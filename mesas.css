@@ -1,0 +1,466 @@
+/* ================================================================
+   mesas.css — Fase 5, sistema de mesas (registro de ventas)
+   Solo lo usa mesas.html.
+
+   PALETA (repintada 2026-09-04, "pulido" post-Fase 5.1): esta
+   herramienta va a ser la base de una plantilla que se vende a otros
+   locales, no solo a Taku Monky — por eso YA NO duplica los hex
+   cremas/dorados de style.css/CLAUDE.md → Design rules. Ahora es
+   blanco/negro/gris (escala neutra tipo "zinc"), sin nada que amarre
+   la interfaz a la identidad cálida de un taquería en particular.
+   Sigue siendo autocontenida (mesas.html no carga style.css) por la
+   misma razón de siempre: es una herramienta de STAFF, independiente
+   del navbar/hero/footer del menú público y de los ajustes que el
+   dueño le sigue haciendo a esas páginas por su cuenta — ahora
+   además independiente de la marca en sí, a propósito.
+
+   Único color que no es blanco/negro/gris: el ámbar de "Ocupada". Se
+   necesita un tercer color aparte de verde (Disponible) y rojo (ya
+   significa error/destructivo en toda la paleta) para un tercer
+   estado que no es ni "bien" ni "error". No se usa en ningún otro
+   lado — ver la nota junto a --ambar más abajo.
+   ================================================================ */
+
+:root {
+  --fondo: #f4f4f5;
+  --superficie: #ffffff;
+  --borde: #e4e4e7;
+  --oscuro: #18181b;
+  --negro: #09090b;
+  --texto-fuerte: #18181b;
+  --muted1: #52525b;
+  --muted2: #71717a;
+  --muted3: #a1a1aa;
+  --eyebrow: #71717a;
+  --verde: #16a34a;
+  --ambar: #d97706;
+  --ambar-texto: #9a5b0a; /* --ambar (#d97706) es de por sí bastante oscuro, pero
+                              como texto sobre --superficie blanco todavía se ve
+                              algo apagado; esta versión oscurecida es la que se
+                              usa para TEXTO, --ambar para fondos/bordes/puntos */
+  --rojo: #dc2626;
+  --rojo-texto: #b91c1c;
+  --rojo-bg: #fef2f2;
+  --blanco: #ffffff;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body {
+  background: var(--fondo);
+  color: var(--texto-fuerte);
+  font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+[hidden] { display: none !important; }
+button { font: inherit; cursor: pointer; border: none; background: none; color: inherit; }
+input { font: inherit; }
+
+/* ----------------------------------------------------------------
+   Toast
+   ---------------------------------------------------------------- */
+.tk-mesas-toast {
+  position: fixed;
+  top: 80px; /* debajo de .tk-mesas-header (~64-68px de alto) — antes estaba
+                en 18px y quedaba encimado sobre el header, tapando el
+                logo/nombre (visto en vivo 2026-09-04). */
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 999;
+  max-width: calc(100% - 32px);
+  padding: 12px 20px;
+  border-radius: 30px;
+  font-size: 13px;
+  font-weight: 600;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, .18);
+  text-align: center;
+}
+.tk-mesas-toast--success { background: var(--verde); color: var(--blanco); }
+.tk-mesas-toast--error { background: var(--rojo-bg); color: var(--rojo-texto); border: 1px solid var(--rojo); }
+
+/* ----------------------------------------------------------------
+   Login — tarjeta blanca elevada, look "producto de software" en vez
+   de calcar sesion_view.py tal cual (ese sigue siendo cálido/Georgia
+   a propósito, es el panel de Flet de Taku Monky; esta página ya no).
+   ---------------------------------------------------------------- */
+.tk-mesas-login {
+  min-height: 100vh;
+  min-height: 100svh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+.tk-mesas-tarjeta-login {
+  width: 100%;
+  max-width: 380px;
+  background: var(--superficie);
+  border: 1px solid var(--borde);
+  border-radius: 24px;
+  padding: 40px 32px;
+  box-shadow: 0 20px 50px -12px rgba(0, 0, 0, .18), 0 0 0 1px rgba(0, 0, 0, .03);
+  text-align: center;
+}
+.tk-mesas-logo { width: 60px; height: 60px; border-radius: 50%; object-fit: cover; }
+.tk-mesas-eyebrow {
+  margin: 18px 0 0;
+  font-size: 11px;
+  font-weight: bold;
+  letter-spacing: .06em;
+  color: var(--eyebrow);
+  text-transform: uppercase;
+}
+.tk-mesas-marca {
+  margin: 6px 0 0;
+  font-family: inherit;
+  font-weight: 700;
+  letter-spacing: -.02em;
+  font-size: 26px;
+  color: var(--texto-fuerte);
+}
+.tk-mesas-subtitulo { margin: 8px 0 28px; font-size: 13px; color: var(--muted2); }
+
+.tk-mesas-campo {
+  width: 100%;
+  height: 50px;
+  padding: 0 16px;
+  border: 1px solid var(--borde);
+  border-radius: 999px;
+  background: var(--superficie);
+  color: var(--texto-fuerte);
+  font-size: 14px;
+}
+.tk-mesas-campo::placeholder { color: var(--muted3); }
+.tk-mesas-campo:focus {
+  outline: none;
+  border-color: var(--oscuro);
+  box-shadow: 0 0 0 3px rgba(24, 24, 27, .08);
+}
+
+/* Envoltura para el campo de contraseña con icono de candado, calcado
+   del icono-dentro-del-input del componente de referencia (AuthModal:
+   el Mail icon absoluto sobre el input de correo). */
+.tk-mesas-campo-envoltura { position: relative; }
+.tk-mesas-campo-icono {
+  position: absolute;
+  left: 17px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--muted3);
+  pointer-events: none;
+}
+.tk-mesas-campo--icono { padding-left: 44px; }
+
+.tk-mesas-error-texto {
+  margin: 12px 0 0;
+  padding: 10px 12px;
+  background: var(--rojo-bg);
+  border: 1px solid var(--rojo);
+  border-radius: 12px;
+  color: var(--rojo-texto);
+  font-size: 12px;
+  text-align: left;
+}
+
+.tk-mesas-boton-primario {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  margin-top: 20px;
+  padding: 16px;
+  background: var(--oscuro);
+  color: var(--blanco);
+  font-weight: bold;
+  font-size: 15px;
+  border-radius: 999px;
+  text-align: center;
+  transition: background-color .15s ease, opacity .15s ease;
+}
+.tk-mesas-boton-primario:hover { background: var(--negro); }
+.tk-mesas-boton-primario:disabled { opacity: .6; cursor: default; }
+.tk-mesas-boton-primario--auto { width: auto; margin-top: 0; padding: 0 24px; white-space: nowrap; }
+.tk-mesas-boton-icono { flex-shrink: 0; }
+
+/* ----------------------------------------------------------------
+   App: header + layout general
+   Logo+nombre centrados de verdad (independiente del ancho del botón
+   de hamburguesa): la marca se posiciona absoluta al centro del
+   header en vez de repartirse con flexbox, que es lo que se necesita
+   para "centrado" cuando el otro lado no está vacío.
+   ---------------------------------------------------------------- */
+.tk-mesas-header {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 14px 20px;
+  background: var(--oscuro);
+}
+.tk-mesas-header-marca {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+.tk-mesas-header-marca img { width: 30px; height: 30px; border-radius: 50%; object-fit: cover; }
+.tk-mesas-header-marca span {
+  font-family: inherit;
+  font-weight: 700;
+  letter-spacing: -.01em;
+  font-size: 16px;
+  color: var(--blanco);
+  white-space: nowrap;
+}
+
+/* Menú de hamburguesa (a la derecha del header) — reemplaza el
+   "Cerrar sesión" suelto de antes; hoy solo trae ese ítem, pero ya
+   queda un lugar donde meter más opciones de header sin volver a
+   rediseñar nada. */
+.tk-mesas-menu { position: relative; }
+.tk-mesas-menu-boton {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  color: var(--blanco);
+}
+.tk-mesas-menu-boton:hover { background: rgba(255, 255, 255, .1); }
+.tk-mesas-menu-panel {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  min-width: 190px;
+  background: var(--superficie);
+  border: 1px solid var(--borde);
+  border-radius: 14px;
+  padding: 6px;
+  box-shadow: 0 16px 32px rgba(0, 0, 0, .18);
+  z-index: 50;
+}
+.tk-mesas-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 11px 12px;
+  border-radius: 9px;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--texto-fuerte);
+  text-align: left;
+}
+.tk-mesas-menu-item:hover { background: var(--fondo); }
+.tk-mesas-menu-item svg { flex-shrink: 0; color: var(--muted2); }
+
+.tk-mesas-main {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 28px 20px 60px;
+}
+
+/* ----------------------------------------------------------------
+   Vista 1: catálogo de mesas (Fase 5.1) — lista fija, con estado
+   ---------------------------------------------------------------- */
+.tk-mesas-seccion-titulo {
+  margin: 32px 0 14px;
+  font-size: 11px;
+  font-weight: bold;
+  letter-spacing: .06em;
+  color: var(--eyebrow);
+  text-transform: uppercase;
+}
+
+.tk-mesas-lista { display: flex; flex-direction: column; gap: 10px; }
+.tk-mesas-tarjeta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 16px 18px;
+  background: var(--superficie);
+  border: 1px solid var(--borde);
+  border-radius: 16px;
+  border-left: 3px solid var(--verde);
+  text-align: left;
+  transition: transform .15s ease, box-shadow .15s ease;
+}
+.tk-mesas-tarjeta:hover { transform: translateY(-1px); box-shadow: 0 6px 16px rgba(0, 0, 0, .08); }
+/* Ocupada: acento ámbar — el único color de toda la hoja que no es
+   blanco/negro/gris/verde/rojo. Ver la nota grande al inicio del
+   archivo: hace falta un tercer color porque ni verde (Disponible)
+   ni rojo (ya es "error/destructivo" en toda la paleta) sirven aquí. */
+.tk-mesas-tarjeta--ocupada { border-left-color: var(--ambar); }
+.tk-mesas-tarjeta-mesa { flex: 1; font-weight: 700; font-size: 15px; color: var(--texto-fuerte); }
+.tk-mesas-tarjeta-estado { font-size: 12.5px; font-weight: 600; white-space: nowrap; }
+.tk-mesas-tarjeta-estado--disponible { color: var(--verde); }
+.tk-mesas-tarjeta-estado--ocupada { color: var(--ambar-texto); }
+.tk-mesas-tarjeta-tiempo { font-size: 12px; color: var(--muted2); white-space: nowrap; }
+
+.tk-mesas-estado, .tk-mesas-vacio, .tk-mesas-error {
+  padding: 32px 20px;
+  text-align: center;
+  font-size: 13px;
+  color: var(--muted2);
+  border: 1px dashed var(--borde);
+  border-radius: 16px;
+}
+.tk-mesas-error { color: var(--rojo-texto); border-color: var(--rojo); background: var(--rojo-bg); }
+.tk-mesas-spinner {
+  width: 26px; height: 26px; margin: 0 auto 12px;
+  border: 3px solid var(--borde);
+  border-top-color: var(--oscuro);
+  border-radius: 50%;
+  animation: tk-mesas-girar .8s linear infinite;
+}
+@keyframes tk-mesas-girar { to { transform: rotate(360deg); } }
+
+/* ----------------------------------------------------------------
+   Vista 2: orden de una mesa
+   ---------------------------------------------------------------- */
+.tk-mesas-orden-encabezado { display: flex; align-items: center; justify-content: space-between; margin: 0 -8px; }
+/* OJO: esta fila vive sobre --fondo (claro), NO dentro de .tk-mesas-header
+   (oscuro) — "Volver" traía por error el color blanco-translúcido pensado
+   para texto sobre el header, prácticamente invisible aquí. Corregido
+   2026-09-04. */
+.tk-mesas-enlace-volver { font-size: 13px; font-weight: 600; color: var(--muted1); padding: 8px; }
+.tk-mesas-enlace-volver:hover { color: var(--oscuro); }
+.tk-mesas-enlace-peligro { font-size: 13px; font-weight: 600; color: var(--rojo-texto); padding: 8px; }
+.tk-mesas-enlace-peligro:hover { text-decoration: underline; }
+
+.tk-mesas-orden-titulo {
+  margin: 14px 0 20px;
+  font-family: inherit;
+  font-weight: 700;
+  letter-spacing: -.02em;
+  font-size: 26px;
+  color: var(--texto-fuerte);
+}
+
+.tk-mesas-orden-items { display: flex; flex-direction: column; gap: 10px; margin-bottom: 18px; }
+.tk-mesas-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 14px 16px;
+  background: var(--superficie);
+  border: 1px solid var(--borde);
+  border-radius: 14px;
+}
+.tk-mesas-item-info { display: flex; flex-direction: column; gap: 2px; }
+.tk-mesas-item-nombre { font-size: 14px; font-weight: 600; color: var(--texto-fuerte); }
+.tk-mesas-item-precio { font-size: 11.5px; color: var(--muted2); }
+.tk-mesas-item-controles { display: flex; align-items: center; gap: 10px; }
+.tk-mesas-paso {
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  background: var(--borde);
+  color: var(--texto-fuerte);
+  font-size: 16px;
+  font-weight: bold;
+  display: flex; align-items: center; justify-content: center;
+  transition: background-color .15s ease, color .15s ease;
+}
+.tk-mesas-paso:hover { background: var(--oscuro); color: var(--blanco); }
+.tk-mesas-item-cantidad { min-width: 18px; text-align: center; font-weight: bold; font-size: 14px; }
+.tk-mesas-item-subtotal { min-width: 62px; text-align: right; font-weight: bold; font-size: 14px; color: var(--texto-fuerte); }
+.tk-mesas-quitar { font-size: 14px; color: var(--muted2); padding: 4px 6px; }
+.tk-mesas-quitar:hover { color: var(--rojo-texto); }
+
+.tk-mesas-boton-secundario {
+  display: block;
+  width: 100%;
+  padding: 14px;
+  border: 1px dashed var(--muted3);
+  border-radius: 16px;
+  color: var(--muted1);
+  font-weight: 600;
+  font-size: 14px;
+  text-align: center;
+}
+.tk-mesas-boton-secundario:hover { background: var(--superficie); border-color: var(--oscuro); color: var(--oscuro); }
+
+.tk-mesas-orden-pie { margin-top: 24px; }
+.tk-mesas-orden-total-fila {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--borde);
+  font-size: 14px;
+  color: var(--muted1);
+}
+#tk-mesas-orden-total { font-size: 24px; font-weight: bold; color: var(--texto-fuerte); }
+
+/* ----------------------------------------------------------------
+   Modal: selector de platillos
+   ---------------------------------------------------------------- */
+.tk-mesas-selector { position: fixed; inset: 0; z-index: 800; display: flex; align-items: flex-end; justify-content: center; }
+.tk-mesas-selector-overlay { position: absolute; inset: 0; background: rgba(0, 0, 0, .5); }
+.tk-mesas-selector-caja {
+  position: relative;
+  width: 100%;
+  max-width: 640px;
+  max-height: 82vh;
+  background: var(--fondo);
+  border-radius: 20px 20px 0 0;
+  padding: 18px 18px 24px;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 -8px 30px rgba(0, 0, 0, .22);
+}
+.tk-mesas-selector-encabezado { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+.tk-mesas-selector-encabezado .tk-mesas-campo { flex: 1; border-radius: 16px; }
+.tk-mesas-selector-cerrar-boton {
+  width: 40px; height: 40px; border-radius: 50%;
+  background: var(--superficie);
+  color: var(--muted1);
+  font-size: 15px;
+  flex-shrink: 0;
+}
+.tk-mesas-selector-cerrar-boton:hover { background: var(--borde); }
+.tk-mesas-selector-lista { overflow-y: auto; }
+.tk-mesas-selector-grupo { margin-bottom: 18px; }
+.tk-mesas-selector-grupo h4 {
+  margin: 0 0 8px;
+  font-size: 11px;
+  font-weight: bold;
+  letter-spacing: .06em;
+  color: var(--eyebrow);
+  text-transform: uppercase;
+}
+.tk-mesas-selector-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 13px 14px;
+  border-radius: 12px;
+  font-size: 14px;
+  color: var(--texto-fuerte);
+  text-align: left;
+}
+.tk-mesas-selector-item:hover { background: var(--superficie); }
+.tk-mesas-selector-item-precio { font-weight: bold; color: var(--muted1); }
+
+/* ----------------------------------------------------------------
+   Responsivo — a partir de aquí es donde más probablemente se use
+   (celular/tablet en el restaurante), así que el layout base de
+   arriba YA es el de celular; esto solo da más aire en pantallas
+   grandes.
+   ---------------------------------------------------------------- */
+@media (min-width: 640px) {
+  .tk-mesas-header { padding: 16px 32px; }
+  .tk-mesas-main { padding-top: 40px; }
+  .tk-mesas-selector { align-items: center; }
+  .tk-mesas-selector-caja { border-radius: 20px; max-height: 78vh; padding: 22px; }
+}

@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" fill="none">
+<defs>
+<linearGradient id="glass" x1="0" y1="0" x2="0.55" y2="1">
+<stop offset="0" stop-color="#1355E8" stop-opacity="0.14"/>
+<stop offset="1" stop-color="#1355E8" stop-opacity="0"/>
+</linearGradient>
+</defs>
+<path d="M 256.00,64.61 L 366.38,128.34 L 296.22,234.64 L 179.33,108.88 Z" fill="url(#glass)" stroke="#1355E8" stroke-width="3.0" stroke-linejoin="round"/>
+<path d="M 364.29,127.14 L 421.74,160.31 L 421.74,351.69 L 410.86,357.97 L 294.54,232.83 Z" fill="url(#glass)" stroke="#1355E8" stroke-width="3.0" stroke-linejoin="round"/>
+<path d="M 413.00,356.74 L 267.99,440.47 L 293.64,228.33 Z" fill="url(#glass)" stroke="#1355E8" stroke-width="3.0" stroke-linejoin="round"/>
+<path d="M 270.58,438.97 L 261.97,443.94 L 199.15,294.73 L 291.28,267.81 Z" fill="url(#glass)" stroke="#1355E8" stroke-width="3.0" stroke-linejoin="round"/>
+<path d="M 264.06,442.73 L 256.00,447.39 L 90.26,351.69 L 90.26,215.34 L 201.82,294.89 Z" fill="url(#glass)" stroke="#1355E8" stroke-width="5.0" stroke-linejoin="round" transform="translate(-13.85,11.50) rotate(6.0,162.18,333.89)"/>
+<path d="M 90.26,218.29 L 90.26,160.31 L 134.42,134.81 L 203.59,299.10 Z" fill="url(#glass)" stroke="#1355E8" stroke-width="3.0" stroke-linejoin="round"/>
+<path d="M 200.09,296.96 L 132.33,136.02 L 181.46,107.65 L 295.78,230.63 L 290.97,270.40 Z" fill="url(#glass)" stroke="#1355E8" stroke-width="3.0" stroke-linejoin="round"/>
+</svg>

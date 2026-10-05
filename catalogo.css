@@ -1,0 +1,884 @@
+/* ================================================================
+   catalogo.css — páginas de categoría del menú público
+   Lo usan: menu-platillos.html, menu-bebidas.html, menu-postres.html
+   (index.html NO lo carga — ver la nota de abajo).
+
+   Va SIEMPRE después de style.css en el <head>, igual que en
+   EJEMPLOS/catalogo.html (style.css + catalogo.css): style.css sigue
+   siendo la base compartida por las 4 páginas (body, paleta, footer,
+   sidebar móvil, estados .tk-estado/.tk-spinner) y este archivo agrega
+   ENCIMA todo lo que solo existe en las páginas de catálogo: el header
+   sticky, la cuadrícula de tarjetas, el modal de búsqueda, el menú de
+   filtros y el visor de foto grande.
+
+   Estructura calcada de EJEMPLOS/catalogo.css (el catálogo de Anxie
+   Store), pedido explícito del dueño el 28 ago 2026: "copia totalmente
+   la estructura moderna". Lo que se copió es la ESTRUCTURA — header de
+   dos filas (íconos + logo al centro + filtro / barra de navegación),
+   tarjeta abierta sin caja con etiqueta arriba y botón de ancho
+   completo abajo, modal de búsqueda, dropdown de orden, visor de zoom.
+   Los COLORES y la tipografía siguen siendo los de Taku Monky (las
+   variables de style.css), no el blanco/negro de Anxie: el dueño pidió
+   la estructura, no la paleta — y la paleta del proyecto es la regla
+   por defecto (ver CLAUDE.md → Design rules). La única excepción de
+   paleta documentada del sitio sigue siendo el carrusel del index, que
+   no toca este archivo.
+
+   Equivalencias con el archivo de referencia, por si hay que volver a
+   compararlos:
+     .catalog-header      → .tk-cat-header
+     .header-top-row      → .tk-cat-fila-top
+     .header-icon-btn     → .tk-cat-icono-btn
+     .catalog-nav         → .tk-cat-nav
+     .product-grid        → .tk-cat-grid
+     .product-card        → .tk-cat-tarjeta
+     .platform-badge      → .tk-cat-etiqueta
+     .image-container     → .tk-cat-foto
+     .btn-buy             → .tk-cat-btn
+     .filter-menu         → .tk-cat-filtro-menu
+     .search-modal-*      → .tk-cat-busqueda-*
+     .image-zoom-*        → .tk-cat-zoom-*
+   ================================================================ */
+
+:root {
+  /* Ancho del área de catálogo: bastante más ancho que el --envoltura
+     de 1100px del resto del sitio, igual que en la referencia
+     (.catalog-main ahí mide 1650px / 95%). Con 4 columnas esto deja
+     tarjetas de ~350px, tamaño donde las fotos de comida se ven de
+     verdad; con los 1100px de antes quedaban en ~245px. */
+  --cat-ancho: 1500px;
+
+  /* Alturas de las dos filas del header sticky. Viven aquí como
+     variables porque las usa también el scroll-margin de las anclas
+     (#platillo-N, a las que salta la búsqueda) — si el header crece,
+     el salto se corrige solo y no queda la tarjeta escondida debajo. */
+  --cat-header-alto: 132px;
+}
+
+/* Bloqueo de scroll del fondo mientras hay un modal abierto — mismo
+   mecanismo que body.no-scroll en EJEMPLOS/catalogo.css. */
+body.tk-sin-scroll { overflow: hidden; }
+
+/* ================================================================
+   HEADER STICKY (fila de íconos + fila de navegación)
+   ================================================================
+   Esta es "la navbar totalmente diferente" que pidió el dueño: en
+   index.html la barra es .tk-navbar, flotante y transparente sobre la
+   foto del hero (texto blanco sobre un degradado oscuro). Aquí no hay
+   hero: esa barra quedaba como una mancha gris encima del fondo crema.
+   La reemplaza este header sólido tipo catálogo, que además es donde
+   viven la lupa y el filtro nuevos.
+
+   OJO: estas páginas ya NO incluyen el marcado de .tk-navbar, así que
+   sus reglas en style.css simplemente no aplican aquí — no hay que
+   anularlas. Lo mismo con .tk-fila-volver ("Volver al inicio"): salió
+   sobrando en cuanto la navegación ganó su propio enlace "Inicio". */
+.tk-cat-header {
+  position: sticky;
+  top: 0;
+  /* Por debajo del sidebar móvil (950) y su overlay (900), que viven en
+     style.css, para que el panel deslizante siga tapando el header como
+     en index.html. Los modales de este archivo van más arriba todavía
+     (ver .tk-cat-busqueda / .tk-cat-zoom). */
+  z-index: 500;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  background: var(--fondo);
+  border-bottom: 1px solid var(--borde);
+  /* Sombra muy tenue, mismo papel que el box-shadow de .catalog-header
+     en la referencia, pero en el negro cálido del proyecto en vez de
+     un negro puro que sobre crema se ve gris sucio. */
+  box-shadow: 0 6px 20px rgba(13, 9, 5, .05);
+}
+
+/* Fila 1: [hamburguesa + lupa] · [marca] · [filtro]
+   Grid de 3 columnas 1fr/auto/1fr — así la marca queda ópticamente
+   centrada aunque los dos grupos de los lados no midan lo mismo (es
+   exactamente el truco de .header-top-row en la referencia). */
+.tk-cat-fila-top {
+  width: 100%;
+  max-width: var(--cat-ancho);
+  margin: 0 auto;
+  padding: 14px 30px;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 12px;
+}
+.tk-cat-grupo-izq {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  justify-self: start;
+}
+.tk-cat-grupo-der { justify-self: end; }
+
+/* Botones de ícono (lupa / filtro) — redondos, sin fondo hasta que se
+   les pasa el cursor. La referencia solo cambia opacidad y escala; aquí
+   además aparece el crema de --superficie porque sobre un fondo crema
+   un ícono "flotando" sin caja se pierde al pasar el mouse. */
+.tk-cat-icono-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  color: var(--oscuro2);
+  background: transparent;
+  transition: background-color .2s ease, color .2s ease, transform .2s ease;
+}
+.tk-cat-icono-btn svg { width: 20px; height: 20px; }
+.tk-cat-icono-btn:hover {
+  background: var(--superficie);
+  color: var(--naranja);
+  transform: scale(1.06);
+}
+.tk-cat-icono-btn:focus-visible {
+  outline: 2px solid var(--acento2);
+  outline-offset: 2px;
+}
+
+/* Hamburguesa: mismo id (#tk-menu-boton) que en index.html para que
+   iniciarNavbar() de catalogo.js la enganche sin cambios, pero con
+   clase propia — la .tk-menu-boton de style.css es blanca (pensada
+   para el navbar oscuro del hero) y aquí el fondo es crema. */
+.tk-cat-hamburguesa {
+  display: none;
+  flex-direction: column;
+  justify-content: center;
+  gap: 5px;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  transition: background-color .2s ease;
+}
+.tk-cat-hamburguesa span {
+  display: block;
+  width: 21px;
+  height: 2px;
+  margin: 0 auto;
+  border-radius: 2px;
+  background: var(--oscuro2);
+  transition: background-color .2s ease;
+}
+.tk-cat-hamburguesa:hover { background: var(--superficie); }
+.tk-cat-hamburguesa:hover span { background: var(--naranja); }
+
+/* Marca del centro. La referencia solo pone el logo circular; aquí va
+   logo + "Taku monky" en Georgia italic, que es el tratamiento de la
+   marca en TODO el sitio (navbar, sidebar, footer, panel) y no se
+   toca. El texto se esconde en pantallas angostas para que la fila no
+   se apriete — ahí queda solo el logo, como en la referencia. */
+.tk-cat-marca {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  justify-self: center;
+}
+.tk-cat-marca img {
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+.tk-cat-marca span {
+  font-family: Georgia, serif;
+  font-style: italic;
+  font-weight: bold;
+  font-size: 20px;
+  color: var(--texto-fuerte);
+  white-space: nowrap;
+}
+
+/* Fila 2: barra de navegación.
+   La referencia usa una franja gris (#f5f5f5) que corta el header en
+   dos; aquí la franja es --header-tabla (#eee5cf), el crema "de
+   encabezado" que el proyecto ya usa para la cabecera de la tabla del
+   panel. Mismo papel, tono del proyecto.
+
+   4 enlaces (Inicio · Platillos · Bebidas · Postres) en vez de los 3 de
+   la referencia — pedido explícito del dueño. Por eso NO se copió su
+   grid de 3 columnas: aquí es un flex centrado, que se acomoda igual
+   con cualquier cantidad de enlaces. */
+.tk-cat-nav-caja {
+  width: 100%;
+  background: var(--header-tabla);
+  border-top: 1px solid var(--borde);
+}
+.tk-cat-nav {
+  max-width: var(--cat-ancho);
+  margin: 0 auto;
+  padding: 13px 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 44px;
+}
+.tk-cat-nav a {
+  position: relative;
+  padding-bottom: 5px;
+  font-family: "Montserrat", -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-size: 12.5px;
+  font-weight: 700;
+  letter-spacing: .13em;
+  text-transform: uppercase;
+  color: var(--muted1);
+  white-space: nowrap;
+  transition: color .25s ease;
+}
+/* Subrayado dorado que crece — mismo mecanismo y mismo --acento2 que
+   .tk-nav-link::after en style.css, para que la navegación del sitio se
+   sienta la misma aunque la barra sea otra. */
+.tk-cat-nav a::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  margin: 0 auto;
+  width: 0;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--acento2);
+  transition: width .35s cubic-bezier(.25, 1, .5, 1);
+}
+.tk-cat-nav a:hover { color: var(--oscuro2); }
+.tk-cat-nav a:hover::after { width: 100%; }
+.tk-cat-nav a.tk-cat-nav--activo { color: var(--oscuro2); }
+.tk-cat-nav a.tk-cat-nav--activo::after { width: 100%; }
+
+/* ================================================================
+   MENÚ DE FILTROS (dropdown "Ordenar por")
+   ================================================================ */
+.tk-cat-filtro-caja { position: relative; }
+
+/* Puntito dorado sobre el ícono cuando hay un orden distinto al de por
+   defecto: sin él, el filtro se queda "aplicado en silencio" y al
+   volver a la página no hay forma de saber por qué la lista no está en
+   el orden normal. La referencia no lo trae (allá el orden por defecto
+   ya es un filtro elegido); aquí sí hace falta porque "Recomendado" es
+   un estado neutro. */
+.tk-cat-filtro-punto {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--acento1);
+  border: 2px solid var(--fondo);
+  opacity: 0;
+  transform: scale(.4);
+  transition: opacity .2s ease, transform .2s ease;
+}
+.tk-cat-filtro-caja.tk-cat-filtrado .tk-cat-filtro-punto {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.tk-cat-filtro-menu {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 10px);
+  z-index: 60;
+  width: 232px;
+  padding: 9px 0;
+  display: none;
+  flex-direction: column;
+  background: var(--fondo);
+  border: 1px solid var(--borde);
+  border-radius: 14px;
+  box-shadow: 0 14px 34px rgba(13, 9, 5, .16);
+}
+.tk-cat-filtro-menu.tk-activo { display: flex; }
+
+.tk-cat-filtro-titulo {
+  padding: 7px 16px 9px;
+  font-family: "Montserrat", -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--eyebrow);
+}
+.tk-cat-filtro-opt {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 16px;
+  text-align: left;
+  font-family: "Montserrat", -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted1);
+  transition: background-color .18s ease, color .18s ease;
+}
+.tk-cat-filtro-opt::after {
+  /* Palomita del que está activo. Se reserva el espacio siempre (con
+     opacidad 0) para que el texto no salte al cambiar de opción. */
+  content: '✓';
+  font-size: 12px;
+  color: var(--naranja);
+  opacity: 0;
+}
+.tk-cat-filtro-opt:hover { background: var(--superficie); color: var(--oscuro2); }
+.tk-cat-filtro-opt.tk-activo { color: var(--oscuro2); font-weight: 700; }
+.tk-cat-filtro-opt.tk-activo::after { opacity: 1; }
+
+/* ================================================================
+   ÁREA PRINCIPAL + ENCABEZADO DE LA PÁGINA
+   ================================================================ */
+.tk-cat-main {
+  max-width: var(--cat-ancho);
+  width: 94%;
+  margin: 0 auto;
+  padding: 46px 0 92px;
+  /* Que el footer no se suba hasta media pantalla cuando una categoría
+     trae pocos platillos (hoy son 2 por categoría). */
+  min-height: 62vh;
+}
+
+/* Alineado a la izquierda como .shop-all-title en la referencia (el
+   diseño anterior lo tenía centrado). El título se queda en Georgia
+   italic: es la tipografía de display del sitio entero y del panel, no
+   algo que este rediseño deba cambiar. */
+.tk-cat-encabezado {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 40px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--borde);
+}
+.tk-cat-eyebrow {
+  font-family: "Montserrat", -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .22em;
+  text-transform: uppercase;
+  color: var(--eyebrow);
+}
+.tk-cat-titulo {
+  margin-top: 8px;
+  font-family: Georgia, serif;
+  font-style: italic;
+  font-weight: bold;
+  font-size: clamp(32px, 5vw, 46px);
+  line-height: 1.05;
+  color: var(--texto-fuerte);
+}
+/* #subtitulo-categoria — el contador ("2 platillos disponibles"). */
+.tk-cat-conteo {
+  font-family: "Montserrat", -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: .04em;
+  color: var(--muted2);
+  padding-bottom: 4px;
+  min-height: 1em;
+}
+
+/* ================================================================
+   CUADRÍCULA — 4 POR FILA EN ESCRITORIO
+   ================================================================
+   El dueño pidió explícitamente conservar las 4 por fila que ya tenía
+   la versión anterior ("es lo unico chido, asi dejalo"). Por eso NO se
+   copió el repeat(3, 1fr) de .product-grid de la referencia: son 4
+   columnas fijas, y de ahí para abajo se van cayendo por breakpoint.
+
+   Huecos generosos (56px verticales) calcados del gap 65px/35px de la
+   referencia — ese aire es buena parte de lo que hace que la tarjeta
+   abierta (sin caja) se lea ordenada en vez de suelta.
+
+   Es un FLEX envolvente, no un grid, y la razón es la fila incompleta.
+   Hoy cada categoría trae 2 platillos: con un grid de 4 columnas fijas
+   el navegador reserva las 4 pistas aunque dos estén vacías, así que
+   las 2 tarjetas se pegaban a la izquierda y la mitad derecha de la
+   pantalla quedaba en blanco (malísimo en un monitor de 1920px).
+   Con flex-wrap + justify-content:center, una fila que no se llena
+   queda centrada y se ve intencional.
+
+   (auto-fit tampoco servía, aunque parezca lo obvio: al contar cuántas
+   pistas caben, el navegador usa el MÁXIMO del minmax cuando es una
+   medida fija — no el mínimo — así que minmax(300px, 360px) daba 3
+   columnas en 1500px, no 4. Medido, no supuesto.)
+
+   Los números salen para que sean EXACTAMENTE 4 por fila en escritorio,
+   que es lo que pidió el dueño:
+     - flex-basis 300px → en el contenedor de 1500px caben 4
+       (4×300+3×30 = 1290 ≤ 1500) pero no 5 (5×300+4×30 = 1620 > 1500).
+     - max-width 360px  → con pocas tarjetas no se estiran a lo ancho de
+       todo el contenedor; se quedan casi del tamaño que tienen cuando
+       la fila va llena (~352px), así una categoría con 2 platillos y
+       otra con 6 se ven parejas al navegar entre ellas.
+   De ahí para abajo el mismo cálculo va soltando columnas solo
+   (3 desde ~1310px, 2 desde ~1000px, 1 desde ~660px), así que esto no
+   necesita media queries para el número de columnas. */
+.tk-cat-grid {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 56px 30px;
+}
+.tk-cat-grid > .tk-cat-tarjeta {
+  flex: 1 1 300px;
+  max-width: 360px;
+}
+
+/* ================================================================
+   TARJETA DE PLATILLO (versión catálogo)
+   ================================================================
+   Cambio de forma que pidió el dueño. Antes: una caja cerrada
+   (.tk-tarjeta en style.css, con fondo, borde y todo adentro). Ahora,
+   como .product-card de la referencia: sin caja ni borde: etiqueta
+   arriba, foto suelta, texto debajo y un botón de ancho completo al
+   pie. Es una definición APARTE, no un reemplazo de .tk-tarjeta:
+   esa se sigue usando tal cual en los previews de index.html y no debe
+   cambiar (el dueño está afinando el index por su cuenta). */
+.tk-cat-tarjeta {
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+/* Etiqueta de categoría — el equivalente de .platform-badge (píldora
+   negra) de la referencia. Usa --oscuro, el negro cálido que el
+   proyecto ya usa para el sidebar y los botones primarios, así que la
+   píldora oscura no es un color nuevo. Se ve repetida dentro de una
+   misma categoría (las 4 dicen lo mismo), y es a propósito: es el
+   ancla visual de arriba de la tarjeta y la misma tarjeta se reusa en
+   los resultados de búsqueda, donde sí se mezclan categorías. */
+.tk-cat-etiqueta {
+  align-self: flex-start;
+  margin-bottom: 16px;
+  padding: 6px 14px;
+  border-radius: var(--radio-pill);
+  background: var(--oscuro);
+  color: var(--blanco);
+  font-family: "Montserrat", -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+}
+
+/* Foto 4:3, no el 16:9 de la referencia: las fotos reales del bucket
+   R2 vienen de todo (medidas el 28 ago 2026: dos apaisadas 3:2, dos
+   casi cuadradas y dos verticales 9:16). Con object-fit:cover, un
+   recorte 16:9 de una foto vertical tira ~70% de la imagen y parte el
+   platillo a la mitad; 4:3 es el punto medio que aguanta las tres
+   proporciones. El radio sí se conserva (--radio-card) aunque la
+   referencia use esquinas rectas: los bordes redondeados son parte del
+   lenguaje del sitio y del panel. */
+.tk-cat-foto {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  margin-bottom: 18px;
+  overflow: hidden;
+  border-radius: var(--radio-card);
+  background: var(--header-tabla);
+  cursor: zoom-in;
+}
+.tk-cat-foto img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform .45s cubic-bezier(.25, 1, .5, 1);
+}
+/* La referencia quitó su zoom de hover (transform:none) pero dejó el
+   cursor de lupa. Aquí se deja un acercamiento mínimo: es la única
+   señal de que la foto se puede abrir en grande. */
+.tk-cat-tarjeta:hover .tk-cat-foto img { transform: scale(1.045); }
+
+.tk-cat-info {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  flex: 1;
+}
+.tk-cat-nombre {
+  font-family: Georgia, serif;
+  font-style: italic;
+  font-weight: bold;
+  font-size: 19px;
+  line-height: 1.25;
+  color: var(--oscuro2);
+}
+.tk-cat-desc {
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--muted1);
+  /* Máximo 2 líneas: con descripciones de largo muy distinto, sin esto
+     las fotos de la fila de abajo quedan a distintas alturas. */
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.tk-cat-precio {
+  margin-top: 4px;
+  font-family: "Montserrat", -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--texto-fuerte);
+}
+
+/* Botón de ancho completo al pie — .btn-buy de la referencia, con la
+   píldora del proyecto (--radio-pill) en vez de las esquinas rectas de
+   allá. margin-top:auto lo pega abajo, así los botones de las 4
+   tarjetas de una fila quedan alineados aunque las descripciones midan
+   distinto. */
+.tk-cat-btn {
+  margin-top: auto;
+  padding-top: 14px;
+}
+.tk-cat-btn a {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: var(--radio-pill);
+  background: var(--oscuro);
+  color: var(--blanco);
+  font-family: "Montserrat", -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-size: 12.5px;
+  font-weight: 700;
+  letter-spacing: .05em;
+  transition: background-color .25s ease, transform .25s ease, box-shadow .25s ease;
+}
+.tk-cat-btn a svg { width: 16px; height: 16px; flex-shrink: 0; }
+.tk-cat-btn a:hover {
+  background: var(--oscuro2);
+  transform: translateY(-2px);
+  box-shadow: var(--sombra-boton);
+}
+
+/* Resalte temporal de la tarjeta a la que saltó la búsqueda — sin esto
+   el usuario cae en medio de la cuadrícula sin saber cuál de las 4 era
+   la que buscaba. */
+@keyframes tk-cat-resaltar {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(255, 162, 0, 0); }
+  25%, 75% { box-shadow: 0 0 0 5px rgba(255, 162, 0, .55); }
+}
+.tk-cat-tarjeta.tk-cat-resaltada .tk-cat-foto {
+  animation: tk-cat-resaltar 1.9s ease-in-out;
+}
+
+/* Ancla de la búsqueda: cada tarjeta lleva id="platillo-N" y el salto
+   tiene que dejar libre el header sticky de dos filas. */
+.tk-cat-tarjeta[id] { scroll-margin-top: calc(var(--cat-header-alto) + 26px); }
+
+/* ================================================================
+   MODAL DE BÚSQUEDA
+   ================================================================
+   Mismo esqueleto que .search-modal-* de la referencia: overlay
+   oscuro, tarjeta arriba (no centrada — así no "salta" al cambiar la
+   cantidad de resultados) y una cuadrícula de resultados con scroll
+   propio. */
+.tk-cat-busqueda {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 78px 18px 24px;
+  background: rgba(13, 9, 5, .7);
+  backdrop-filter: blur(5px);
+  opacity: 0;
+  visibility: hidden;
+  /* pointer-events:none mientras está cerrada — mismo "bug fantasma"
+     que documenta la referencia al final de su archivo: sin esto el
+     overlay invisible se sigue comiendo los clics de la página. */
+  pointer-events: none;
+  transition: opacity .28s ease, visibility .28s ease;
+}
+.tk-cat-busqueda.tk-activo {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+}
+
+.tk-cat-busqueda-caja {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 640px;
+  max-height: 78vh;
+  padding: 20px 22px 22px;
+  border-radius: 18px;
+  background: var(--fondo);
+  border: 1px solid var(--borde);
+  box-shadow: 0 24px 60px rgba(13, 9, 5, .38);
+  transform: translateY(-12px);
+  transition: transform .28s cubic-bezier(.25, 1, .5, 1);
+}
+.tk-cat-busqueda.tk-activo .tk-cat-busqueda-caja { transform: translateY(0); }
+
+.tk-cat-busqueda-barra {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding-bottom: 13px;
+  border-bottom: 1px solid var(--borde);
+}
+.tk-cat-busqueda-barra > svg {
+  width: 19px;
+  height: 19px;
+  flex-shrink: 0;
+  color: var(--muted3);
+}
+.tk-cat-busqueda-input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-family: "Montserrat", -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--oscuro2);
+}
+.tk-cat-busqueda-input::placeholder { color: var(--muted3); }
+.tk-cat-busqueda-cerrar {
+  flex-shrink: 0;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  font-size: 21px;
+  line-height: 1;
+  color: var(--muted2);
+  transition: color .2s ease, background-color .2s ease;
+}
+.tk-cat-busqueda-cerrar:hover { color: var(--oscuro2); background: var(--superficie); }
+
+.tk-cat-busqueda-cuerpo {
+  margin-top: 18px;
+  overflow-y: auto;
+}
+.tk-cat-busqueda-rotulo {
+  margin-bottom: 13px;
+  font-family: "Montserrat", -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+  color: var(--eyebrow);
+}
+.tk-cat-busqueda-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(146px, 1fr));
+  gap: 14px;
+}
+.tk-cat-resultado {
+  display: flex;
+  flex-direction: column;
+  padding: 8px;
+  border: 1px solid transparent;
+  border-radius: 13px;
+  color: inherit;
+  transition: background-color .2s ease, border-color .2s ease, transform .2s ease;
+}
+.tk-cat-resultado:hover,
+.tk-cat-resultado:focus-visible {
+  background: var(--superficie);
+  border-color: var(--borde);
+  transform: translateY(-2px);
+  outline: none;
+}
+.tk-cat-resultado-foto {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  border-radius: 9px;
+  background: var(--header-tabla);
+}
+.tk-cat-resultado-nombre {
+  margin: 9px 0 3px;
+  font-family: Georgia, serif;
+  font-style: italic;
+  font-weight: bold;
+  font-size: 14px;
+  line-height: 1.25;
+  color: var(--oscuro2);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.tk-cat-resultado-pie {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.tk-cat-resultado-precio {
+  font-family: "Montserrat", -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--texto-fuerte);
+}
+/* Aquí el chip dorado sí conserva su papel original (marcar de qué
+   categoría es cada resultado), porque la búsqueda mezcla las tres. */
+.tk-cat-resultado-chip {
+  padding: 3px 8px;
+  border-radius: var(--radio-badge);
+  background: var(--chip-bg);
+  color: var(--chip-texto);
+  font-size: 9.5px;
+  font-weight: bold;
+  white-space: nowrap;
+}
+.tk-cat-busqueda-vacio {
+  grid-column: 1 / -1;
+  padding: 22px 4px;
+  font-size: 13px;
+  color: var(--muted2);
+}
+
+/* ================================================================
+   VISOR DE FOTO GRANDE
+   ================================================================ */
+.tk-cat-zoom {
+  position: fixed;
+  inset: 0;
+  z-index: 1300;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 26px;
+  background: rgba(13, 9, 5, .88);
+  backdrop-filter: blur(7px);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity .28s ease, visibility .28s ease;
+}
+.tk-cat-zoom.tk-activo { opacity: 1; visibility: visible; pointer-events: auto; }
+
+.tk-cat-zoom-caja {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  max-width: 1100px;
+  max-height: 88vh;
+}
+.tk-cat-zoom-img {
+  max-width: 100%;
+  max-height: 88vh;
+  object-fit: contain;
+  border-radius: var(--radio-card);
+  cursor: zoom-in;
+  transition: transform .12s ease-out;
+}
+.tk-cat-zoom-img.tk-acercada { cursor: zoom-out; }
+.tk-cat-zoom-cerrar {
+  position: absolute;
+  top: -46px;
+  right: 0;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  font-size: 26px;
+  line-height: 1;
+  color: var(--blanco);
+  transition: color .2s ease, background-color .2s ease;
+}
+.tk-cat-zoom-cerrar:hover { color: var(--dorado); background: rgba(255, 255, 255, .1); }
+.tk-cat-zoom-pie {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -38px;
+  text-align: center;
+  font-family: Georgia, serif;
+  font-style: italic;
+  font-size: 15px;
+  color: rgba(255, 255, 255, .82);
+}
+
+/* ================================================================
+   RESPONSIVO
+   ================================================================
+   El número de columnas NO se toca aquí: lo resuelve solo el auto-fit
+   de .tk-cat-grid (ver la nota grande de allá arriba). Lo que sí se
+   ajusta por breakpoint es el aire entre tarjetas y el chrome de la
+   página. El corte más importante es el de 860px: ahí se esconde la
+   fila de navegación completa y aparece la hamburguesa con el sidebar
+   deslizante, tal como hace la referencia a 992px (allá con 3 enlaces;
+   aquí son 4 y a 860px todavía respiran bien). */
+@media (max-width: 1240px) {
+  .tk-cat-grid { gap: 48px 26px; }
+}
+
+/* 680px es justo donde deja de caber una segunda tarjeta por fila
+   (2×300 + 30 de hueco = 630px de contenido, y el contenedor mide 94%
+   del viewport). De ahí para abajo se le quita el tope de 360px para
+   que la única tarjeta de la fila ocupe TODO el ancho del teléfono —
+   que es de lo que se trata un menú — en vez de quedarse angosta y
+   centrada con aire a los lados. Va en su propio breakpoint y no en el
+   de 620px de abajo (el del header) justamente porque son dos cosas
+   distintas: una depende del ancho de la tarjeta, la otra de cuánto
+   cabe en la barra de arriba. */
+@media (max-width: 680px) {
+  .tk-cat-grid > .tk-cat-tarjeta { max-width: none; }
+}
+
+@media (max-width: 860px) {
+  :root { --cat-header-alto: 70px; }
+  .tk-cat-nav-caja { display: none; }
+  .tk-cat-hamburguesa { display: flex; }
+  .tk-cat-fila-top { padding: 12px 18px; }
+  .tk-cat-main { padding: 34px 0 70px; }
+  .tk-cat-encabezado { margin-bottom: 30px; }
+}
+
+/* Esconder/mostrar al hacer scroll — mismo mecanismo que
+   .tk-navbar--oculta en style.css (el listener vive en
+   iniciarNavbar(), catalogo.js, compartido por las 4 páginas). Pedido
+   del dueño (4 sep 2026): "igual que la navbar del index".
+   A propósito en su propio @media (max-width: 640px) y NO dentro del
+   bloque de 860px de arriba: 640 es el corte que usa esMovil() en el
+   JS, así que este número tiene que coincidir con ESE, no con los
+   otros cortes (860/680/620) de este archivo — si algún día cambia
+   uno, hay que revisar el otro. .tk-cat-header sigue siendo
+   position:sticky (no se toca); una vez "pegado" arriba pinta igual
+   que fixed, así que el transform lo desliza fuera sin dejar hueco:
+   el contenido de abajo ya venía scrolleando por debajo de él. */
+@media (max-width: 640px) {
+  .tk-cat-header { transition: transform .35s ease; }
+  .tk-cat-header--oculta { transform: translateY(-100%); }
+}
+
+@media (max-width: 620px) {
+  .tk-cat-grid { gap: 40px; }
+  .tk-cat-marca span { display: none; }
+  /* El contador baja a su propio renglón: en una pantalla angosta,
+     "Platillos" y "2 platillos disponibles" en la misma línea quedaban
+     pegados a las dos orillas, sin aire en medio. */
+  .tk-cat-encabezado {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+  }
+  .tk-cat-conteo { padding-bottom: 0; }
+  .tk-cat-busqueda { padding-top: 54px; }
+  .tk-cat-busqueda-caja { max-height: 84vh; }
+  .tk-cat-busqueda-grid { grid-template-columns: repeat(auto-fill, minmax(128px, 1fr)); }
+  .tk-cat-zoom { padding: 16px; }
+  .tk-cat-zoom-cerrar { top: -42px; }
+}

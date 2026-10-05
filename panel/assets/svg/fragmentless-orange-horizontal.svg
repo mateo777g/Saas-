@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1308" height="400" viewBox="0 0 1308 400" fill="none">
+<g transform="translate(80,75.0) scale(0.488281)">
+<defs>
+<linearGradient id="glass" x1="0" y1="0" x2="0.55" y2="1">
+<stop offset="0" stop-color="#E8622A" stop-opacity="0.14"/>
+<stop offset="1" stop-color="#E8622A" stop-opacity="0"/>
+</linearGradient>
+</defs>
+<path d="M 256.00,64.61 L 366.38,128.34 L 296.22,234.64 L 179.33,108.88 Z" fill="url(#glass)" stroke="#E8622A" stroke-width="3.0" stroke-linejoin="round"/>
+<path d="M 364.29,127.14 L 421.74,160.31 L 421.74,351.69 L 410.86,357.97 L 294.54,232.83 Z" fill="url(#glass)" stroke="#E8622A" stroke-width="3.0" stroke-linejoin="round"/>
+<path d="M 413.00,356.74 L 267.99,440.47 L 293.64,228.33 Z" fill="url(#glass)" stroke="#E8622A" stroke-width="3.0" stroke-linejoin="round"/>
+<path d="M 270.58,438.97 L 261.97,443.94 L 199.15,294.73 L 291.28,267.81 Z" fill="url(#glass)" stroke="#E8622A" stroke-width="3.0" stroke-linejoin="round"/>
+<path d="M 264.06,442.73 L 256.00,447.39 L 90.26,351.69 L 90.26,215.34 L 201.82,294.89 Z" fill="url(#glass)" stroke="#E8622A" stroke-width="3.0" stroke-linejoin="round"/>
+<path d="M 90.26,218.29 L 90.26,160.31 L 134.42,134.81 L 203.59,299.10 Z" fill="url(#glass)" stroke="#E8622A" stroke-width="3.0" stroke-linejoin="round"/>
+<path d="M 200.09,296.96 L 132.33,136.02 L 181.46,107.65 L 295.78,230.63 L 290.97,270.40 Z" fill="url(#glass)" stroke="#E8622A" stroke-width="3.0" stroke-linejoin="round"/>
+</g>
+<g transform="translate(386.00,229.00) scale(0.58000)" fill="none" stroke="#E8622A" stroke-width="7.759" stroke-linecap="round" stroke-linejoin="round">
+<path d="M 30,0 L 30,-114 A 30.00,30.00 0 0 1 45.00,-139.98 A 30.00,30.00 0 0 1 75.00,-139.98" transform="translate(0.00,0)"/>
+<path d="M 4.00,-100.00 L 64.00,-100.00" transform="translate(0.00,0)"/>
+<path d="M 0.00,0.00 L 0.00,-100.00" transform="translate(102.00,0)"/>
+<path d="M 0.00,-60.00 A 40.00,40.00 0 0 1 36.51,-99.85" transform="translate(102.00,0)"/>
+<path d="M 100.00,-50.00 A 50.00,50.00 0 0 0 50.00,-100.00 A 50.00,50.00 0 0 0 0.00,-50.00 A 50.00,50.00 0 0 0 50.00,0.00 A 50.00,50.00 0 0 0 100.00,-50.00" transform="translate(200.00,0)"/>
+<path d="M 100.00,-100.00 L 100.00,0.00" transform="translate(200.00,0)"/>
+<path d="M 100.00,-50.00 A 50.00,50.00 0 0 0 50.00,-100.00 A 50.00,50.00 0 0 0 0.00,-50.00 A 50.00,50.00 0 0 0 50.00,0.00 A 50.00,50.00 0 0 0 100.00,-50.00" transform="translate(342.00,0)"/>
+<path d="M 100.00,-100.00 L 100.00,16 A 26.00,26.00 0 0 1 74.00,42.00" transform="translate(342.00,0)"/>
+<path d="M 0.00,0.00 L 0.00,-100.00" transform="translate(484.00,0)"/>
+<path d="M 0.00,-62.00 A 38.00,38.00 0 0 1 38.00,-100.00 A 38.00,38.00 0 0 1 76.00,-62.00 L 76,0" transform="translate(484.00,0)"/>
+<path d="M 76.00,-62.00 A 38.00,38.00 0 0 1 114.00,-100.00 A 38.00,38.00 0 0 1 152.00,-62.00 L 152,0" transform="translate(484.00,0)"/>
+<path d="M 0,-50.00 L 100.00,-50.00 A 50.00,50.00 0 0 0 59.75,-99.04 A 50.00,50.00 0 0 0 3.81,-69.13 A 50.00,50.00 0 0 0 22.22,-8.43 A 50.00,50.00 0 0 0 85.36,-14.64" transform="translate(682.00,0)"/>
+<path d="M 0.00,0.00 L 0.00,-100.00" transform="translate(824.00,0)"/>
+<path d="M 0.00,-58.00 A 42.00,42.00 0 0 1 42.00,-100.00 A 42.00,42.00 0 0 1 84.00,-58.00 L 84,0" transform="translate(824.00,0)"/>
+<path d="M 0.00,-132.00 L 0.00,0.00" transform="translate(954.00,0)"/>
+<path d="M -22.00,-100.00 L 30.00,-100.00" transform="translate(954.00,0)"/>
+<path d="M 0.00,-142.00 L 0.00,0.00" transform="translate(1032.00,0)"/>
+<path d="M 0,-50.00 L 100.00,-50.00 A 50.00,50.00 0 0 0 59.75,-99.04 A 50.00,50.00 0 0 0 3.81,-69.13 A 50.00,50.00 0 0 0 22.22,-8.43 A 50.00,50.00 0 0 0 85.36,-14.64" transform="translate(1086.00,0)"/>
+<path d="M 78.00,-74.00 A 26.00,26.00 0 0 0 55.02,-99.82 A 26.00,26.00 0 0 0 26.70,-80.00 A 26.00,26.00 0 0 0 43.11,-49.57 A 26.00,26.00 0 0 1 77.30,-20.00 A 26.00,26.00 0 0 1 48.98,-0.18 A 26.00,26.00 0 0 1 26.00,-26.00" transform="translate(1228.00,0)"/>
+<path d="M 78.00,-74.00 A 26.00,26.00 0 0 0 55.02,-99.82 A 26.00,26.00 0 0 0 26.70,-80.00 A 26.00,26.00 0 0 0 43.11,-49.57 A 26.00,26.00 0 0 1 77.30,-20.00 A 26.00,26.00 0 0 1 48.98,-0.18 A 26.00,26.00 0 0 1 26.00,-26.00" transform="translate(1352.00,0)"/>
+</g>
+</svg>

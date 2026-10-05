@@ -1,0 +1,42 @@
+{
+ "v": 3,
+ "createdOnFiles": {
+  "v": 1,
+  "at": "2026-09-28T20:08:23Z"
+ },
+ "title": "Agente IA rediseño",
+ "launch": {
+  "view": "canvas"
+ },
+ "pages": [],
+ "boards": {
+  "Main.dc.html": {
+   "x": 0,
+   "y": 0,
+   "w": 1440,
+   "h": 900,
+   "title": "Bienvenida · tema claro"
+  },
+  "Conversacion.dc.html": {
+   "x": 1520,
+   "y": 0,
+   "w": 1440,
+   "h": 900,
+   "title": "Conversación · tema claro"
+  },
+  "Oscuro.dc.html": {
+   "x": 0,
+   "y": 1020,
+   "w": 1440,
+   "h": 900,
+   "title": "Bienvenida · tema oscuro"
+  }
+ },
+ "order": [
+  "Main.dc.html",
+  "Conversacion.dc.html",
+  "Oscuro.dc.html"
+ ],
+ "notes": {},
+ "designSystems": []
+}

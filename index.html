@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Taku Monky — Menú</title>
+<meta name="description" content="Sabor casero, ambiente divertido — así comemos aquí. Consulta el menú de Taku Monky: platillos, bebidas y postres.">
+<meta property="og:title" content="Taku Monky — Menú">
+<meta property="og:description" content="Sabor casero, ambiente divertido — así comemos aquí.">
+<meta property="og:image" content="assets/logomonky.png">
+<meta property="og:type" content="website">
+<link rel="icon" type="image/png" href="assets/logomonky.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<!-- Archivo (900): la tipografía del título gigante del hero desde el
+     remodelado de la sección 1 (6 sep 2026) sobre la opción 1a
+     ("Centrada · foto de fondo") del canvas de Claude Design "Taku
+     Monky Hero Options" — reemplaza a Oswald Light, que era la única
+     otra cosa que usaba este <link> y solo para el hero viejo, por eso
+     se quitó del todo en vez de dejarla cargando sin uso. Un solo peso
+     (900) porque es el único que se usa, igual que pasaba con Oswald.
+     SOLO se usa en el hero, por eso este <link> se queda cargándose
+     nada más en index.html, no en las 3 páginas de categoría. -->
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&family=Archivo:wght@900&family=Rock+Salt&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<nav class="tk-navbar">
+  <div class="tk-envoltura">
+    <a class="tk-marca" href="index.html">
+      <img src="assets/logomonky.png" alt="">
+      <span>Taku monky</span>
+    </a>
+    <div class="tk-nav-links">
+      <a class="tk-nav-link" href="menu-platillos.html">Platillos</a>
+      <a class="tk-nav-link" href="menu-bebidas.html">Bebidas</a>
+      <a class="tk-nav-link" href="menu-postres.html">Postres</a>
+    </div>
+    <div class="tk-nav-acciones">
+      <a class="tk-nav-whatsapp" id="enlace-whatsapp-navbar" href="#" target="_blank" rel="noopener" aria-label="Pedir por WhatsApp">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 11.5a8.5 8.5 0 0 1-12.3 7.6L4 20l1-4a8.5 8.5 0 1 1 15.5-4.5Z"/><path d="M8.7 9.8c.25-.6.5-.6.75-.6h.4c.15 0 .35 0 .5.35l.6 1.35c.1.2 0 .45-.1.55l-.4.5c-.1.15-.1.35 0 .5.25.5 1.25 1.6 2.2 1.95.2.1.35 0 .45-.1l.5-.5c.15-.2.35-.2.5-.1l1.3.65c.15.1.25.25.25.45 0 .65-.75 1.3-1.4 1.3-1.45 0-4.15-1.25-5.25-3.7-.4-.9-.4-1.85 0-2.5Z" fill="currentColor" stroke="none"/></svg>
+      </a>
+      <button class="tk-menu-boton" id="tk-menu-boton" aria-label="Abrir menú">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </div>
+</nav>
+
+<div class="tk-sidebar-overlay" id="tk-sidebar-overlay"></div>
+<aside class="tk-sidebar" id="tk-sidebar">
+  <button class="tk-sidebar-cerrar" id="tk-sidebar-cerrar" aria-label="Cerrar menú">&times;</button>
+  <div class="tk-sidebar-encabezado">
+    <img src="assets/logomonky.png" alt="">
+    <span>Taku monky</span>
+  </div>
+  <ul class="tk-sidebar-links">
+    <li><a href="menu-platillos.html">Platillos</a></li>
+    <li><a href="menu-bebidas.html">Bebidas</a></li>
+    <li><a href="menu-postres.html">Postres</a></li>
+  </ul>
+</aside>
+
+<!-- Envoltura del scroll-jacking de la sección 1 (9 sep 2026) — el
+     <header> de abajo se queda fijo (sticky) mientras se recorre esta
+     caja, más alta que la pantalla; ese scroll "de más" es lo que
+     hero-animacion.js traduce en qué frame de los 132 pintar. Mismo
+     patrón que .tk-carrusel-enganche de la sección 2 (ver CLAUDE.md),
+     aplicado aquí por primera vez para controlar una animación en vez
+     de solo "atrapar" el scroll un momento — ver style.css para el
+     resto del mecanismo. -->
+<div class="tk-hero-enganche" id="tk-hero-enganche">
+<header class="tk-hero" id="tk-hero">
+  <!-- Velo/degradado del hero — remodelado 6 sep 2026 sobre la opción
+       1a ("Centrada · foto de fondo") del canvas de Claude Design
+       "Taku Monky Hero Options". Al principio esto llevaba una <img>
+       de fondo (assets/hero-fondo.png) con la idea de una foto real
+       de ambiente; el dueño la probó y pidió quitarla (7 sep 2026:
+       "se ve malisimo, mejor dejale el degradado... que ya no sea un
+       error sino parte del diseño"). El degradado café-a-negro de
+       .tk-hero + este velo (ver style.css) son ahora el fondo final a
+       propósito, no un respaldo temporal por falta de foto — por eso
+       ya no hay ninguna <img> ni onerror aquí. -->
+  <div class="tk-hero-fondo" aria-hidden="true">
+    <div class="tk-hero-fondo-velo"></div>
+  </div>
+
+  <!-- Humo del asador — reemplaza las hojas decorativas de palmera que
+       vivían aquí (7 sep 2026, ver la nota grande junto a .tk-humo en
+       style.css para el porqué). -->
+  <div class="tk-humo tk-humo--hero" aria-hidden="true">
+    <span class="tk-humo-mancha tk-humo-mancha--izq-grande"></span>
+    <span class="tk-humo-mancha tk-humo-mancha--izq-chica"></span>
+    <span class="tk-humo-mancha tk-humo-mancha--der-grande"></span>
+    <span class="tk-humo-mancha tk-humo-mancha--der-chica"></span>
+  </div>
+
+  <div class="tk-hero-contenido">
+    <!-- Bloque de texto — sin cambios de contenido, solo se metió
+         dentro de este wrapper nuevo (9 sep 2026) para poder acotarlo a
+         ~820px pegado a la izquierda del hero sin tocar el layout
+         centrado de celular (ver style.css). -->
+    <div class="tk-hero-texto">
+    <div class="tk-hero-eyebrow-fila">
+      <span class="tk-hero-linea tk-hero-linea--izq"></span>
+      <p class="tk-hero-eyebrow">Taquería</p>
+      <span class="tk-hero-linea tk-hero-linea--der"></span>
+    </div>
+
+    <h1 class="tk-hero-titulo">Taku <span class="tk-hero-punto">&middot;</span> Monky</h1>
+
+    <!-- tk-hero-info-fila--cuadricula / tk-hero-info-pill--tarjeta: clases
+         ADICIONALES agregadas 7 sep 2026 para la Opción B ("Cuadrícula 2×2")
+         del canvas "Hero Celular Taku Monky" — solo tienen reglas dentro de
+         @media (max-width:640px) en style.css, así que en PC/tablet ancho
+         (>640px) no hacen nada y esta fila se sigue viendo exactamente
+         igual que antes (flex-wrap, píldora horizontal). Ni el texto ni el
+         orden de las 4 píldoras cambió. -->
+    <div class="tk-hero-info-fila tk-hero-info-fila--cuadricula">
+      <span class="tk-hero-info-pill tk-hero-info-pill--tarjeta">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#e8c98c" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg>
+        Abierto ahora &middot; cierra 11&nbsp;pm
+      </span>
+      <span class="tk-hero-info-pill tk-hero-info-pill--tarjeta">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#e8c98c" stroke-width="2"><path d="M12 21s7-6.4 7-11.5A7 7 0 0 0 5 9.5C5 14.6 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.3"/></svg>
+        Col. Centro, a 5 min del Zócalo
+      </span>
+      <span class="tk-hero-info-pill tk-hero-info-pill--tarjeta">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#e8c98c" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 11.5a8.5 8.5 0 0 1-12.3 7.6L4 20l1-4a8.5 8.5 0 1 1 15.5-4.5Z"/><path d="M8.7 9.8c.25-.6.5-.6.75-.6h.4c.15 0 .35 0 .5.35l.6 1.35c.1.2 0 .45-.1.55l-.4.5c-.1.15-.1.35 0 .5.25.5 1.25 1.6 2.2 1.95.2.1.35 0 .45-.1l.5-.5c.15-.2.35-.2.5-.1l1.3.65c.15.1.25.25.25.45 0 .65-.75 1.3-1.4 1.3-1.45 0-4.15-1.25-5.25-3.7-.4-.9-.4-1.85 0-2.5Z" fill="#e8c98c" stroke="none"/></svg>
+        Pedidos por WhatsApp
+      </span>
+      <span class="tk-hero-info-pill tk-hero-info-pill--tarjeta">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#e8c98c" stroke-width="2"><path d="M20.6 12.9 12 21.5a1.6 1.6 0 0 1-2.3 0l-6.2-6.2a1.6 1.6 0 0 1 0-2.3L12.1 4.4H19a1.6 1.6 0 0 1 1.6 1.6v6.9z"/><circle cx="15.5" cy="8.5" r="1.3"/></svg>
+        $$ &middot; $80&ndash;150 por persona
+      </span>
+    </div>
+
+    <p class="tk-tagline">Tacos al pastor cortados al momento, salsas hechas a diario y tortillas recién torteadas — para comer aquí o pedir a domicilio.</p>
+
+    <div class="tk-hero-botones">
+      <a class="tk-btn tk-btn--secundario" id="enlace-whatsapp-hero" href="#" target="_blank" rel="noopener">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 11.5a8.5 8.5 0 0 1-12.3 7.6L4 20l1-4a8.5 8.5 0 1 1 15.5-4.5Z"/><path d="M8.7 9.8c.25-.6.5-.6.75-.6h.4c.15 0 .35 0 .5.35l.6 1.35c.1.2 0 .45-.1.55l-.4.5c-.1.15-.1.35 0 .5.25.5 1.25 1.6 2.2 1.95.2.1.35 0 .45-.1l.5-.5c.15-.2.35-.2.5-.1l1.3.65c.15.1.25.25.25.45 0 .65-.75 1.3-1.4 1.3-1.45 0-4.15-1.25-5.25-3.7-.4-.9-.4-1.85 0-2.5Z" fill="currentColor" stroke="none"/></svg>
+        Pedir por WhatsApp
+      </a>
+      <a class="tk-btn tk-btn--primario" href="menu-platillos.html">Ver menú</a>
+    </div>
+    </div>
+  </div>
+
+  <!-- Animación del taco — 132 frames en assets/frames/ (NO TOCAR esos
+       archivos, ver hero-animacion.js). El <img> de abajo es el
+       respaldo real, no un placeholder: se pinta con puro HTML/CSS, sin
+       esperar a ningún script, así que nunca hay un hueco vacío
+       mientras carga el resto — y es también TODO lo que ve un celular
+       o alguien con "reducir movimiento" activado (ver
+       hero-animacion.js para el porqué de esa decisión). El <canvas>
+       arranca oculto (hidden) y hero-animacion.js lo descubre —
+       escondiendo el <img>— solo cuando ya precargó los 132 frames y el
+       visitante sí califica para la animación completa.
+
+       ⚠️ Va como HERMANO de .tk-hero-contenido, no adentro (se movió el
+       9 sep 2026): de 641px para arriba es una CAPA DE FONDO
+       (position:absolute anclada a .tk-hero, ver style.css), no una
+       columna que se reparta el ancho con el texto — que era justo lo
+       que partía el título en dos renglones y apilaba las píldoras. En
+       celular sigue siendo un bloque en flujo debajo del texto, ahora
+       como segundo hijo de .tk-hero en columna (ver el @media de
+       ≤640px). -->
+  <div class="tk-hero-animacion" aria-hidden="true">
+    <img class="tk-hero-animacion-media" id="tk-hero-frame-estatico" src="assets/frames/frame_0001.webp" width="1200" height="675" alt="">
+    <canvas class="tk-hero-animacion-media" id="tk-hero-canvas" width="1200" height="675" hidden></canvas>
+  </div>
+
+  <div class="tk-hero-cue" aria-hidden="true">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M6 9l6 6 6-6"/></svg>
+  </div>
+</header>
+</div>
+
+<!-- ================================================================
+     Carrusel 3D del menú — SOLO escritorio (≥1024px, ver style.css y
+     carrusel.js). En pantallas más angostas esta sección se queda en
+     display:none y de ahí para abajo siguen las 3 secciones de
+     categoría de toda la vida (Platillos/Bebidas/Postres), intactas.
+
+     Pedido explícito del dueño (27 ago 2026): puerto lo más fiel
+     posible de un componente de referencia (carrusel 3D "coverflow"),
+     colores y tipografía propios incluidos a propósito — ver
+     CLAUDE.md → Design rules → Public menu site para la excepción a
+     "reusar la paleta del sitio". Los datos SÍ son reales (platillos
+     de verdad vía carrusel.js), nunca las fotos de stock del original.
+     ================================================================ -->
+<!-- Envoltura del "enganche" de scroll — SOLO da altura extra en escritorio
+     (ver .tk-carrusel-enganche en style.css). Puramente CSS (position:
+     sticky), sin JS ni animación: pedido explícito del dueño de que la
+     sección "atrape" el scroll un momento y nada más, cero efectos
+     mientras se atraviesa. -->
+<div class="tk-carrusel-enganche">
+<section class="tk-carrusel-seccion" id="carrusel-menu" aria-label="Menú">
+  <!-- El humo que llevaba esta sección (arriba) se quitó a pedido del
+       dueño (7 sep 2026) junto con el de la esquina inferior del hero
+       (ver .tk-humo--hero en style.css) — quería la sección 1 y 2 sin
+       humo en escritorio. La versión de celular no se toca: la carta
+       de celular (.tk-carta-seccion) nunca tuvo humo propio, así que
+       no hay nada que restaurar ahí. -->
+  <div class="tk-carrusel-recorte">
+    <div class="tk-cf-fondo">
+      <div class="tk-cf-fondo-img" id="carrusel-fondo"></div>
+      <div class="tk-cf-fondo-degradado"></div>
+    </div>
+
+    <div class="tk-cf-envoltura">
+      <div class="tk-cf-eyebrow-fila">
+        <span class="tk-cf-linea tk-cf-linea--izq"></span>
+        <h3 class="tk-cf-eyebrow">Menú</h3>
+        <span class="tk-cf-linea tk-cf-linea--der"></span>
+      </div>
+
+      <div class="tk-cf-escenario" id="carrusel-escenario">
+        <div class="tk-cf-cargando"><div class="tk-spinner"></div><p>Cargando el menú...</p></div>
+      </div>
+
+      <button class="tk-cf-flecha tk-cf-flecha--prev" id="carrusel-prev" aria-label="Platillo anterior">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 19l-7-7 7-7"/></svg>
+      </button>
+      <button class="tk-cf-flecha tk-cf-flecha--next" id="carrusel-next" aria-label="Siguiente platillo">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg>
+      </button>
+
+      <div class="tk-cf-dots" id="carrusel-dots"></div>
+    </div>
+  </div>
+</section>
+</div>
+
+<!-- ================================================================
+     "Carta" del menú — SOLO celular/tablet chico (<1024px, ver style.css
+     y carta.js). En escritorio esta sección se queda en display:none y
+     arriba sigue el carrusel 3D de siempre; aquí abajo es al revés: de
+     1024px para abajo esta es la que reemplaza a las 3 secciones de
+     categoría (Platillos/Bebidas/Postres, ver más abajo, que se quedan
+     como marcado muerto en TODOS los anchos desde la Fase 4.3).
+
+     Pedido explícito del dueño (2026-09-03, con una maqueta en imagen):
+     fondo negro, foto del platillo YA RECORTADA sin fondo (con todo y
+     tabla/plato), autoplay + swipe, puntitos, lista de renglones con
+     línea punteada + precio, el activo resaltado en dorado. SIN FLECHAS
+     a los lados — lo remarcó varias veces. Solo categoría Platillos, tope
+     de 5 (aplicado de verdad por el panel al generar cada recorte).
+
+     Título/lista/puntitos empiezan vacíos a propósito: carta.js los
+     llena en cuanto carga el catálogo (igual que #carrusel-dots arriba).
+     El botón "Ver menú" SÍ es estático — no depende de qué platillo
+     esté activo, así que no hace falta generarlo por JS. (Se llamaba "Ver
+     platillos" hasta el 7 sep 2026, mismo día del repintado de abajo — el
+     dueño pidió el nombre nuevo junto con bajarlo un poco; el href se
+     queda igual, sigue yendo a menu-platillos.html.)
+
+     Repintado 7 sep 2026 sobre una segunda maqueta en imagen: cada
+     renglón de la lista ganó su número, con el activo resaltado en un
+     recuadro naranja real (no solo con el cambio de color de antes) y en
+     negritas. Sigue siendo el mismo dato real (fotos recortadas de
+     verdad, mismo tope de 5) y la misma mecánica (autoplay + swipe, sin
+     flechas, renglones y puntitos clicables).
+
+     ⚠️ CORREGIDO el mismo día tras una TERCERA imagen del dueño: el
+     círculo con resplandor y su contador "01 / 05" NO viajan con el
+     swipe — son el FONDO FIJO de la ventanita (.tk-carta-aro-fijo /
+     #carta-contador, hermanos de #carta-fotos dentro de
+     .tk-carta-fotos-envoltura, ver style.css), y lo único que se mueve
+     al deslizar es la <img> de cada slide, por debajo del círculo. El
+     acento de toda esta sección también pasó del dorado del carrusel de
+     escritorio a un naranja (--carta-naranja en style.css), pedido
+     explícito con la imagen de referencia. Ver la nota grande al inicio
+     de carta.js para el detalle completo de la corrección. -->
+<section class="tk-carta-seccion" id="carta-menu">
+  <div class="tk-carta-envoltura">
+    <div class="tk-cf-eyebrow-fila">
+      <span class="tk-cf-linea tk-cf-linea--izq"></span>
+      <h3 class="tk-cf-eyebrow">Platillos</h3>
+      <span class="tk-cf-linea tk-cf-linea--der"></span>
+    </div>
+
+    <div class="tk-carta-fotos-envoltura">
+      <div class="tk-carta-aro-fijo" aria-hidden="true"></div>
+      <div class="tk-carta-fotos" id="carta-fotos">
+        <div class="tk-cf-cargando"><div class="tk-spinner"></div><p>Cargando el menú...</p></div>
+      </div>
+      <span class="tk-carta-contador" id="carta-contador" aria-hidden="true"></span>
+    </div>
+
+    <div class="tk-cf-divisor"></div>
+
+    <div class="tk-cf-dots tk-carta-dots" id="carta-dots"></div>
+
+    <h2 class="tk-carta-titulo" id="carta-titulo"></h2>
+
+    <div class="tk-carta-lista" id="carta-lista"></div>
+
+    <a class="tk-cf-cta tk-carta-cta" href="menu-platillos.html">
+      <span>Ver menú</span>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+    </a>
+  </div>
+</section>
+
+<section id="platillos" class="tk-seccion">
+  <div class="tk-seccion-encabezado">
+    <p class="tk-eyebrow">Del menú</p>
+    <h2>Platillos</h2>
+  </div>
+  <div class="tk-tarjetas--preview" id="contenedor-platillos">
+    <div class="tk-estado"><div class="tk-spinner"></div><p>Cargando el menú...</p></div>
+  </div>
+  <div class="tk-cta-fila">
+    <a class="tk-btn tk-btn--primario" href="menu-platillos.html">Ver todos los platillos</a>
+  </div>
+</section>
+
+<section id="bebidas" class="tk-seccion tk-seccion--alterna">
+  <div class="tk-seccion-encabezado">
+    <p class="tk-eyebrow">Del menú</p>
+    <h2>Bebidas</h2>
+  </div>
+  <div class="tk-tarjetas--preview" id="contenedor-bebidas">
+    <div class="tk-estado"><div class="tk-spinner"></div><p>Cargando el menú...</p></div>
+  </div>
+  <div class="tk-cta-fila">
+    <a class="tk-btn tk-btn--primario" href="menu-bebidas.html">Ver todas las bebidas</a>
+  </div>
+</section>
+
+<section id="postres" class="tk-seccion">
+  <div class="tk-seccion-encabezado">
+    <p class="tk-eyebrow">Del menú</p>
+    <h2>Postres</h2>
+  </div>
+  <div class="tk-tarjetas--preview" id="contenedor-postres">
+    <div class="tk-estado"><div class="tk-spinner"></div><p>Cargando el menú...</p></div>
+  </div>
+  <div class="tk-cta-fila">
+    <a class="tk-btn tk-btn--primario" href="menu-postres.html">Ver todos los postres</a>
+  </div>
+</section>
+
+<footer class="tk-footer">
+  <div class="tk-envoltura">
+    <div class="tk-footer-marca-columna">
+      <a class="tk-footer-marca" href="index.html">
+        <img src="assets/logomonky.png" alt="">
+        <span>Taku monky</span>
+      </a>
+      <p class="tk-footer-tagline">Sabor casero, ambiente divertido — así comemos aquí.</p>
+    </div>
+    <div class="tk-footer-columna">
+      <h3>Menú</h3>
+      <ul>
+        <li><a class="tk-footer-enlace" href="menu-platillos.html">Platillos</a></li>
+        <li><a class="tk-footer-enlace" href="menu-bebidas.html">Bebidas</a></li>
+        <li><a class="tk-footer-enlace" href="menu-postres.html">Postres</a></li>
+      </ul>
+    </div>
+    <div class="tk-footer-columna">
+      <h3>Contacto</h3>
+      <ul>
+        <li>
+          <a class="tk-footer-enlace" id="enlace-whatsapp-footer" href="#" target="_blank" rel="noopener">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 11.5a8.5 8.5 0 0 1-12.3 7.6L4 20l1-4a8.5 8.5 0 1 1 15.5-4.5Z"/><path d="M8.7 9.8c.25-.6.5-.6.75-.6h.4c.15 0 .35 0 .5.35l.6 1.35c.1.2 0 .45-.1.55l-.4.5c-.1.15-.1.35 0 .5.25.5 1.25 1.6 2.2 1.95.2.1.35 0 .45-.1l.5-.5c.15-.2.35-.2.5-.1l1.3.65c.15.1.25.25.25.45 0 .65-.75 1.3-1.4 1.3-1.45 0-4.15-1.25-5.25-3.7-.4-.9-.4-1.85 0-2.5Z" fill="currentColor" stroke="none"/></svg>
+            WhatsApp
+          </a>
+        </li>
+        <li>
+          <a class="tk-footer-enlace" href="https://www.instagram.com/taku_monky/" target="_blank" rel="noopener">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3.5" y="3.5" width="17" height="17" rx="5"/><circle cx="12" cy="12" r="4.2"/><circle cx="17.2" cy="6.8" r="1" fill="currentColor" stroke="none"/></svg>
+            @taku_monky
+          </a>
+        </li>
+        <li>
+          <span class="tk-footer-enlace">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21Z"/><circle cx="12" cy="9.5" r="2.3"/></svg>
+            Josefa Ortiz de Domínguez, entre Cedro y Álamo
+          </span>
+        </li>
+      </ul>
+    </div>
+  </div>
+  <div class="tk-footer-movil">
+    <div class="tk-footer-acordeon">
+      <details class="tk-footer-acc-item">
+        <summary class="tk-footer-acc-boton">
+          Menú
+          <svg class="tk-footer-acc-flecha" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+        </summary>
+        <div class="tk-footer-acc-panel">
+          <div class="tk-footer-acc-fila">
+            <a class="tk-footer-enlace" href="menu-platillos.html">Platillos</a>
+            <a class="tk-footer-enlace" href="menu-bebidas.html">Bebidas</a>
+            <a class="tk-footer-enlace" href="menu-postres.html">Postres</a>
+          </div>
+        </div>
+      </details>
+      <details class="tk-footer-acc-item">
+        <summary class="tk-footer-acc-boton">
+          Dirección
+          <svg class="tk-footer-acc-flecha" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+        </summary>
+        <div class="tk-footer-acc-panel">
+          <p class="tk-footer-acc-texto tk-footer-acc-direccion">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21Z"/><circle cx="12" cy="9.5" r="2.3"/></svg>
+            Josefa Ortiz de Domínguez, entre Cedro y Álamo
+          </p>
+        </div>
+      </details>
+      <details class="tk-footer-acc-item">
+        <summary class="tk-footer-acc-boton">
+          Legales
+          <svg class="tk-footer-acc-flecha" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+        </summary>
+        <div class="tk-footer-acc-panel">
+          <p class="tk-footer-acc-texto tk-footer-acc-vacio">Próximamente.</p>
+        </div>
+      </details>
+    </div>
+
+    <div class="tk-footer-social">
+      <a class="tk-footer-social-icono" id="enlace-whatsapp-footer-movil" href="#" target="_blank" rel="noopener" aria-label="WhatsApp">
+        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 11.5a8.5 8.5 0 0 1-12.3 7.6L4 20l1-4a8.5 8.5 0 1 1 15.5-4.5Z"/><path d="M8.7 9.8c.25-.6.5-.6.75-.6h.4c.15 0 .35 0 .5.35l.6 1.35c.1.2 0 .45-.1.55l-.4.5c-.1.15-.1.35 0 .5.25.5 1.25 1.6 2.2 1.95.2.1.35 0 .45-.1l.5-.5c.15-.2.35-.2.5-.1l1.3.65c.15.1.25.25.25.45 0 .65-.75 1.3-1.4 1.3-1.45 0-4.15-1.25-5.25-3.7-.4-.9-.4-1.85 0-2.5Z" fill="currentColor" stroke="none"/></svg>
+      </a>
+      <a class="tk-footer-social-icono" href="https://www.instagram.com/taku_monky/" target="_blank" rel="noopener" aria-label="Instagram">
+        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3.5" y="3.5" width="17" height="17" rx="5"/><circle cx="12" cy="12" r="4.2"/><circle cx="17.2" cy="6.8" r="1" fill="currentColor" stroke="none"/></svg>
+      </a>
+    </div>
+  </div>
+
+  <p class="tk-footer-copy">© 2026 Taku monky</p>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="catalogo.js"></script>
+<script src="carrusel.js"></script>
+<script src="carta.js"></script>
+<script src="hero-animacion.js"></script>
+<script>
+  document.getElementById("enlace-whatsapp-hero").href = URL_WHATSAPP;
+  document.getElementById("enlace-whatsapp-footer").href = URL_WHATSAPP;
+  document.getElementById("enlace-whatsapp-footer-movil").href = URL_WHATSAPP;
+  document.getElementById("enlace-whatsapp-navbar").href = URL_WHATSAPP;
+  iniciarNavbar();
+  iniciarHeroAnimacion();
+  iniciarIndex();
+  iniciarCarrusel();
+  iniciarCarta();
+  // El humo decorativo (.tk-humo, ver style.css) es puro CSS — sin JS,
+  // ninguna clase que agregar/quitar ni listener de scroll.
+</script>
+</body>
+</html>

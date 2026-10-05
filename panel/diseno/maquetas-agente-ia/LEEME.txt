@@ -1,0 +1,8 @@
+Maquetas del rediseño del Agente IA (28/09/2026). Las aprobó el desarrollador y son la
+referencia visual para el resto de las vistas (reglas en planes/plan panel.txt).
+
+- 1-bienvenida-claro.html, 2-conversacion-claro.html, 3-bienvenida-oscuro.html: ábrelas con
+  doble clic en el navegador (el fondo de manchas se mueve).
+- dither-claro.webp / dither-oscuro.webp / logo.svg: lo que usan las maquetas.
+- fuente/: los archivos originales del lienzo (Design de claude.ai) y armar.py, el script que
+  los generó. Lienzo en línea: https://claude.ai/artifact/BG9Unffxr2gpM5ViW8ZHGe

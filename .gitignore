@@ -1,0 +1,34 @@
+# Llaves reales. Nunca van al repo.
+.env
+
+# Solo viven en esta compu (nuevo comienzo, 2026-10-04):
+#  - CLAUDE.md: las instrucciones de Claude Code, con el contexto privado del producto.
+#  - panel_licencias/: la app de licencias de Fragmentless; no es parte del producto.
+CLAUDE.md
+panel_licencias/
+
+# Planes, roadmap y guías: documentación privada.
+planes/
+Hey Claude Code, read this file..txt
+
+# Carpetas de referencia de otros proyectos: traen llaves y URLs de ESOS proyectos.
+EJEMPLOS/
+EJEMPLOS 2/
+"EJEMPLOS 2"/
+EJEMPLOS_2/
+
+# Credenciales de los clientes del panel de licencias. Su sitio es
+# %LOCALAPPDATA%\PanelLicencias\clientes.json; esto es por si queda una copia aquí.
+clientes.json
+
+# Los anuncios que genera el panel (panel/biblioteca/): imágenes, no código.
+biblioteca/
+
+# Por si la sesión del panel llegara a escribirse aquí por error.
+sesion.json
+
+# Permisos locales de Claude Code.
+.claude/settings.local.json*
+
+__pycache__/
+*.pyc

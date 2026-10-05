@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Taku Monky — Mesas</title>
+<!-- Herramienta interna de staff, no una página del menú público: no
+     debe indexarse ni aparecer en buscadores. -->
+<meta name="robots" content="noindex, nofollow">
+<link rel="icon" type="image/png" href="assets/logomonky.png">
+<link rel="stylesheet" href="mesas.css">
+</head>
+<body>
+
+<!-- Toast global de estado (éxito/error), mismo papel que #toast en
+     EJEMPLOS/lilshop.html. -->
+<div id="tk-mesas-toast" class="tk-mesas-toast" hidden></div>
+
+<!-- ==========================================
+     LOGIN — ya NO calca views/sesion_view.py (2026-09-04: mesas.html
+     va a ser la base de una plantilla que se vende a otros locales,
+     así que se independizó también de la identidad cálida/Georgia
+     del panel de Flet, no solo de style.css). Tarjeta blanca con
+     icono dentro del campo y botón con flecha, inspirada en un
+     componente de referencia (AuthModal) sin sus login sociales ni
+     el botón de correo — aquí solo hay una contraseña real. El
+     correo NO se pide: es siempre el mismo admin, igual que
+     ADMIN_EMAIL en lilshop.html.
+     ========================================== -->
+<div id="tk-mesas-login" class="tk-mesas-login" hidden>
+  <div class="tk-mesas-tarjeta-login">
+    <img src="assets/logomonky.png" alt="" class="tk-mesas-logo">
+    <p class="tk-mesas-eyebrow">SISTEMA DE MESAS</p>
+    <h1 class="tk-mesas-marca">Taku Monky</h1>
+    <p class="tk-mesas-subtitulo">Inicia sesión para registrar ventas.</p>
+
+    <form id="tk-mesas-form-login">
+      <div class="tk-mesas-campo-envoltura">
+        <svg class="tk-mesas-campo-icono" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+        <input type="password" id="tk-mesas-password" class="tk-mesas-campo tk-mesas-campo--icono" placeholder="Tu contraseña" required autofocus>
+      </div>
+      <p id="tk-mesas-login-error" class="tk-mesas-error-texto" hidden></p>
+      <button type="submit" id="tk-mesas-boton-entrar" class="tk-mesas-boton-primario">
+        <span id="tk-mesas-boton-entrar-texto">Entrar</span>
+        <svg class="tk-mesas-boton-icono" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+      </button>
+    </form>
+  </div>
+</div>
+
+<!-- ==========================================
+     APP — oculta hasta que hay sesión.
+     ========================================== -->
+<div id="tk-mesas-app" hidden>
+  <header class="tk-mesas-header">
+    <div class="tk-mesas-header-marca">
+      <img src="assets/logomonky.png" alt="">
+      <span>Taku Monky</span>
+    </div>
+    <div class="tk-mesas-menu">
+      <button id="tk-mesas-menu-boton" class="tk-mesas-menu-boton" type="button" aria-haspopup="true" aria-expanded="false" aria-label="Abrir menú">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="4" y1="7" x2="20" y2="7"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="17" x2="20" y2="17"/></svg>
+      </button>
+      <div id="tk-mesas-menu-panel" class="tk-mesas-menu-panel" hidden>
+        <button id="tk-mesas-cerrar-sesion" class="tk-mesas-menu-item" type="button">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+          <span>Cerrar sesión</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="tk-mesas-main">
+
+    <!-- VISTA 1: catálogo de mesas (Fase 5.1) con su estado -->
+    <section id="tk-mesas-vista-lista">
+      <p class="tk-mesas-seccion-titulo">Mesas</p>
+      <!-- La lista de mesas es fija — se agregan/renombran/borran desde el
+           panel de Flet (sección "Mesas"), no aquí. mesas.js pinta cada una
+           como "Disponible" u "Ocupada · $total" según si tiene una venta
+           abierta ahorita mismo. -->
+      <div id="tk-mesas-lista" class="tk-mesas-lista"></div>
+    </section>
+
+    <!-- VISTA 2: orden en curso de una mesa -->
+    <section id="tk-mesas-vista-orden" hidden>
+      <div class="tk-mesas-orden-encabezado">
+        <button id="tk-mesas-volver" class="tk-mesas-enlace-volver" type="button">‹ Todas las mesas</button>
+        <button id="tk-mesas-cancelar-mesa" class="tk-mesas-enlace-peligro" type="button">Cancelar mesa</button>
+      </div>
+
+      <h2 id="tk-mesas-orden-titulo" class="tk-mesas-orden-titulo">Mesa</h2>
+
+      <div id="tk-mesas-orden-items" class="tk-mesas-orden-items"></div>
+
+      <button id="tk-mesas-agregar-producto" class="tk-mesas-boton-secundario" type="button">+ Agregar producto</button>
+
+      <div class="tk-mesas-orden-pie">
+        <div class="tk-mesas-orden-total-fila">
+          <span>Total</span>
+          <span id="tk-mesas-orden-total">$0</span>
+        </div>
+        <button id="tk-mesas-cerrar-venta" class="tk-mesas-boton-primario" type="button">Cerrar venta</button>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<!-- ==========================================
+     MODAL: selector de platillos (agregar producto a la orden)
+     ========================================== -->
+<div id="tk-mesas-selector" class="tk-mesas-selector" hidden>
+  <div id="tk-mesas-selector-overlay" class="tk-mesas-selector-overlay"></div>
+  <div class="tk-mesas-selector-caja">
+    <div class="tk-mesas-selector-encabezado">
+      <input type="text" id="tk-mesas-selector-buscar" class="tk-mesas-campo" placeholder="Buscar en el menú...">
+      <button id="tk-mesas-selector-cerrar" class="tk-mesas-selector-cerrar-boton" type="button" aria-label="Cerrar">✕</button>
+    </div>
+    <div id="tk-mesas-selector-lista" class="tk-mesas-selector-lista"></div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="mesas.js"></script>
+</body>
+</html>

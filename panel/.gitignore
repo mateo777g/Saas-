@@ -1,0 +1,49 @@
+# Traen llaves reales dentro. No quitar de aquí.
+.env
+Hey Claude Code, read this file..txt
+
+# Carpetas de referencia de OTROS proyectos del dueño. Nunca se publican:
+# traen anon keys, URLs de Worker y R2_PUBLIC_BASE de ESOS proyectos, y este
+# repo es PÚBLICO.
+#
+# EJEMPLOS/ (Anxie Store) ya se BORRÓ del disco el 2026-09-06: el proyecto
+# terminó de basarse en ella y el dueño pidió eliminarla. La regla se queda
+# igual por si alguna vez vuelve una copia.
+# EJEMPLOS 2/ es la que la reemplaza — la referencia para la creación de
+# contenido (Fase 7). Se ignoró DESDE ANTES de que existiera, a propósito: es
+# más barato que acordarse de agregarla el día que caiga en el disco con
+# llaves adentro. Cayó el 2026-09-06 y la regla ya estaba puesta.
+EJEMPLOS/
+EJEMPLOS 2/
+"EJEMPLOS 2"/
+EJEMPLOS_2/
+
+__pycache__/
+*.pyc
+
+# Por si la sesion del panel llegara a escribirse dentro del repo por error.
+# Su sitio correcto es %LOCALAPPDATA%\TakuMonky\sesion.json
+sesion.json
+
+# Archivos temporales de Claude Code (traen permisos locales, no van al repo).
+.claude/settings.local.json*
+
+# Credenciales de MIS clientes para panel_licencias/. Su sitio correcto es
+# %LOCALAPPDATA%\PanelLicencias\clientes.json (fuera del repo, que es publico);
+# esto es por si alguna vez queda una copia dentro de la carpeta.
+clientes.json
+
+# Los anuncios que genera la Fase 7 (models/generador_anuncios.py). Son
+# imagenes generadas, no codigo, y el repo es PUBLICO -- el roadmap ya
+# dejaba esto como la recomendacion por default ("Yo la ignoraria") en su
+# lista de preguntas abiertas; si el dueño pide lo contrario, se quita
+# esta linea.
+biblioteca/
+
+guia panel flet diseno y optimizacion.txt
+
+# La configuración de quien usa el panel (carpeta de exportación, nombre, tema):
+# models/config_usuario.py la escribe aquí, junto a main.py, como en Anxie.
+# Trae el nombre completo y rutas de su PC, y el repo es PÚBLICO.
+config.json
+config.json.tmp

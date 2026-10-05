@@ -1,5 +1,5 @@
 // ================================================================
-// menu.js — el menú completo de index.html
+// menu.js — el menú completo de menu.html
 // Pinta las 3 secciones de la página (Platillos, Bebidas, Postres) con
 // sus tarjetas, el orden ("Ordenar por"), la búsqueda y el visor de
 // foto grande.
@@ -96,7 +96,7 @@ function _catResultadoHTML(platillo) {
 
 // ----------------------------------------------------------------
 // Marcado de los dos modales (búsqueda y foto grande). Se inyecta
-// desde aquí para que index.html se quede con lo que tiene que verse
+// desde aquí para que menu.html se quede con lo que tiene que verse
 // sin JS: header, secciones, sidebar y footer.
 // ----------------------------------------------------------------
 function _catMontarModales() {
@@ -130,7 +130,7 @@ function _catMontarModales() {
 }
 
 // ----------------------------------------------------------------
-// Punto de entrada — index.html llama a iniciarMenu().
+// Punto de entrada — menu.html llama a iniciarMenu().
 // ----------------------------------------------------------------
 async function iniciarMenu() {
   const main = document.querySelector(".tk-cat-main");
@@ -354,7 +354,7 @@ async function iniciarMenu() {
   // ---------------- Arranque ----------------
   await cargar();
 
-  // Enlace directo a un platillo (index.html#platillo-2) o a una
+  // Enlace directo a un platillo (menu.html#platillo-2) o a una
   // sección (#bebidas): las secciones estaban ocultas hasta ahora, así
   // que el navegador no pudo saltar solo al abrir la página.
   const anclaId = (location.hash.match(/^#platillo-(\d+)$/) || [])[1];

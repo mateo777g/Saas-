@@ -1,5 +1,5 @@
 // ================================================================
-// catalogo.js — la capa de datos del menú en línea (index.html)
+// catalogo.js — la capa de datos del menú en línea (menu.html)
 // Cliente de Supabase, caché + auto-refresco, sidebar móvil y los
 // helpers que usa menu.js (agrupar, contar, escapar, precio, estados).
 // ================================================================

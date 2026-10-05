@@ -5,10 +5,10 @@
    PALETA (repintada 2026-09-04, "pulido" post-Fase 5.1): esta
    herramienta va a ser la base de una plantilla que se vende a otros
    locales, no solo a Taku Monky — por eso YA NO duplica los hex
-   cremas/dorados de style.css/CLAUDE.md → Design rules. Ahora es
+   cremas/dorados de menu.css/CLAUDE.md → Design rules. Ahora es
    blanco/negro/gris (escala neutra tipo "zinc"), sin nada que amarre
    la interfaz a la identidad cálida de un taquería en particular.
-   Sigue siendo autocontenida (mesas.html no carga style.css) por la
+   Sigue siendo autocontenida (mesas.html no carga menu.css) por la
    misma razón de siempre: es una herramienta de STAFF, independiente
    del navbar/hero/footer del menú público y de los ajustes que el
    dueño le sigue haciendo a esas páginas por su cuenta — ahora

@@ -1,13 +1,13 @@
 /* ================================================================
-   catalogo.css — el menú en línea (index.html)
-   Va SIEMPRE después de style.css (la base: paleta, sidebar móvil,
+   catalogo.css — el menú en línea (menu.html)
+   Va SIEMPRE después de menu.css (la base: paleta, sidebar móvil,
    estados y footer). Aquí vive todo lo propio del menú: el header
    sticky, las secciones por categoría, la cuadrícula de tarjetas, el
    modal de búsqueda, el menú de orden y el visor de foto grande.
 
    Estructura calcada del catálogo de Anxie Store (pedido del dueño el
    28 ago 2026: "copia totalmente la estructura moderna"); los colores
-   y la tipografía son las variables de style.css.
+   y la tipografía son las variables de menu.css.
    ================================================================ */
 
 :root {
@@ -38,7 +38,7 @@ body.tk-sin-scroll { overflow: hidden; }
   position: sticky;
   top: 0;
   /* Por debajo del sidebar móvil (950) y su overlay (900), que viven en
-     style.css, para que el panel deslizante tape el header. Los modales de este archivo van más arriba todavía
+     menu.css, para que el panel deslizante tape el header. Los modales de este archivo van más arriba todavía
      (ver .tk-cat-busqueda / .tk-cat-zoom). */
   z-index: 500;
   width: 100%;

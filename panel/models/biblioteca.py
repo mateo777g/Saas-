@@ -5,13 +5,15 @@ fecha, su formato (post o historia), su medida y el producto. Lo usa Mi bibliote
 (views/biblioteca_view.py); las llamadas son de disco, así que la vista las corre con
 asyncio.to_thread.
 
-SIN TABLA EN SUPABASE, a propósito: todo sale del archivo mismo. Los dos generadores ponen la
-fecha y el producto en el nombre:
-- Con IA (models/generador_ia.py):  20261001-153543-taco-arabe-ia-post.png
-- Plantillas (generador_anuncios.py): taco-arabe-01-topografico-story-1759350000000.png
-Un archivo que no siga ninguno de los dos (copiado a mano) toma la fecha de modificación y el
-formato de su medida. Una tabla con lo mismo se desfasaría en cuanto alguien borre un archivo
-desde el Explorador.
+SIN TABLA EN SUPABASE, a propósito: todo sale del archivo mismo. El generador
+(models/generador_ia.py) pone la fecha y el producto en el nombre:
+20261001-153543-taco-arabe-ia-post.png
+Un archivo que no siga ese patrón (copiado a mano) toma la fecha de modificación y el formato de
+su medida. Una tabla con lo mismo se desfasaría en cuanto alguien borre un archivo desde el
+Explorador.
+
+La carpeta (RUTA_BIBLIOTECA) y el slug del producto viven aquí: generador_ia.py escribe con los
+mismos dos, así que el nombre que pone y el que se busca aquí nunca se desfasan.
 """
 import datetime
 import os
@@ -22,12 +24,25 @@ import subprocess
 from PIL import Image
 
 from models.config_usuario import obtener_ruta_exportacion
-from models.generador_anuncios import RUTA_BIBLIOTECA, _slug
+
+# Relativa a panel/ (el cwd de la app). Se arman las rutas con diagonal, nunca con
+# os.path.join: ft.Image(src=...) no carga rutas con "\".
+RUTA_BIBLIOTECA = "biblioteca"
 
 EXTENSIONES = (".png", ".jpg", ".jpeg", ".webp")
 
 _DE_IA = re.compile(r"^(\d{8}-\d{6})-(.+)-ia-(post|historia)\.\w+$", re.IGNORECASE)
-_DE_PLANTILLA = re.compile(r"^(.+?)-\d{2}-[a-z0-9]+-(post|story)-(\d{13})\.\w+$", re.IGNORECASE)
+
+_MAPA_ACENTOS = str.maketrans("áéíóúüñ", "aeiouun")
+
+
+def _slug(texto: str) -> str:
+    """El producto como va en el nombre del archivo: "Taco Árabe" -> "taco-arabe"."""
+    texto = texto.strip().lower().translate(_MAPA_ACENTOS)
+    limpio = "".join(c if c.isalnum() else "-" for c in texto)
+    while "--" in limpio:
+        limpio = limpio.replace("--", "-")
+    return limpio.strip("-") or "producto"
 
 
 def _medida(ruta):
@@ -47,10 +62,6 @@ def _leer(nombre_archivo):
     if coincide := _DE_IA.match(nombre_archivo):
         fecha = datetime.datetime.strptime(coincide.group(1), "%Y%m%d-%H%M%S")
         slug, formato = coincide.group(2), coincide.group(3).lower()
-    elif coincide := _DE_PLANTILLA.match(nombre_archivo):
-        slug = coincide.group(1)
-        formato = "post" if coincide.group(2).lower() == "post" else "historia"
-        fecha = datetime.datetime.fromtimestamp(int(coincide.group(3)) / 1000)
     if fecha is None:
         fecha = datetime.datetime.fromtimestamp(mtime)
     if formato is None:

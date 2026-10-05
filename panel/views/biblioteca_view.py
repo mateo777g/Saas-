@@ -5,8 +5,8 @@ Agente IA): la vista pinta su propio suelo (D.suelo) y MainController lo sube de
 Las reglas están en planes/plan panel.txt ("DISEÑO MANCHAS + VIDRIO"); la maqueta aprobada, en
 https://claude.ai/artifact/3Yz1CqyvCrUn5fCKvmaaze.
 
-La galería de lo que hay en la carpeta biblioteca/ (lo que generan Crear contenido y las
-plantillas). Todo sale de los archivos: fecha, formato y producto los lee models/biblioteca.py
+La galería de lo que hay en la carpeta biblioteca/ (lo que genera Crear contenido). Todo sale
+de los archivos: fecha, formato y producto los lee models/biblioteca.py
 del nombre de cada uno; el nombre bonito del producto se busca en el menú (si no se puede leer,
 queda el del archivo).
 

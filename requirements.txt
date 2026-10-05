@@ -6,5 +6,4 @@ supabase
 python-dotenv
 httpx
 pillow
-rembg
 openai

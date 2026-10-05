@@ -33,7 +33,7 @@ sesion.json
 # esto es por si alguna vez queda una copia dentro de la carpeta.
 clientes.json
 
-# Los anuncios que genera la Fase 7 (models/generador_anuncios.py). Son
+# Los anuncios que genera Crear contenido (models/generador_ia.py). Son
 # imagenes generadas, no codigo, y el repo es PUBLICO -- el roadmap ya
 # dejaba esto como la recomendacion por default ("Yo la ignoraria") en su
 # lista de preguntas abiertas; si el dueño pide lo contrario, se quita

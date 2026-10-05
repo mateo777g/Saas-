@@ -17,7 +17,7 @@ DAOs, no atrapa excepciones.
 import datetime
 import os
 
-from models.generador_anuncios import RUTA_BIBLIOTECA
+from models.biblioteca import RUTA_BIBLIOTECA
 from models.ia_controller import (_agrupar_por_producto, _canonizar_mesas, _dia_de_negocio,
                                   _fecha_local, _normalizar_mesa)
 from models.mesa_dao import MesaDAO
@@ -105,7 +105,7 @@ def leer_ventas() -> dict:
 def contar_anuncios_del_mes() -> int:
     """Cuántos anuncios generó este mes el asistente de contenido: los archivos de la
     biblioteca (panel/biblioteca/) modificados en el mes en curso. Carpeta ausente = 0 (se
-    crea con el primer anuncio, ver generador_anuncios.py)."""
+    crea con el primer anuncio, ver generador_ia.py)."""
     if not os.path.isdir(RUTA_BIBLIOTECA):
         return 0
     hoy = datetime.date.today()

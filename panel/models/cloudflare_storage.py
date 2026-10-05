@@ -53,18 +53,6 @@ El AVISO EN PANTALLA (el banner rojo que ve el dueño) lo arma la vista
 pasos de arriba, el fallo NUNCA desaparece sin dejar rastro aunque en algún
 punto futuro alguien decida atrapar la excepción y no mostrar nada: ya quedó
 en el registro de huérfanos para poder limpiarlo a mano.
-
-RECORTE DE FONDO (Fase 4.3, la "carta" de celular del index) — recortar_fondo()
-usa rembg (modelo "u2net", ya bajado a C:\\Users\\<usuario>\\.rembg\\models\\)
-para quitar el fondo de la foto y dejar el platillo CON su tabla/plato (el
-dueño vio ambas opciones — con y sin tabla — y eligió con tabla, se ve más
-"rústico/premium" que el producto flotando en el vacío puro). Solo se usa
-para categoría Platillos, con tope de 5 y toda la lógica de cuándo generar/
-regenerar/borrar en views/components/dialogo_platillo.py — este módulo solo
-expone la función suelta, igual que con validar_y_comprimir()/subir_imagen().
-Un fallo aquí NUNCA debe tumbar el guardado normal del platillo: el recorte
-es un extra para la carta, no el platillo en sí — dialogo_platillo.py atrapa
-RecorteFallido aparte del resto de excepciones de guardado.
 """
 import io
 import json
@@ -75,7 +63,6 @@ from typing import Optional
 
 import httpx
 from PIL import Image, ImageOps, UnidentifiedImageError
-from rembg import new_session, remove
 
 from models.supabase_client import client
 
@@ -93,12 +80,6 @@ if not CLOUDFLARE_WORKER_URL or not CLOUDFLARE_R2_PUBLIC_BASE:
 # (4000px+ de lado) no se suba tal cual y llene el bucket.
 _CALIDAD_WEBP = 80
 _LADO_MAXIMO = 1600
-
-# Modelo de rembg para el recorte de fondo (Fase 4.3) — decisión final del
-# dueño (2026-09-03) tras comparar 3 modelos en la foto real del "Taco Arabe
-# con Queso": u2net es el único que CONSERVA la tabla/plato en vez de dejar
-# el producto pelado. Ver el docstring del módulo.
-_MODELO_RECORTE = "u2net"
 
 # Tope del archivo ORIGINAL (antes de comprimir) que se deja elegir. A
 # propósito generoso: una foto de celular normal pesa 3-8 MB y NO debe
@@ -133,16 +114,6 @@ class LimpiezaImagenFallida(Exception):
         self.nombre_archivo = nombre_archivo
         self.causa = causa
         super().__init__(f"No se pudo borrar '{nombre_archivo}' de R2: {causa}")
-
-
-class RecorteFallido(Exception):
-    """No se pudo recortar el fondo de la foto (rembg/onnxruntime truena, o
-    el resultado quedó sin ningún píxel con alfa > 0). A diferencia de
-    ArchivoInvalido/SubidaFallida, esto NUNCA debe impedir guardar el
-    platillo: el recorte es un extra para la carta de celular (Fase 4.3),
-    no el platillo en sí. Quien la atrape (dialogo_platillo.py) debe seguir
-    con el guardado normal y solo avisar que la carta se quedó sin su
-    versión recortada esta vez."""
 
 
 # ----------------------------------------------------------------------
@@ -192,71 +163,6 @@ def validar_y_comprimir(ruta_archivo: str) -> bytes:
         buffer = io.BytesIO()
         imagen.save(buffer, format="WEBP", quality=_CALIDAD_WEBP)
         return buffer.getvalue()
-
-
-# ----------------------------------------------------------------------
-# Recorte de fondo (Fase 4.3, rembg) — corre DESPUÉS de validar_y_comprimir()
-# y ANTES de subir_imagen(), ver docstring del módulo.
-# ----------------------------------------------------------------------
-_sesion_rembg = None  # singleton perezoso — ver _sesion_recorte()
-
-
-def _sesion_recorte():
-    """Crea la sesión de rembg (carga el modelo ONNX, ~168MB) la PRIMERA
-    vez que de verdad se necesita, y la reusa siempre después. A propósito
-    NO se crea al importar este módulo: cargar el modelo en cada arranque
-    del panel —aunque el dueño solo vaya a editar una Bebida— sería un
-    costo fijo innecesario. Pero sí se reusa entre fotos dentro de la misma
-    sesión del panel: crearla por cada foto es lentísimo (es lo que pide
-    evitar el roadmap de la Fase 4.3)."""
-    global _sesion_rembg
-    if _sesion_rembg is None:
-        _sesion_rembg = new_session(_MODELO_RECORTE)
-    return _sesion_rembg
-
-
-def recortar_fondo(datos_imagen: bytes) -> bytes:
-    """Quita el fondo de `datos_imagen` (bytes de una imagen que Pillow ya
-    puede abrir — se le pasa el mismo WebP que ya salió de
-    validar_y_comprimir(), ya con la rotación EXIF corregida y el lado
-    mayor topado a 1600px, para no reprocesar eso dos veces) usando rembg
-    con el modelo _MODELO_RECORTE ("u2net": conserva la tabla/plato del
-    platillo, ver docstring del módulo). Devuelve bytes WebP CON CANAL
-    ALFA, recortados al bounding box de lo que quedó NO transparente (para
-    no subir aire transparente de más alrededor del producto).
-
-    Llamada BLOQUEANTE (CPU, ~0.2s con u2net) — igual que
-    validar_y_comprimir(), quien la use la manda a un hilo aparte con
-    asyncio.to_thread (ver views/components/dialogo_platillo.py).
-
-    Levanta RecorteFallido si rembg truena o si el resultado sale sin
-    ningún píxel con alfa > 0 (bbox vacío) — nunca deja pasar una imagen
-    rota o completamente transparente en silencio.
-    """
-    try:
-        resultado = remove(datos_imagen, session=_sesion_recorte())
-        imagen = Image.open(io.BytesIO(resultado)).convert("RGBA")
-
-        # Bounding box del CANAL ALFA, no de la imagen completa: rembg
-        # conserva el color RGB original bajo las zonas transparentes, así
-        # que Image.getbbox() (que mira los 4 canales juntos) no detectaría
-        # el recorte real. alfa.getbbox() sí encuentra solo lo que quedó
-        # visible de verdad.
-        alfa = imagen.split()[-1]
-        bbox = alfa.getbbox()
-        if bbox is None:
-            raise RecorteFallido(
-                "rembg no dejó ningún píxel visible (imagen totalmente transparente)."
-            )
-        imagen = imagen.crop(bbox)
-
-        buffer = io.BytesIO()
-        imagen.save(buffer, format="WEBP", quality=_CALIDAD_WEBP)
-        return buffer.getvalue()
-    except RecorteFallido:
-        raise
-    except Exception as e:
-        raise RecorteFallido(f"No se pudo recortar el fondo de la imagen: {e}") from e
 
 
 # ----------------------------------------------------------------------

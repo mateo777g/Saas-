@@ -24,9 +24,7 @@ pantalla):
   listo (la imagen + "Guardado en Mi biblioteca", Generar otra, Abrir carpeta) / error.
 
 La imagen la hace models/generador_ia.py (gpt-image-2.5-sunburst, bloqueante: va con
-asyncio.to_thread) y la guarda en biblioteca/, donde Mi biblioteca ya la ve. Las PLANTILLAS de
-antes no se borraron: su vista está en views/contenido_plantillas_view.py, sin ruta ni botón,
-para reintegrarla después.
+asyncio.to_thread) y la guarda en biblioteca/, donde Mi biblioteca ya la ve.
 """
 import asyncio
 import os

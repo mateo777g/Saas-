@@ -45,7 +45,7 @@ from dotenv import load_dotenv
 from openai import OpenAI
 from PIL import Image
 
-from models.generador_anuncios import RUTA_BIBLIOTECA
+from models.biblioteca import RUTA_BIBLIOTECA, _slug
 
 load_dotenv(Path(__file__).resolve().parents[2] / ".env")
 
@@ -286,17 +286,6 @@ def _bajar_foto(url: str, numero: int = 1) -> tuple:
     return (f"producto-{numero}.{extension}", respuesta.content, tipo)
 
 
-_MAPA_ACENTOS = str.maketrans("áéíóúüñ", "aeiouun")
-
-
-def _slug(texto: str) -> str:
-    texto = texto.strip().lower().translate(_MAPA_ACENTOS)
-    limpio = "".join(c if c.isalnum() else "-" for c in texto)
-    while "--" in limpio:
-        limpio = limpio.replace("--", "-")
-    return limpio.strip("-") or "producto"
-
-
 def generar(producto: dict, formato: str, mensaje: str, datos: dict,
             color: str | None = None, extras: list[dict] | None = None) -> str:
     """Genera el flyer y lo guarda en biblioteca/. Devuelve la ruta con "/" (lista para
@@ -329,7 +318,7 @@ def generar(producto: dict, formato: str, mensaje: str, datos: dict,
 
     os.makedirs(RUTA_BIBLIOTECA, exist_ok=True)
     marca = datetime.now().strftime("%Y%m%d-%H%M%S")
-    # Diagonal, no os.path.join: ft.Image no carga rutas con "\" (ver generador_anuncios.py).
+    # Diagonal, no os.path.join: ft.Image no carga rutas con "\" (ver models/biblioteca.py).
     ruta = f"{RUTA_BIBLIOTECA}/{marca}-{_slug(producto.get('nombre', ''))}-ia-{formato}.png"
     imagen.save(ruta)
     return ruta

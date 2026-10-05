@@ -23,8 +23,6 @@ OSCURO = {
     "modo": "dark",
     # --- Superficies ---
     "fondo": "#0e0e0e",                  # debajo del degradado de la página
-    # El degradado de la página: un brillo abajo a la derecha (regla 5). Stops 0 / 0.32 / 0.7 / 1.
-    "fondo_pagina": ["#a5a5a5", "#5c5c5c", "#1a1a1a", "#000000"],
     "barra": "#0e0e0e",                  # la barra lateral
     "tarjeta": ["#222222", "#3a3a3a"],   # relleno de tarjeta, de arriba-izquierda a abajo-derecha
     # El brillo del borde de las tarjetas, atajos y píldoras (brillo(), stops 0 / 0.3 / 1), y la
@@ -66,7 +64,6 @@ OSCURO = {
 CLARO = {
     "modo": "light",
     "fondo": "#e8e8e8",
-    "fondo_pagina": ["#ffffff", "#f4f4f4", "#e8e8e8", "#dcdcdc"],
     "barra": "#f7f7f7",
     "tarjeta": ["#f3f3f3", "#ffffff"],
     "brillo": ["#40000000", "#14000000", "#00000000"],

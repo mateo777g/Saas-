@@ -40,16 +40,6 @@ se resolvieron reusando piezas ya existentes en vez de inventar:
     campos de este mismo diálogo, aplicada a un botón en vez de a un
     TextField.
 Si el dueño prefiere otra medida, es un cambio de una línea en este archivo.
-
-FASE 4.3 (la "carta" de celular del index): cuando categoria == "Platillos"
-y se sube una foto nueva, _guardar() también genera (o regenera) su versión
-sin fondo con models/cloudflare_storage.recortar_fondo() y la sube como un
-SEGUNDO archivo en R2 (image_url_recortada) — nunca más de _LIMITE_RECORTES
-Platillos a la vez, y siempre se suelta si la categoría deja de ser
-"Platillos" o si el platillo se borra. Un fallo generando el recorte NUNCA
-tumba el guardado normal del platillo (ver RecorteFallido en
-cloudflare_storage.py) — solo se avisa aparte, con el mismo banner rojo que
-ya usa el aviso de limpieza huérfana de la Fase 3.
 """
 import asyncio
 import tkinter as tk
@@ -68,11 +58,6 @@ _CATEGORIAS = ["Platillos", "Bebidas", "Postres"]
 
 # El ancho de la ventana (diseño manchas + vidrio): cabe la categoría y el precio lado a lado.
 _ANCHO_TARJETA = 520
-
-# Fase 4.3 (carta de celular del index) — tope del dueño para no llenar
-# Cloudflare de recortes: como máximo 5 Platillos llevan image_url_recortada
-# a la vez. Ver _guardar() más abajo y PlatilloDAO.contar_platillos_con_recorte().
-_LIMITE_RECORTES = 5
 
 
 def _texto_precio(valor) -> str:
@@ -341,10 +326,6 @@ class DialogoPlatillo:
     async def _guardar(self, datos: dict):
         self._set_cargando(True, "Guardando...")
         imagen_nueva_url = None  # URL en R2 de la foto recién subida, si hubo una
-        # Fase 4.3 — estado del recorte de fondo para este guardado.
-        recorte_nueva_url = None  # URL del recorte recién subido, si se generó uno
-        recorte_a_borrar = None  # recorte VIEJO a soltar (reemplazado o categoría cambió)
-        aviso_recorte_fallido = False  # rembg/la subida del recorte tronó, pero NO el guardado
 
         # Fase 3 — paso 1: si el dueño eligió una foto nueva en este
         # diálogo, comprimirla y subirla ANTES de tocar Supabase (orden de
@@ -366,42 +347,6 @@ class DialogoPlatillo:
                 self._set_cargando(False)
                 return
 
-            # Fase 4.3 — recorte de fondo para la carta de celular del
-            # index, SOLO para categoría Platillos y solo cuando hay foto
-            # nueva (ver la nota de alcance en el docstring del módulo).
-            # Corre AQUÍ, ANTES de subir nada: es puro cómputo local sobre
-            # datos_webp (sin red todavía), así que si el cupo ya está
-            # lleno o rembg truena, ni se intenta la subida de más abajo.
-            # Un fallo aquí se guarda en `aviso_recorte_fallido` — nunca
-            # lanza ni cancela el guardado normal del platillo.
-            datos_recorte = None
-            if datos["categoria"] == "Platillos":
-                recorte_previo = (
-                    self.platillo.get("image_url_recortada") if self.editando else None
-                )
-                # Si ya tenía uno, regenerarlo no gasta cupo nuevo (ya
-                # contaba dentro de los _LIMITE_RECORTES de antes).
-                puede_generar = bool(recorte_previo)
-                if not puede_generar:
-                    try:
-                        ya_hay = await asyncio.to_thread(
-                            PlatilloDAO.contar_platillos_con_recorte
-                        )
-                    except Exception as e:
-                        print(f"[dialogo_platillo] no se pudo consultar el cupo de recortes: {e}")
-                        ya_hay = _LIMITE_RECORTES  # ante la duda, no generar de más
-                    puede_generar = ya_hay < _LIMITE_RECORTES
-
-                if puede_generar:
-                    self._set_cargando(True, "Recortando fondo...")
-                    try:
-                        datos_recorte = await asyncio.to_thread(
-                            cloudflare_storage.recortar_fondo, datos_webp
-                        )
-                    except cloudflare_storage.RecorteFallido as e:
-                        print(f"[dialogo_platillo] no se pudo generar el recorte: {e}")
-                        aviso_recorte_fallido = True
-
             self._set_cargando(True, "Subiendo foto...")
             try:
                 imagen_nueva_url = await asyncio.to_thread(
@@ -414,34 +359,7 @@ class DialogoPlatillo:
                 return
 
             datos["image_url"] = imagen_nueva_url
-
-            # El recorte (si se generó arriba) se sube justo después de la
-            # foto normal, todavía bajo el mismo paso "Subiendo foto...".
-            if datos_recorte is not None:
-                try:
-                    recorte_nueva_url = await asyncio.to_thread(
-                        cloudflare_storage.subir_imagen, datos_recorte
-                    )
-                    datos["image_url_recortada"] = recorte_nueva_url
-                    if recorte_previo and recorte_previo != recorte_nueva_url:
-                        recorte_a_borrar = recorte_previo
-                except cloudflare_storage.SubidaFallida as e:
-                    print(f"[dialogo_platillo] no se pudo subir el recorte: {e}")
-                    aviso_recorte_fallido = True
-
             self._set_cargando(True, "Guardando...")
-
-        # Fase 4.3 — si la categoría final YA NO es "Platillos" pero el
-        # platillo (en edición) SÍ tenía un recorte de cuando lo era, hay
-        # que soltarlo — con o sin foto nueva en este guardado. Conservarlo
-        # sería basura viva en R2 que nadie vuelve a mostrar.
-        if (
-            self.editando
-            and datos["categoria"] != "Platillos"
-            and self.platillo.get("image_url_recortada")
-        ):
-            recorte_a_borrar = self.platillo["image_url_recortada"]
-            datos["image_url_recortada"] = None
 
         try:
             if self.editando:
@@ -456,14 +374,12 @@ class DialogoPlatillo:
         except httpx.RequestError as e:
             print(f"[dialogo_platillo] error de red al guardar: {e}")
             await self._revertir_imagen_si_hace_falta(imagen_nueva_url)
-            await self._revertir_imagen_si_hace_falta(recorte_nueva_url)  # Fase 4.3
             self._mostrar_error("No hay conexión con el servidor. Revisa tu internet.")
             self._set_cargando(False)
             return
         except Exception as e:
             print(f"[dialogo_platillo] error al guardar: {e}")
             await self._revertir_imagen_si_hace_falta(imagen_nueva_url)
-            await self._revertir_imagen_si_hace_falta(recorte_nueva_url)  # Fase 4.3
             self._mostrar_error("No se pudo guardar el platillo. Intenta de nuevo.")
             self._set_cargando(False)
             return
@@ -484,24 +400,6 @@ class DialogoPlatillo:
                     "El platillo se guardó, pero no se pudo borrar su foto "
                     "anterior en Cloudflare. Quedó registrada para limpiarla después."
                 )
-
-        # Fase 4.3 — recorte VIEJO que había que soltar (una foto nueva
-        # reemplazó su recorte anterior, o la categoría dejó de ser
-        # "Platillos"). Mismo tratamiento de huérfanos que la foto normal.
-        if recorte_a_borrar:
-            try:
-                await asyncio.to_thread(cloudflare_storage.eliminar_imagen, recorte_a_borrar)
-            except cloudflare_storage.LimpiezaImagenFallida:
-                aviso_limpieza = aviso_limpieza or (
-                    "El platillo se guardó, pero no se pudo borrar su recorte "
-                    "anterior en Cloudflare. Quedó registrada para limpiarla después."
-                )
-
-        if aviso_recorte_fallido and not aviso_limpieza:
-            aviso_limpieza = (
-                "El platillo se guardó, pero no se pudo generar su versión para "
-                "la carta de celular. Vuelve a intentarlo subiendo la foto de nuevo."
-            )
 
         self._set_cargando(False)  # si no, _cerrar() se niega a cerrar (_ocupado sigue True)
         self._cerrar()
@@ -594,7 +492,6 @@ class DialogoPlatillo:
         # corresponde a ninguna fila real — PlatilloDAO.eliminar() no
         # regresa la fila borrada.
         imagen_a_borrar = self.platillo.get("image_url")
-        recorte_a_borrar = self.platillo.get("image_url_recortada")  # Fase 4.3
         try:
             await asyncio.to_thread(PlatilloDAO.eliminar, self.platillo["id"])
         except httpx.RequestError as e:
@@ -624,17 +521,6 @@ class DialogoPlatillo:
                     "en Cloudflare. Quedó registrada para limpiarla después."
                 )
 
-        # Fase 4.3 — "al borrar un platillo hay que borrar sus DOS imágenes
-        # de R2" (roadmap): la foto normal de arriba, y su recorte si tenía.
-        if recorte_a_borrar:
-            try:
-                await asyncio.to_thread(cloudflare_storage.eliminar_imagen, recorte_a_borrar)
-            except cloudflare_storage.LimpiezaImagenFallida:
-                aviso_limpieza = aviso_limpieza or (
-                    "El platillo se eliminó, pero no se pudo borrar su recorte "
-                    "en Cloudflare. Quedó registrada para limpiarla después."
-                )
-
         self._set_cargando(False)  # si no, _cerrar() se niega a cerrar (_ocupado sigue True)
         self._cerrar()
         self.on_guardado(aviso_limpieza)
@@ -647,12 +533,10 @@ class DialogoPlatillo:
 
     def _set_cargando(self, cargando: bool, texto: str = "Guardando..."):
         """`texto` (Fase 3) es el paso actual mientras `cargando=True` —
-        _guardar() lo va cambiando ("Optimizando imagen..." → "Recortando
-        fondo..." [Fase 4.3, solo Platillos con foto nueva] → "Subiendo
-        foto..." → "Guardando...") porque ahora puede haber varias
-        operaciones lentas seguidas (Pillow, rembg, la(s) subida(s)) antes
-        de tocar Supabase, y el dueño pidió ver en qué paso va. Se ignora
-        cuando cargando=False."""
+        _guardar() lo va cambiando ("Optimizando imagen..." → "Subiendo
+        foto..." → "Guardando...") porque puede haber varias operaciones
+        lentas seguidas (Pillow, la subida) antes de tocar Supabase, y el
+        dueño pidió ver en qué paso va. Se ignora cuando cargando=False."""
         self._ocupado = cargando
         # Sin rueda de carga: los botones apagados y, arriba, el paso en el que va.
         self.texto_paso.value = texto.upper() if cargando else self._texto_arriba

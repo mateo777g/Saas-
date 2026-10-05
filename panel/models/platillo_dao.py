@@ -37,18 +37,12 @@ class EscrituraSinEfecto(Exception):
     guardado: la vista la atrapa con el `except Exception` genérico que ya
     tenía y muestra el mismo mensaje amigable de "no se pudo guardar"."""
 
-# Solo las columnas que menu_view.py realmente pinta en la tabla, MÁS
-# image_url_recortada — nunca select('*'). Mismo criterio que
-# EJEMPLOS/catalog-cache.js.
+# Solo las columnas que menu_view.py realmente pinta en la tabla — nunca
+# select('*'). Mismo criterio que EJEMPLOS/catalog-cache.js.
 # (created_at existe en la tabla pero ninguna vista la usa todavía; "orden"
 # tampoco se pinta como texto, solo se usa para el ORDER BY de abajo, así
 # que no hace falta traerla también en el select de obtener_todos().)
-# image_url_recortada (Fase 4.3) es la ÚNICA excepción a "solo lo que se
-# pinta": menu_view.py no la muestra, pero dialogo_platillo.py sí la
-# necesita al editar un platillo — para saber si YA tenía un recorte
-# generado (y así no perder el cupo de 5, ver ese archivo) sin tener que
-# hacer una consulta aparte solo para eso.
-_COLUMNAS = "id, nombre, descripcion, categoria, precio, visible, image_url, image_url_recortada"
+_COLUMNAS = "id, nombre, descripcion, categoria, precio, visible, image_url"
 
 # Mismas 3 categorías del CHECK de la tabla y de _CATEGORIAS en
 # dialogo_platillo.py — fijas a propósito, no hay categoría libre. Las usa
@@ -63,12 +57,6 @@ _CATEGORIAS_FIJAS = ("Platillos", "Bebidas", "Postres")
 # CLAUDE.md/roadmap) para que la tarjeta detecte ediciones de verdad, no
 # solo altas.
 _COLUMNAS_RECIENTES = "id, nombre, image_url, created_at, updated_at"
-
-# Solo lo que pinta el selector de platillo del asistente de contenido
-# (Fase 7.3, views/contenido_view.py) — igual criterio que _COLUMNAS
-# arriba, nunca select('*'). No trae precio/descripcion/categoria porque
-# ese paso solo necesita mostrar la foto recortada y el nombre.
-_COLUMNAS_CON_RECORTE = "id, nombre, image_url_recortada"
 
 
 class PlatilloDAO:
@@ -130,12 +118,6 @@ class PlatilloDAO:
         assets/sin-foto.png, exactamente igual que antes de la Fase 3. Sí manda
         `orden`, calculado aquí, para que el platillo quede al final de la
         lista.
-
-        `image_url_recortada` (Fase 4.3) es igual de OPCIONAL y con el mismo
-        criterio: solo se manda si la llave viene en `datos` (el dueño creó
-        un Platillo con foto y sí se generó su recorte — ver
-        dialogo_platillo.py). Un alta nunca la manda en None a propósito:
-        no hay recorte "viejo" que limpiar en una fila que no existía.
         """
         fila = {
             "nombre": datos["nombre"],
@@ -146,8 +128,6 @@ class PlatilloDAO:
         }
         if "image_url" in datos:
             fila["image_url"] = datos["image_url"]
-        if "image_url_recortada" in datos:
-            fila["image_url_recortada"] = datos["image_url_recortada"]
         respuesta = client.from_("platillos").insert(fila).execute()
         if not respuesta.data:
             # No debería pasar (un INSERT bloqueado por RLS sí lanza error de
@@ -167,15 +147,7 @@ class PlatilloDAO:
         incluye en el UPDATE si el dueño cambió la foto en el diálogo (ya
         subida a R2 antes de llamar aquí — ver dialogo_platillo.py). Si la
         llave no viene en `datos`, la columna no se toca y la fila conserva
-        la foto que ya tenía.
-
-        `image_url_recortada` (Fase 4.3) sigue el mismo criterio de
-        "solo si la llave viene", pero a diferencia de `image_url` SÍ puede
-        venir con valor `None` a propósito: es como dialogo_platillo.py
-        limpia la columna cuando el platillo deja de ser categoría
-        "Platillos" (o cuando el recorte viejo hay que soltarlo). Por eso
-        aquí se revisa con `"image_url_recortada" in datos`, nunca con
-        `datos.get(...)`, que trataría None como "no venía"."""
+        la foto que ya tenía."""
         fila = {
             "nombre": datos["nombre"],
             "descripcion": datos.get("descripcion") or None,
@@ -184,8 +156,6 @@ class PlatilloDAO:
         }
         if "image_url" in datos:
             fila["image_url"] = datos["image_url"]
-        if "image_url_recortada" in datos:
-            fila["image_url_recortada"] = datos["image_url_recortada"]
         respuesta = (
             client.from_("platillos").update(fila).eq("id", id_platillo).execute()
         )
@@ -331,46 +301,4 @@ class PlatilloDAO:
                 categorias_en_uso += 1
 
         return {"total": total, "categorias_en_uso": categorias_en_uso}
-
-    @staticmethod
-    def contar_platillos_con_recorte() -> int:
-        """Para el cupo de 5 de la Fase 4.3 (dialogo_platillo.py, la carta
-        de celular del index): cuántos Platillos YA tienen
-        image_url_recortada generado, para saber si todavía hay lugar antes
-        de gastar tiempo/Cloudflare generando uno más.
-
-        Mismo patrón que obtener_estadisticas(): count="exact", head=True,
-        nunca baja las filas completas solo para contarlas. El filtro de
-        categoría va explícito (no tiene sentido contar un recorte de un
-        platillo que ya no es "Platillos" — aunque en la práctica
-        dialogo_platillo.py ya limpia la columna en ese caso, este filtro
-        es el respaldo correcto de todos modos)."""
-        respuesta = (
-            client.from_("platillos")
-            .select("id", count="exact", head=True)
-            .eq("categoria", "Platillos")
-            .not_.is_("image_url_recortada", "null")
-            .execute()
-        )
-        return respuesta.count or 0
-
-    @staticmethod
-    def obtener_con_recorte() -> list[dict]:
-        """Para el paso 3 del asistente de contenido (Fase 7.3, "Elegir
-        platillo"): solo los Platillos que YA tienen image_url_recortada
-        generado — un anuncio siempre estampa la foto recortada, nunca la
-        original con fondo (ver models/generador_anuncios.py). Mismo
-        filtro que contar_platillos_con_recorte(), pero trayendo las filas
-        en vez de solo el conteo — hoy son 5 (ids 5, 30, 31, 32, 33, ver
-        CLAUDE.md → Fase 7)."""
-        respuesta = (
-            client.from_("platillos")
-            .select(_COLUMNAS_CON_RECORTE)
-            .eq("categoria", "Platillos")
-            .not_.is_("image_url_recortada", "null")
-            .order("orden")
-            .order("id")
-            .execute()
-        )
-        return respuesta.data or []
 

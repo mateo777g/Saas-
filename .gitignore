@@ -27,8 +27,10 @@ biblioteca/
 # Por si la sesión del panel llegara a escribirse aquí por error.
 sesion.json
 
-# Permisos locales de Claude Code.
+# Permisos locales de Claude Code, y la vista previa del sitio que solo usa Claude Code
+# (.claude/launch.json, "menu-en-linea").
 .claude/settings.local.json*
+.claude/launch.json
 
 __pycache__/
 *.pyc

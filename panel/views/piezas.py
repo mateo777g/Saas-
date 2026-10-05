@@ -14,17 +14,6 @@ MESES = ["ENERO", "FEBRERO", "MARZO", "ABRIL", "MAYO", "JUNIO", "JULIO", "AGOSTO
          "SEPTIEMBRE", "OCTUBRE", "NOVIEMBRE", "DICIEMBRE"]
 
 
-def fondo_pagina():
-    # El fondo de las vistas nuevas: un brillo gris abajo a la derecha sobre negro. De ahí
-    # viene la luz de todo el panel (las tarjetas se aclaran hacia esa esquina).
-    return ft.RadialGradient(
-        center=ft.Alignment(0.95, 0.85),
-        radius=1.25,
-        colors=C.fondo_pagina,
-        stops=[0, 0.32, 0.7, 1]
-    )
-
-
 def fecha_vista():
     # La fecha de arriba de cada vista ("JUEVES, 24 DE SEPTIEMBRE").
     hoy = datetime.datetime.now()

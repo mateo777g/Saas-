@@ -1,13 +1,7 @@
 // ================================================================
-// catalogo.js — menú público de Taku Monky (Fase 4)
-// Comparten este archivo: index.html, menu-platillos.html,
-// menu-bebidas.html, menu-postres.html.
-//
-// Junta en UNO lo que en EJEMPLOS eran dos archivos separados
-// (supabase-config.js + catalog-cache.js), más el render de tarjetas
-// y estados — pedido explícito del dueño: "un solo .js compartido
-// para lo del catálogo", para no repetir el HTML de la tarjeta en
-// cuatro páginas.
+// catalogo.js — la capa de datos del menú en línea (index.html)
+// Cliente de Supabase, caché + auto-refresco, sidebar móvil y los
+// helpers que usa menu.js (agrupar, contar, escapar, precio, estados).
 // ================================================================
 
 // ----------------------------------------------------------------
@@ -42,11 +36,10 @@ const _supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
 });
 
 // ----------------------------------------------------------------
-// WhatsApp — número de PLACEHOLDER a propósito (ver CLAUDE.md/roadmap,
-// Fase 4). Cuando tengas el número real del negocio, cámbialo AQUÍ —
-// una sola vez: esta constante alimenta el botón del hero Y el del
-// footer de las 4 páginas, no está escrita por separado en ningún
-// otro archivo.
+// WhatsApp — número de PLACEHOLDER a propósito. Cuando tengas el
+// número real del negocio, cámbialo AQUÍ — una sola vez: esta
+// constante alimenta el footer y el botón de cada tarjeta, no está
+// escrita por separado en ningún otro archivo.
 // ----------------------------------------------------------------
 const NUMERO_WHATSAPP = "5215500000000"; // ← reemplazar aquí con el número real
 const MENSAJE_WHATSAPP = "Hola, quiero hacer un pedido";
@@ -55,11 +48,9 @@ const URL_WHATSAPP = `https://wa.me/${NUMERO_WHATSAPP}?text=${encodeURIComponent
 )}`;
 
 /** El mismo número, pero con el platillo ya escrito en el mensaje — lo
- * usa el botón "Pedir por WhatsApp" de cada tarjeta en las páginas de
- * categoría (ver menu.js). Vive AQUÍ y no en menu.js justamente para
- * que NUMERO_WHATSAPP siga teniendo un solo lugar de verdad: el día
- * que llegue el número real del negocio se cambia una vez, arriba, y
- * queda bien el hero, el footer y los botones de todas las tarjetas. */
+ * usa el botón "Pedir por WhatsApp" de cada tarjeta (ver menu.js). Vive
+ * AQUÍ y no en menu.js para que NUMERO_WHATSAPP siga teniendo un solo
+ * lugar de verdad. */
 function urlWhatsAppPlatillo(nombre) {
   const texto = nombre ? `Hola, quiero pedir: ${nombre}` : MENSAJE_WHATSAPP;
   return `https://wa.me/${NUMERO_WHATSAPP}?text=${encodeURIComponent(texto)}`;
@@ -89,11 +80,7 @@ function urlWhatsAppPlatillo(nombre) {
 const CACHE_KEY = "taku_monky_catalogo_v1";
 const CACHE_DURACION_MS = 30 * 1000;
 
-// image_url_recortada (Fase 4.3) — la versión sin fondo de un platillo,
-// generada en el panel (rembg) SOLO para categoría Platillos. La usa
-// carta.js (la sección de celular del index); las demás páginas la reciben
-// igual (una sola consulta para todas) pero simplemente no la pintan.
-const _COLUMNAS = "id, nombre, descripcion, categoria, precio, image_url, image_url_recortada, orden";
+const _COLUMNAS = "id, nombre, descripcion, categoria, precio, image_url, orden";
 
 async function obtenerCatalogo({ forzar = false } = {}) {
   // `forzar` lo manda SOLO iniciarAutoRefresco() (ver abajo) — nunca la
@@ -162,12 +149,9 @@ function iniciarAutoRefresco(callback) {
 }
 
 // ----------------------------------------------------------------
-// Navbar / sidebar móvil — mismo patrón que EJEMPLOS/style.css
-// (barra fija tipo "sombra" arriba + un sidebar deslizante en móvil
-// con overlay), solo que aquí los colores/tipografía son los de Taku
-// Monky. El HTML del botón hamburguesa + sidebar es idéntico en las
-// 4 páginas (mismos ids), solo cambian los enlaces adentro, así que
-// basta con una sola función enganchando los botones por id.
+// Sidebar móvil (hamburguesa + panel deslizante con overlay) y el
+// header que se esconde al hacer scroll en celular. Engancha los
+// botones por id.
 // ----------------------------------------------------------------
 function iniciarNavbar() {
   const boton = document.getElementById("tk-menu-boton");
@@ -195,20 +179,10 @@ function iniciarNavbar() {
   });
 
   // Esconder/mostrar el header según la dirección del scroll — solo en
-  // móvil (≤640px, mismo corte que el resto del nav móvil; en
-  // escritorio/tablet el header se queda fijo como siempre). Bajando se
-  // esconde, subiendo vuelve, y cerca del tope siempre se ve (para no
-  // desaparecer justo al salir del hero/arrancar la página).
-  //
-  // Dos headers en el sitio, cada página trae solo uno de los dos:
-  // .tk-navbar (index.html, fixed y transparente sobre el hero) y
-  // .tk-cat-header (las 3 páginas de categoría, sticky y sólido —
-  // pedido del dueño el 4 sep 2026, "igual que la navbar del index").
-  // position:sticky con top:0 pinta igual que fixed una vez "pegado" —
-  // el contenido de abajo ya scrollea por debajo de él, así que el
-  // mismo transform:translateY(-100%) lo esconde sin dejar un hueco en
-  // blanco; no hace falta un mecanismo distinto para el segundo.
-  iniciarOcultarAlScroll(document.querySelector(".tk-navbar"), "tk-navbar--oculta");
+  // móvil (≤640px; en escritorio/tablet el header se queda fijo).
+  // Bajando se esconde, subiendo vuelve, y cerca del tope siempre se ve.
+  // .tk-cat-header es position:sticky: una vez "pegado" pinta igual que
+  // fixed, así que transform:translateY(-100%) lo esconde sin dejar hueco.
   iniciarOcultarAlScroll(document.querySelector(".tk-cat-header"), "tk-cat-header--oculta");
 }
 
@@ -277,40 +251,6 @@ function formatearPrecio(valor) {
 }
 
 // ----------------------------------------------------------------
-// LA tarjeta de platillo — única definición en todo el sitio. La usan
-// el preview del index Y las 3 páginas de categoría completa. Si un
-// día cambia el diseño de la tarjeta, se toca aquí y ya — no hay una
-// segunda copia en ningún archivo .html.
-// ----------------------------------------------------------------
-function tarjetaPlatilloHTML(platillo) {
-  const nombre = escapeHtml(platillo.nombre || "");
-  const descripcion = escapeHtml(platillo.descripcion || "");
-  const categoria = escapeHtml(platillo.categoria || "");
-  const precio = formatearPrecio(platillo.precio);
-  // Igual que platillo.get("image_url") or "assets/sin-foto.png" en
-  // menu_view.py: sin foto todavía (el caso normal hoy) cae al mismo
-  // placeholder que ya usa el panel, no a un ícono roto.
-  const imagen = escapeHtml(platillo.image_url || "assets/sin-foto.png");
-
-  return `
-    <article class="tk-tarjeta">
-      <div class="tk-tarjeta-foto">
-        <img src="${imagen}" alt="${nombre}" loading="lazy"
-             onerror="this.onerror=null; this.src='assets/sin-foto.png';">
-      </div>
-      <div class="tk-tarjeta-cuerpo">
-        <div class="tk-tarjeta-encabezado">
-          <span class="tk-tarjeta-nombre">${nombre}</span>
-          <span class="tk-tarjeta-precio">${precio}</span>
-        </div>
-        ${descripcion ? `<p class="tk-tarjeta-descripcion">${descripcion}</p>` : ""}
-        <span class="tk-tarjeta-chip">${categoria}</span>
-      </div>
-    </article>
-  `;
-}
-
-// ----------------------------------------------------------------
 // Estados compartidos — mismo lenguaje visual que el panel (ver
 // menu_view.py: _estado_cargando() / _estado_vacio() / _estado_error()).
 // ----------------------------------------------------------------
@@ -319,11 +259,6 @@ const _ICONO_ERROR =
 const _ICONO_VACIO =
   '<svg class="tk-icono-vacio" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M8.3 7.2v9.6M6.8 7.2v4a1.5 1.5 0 0 0 3 0v-4M15.6 7.2c-1.05 0-1.9 1.3-1.9 2.9 0 1.3.55 2.35 1.3 2.75v4.3"/></svg>';
 
-function htmlEstadoCargando(mensaje) {
-  return `<div class="tk-estado"><div class="tk-spinner"></div><p>${escapeHtml(
-    mensaje || "Cargando el menú..."
-  )}</p></div>`;
-}
 function htmlEstadoError() {
   return `<div class="tk-estado tk-estado--error">${_ICONO_ERROR}<p>No hay conexión con el servidor. Revisa tu internet.</p></div>`;
 }
@@ -333,71 +268,3 @@ function htmlEstadoVacio(categoria) {
     nombre
   )} en el menú.</p><p>Vuelve pronto, estamos preparando algo nuevo.</p></div>`;
 }
-
-// ----------------------------------------------------------------
-// index.html — un preview (máx. 3) por categoría, UNA sola consulta
-// para las tres secciones (obtenerCatalogo() ya trae todo el catálogo
-// visible; aquí solo se reparte por categoría). Si una categoría no
-// tiene ningún platillo visible, su sección se ESCONDE por completo
-// — no se queda un hueco a medias.
-// ----------------------------------------------------------------
-async function iniciarIndex() {
-  const secciones = {
-    Platillos: document.getElementById("platillos"),
-    Bebidas: document.getElementById("bebidas"),
-    Postres: document.getElementById("postres"),
-  };
-  const contenedores = {
-    Platillos: document.getElementById("contenedor-platillos"),
-    Bebidas: document.getElementById("contenedor-bebidas"),
-    Postres: document.getElementById("contenedor-postres"),
-  };
-
-  async function cargar(forzar = false) {
-    try {
-      const lista = await obtenerCatalogo({ forzar });
-      const grupos = agruparPorCategoria(lista);
-      for (const categoria of CATEGORIAS) {
-        const items = grupos[categoria].slice(0, 3);
-        const seccion = secciones[categoria];
-        const contenedor = contenedores[categoria];
-        if (!seccion || !contenedor) continue;
-        if (items.length === 0) {
-          seccion.style.display = "none";
-          continue;
-        }
-        seccion.style.display = "";
-        contenedor.innerHTML = items.map(tarjetaPlatilloHTML).join("");
-      }
-    } catch (e) {
-      console.error("[catalogo] error cargando el índice:", e);
-      for (const categoria of CATEGORIAS) {
-        const seccion = secciones[categoria];
-        const contenedor = contenedores[categoria];
-        if (!seccion || !contenedor) continue;
-        seccion.style.display = "";
-        contenedor.innerHTML = htmlEstadoError();
-      }
-    }
-  }
-
-  await cargar();
-  iniciarAutoRefresco(cargar);
-}
-
-// ----------------------------------------------------------------
-// Páginas de categoría completa (menu-platillos/bebidas/postres.html)
-//
-// Ya NO viven aquí: desde el rediseño del 28 ago 2026 esas 3 páginas
-// las arma iniciarCatalogo(categoria) en menu.js, que además del
-// listado trae el orden/filtro, la búsqueda y el visor de foto grande.
-// La función iniciarCategoria() que estaba en este lugar se eliminó al
-// quedarse sin quien la llamara — no se dejó "por si acaso" para no
-// terminar con dos caminos distintos pintando lo mismo.
-//
-// Lo que este archivo SÍ le sigue prestando a esas páginas (y por eso
-// catalogo.js se carga antes que menu.js): el cliente de Supabase, la
-// caché + auto-refresco, iniciarNavbar(), agruparPorCategoria(),
-// textoContador(), escapeHtml(), formatearPrecio(), los estados
-// htmlEstadoError()/htmlEstadoVacio() y urlWhatsAppPlatillo().
-// ----------------------------------------------------------------

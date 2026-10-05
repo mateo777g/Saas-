@@ -1,43 +1,13 @@
 /* ================================================================
-   catalogo.css — páginas de categoría del menú público
-   Lo usan: menu-platillos.html, menu-bebidas.html, menu-postres.html
-   (index.html NO lo carga — ver la nota de abajo).
+   catalogo.css — el menú en línea (index.html)
+   Va SIEMPRE después de style.css (la base: paleta, sidebar móvil,
+   estados y footer). Aquí vive todo lo propio del menú: el header
+   sticky, las secciones por categoría, la cuadrícula de tarjetas, el
+   modal de búsqueda, el menú de orden y el visor de foto grande.
 
-   Va SIEMPRE después de style.css en el <head>, igual que en
-   EJEMPLOS/catalogo.html (style.css + catalogo.css): style.css sigue
-   siendo la base compartida por las 4 páginas (body, paleta, footer,
-   sidebar móvil, estados .tk-estado/.tk-spinner) y este archivo agrega
-   ENCIMA todo lo que solo existe en las páginas de catálogo: el header
-   sticky, la cuadrícula de tarjetas, el modal de búsqueda, el menú de
-   filtros y el visor de foto grande.
-
-   Estructura calcada de EJEMPLOS/catalogo.css (el catálogo de Anxie
-   Store), pedido explícito del dueño el 28 ago 2026: "copia totalmente
-   la estructura moderna". Lo que se copió es la ESTRUCTURA — header de
-   dos filas (íconos + logo al centro + filtro / barra de navegación),
-   tarjeta abierta sin caja con etiqueta arriba y botón de ancho
-   completo abajo, modal de búsqueda, dropdown de orden, visor de zoom.
-   Los COLORES y la tipografía siguen siendo los de Taku Monky (las
-   variables de style.css), no el blanco/negro de Anxie: el dueño pidió
-   la estructura, no la paleta — y la paleta del proyecto es la regla
-   por defecto (ver CLAUDE.md → Design rules). La única excepción de
-   paleta documentada del sitio sigue siendo el carrusel del index, que
-   no toca este archivo.
-
-   Equivalencias con el archivo de referencia, por si hay que volver a
-   compararlos:
-     .catalog-header      → .tk-cat-header
-     .header-top-row      → .tk-cat-fila-top
-     .header-icon-btn     → .tk-cat-icono-btn
-     .catalog-nav         → .tk-cat-nav
-     .product-grid        → .tk-cat-grid
-     .product-card        → .tk-cat-tarjeta
-     .platform-badge      → .tk-cat-etiqueta
-     .image-container     → .tk-cat-foto
-     .btn-buy             → .tk-cat-btn
-     .filter-menu         → .tk-cat-filtro-menu
-     .search-modal-*      → .tk-cat-busqueda-*
-     .image-zoom-*        → .tk-cat-zoom-*
+   Estructura calcada del catálogo de Anxie Store (pedido del dueño el
+   28 ago 2026: "copia totalmente la estructura moderna"); los colores
+   y la tipografía son las variables de style.css.
    ================================================================ */
 
 :root {
@@ -62,23 +32,13 @@ body.tk-sin-scroll { overflow: hidden; }
 /* ================================================================
    HEADER STICKY (fila de íconos + fila de navegación)
    ================================================================
-   Esta es "la navbar totalmente diferente" que pidió el dueño: en
-   index.html la barra es .tk-navbar, flotante y transparente sobre la
-   foto del hero (texto blanco sobre un degradado oscuro). Aquí no hay
-   hero: esa barra quedaba como una mancha gris encima del fondo crema.
-   La reemplaza este header sólido tipo catálogo, que además es donde
-   viven la lupa y el filtro nuevos.
-
-   OJO: estas páginas ya NO incluyen el marcado de .tk-navbar, así que
-   sus reglas en style.css simplemente no aplican aquí — no hay que
-   anularlas. Lo mismo con .tk-fila-volver ("Volver al inicio"): salió
-   sobrando en cuanto la navegación ganó su propio enlace "Inicio". */
+   Header sólido tipo catálogo: aquí viven la lupa, el filtro y las
+   anclas a las 3 secciones. */
 .tk-cat-header {
   position: sticky;
   top: 0;
   /* Por debajo del sidebar móvil (950) y su overlay (900), que viven en
-     style.css, para que el panel deslizante siga tapando el header como
-     en index.html. Los modales de este archivo van más arriba todavía
+     style.css, para que el panel deslizante tape el header. Los modales de este archivo van más arriba todavía
      (ver .tk-cat-busqueda / .tk-cat-zoom). */
   z-index: 500;
   width: 100%;
@@ -140,10 +100,8 @@ body.tk-sin-scroll { overflow: hidden; }
   outline-offset: 2px;
 }
 
-/* Hamburguesa: mismo id (#tk-menu-boton) que en index.html para que
-   iniciarNavbar() de catalogo.js la enganche sin cambios, pero con
-   clase propia — la .tk-menu-boton de style.css es blanca (pensada
-   para el navbar oscuro del hero) y aquí el fondo es crema. */
+/* Hamburguesa: iniciarNavbar() (catalogo.js) la engancha por su id,
+   #tk-menu-boton. */
 .tk-cat-hamburguesa {
   display: none;
   flex-direction: column;
@@ -168,8 +126,7 @@ body.tk-sin-scroll { overflow: hidden; }
 
 /* Marca del centro. La referencia solo pone el logo circular; aquí va
    logo + "Taku monky" en Georgia italic, que es el tratamiento de la
-   marca en TODO el sitio (navbar, sidebar, footer, panel) y no se
-   toca. El texto se esconde en pantallas angostas para que la fila no
+   marca en todo el sitio (sidebar, footer) y no se toca. El texto se esconde en pantallas angostas para que la fila no
    se apriete — ahí queda solo el logo, como en la referencia. */
 .tk-cat-marca {
   display: flex;
@@ -199,10 +156,8 @@ body.tk-sin-scroll { overflow: hidden; }
    encabezado" que el proyecto ya usa para la cabecera de la tabla del
    panel. Mismo papel, tono del proyecto.
 
-   4 enlaces (Inicio · Platillos · Bebidas · Postres) en vez de los 3 de
-   la referencia — pedido explícito del dueño. Por eso NO se copió su
-   grid de 3 columnas: aquí es un flex centrado, que se acomoda igual
-   con cualquier cantidad de enlaces. */
+   Las anclas a las 3 secciones van en un flex centrado, que se acomoda
+   igual con cualquier cantidad de enlaces. */
 .tk-cat-nav-caja {
   width: 100%;
   background: var(--header-tabla);
@@ -229,9 +184,7 @@ body.tk-sin-scroll { overflow: hidden; }
   white-space: nowrap;
   transition: color .25s ease;
 }
-/* Subrayado dorado que crece — mismo mecanismo y mismo --acento2 que
-   .tk-nav-link::after en style.css, para que la navegación del sitio se
-   sienta la misma aunque la barra sea otra. */
+/* Subrayado dorado que crece al pasar el cursor. */
 .tk-cat-nav a::after {
   content: '';
   position: absolute;
@@ -247,8 +200,6 @@ body.tk-sin-scroll { overflow: hidden; }
 }
 .tk-cat-nav a:hover { color: var(--oscuro2); }
 .tk-cat-nav a:hover::after { width: 100%; }
-.tk-cat-nav a.tk-cat-nav--activo { color: var(--oscuro2); }
-.tk-cat-nav a.tk-cat-nav--activo::after { width: 100%; }
 
 /* ================================================================
    MENÚ DE FILTROS (dropdown "Ordenar por")
@@ -343,6 +294,11 @@ body.tk-sin-scroll { overflow: hidden; }
   min-height: 62vh;
 }
 
+/* Una sección por categoría. El scroll-margin deja libre el header
+   sticky al saltar con las anclas (#platillos, #bebidas, #postres). */
+.tk-cat-seccion { scroll-margin-top: calc(var(--cat-header-alto) + 16px); }
+.tk-cat-seccion + .tk-cat-seccion { margin-top: 88px; }
+
 /* Alineado a la izquierda como .shop-all-title en la referencia (el
    diseño anterior lo tenía centrado). El título se queda en Georgia
    italic: es la tipografía de display del sitio entero y del panel, no
@@ -435,13 +391,9 @@ body.tk-sin-scroll { overflow: hidden; }
 /* ================================================================
    TARJETA DE PLATILLO (versión catálogo)
    ================================================================
-   Cambio de forma que pidió el dueño. Antes: una caja cerrada
-   (.tk-tarjeta en style.css, con fondo, borde y todo adentro). Ahora,
-   como .product-card de la referencia: sin caja ni borde: etiqueta
+   Como .product-card de la referencia: sin caja ni borde, etiqueta
    arriba, foto suelta, texto debajo y un botón de ancho completo al
-   pie. Es una definición APARTE, no un reemplazo de .tk-tarjeta:
-   esa se sigue usando tal cual en los previews de index.html y no debe
-   cambiar (el dueño está afinando el index por su cuenta). */
+   pie. */
 .tk-cat-tarjeta {
   display: flex;
   flex-direction: column;
@@ -847,18 +799,9 @@ body.tk-sin-scroll { overflow: hidden; }
   .tk-cat-encabezado { margin-bottom: 30px; }
 }
 
-/* Esconder/mostrar al hacer scroll — mismo mecanismo que
-   .tk-navbar--oculta en style.css (el listener vive en
-   iniciarNavbar(), catalogo.js, compartido por las 4 páginas). Pedido
-   del dueño (4 sep 2026): "igual que la navbar del index".
-   A propósito en su propio @media (max-width: 640px) y NO dentro del
-   bloque de 860px de arriba: 640 es el corte que usa esMovil() en el
-   JS, así que este número tiene que coincidir con ESE, no con los
-   otros cortes (860/680/620) de este archivo — si algún día cambia
-   uno, hay que revisar el otro. .tk-cat-header sigue siendo
-   position:sticky (no se toca); una vez "pegado" arriba pinta igual
-   que fixed, así que el transform lo desliza fuera sin dejar hueco:
-   el contenido de abajo ya venía scrolleando por debajo de él. */
+/* Esconder/mostrar al hacer scroll (el listener vive en
+   iniciarNavbar(), catalogo.js). 640px es el corte de esMovil() en el
+   JS: si cambia uno, hay que cambiar el otro. */
 @media (max-width: 640px) {
   .tk-cat-header { transition: transform .35s ease; }
   .tk-cat-header--oculta { transform: translateY(-100%); }

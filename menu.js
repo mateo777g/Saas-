@@ -1,17 +1,8 @@
 // ================================================================
-// menu.js — lógica de las páginas de categoría del menú público
-// Lo cargan SOLO: menu-platillos.html, menu-bebidas.html,
-// menu-postres.html. index.html NO lo carga.
-//
-// Mismo criterio de separación que carrusel.js (que es solo del
-// index): catalogo.js es el archivo COMPARTIDO por las 4 páginas —
-// cliente de Supabase, caché, navbar/sidebar, helpers y la tarjeta de
-// los previews del index — y cada "isla" que existe en unas páginas y
-// no en otras vive en su propio archivo. Aquí adentro está todo lo
-// que la referencia EJEMPLOS/catalogo.html traía en un <script>
-// inline: render de la cuadrícula, orden/filtro, búsqueda y visor de
-// foto grande. Inline no era opción: son 3 páginas idénticas y se
-// habría copiado el mismo código tres veces.
+// menu.js — el menú completo de index.html
+// Pinta las 3 secciones de la página (Platillos, Bebidas, Postres) con
+// sus tarjetas, el orden ("Ordenar por"), la búsqueda y el visor de
+// foto grande.
 //
 // DEPENDE de globals de catalogo.js, así que en el HTML
 // <script src="catalogo.js"> va SIEMPRE antes que este archivo:
@@ -20,24 +11,10 @@
 //   htmlEstadoVacio, urlWhatsAppPlatillo.
 // ================================================================
 
-// Página de cada categoría — para que la búsqueda pueda mandar al
-// visitante a la categoría correcta cuando el resultado no vive en la
-// página donde está parado.
-const _CAT_PAGINAS = {
-  Platillos: "menu-platillos.html",
-  Bebidas: "menu-bebidas.html",
-  Postres: "menu-postres.html",
-};
-
 // Criterios del dropdown "Ordenar por". `null` = dejar la lista tal
 // como viene de la consulta, que ya está ordenada por `orden` y luego
 // `id` (o sea: el orden que el dueño acomodó en el panel). Por eso el
 // valor por defecto se llama "Recomendado" y no "Predeterminado".
-//
-// A propósito NO se copió el "Más Recientes" de la referencia: pediría
-// created_at, una columna que _COLUMNAS de catalogo.js no trae, y en un
-// menú "lo más nuevo" importa mucho menos que el orden que el dueño
-// decidió a mano.
 const _CAT_ORDENES = {
   recomendado: null,
   "precio-asc": (a, b) => Number(a.precio) - Number(b.precio),
@@ -54,9 +31,8 @@ const _CAT_ICONO_WA =
 const _CAT_ICONO_LUPA =
   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7.5"/><line x1="20.5" y1="20.5" x2="16.5" y2="16.5"/></svg>';
 
-/** Igual que normalizarTexto() de EJEMPLOS/catalogo.html: minúsculas y
- * sin acentos, para que "cafe" encuentre "Café" y "jamaica" encuentre
- * "Agua de Jamaica" sin que el cliente tenga que escribir el acento. */
+/** Minúsculas y sin acentos, para que "cafe" encuentre "Café" y
+ * "jamaica" encuentre "Agua de Jamaica" sin escribir el acento. */
 function _catNormalizar(texto) {
   return String(texto == null ? "" : texto)
     .toLowerCase()
@@ -65,22 +41,14 @@ function _catNormalizar(texto) {
 }
 
 function _catImagen(platillo) {
-  // Mismo fallback que menu_view.py y que tarjetaPlatilloHTML() de
-  // catalogo.js: sin foto se ve el placeholder del proyecto, no un
-  // ícono roto.
+  // Mismo fallback que menu_view.py: sin foto se ve el placeholder del
+  // proyecto, no un ícono roto.
   return escapeHtml(platillo.image_url || "assets/sin-foto.png");
 }
 
 // ----------------------------------------------------------------
-// LA tarjeta de la página de catálogo — versión "abierta" (sin caja),
-// calcada de .product-card de EJEMPLOS/catalogo.css: etiqueta arriba,
+// La tarjeta del menú — versión "abierta" (sin caja): etiqueta arriba,
 // foto, texto y botón de ancho completo al pie.
-//
-// Es una definición SEPARADA de tarjetaPlatilloHTML() de catalogo.js a
-// propósito: esa otra sigue siendo la tarjeta de los previews de
-// index.html, que el dueño está afinando por su cuenta y este rediseño
-// no debe tocar. Cada una está definida UNA sola vez, que es la regla
-// que importa (no repetir marcado entre páginas).
 // ----------------------------------------------------------------
 function tarjetaCatalogoHTML(platillo) {
   const nombre = escapeHtml(platillo.nombre || "");
@@ -108,15 +76,13 @@ function tarjetaCatalogoHTML(platillo) {
   `;
 }
 
-/** Resultado compacto del modal de búsqueda — equivalente de
- * .search-result-item de la referencia. Lleva el chip dorado de
- * categoría porque la búsqueda mezcla las 3 (a diferencia de la
- * cuadrícula, donde todas son la misma). */
+/** Resultado compacto del modal de búsqueda. Lleva el chip de
+ * categoría porque la búsqueda mezcla las 3. */
 function _catResultadoHTML(platillo) {
   const nombre = escapeHtml(platillo.nombre || "");
   const categoria = escapeHtml(platillo.categoria || "");
   return `
-    <a class="tk-cat-resultado" href="#" data-id="${platillo.id}" data-categoria="${categoria}">
+    <a class="tk-cat-resultado" href="#platillo-${platillo.id}" data-id="${platillo.id}">
       <img class="tk-cat-resultado-foto" src="${_catImagen(platillo)}" alt="${nombre}"
            loading="lazy" onerror="this.onerror=null; this.src='assets/sin-foto.png';">
       <span class="tk-cat-resultado-nombre">${nombre}</span>
@@ -129,14 +95,9 @@ function _catResultadoHTML(platillo) {
 }
 
 // ----------------------------------------------------------------
-// Marcado de los dos modales (búsqueda y foto grande).
-//
-// Se inyecta desde aquí en vez de escribirlo en cada .html: son 3
-// páginas idénticas y dejarlo en el HTML significaría mantener el
-// mismo bloque tres veces (que es justo lo que este proyecto evita con
-// la tarjeta). El marcado que SÍ se queda en cada .html es el que
-// cambia de página a página o tiene que verse sin JS: header,
-// navegación, sidebar y footer.
+// Marcado de los dos modales (búsqueda y foto grande). Se inyecta
+// desde aquí para que index.html se quede con lo que tiene que verse
+// sin JS: header, secciones, sidebar y footer.
 // ----------------------------------------------------------------
 function _catMontarModales() {
   const html = `
@@ -169,54 +130,64 @@ function _catMontarModales() {
 }
 
 // ----------------------------------------------------------------
-// Punto de entrada — cada página de categoría llama a
-// iniciarCatalogo("Platillos" | "Bebidas" | "Postres").
+// Punto de entrada — index.html llama a iniciarMenu().
 // ----------------------------------------------------------------
-async function iniciarCatalogo(categoria) {
-  const grid = document.getElementById("contenedor-grid");
-  const conteo = document.getElementById("subtitulo-categoria");
-  if (!grid) return;
+async function iniciarMenu() {
+  const main = document.querySelector(".tk-cat-main");
+  const estado = document.getElementById("estado-menu");
+  const secciones = [...document.querySelectorAll(".tk-cat-seccion[data-categoria]")];
+  if (!main || !estado || !secciones.length) return;
 
   _catMontarModales();
 
-  // Lista COMPLETA del catálogo (las 3 categorías) — la búsqueda mira
-  // todo el menú, no solo la página abierta: un cliente parado en
-  // Platillos que escribe "frappe" debe encontrarlo igual.
+  // Lista COMPLETA del catálogo (la usa la búsqueda) y la misma lista
+  // repartida por categoría, en el orden que trae la consulta. El
+  // criterio de orden se aplica siempre sobre una copia, así
+  // "Recomendado" puede volver sin reconsultar.
   let _catalogo = [];
-  // Lista de ESTA categoría, en el orden que trae la consulta. El
-  // criterio de orden se aplica siempre sobre una copia de esta, así
-  // "Recomendado" puede volver sin tener que reconsultar.
-  let _deLaCategoria = [];
+  let _grupos = {};
   let _orden = _CAT_ORDEN_DEFECTO;
+  let _cargado = false;
 
-  // ---------------- Cuadrícula ----------------
-  function pintarGrid() {
-    if (!_deLaCategoria.length) {
-      grid.className = "";
-      grid.innerHTML = htmlEstadoVacio(categoria);
-      return;
-    }
+  // ---------------- Secciones ----------------
+  function pintarSecciones() {
     const comparador = _CAT_ORDENES[_orden];
-    const lista = comparador ? [..._deLaCategoria].sort(comparador) : _deLaCategoria;
-    grid.className = "tk-cat-grid";
-    grid.innerHTML = lista.map(tarjetaCatalogoHTML).join("");
+    for (const seccion of secciones) {
+      const categoria = seccion.dataset.categoria;
+      const items = _grupos[categoria] || [];
+      const contenido = seccion.querySelector(".tk-cat-contenido");
+      const conteo = seccion.querySelector(".tk-cat-conteo");
+      if (conteo) conteo.textContent = textoContador(categoria, items.length);
+      if (!items.length) {
+        contenido.className = "tk-cat-contenido";
+        contenido.innerHTML = htmlEstadoVacio(categoria);
+        continue;
+      }
+      const lista = comparador ? [...items].sort(comparador) : items;
+      contenido.className = "tk-cat-contenido tk-cat-grid";
+      contenido.innerHTML = lista.map(tarjetaCatalogoHTML).join("");
+    }
   }
 
   async function cargar(forzar = false) {
     try {
       _catalogo = await obtenerCatalogo({ forzar });
-      _deLaCategoria = agruparPorCategoria(_catalogo)[categoria] || [];
-      if (conteo) conteo.textContent = textoContador(categoria, _deLaCategoria.length);
-      pintarGrid();
+      _grupos = agruparPorCategoria(_catalogo);
+      pintarSecciones();
+      estado.hidden = true;
+      secciones.forEach((s) => (s.hidden = false));
+      _cargado = true;
       // Si el modal está abierto durante un refresco automático, sus
       // resultados también se actualizan — si no, se quedaría mostrando
       // un platillo que el dueño acaba de ocultar desde el panel.
       if (modalBusqueda.classList.contains("tk-activo")) buscar(input.value);
     } catch (e) {
-      console.error("[menu] error cargando la categoría", categoria, e);
-      if (conteo) conteo.textContent = "";
-      grid.className = "";
-      grid.innerHTML = htmlEstadoError();
+      console.error("[menu] error cargando el menú", e);
+      // Si el menú ya se ve, un refresco fallido no lo borra: se queda
+      // lo último que se leyó y el siguiente refresco lo corrige.
+      if (_cargado) return;
+      estado.innerHTML = htmlEstadoError();
+      estado.hidden = false;
     }
   }
 
@@ -232,7 +203,6 @@ async function iniciarCatalogo(categoria) {
       e.stopPropagation();
       menuFiltro.classList.toggle("tk-activo");
     });
-    // Clic fuera = cerrar, igual que la referencia.
     document.addEventListener("click", (e) => {
       if (!menuFiltro.contains(e.target) && !botonFiltro.contains(e.target)) {
         menuFiltro.classList.remove("tk-activo");
@@ -247,7 +217,7 @@ async function iniciarCatalogo(categoria) {
           cajaFiltro.classList.toggle("tk-cat-filtrado", _orden !== _CAT_ORDEN_DEFECTO);
         }
         menuFiltro.classList.remove("tk-activo");
-        pintarGrid();
+        if (_cargado) pintarSecciones();
       });
     });
   }
@@ -294,23 +264,15 @@ async function iniciarCatalogo(categoria) {
   });
   input.addEventListener("input", (e) => buscar(e.target.value));
 
-  // Un resultado puede vivir en ESTA página o en otra categoría:
-  //  - misma categoría → cerrar el modal y bajar a la tarjeta.
-  //  - otra categoría  → ir a su página con #platillo-N, que esa página
-  //    resuelve sola al cargar (ver saltarAlPlatillo más abajo).
+  // Todo el menú vive en esta página: un resultado cierra el modal y
+  // baja a su tarjeta.
   gridBusqueda.addEventListener("click", (e) => {
     const item = e.target.closest(".tk-cat-resultado");
     if (!item) return;
     e.preventDefault();
     const id = item.dataset.id;
-    const cat = item.dataset.categoria;
-    if (cat === categoria) {
-      cerrarBusqueda();
-      setTimeout(() => saltarAlPlatillo(id), 160);
-    } else {
-      const pagina = _CAT_PAGINAS[cat];
-      if (pagina) window.location.href = `${pagina}#platillo-${id}`;
-    }
+    cerrarBusqueda();
+    setTimeout(() => saltarAlPlatillo(id), 160);
   });
 
   function saltarAlPlatillo(id) {
@@ -341,7 +303,7 @@ async function iniciarCatalogo(categoria) {
     zoomImg.style.transformOrigin = "center center";
   }
 
-  grid.addEventListener("click", (e) => {
+  main.addEventListener("click", (e) => {
     const foto = e.target.closest(".tk-cat-foto");
     if (!foto) return;
     const img = foto.querySelector("img");
@@ -392,9 +354,15 @@ async function iniciarCatalogo(categoria) {
   // ---------------- Arranque ----------------
   await cargar();
 
-  // Llegada desde la búsqueda de otra categoría (menu-bebidas.html#platillo-2).
+  // Enlace directo a un platillo (index.html#platillo-2) o a una
+  // sección (#bebidas): las secciones estaban ocultas hasta ahora, así
+  // que el navegador no pudo saltar solo al abrir la página.
   const anclaId = (location.hash.match(/^#platillo-(\d+)$/) || [])[1];
   if (anclaId) setTimeout(() => saltarAlPlatillo(anclaId), 220);
+  else if (location.hash.length > 1) {
+    const destino = document.getElementById(location.hash.slice(1));
+    if (destino) destino.scrollIntoView();
+  }
 
   iniciarAutoRefresco(cargar);
 }

@@ -14,6 +14,12 @@
   --sobre-hueco: #FFFFFF;
   --velo: rgba(10, 10, 11, 0.45);
   --capa-video: rgba(10, 10, 11, 0.4);
+  /* Los resortes del carrusel de la sección 3 (de Motion), muestreados en 20 tramos: el de las tarjetas
+     (bounce 0.1 en 0.25 s) y el de la pista cuando la sueltas después de arrastrar (rigidez 200, freno 40) */
+  --resorte: linear(0, 0.0698, 0.2176, 0.3835, 0.5372, 0.6662, 0.7677, 0.8438, 0.8986, 0.9367, 0.9623, 0.9789,
+    0.9893, 0.9954, 0.9989, 1.0006, 1.0013, 1.0015, 1.0014, 1.0012, 1);
+  --resorte-regreso: linear(0, 0.0794, 0.2179, 0.3532, 0.4701, 0.5675, 0.6474, 0.7127, 0.7659, 0.8093, 0.8446,
+    0.8734, 0.8969, 0.916, 0.9316, 0.9443, 0.9546, 0.963, 0.9699, 0.9755, 1);
   --letra: 'Outfit', 'Avenir Next', 'Segoe UI', system-ui, sans-serif;
   --margen: 28px;
   --alto-barra: 88px;
@@ -401,6 +407,133 @@ body {
   opacity: var(--aparecer);
   transform: translateY(calc((1 - var(--aparecer)) * 24px));
   transition: opacity 120ms linear, transform 120ms linear;
+  width: 100%;
+}
+
+/* Las vistas del panel (vistas.js), del componente Coverflow Carousel: llenan la hoja, centradas a lo alto,
+   sobre su blanco. Las tarjetas tienen la forma de las capturas (1919×1003) y son más grandes que las del
+   ejemplo (280×220): el 30 % del ancho de la pantalla (en celular, el 76 % hasta 300 px), y menos si la
+   pantalla es muy bajita para que quepan con el texto y los botones. El arreglo crece con ellas: el ejemplo,
+   con su tarjeta de 280 px de ancho, las separa 220 px, manda cada lugar 180 px al fondo y las mira con una
+   perspectiva de 1200 px desde 26 px más abajo de su centro. Esquinas, borde y sombra quedan como en el ejemplo. */
+.vistas {
+  --ancho: max(min(76vw, 300px), min(30vw, (100svh - 380px) * 1.9));
+  --alto: calc(var(--ancho) * 1003 / 1919);
+  --espacio: calc(var(--ancho) * 220 / 280);
+  --hondo: calc(var(--ancho) * 180 / 280);
+  box-sizing: border-box;
+  min-height: 100vh;
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  overflow-x: clip; /* las de las orillas no ensanchan la página */
+  -webkit-user-select: none;
+  user-select: none;
+  outline: none;
+}
+.vistas-escenario {
+  perspective: calc(var(--ancho) * 1200 / 280);
+  perspective-origin: 50% calc(50% + var(--ancho) * 26 / 280);
+}
+/* La que se arrastra (vistas.js); al soltarla regresa a su lugar con el resorte de regreso */
+.vistas-pista {
+  position: relative;
+  height: calc(var(--alto) + 100px);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  transform-style: preserve-3d;
+  touch-action: pan-y;
+  transition: transform 0.7s var(--resorte-regreso);
+}
+.vistas-pista[data-arrastrando] { transition: none; }
+.vistas-tarjeta {
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  box-sizing: border-box;
+  width: var(--ancho);
+  height: var(--alto);
+  overflow: hidden;
+  border: 1px solid rgba(10, 10, 11, 0.1);
+  border-radius: 16px;
+  background: var(--fondo);
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+  transition: transform 0.25s var(--resorte), opacity 0.25s var(--resorte);
+}
+.vistas-tarjeta[hidden] { display: none; }
+.vistas-tarjeta img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* El texto de la vista del frente, arriba de los botones */
+.vistas-textos {
+  display: grid;
+  width: min(34em, calc(100% - 2 * var(--margen)));
+  margin: 16px auto 0;
+  text-align: center;
+}
+.vistas-texto { grid-area: 1 / 1; visibility: hidden; }
+.vistas-texto[data-dentro] { visibility: visible; }
+.vistas-texto h2 {
+  margin: 0;
+  font-weight: 500;
+  font-size: clamp(1.625rem, 3.4vw, 3rem);
+  line-height: 1.2;
+  letter-spacing: -0.025em;
+}
+.vistas-texto p {
+  margin: 12px auto 0;
+  max-width: 26em;
+  font-size: clamp(0.9375rem, 1.1vw, 1.125rem);
+  line-height: 1.6;
+  color: var(--tinta-suave);
+  text-wrap: balance;
+}
+
+/* Anterior y Siguiente, como los del ejemplo: blancos con borde gris; al picarlos se encogen un poco */
+.vistas-botones {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  margin-top: 28px;
+}
+.boton-vistas {
+  box-sizing: border-box;
+  height: 36px;
+  padding: 0 16px;
+  border: 1px solid #E5E5E5;
+  border-radius: 8px;
+  background: var(--fondo);
+  color: var(--tinta);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 20px;
+  white-space: nowrap;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  cursor: pointer;
+  transition: transform 150ms ease-out;
+}
+.boton-vistas:hover { background: #F5F5F5; }
+.boton-vistas:active { transform: scale(0.97); }
+.boton-vistas:focus-visible { outline: 2px solid #A1A1A1; outline-offset: 2px; }
+
+/* Solo para lectores de pantalla */
+.solo-lector {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
 }
 
 @media (max-width: 760px) {
@@ -431,4 +564,7 @@ body {
   .barra[data-abierto] .submenu li { animation: none; }
   .rueda span { transition: none; }
   :is(.texto-centro, .texto-lado) :is(h2, p, .texto-boton) { transform: none; }
+  /* El carrusel sin giros ni fondo: las vistas cambian de golpe (vistas.js) */
+  .vistas-escenario { perspective: none; }
+  .vistas-pista, .vistas-tarjeta, .boton-vistas { transition: none; }
 }

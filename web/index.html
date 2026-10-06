@@ -11,6 +11,7 @@
 <script src="barra.js" defer></script>
 <script src="escena.js" defer></script>
 <script src="hoja.js" defer></script>
+<script src="vistas.js" defer></script>
 </head>
 <body>
 
@@ -99,7 +100,60 @@
   <section class="hoja">
     <div class="hoja-fija">
       <div class="hoja-contenido">
-        <!-- Lo de la sección 3: pendiente -->
+        <!-- Las vistas del panel (vistas.js): sus capturas en fila, la del frente derecha y las de los lados
+             giradas y más al fondo. Se pasan con los botones, las flechas del teclado o arrastrando a los lados.
+             Arriba de los botones va el texto de la del frente: el de vistas-textos con su mismo lugar en la
+             lista. Por ahora son capturas de prueba (web/prueba/, fuera de git). -->
+        <div class="vistas" role="region" aria-roledescription="carrusel" aria-label="Vistas del panel" tabindex="0">
+          <div class="vistas-escenario">
+            <ul class="vistas-pista">
+              <li class="vistas-tarjeta"><img src="prueba/vista-sesion.webp" alt="La pantalla para iniciar sesión en el panel" draggable="false"></li>
+              <li class="vistas-tarjeta"><img src="prueba/vista-inicio.webp" alt="La vista Inicio del panel" draggable="false"></li>
+              <li class="vistas-tarjeta"><img src="prueba/vista-menu.webp" alt="La vista Mi menú del panel" draggable="false"></li>
+              <li class="vistas-tarjeta"><img src="prueba/vista-mesas.webp" alt="La vista Mesas del panel" draggable="false"></li>
+              <li class="vistas-tarjeta"><img src="prueba/vista-agente.webp" alt="La vista Agente IA del panel" draggable="false"></li>
+              <li class="vistas-tarjeta"><img src="prueba/vista-contenido.webp" alt="La vista Crear contenido del panel" draggable="false"></li>
+              <li class="vistas-tarjeta"><img src="prueba/vista-biblioteca.webp" alt="La vista Mi biblioteca del panel" draggable="false"></li>
+            </ul>
+          </div>
+          <!-- Todos ocupan el mismo lugar y solo se ve el de la vista del frente: así los botones no brincan
+               cuando una descripción tiene más renglones que otra -->
+          <div class="vistas-textos">
+            <div class="vistas-texto">
+              <h2>Inicia sesión</h2>
+              <p>Entra con tu correo y tu contraseña para administrar tu restaurante.</p>
+            </div>
+            <div class="vistas-texto">
+              <h2>Inicio</h2>
+              <p>Lo vendido hoy, tus mesas, lo más vendido y lo último de tu menú, de un vistazo.</p>
+            </div>
+            <div class="vistas-texto">
+              <h2>Mi menú</h2>
+              <p>Agrega tus platillos con foto, precio y categoría, y ocúltalos cuando se agoten.</p>
+            </div>
+            <div class="vistas-texto">
+              <h2>Mesas</h2>
+              <p>Qué mesas están ocupadas, desde hace cuánto y cuánto llevan de cuenta.</p>
+            </div>
+            <div class="vistas-texto">
+              <h2>Agente IA</h2>
+              <p>Pregúntale lo que quieras de tu negocio: te responde con las cifras de tus ventas cerradas.</p>
+            </div>
+            <div class="vistas-texto">
+              <h2>Crear contenido</h2>
+              <p>Elige un platillo y el formato, y la IA arma tu anuncio para Instagram con los datos de tu negocio.</p>
+            </div>
+            <div class="vistas-texto">
+              <h2>Mi biblioteca</h2>
+              <p>Todos tus anuncios guardados por día, posts e historias, listos para descargar.</p>
+            </div>
+          </div>
+          <div class="vistas-botones">
+            <button type="button" class="boton-vistas" data-paso="-1" aria-label="Vista anterior">Anterior</button>
+            <button type="button" class="boton-vistas" data-paso="1" aria-label="Vista siguiente">Siguiente</button>
+          </div>
+          <p class="solo-lector" aria-live="polite"></p>
+        </div>
       </div>
     </div>
     <div class="hoja-enganche" aria-hidden="true"></div>

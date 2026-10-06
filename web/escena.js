@@ -1,7 +1,7 @@
 // escena.js — la escena del video en la página de Fragmentless (index.html).
 // Al bajar, el hueco del video se encoge y se gira de lado, el fondo se oscurece (y el video del panel
 // oscuro cambia al del panel claro) y sale el texto del centro; luego la tarjeta se va a la derecha
-// y sale el texto de la izquierda con su botón.
+// y sale el texto de la izquierda con su botón. Con mouse, la tarjeta además mira hacia el cursor.
 // La tarjeta y el fondo los mueve el scroll: cada cuadro se calcula de cuánto has bajado dentro de la
 // escena. Los textos no: al llegar a su momento entran solos, con el reloj (style.css), y al pasarlo se van.
 (() => {
@@ -33,6 +33,10 @@
   };
   // La perspectiva mide 3.75 veces el ancho de la tarjeta encogida (también medido).
   const PROFUNDIDAD = 3.75;
+  // La tarjeta mira hacia el cursor: se gira hasta estos grados de más, encima de su pose
+  // (x: hacia arriba o abajo, y: hacia los lados). No salta: lo persigue, y en `demora` ms
+  // recorre casi dos tercios del camino.
+  const MIRADA = { x: 10, y: 12, demora: 120 };
 
   // Tramos del recorrido: 0 es arriba de la escena y 1 el final.
   const TRAMOS = {
@@ -62,6 +66,7 @@
   }
 
   const limitar = (v) => Math.min(1, Math.max(0, v));
+  const deMenosAMasUno = (v) => Math.min(1, Math.max(-1, v));
   const tramo = (p, [desde, hasta]) => limitar((p - desde) / (hasta - desde));
   const adentro = (p, [desde, hasta]) => p >= desde && p < hasta;
   const suave = (t) => (t < 0.5 ? 4 * t * t * t : 1 - (-2 * t + 2) ** 3 / 2);
@@ -72,6 +77,9 @@
   };
 
   let pendiente = false;
+  let cursor = null; // dónde está el mouse en la pantalla; null = fuera de la página
+  const mirada = { x: 0, y: 0 }; // los grados de más que lleva ahorita
+  let ultimoCuadro = 0;
 
   function pintar() {
     pendiente = false;
@@ -103,9 +111,25 @@
       alLado,
       suave(tramo(p, TRAMOS.irseAlLado)),
     );
+
+    // Hacia dónde quiere mirar: el cursor respecto al centro de la tarjeta (a media pantalla de
+    // distancia, el giro completo). Crece conforme se encoge: a todo lo ancho, arriba, no se gira.
+    const metida = suave(tramo(p, TRAMOS.encoger)) * giro;
+    const meta = cursor
+      ? {
+          x: -deMenosAMasUno((cursor.y - pose.y) / (altoPantalla / 2)) * MIRADA.x * metida,
+          y: deMenosAMasUno((cursor.x - pose.x) / (anchoPantalla / 2)) * MIRADA.y * metida,
+        }
+      : { x: 0, y: 0 };
+    const ahora = performance.now();
+    const avance = 1 - Math.exp(-Math.min(ahora - ultimoCuadro, 34) / MIRADA.demora);
+    ultimoCuadro = ahora;
+    mirada.x += (meta.x - mirada.x) * avance;
+    mirada.y += (meta.y - mirada.y) * avance;
+
     video.style.transform =
       `translate(${pose.x - x0}px, ${pose.y - y0}px) perspective(${PROFUNDIDAD * k * ancho}px) ` +
-      `rotateX(${pose.rx}deg) rotateY(${pose.ry}deg) rotateZ(${pose.rz}deg) scale(${pose.k})`;
+      `rotateX(${pose.rx + mirada.x}deg) rotateY(${pose.ry + mirada.y}deg) rotateZ(${pose.rz}deg) scale(${pose.k})`;
     video.style.setProperty('--k', pose.k);
 
     // El eslogan se va, y con él la capa oscura que lo hace legible.
@@ -123,6 +147,9 @@
     // se va cuando la tarjeta empieza a moverse, y el de la izquierda entra cuando ya va llegando.
     centro.toggleAttribute('data-dentro', adentro(p, TEXTOS.centro));
     lado.toggleAttribute('data-dentro', adentro(p, TEXTOS.lado));
+
+    // Si la tarjeta todavía no llega a donde quiere mirar, sigue en el siguiente cuadro.
+    if (Math.abs(meta.x - mirada.x) > 0.01 || Math.abs(meta.y - mirada.y) > 0.01) pedirCuadro();
   }
 
   function pedirCuadro() {
@@ -135,5 +162,19 @@
   addEventListener('resize', pedirCuadro);
   celular.addEventListener('change', pedirCuadro);
   sinMovimiento.addEventListener('change', pedirCuadro);
+
+  // El cursor: solo el del mouse (con el dedo no hay hacia dónde mirar). Si sale de la página
+  // o la ventana pierde el foco, la tarjeta vuelve a su pose.
+  addEventListener('pointermove', (e) => {
+    if (e.pointerType !== 'mouse') return;
+    cursor = { x: e.clientX, y: e.clientY };
+    pedirCuadro();
+  }, { passive: true });
+  const olvidarCursor = () => {
+    cursor = null;
+    pedirCuadro();
+  };
+  document.documentElement.addEventListener('mouseleave', olvidarCursor);
+  addEventListener('blur', olvidarCursor);
   pintar();
 })();

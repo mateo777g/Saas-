@@ -9,62 +9,87 @@
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@200;400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
 <script src="barra.js" defer></script>
+<script src="escena.js" defer></script>
 </head>
 <body>
 
-<div class="pagina">
-  <header class="barra">
-    <div class="barra-fila">
-      <a class="logo" href="./">
-        <!-- ∫∫ acostada: girada 90°, una integral encima de la otra -->
-        <svg viewBox="104 25 322 350" aria-hidden="true">
-          <g fill="currentColor" transform="rotate(90 265 200)">
-            <path d="M 299.5 47.5 A 19 19 0 1 1 272.15 57.5 C 258 54 245 72 238 100 C 232 124 222 172 216 200 C 210 230 204 264 196 292 C 182 340 156 360 122 360 C 112 360 106 355.7 100.5 352.5 A 19 19 0 1 1 127.85 342.5 C 142 346 155 328 162 300 C 168 276 178 228 184 200 C 190 170 196 136 204 108 C 218 60 244 40 278 40 C 288 40 294 44.3 299.5 47.5 Z"></path>
-            <path transform="translate(130 0)" d="M 299.5 47.5 A 19 19 0 1 1 272.15 57.5 C 258 54 245 72 238 100 C 232 124 222 172 216 200 C 210 230 204 264 196 292 C 182 340 156 360 122 360 C 112 360 106 355.7 100.5 352.5 A 19 19 0 1 1 127.85 342.5 C 142 346 155 328 162 300 C 168 276 178 228 184 200 C 190 170 196 136 204 108 C 218 60 244 40 278 40 C 288 40 294 44.3 299.5 47.5 Z"></path>
-          </g>
-        </svg>
-        <span>fragmentless</span>
-      </a>
+<header class="barra">
+  <div class="barra-fila">
+    <a class="logo" href="./">
+      <!-- ∫∫ acostada: girada 90°, una integral encima de la otra -->
+      <svg viewBox="104 25 322 350" aria-hidden="true">
+        <g fill="currentColor" transform="rotate(90 265 200)">
+          <path d="M 299.5 47.5 A 19 19 0 1 1 272.15 57.5 C 258 54 245 72 238 100 C 232 124 222 172 216 200 C 210 230 204 264 196 292 C 182 340 156 360 122 360 C 112 360 106 355.7 100.5 352.5 A 19 19 0 1 1 127.85 342.5 C 142 346 155 328 162 300 C 168 276 178 228 184 200 C 190 170 196 136 204 108 C 218 60 244 40 278 40 C 288 40 294 44.3 299.5 47.5 Z"></path>
+          <path transform="translate(130 0)" d="M 299.5 47.5 A 19 19 0 1 1 272.15 57.5 C 258 54 245 72 238 100 C 232 124 222 172 216 200 C 210 230 204 264 196 292 C 182 340 156 360 122 360 C 112 360 106 355.7 100.5 352.5 A 19 19 0 1 1 127.85 342.5 C 142 346 155 328 162 300 C 168 276 178 228 184 200 C 190 170 196 136 204 108 C 218 60 244 40 278 40 C 288 40 294 44.3 299.5 47.5 Z"></path>
+        </g>
+      </svg>
+      <span>fragmentless</span>
+    </a>
 
-      <nav class="atajos" aria-label="Atajos">
-        <button type="button" class="atajo" aria-expanded="false" aria-controls="menu-productos">Productos</button>
-        <button type="button" class="atajo" aria-expanded="false" aria-controls="menu-soluciones">Soluciones</button>
-        <button type="button" class="atajo" aria-expanded="false" aria-controls="menu-acerca">Acerca de</button>
-      </nav>
+    <nav class="atajos" aria-label="Atajos">
+      <button type="button" class="atajo" aria-expanded="false" aria-controls="menu-productos">Productos</button>
+      <button type="button" class="atajo" aria-expanded="false" aria-controls="menu-soluciones">Soluciones</button>
+      <button type="button" class="atajo" aria-expanded="false" aria-controls="menu-acerca">Acerca de</button>
+    </nav>
 
-      <div class="acciones">
-        <a class="boton boton-borde" href="#">Iniciar Sesión</a>
-        <a class="boton boton-negro" href="#">Empieza</a>
+    <div class="acciones">
+      <a class="boton boton-borde" href="#">Iniciar Sesión</a>
+      <a class="boton boton-negro" href="#">Empieza</a>
+    </div>
+  </div>
+
+  <!-- Lo que se despliega al tocar un atajo: la barra crece hacia abajo -->
+  <div class="despliegue">
+    <div class="despliegue-dentro">
+      <ul class="submenu" id="menu-productos" hidden>
+        <li><a href="#">SaaS Restaurante</a></li>
+      </ul>
+      <ul class="submenu" id="menu-soluciones" hidden>
+        <li><a href="#">Planes</a></li>
+      </ul>
+      <ul class="submenu" id="menu-acerca" hidden>
+        <li><a href="#">Nosotros</a></li>
+        <li><a href="#">Contáctanos</a></li>
+      </ul>
+    </div>
+  </div>
+</header>
+
+<!-- Desenfoca la página mientras la barra está abierta -->
+<div class="velo" aria-hidden="true"></div>
+
+<main>
+  <!-- La escena (escena.js): al bajar, el hueco del video se encoge y se gira de lado, el fondo
+       se oscurece y sale el texto del centro; luego la tarjeta se va a la derecha y sale el de la izquierda. -->
+  <section class="escena" aria-label="Presentación">
+    <div class="escena-fija">
+      <div class="noche" aria-hidden="true"></div>
+
+      <!-- Los videos de la página van sin audio. Sobre el fondo blanco se ve el panel oscuro; al
+           oscurecerse la página entra el panel claro. Por ahora son grabaciones de prueba (web/prueba/,
+           fuera de git); los de verdad vendrán de R2 (carpeta web/). Sin video, el hueco se ve azul. -->
+      <div class="video">
+        <video class="video-dia" src="prueba/panel-oscuro.mp4" autoplay muted loop playsinline aria-hidden="true"></video>
+        <video class="video-noche" src="prueba/panel-claro.mp4" autoplay muted loop playsinline aria-hidden="true"></video>
+        <h1>Un mundo sin piezas sueltas.</h1>
+      </div>
+
+      <div class="texto-centro">
+        <h2>Presentamos nuestro nuevo SaaS.</h2>
+        <p class="se-enciende">Este producto está diseñado para restaurantes: menú, mesas, caja y cocina en un solo sistema.</p>
+      </div>
+
+      <div class="texto-lado">
+        <h2>Moderniza tu negocio.</h2>
+        <p class="se-enciende">Compra la licencia ya mismo y disfruta del sistema.</p>
+        <a class="boton boton-azul" href="#">
+          Comprar licencia
+          <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M6 3.5 10.5 8 6 12.5"></path></svg>
+        </a>
       </div>
     </div>
-
-    <!-- Lo que se despliega al tocar un atajo: la barra crece hacia abajo -->
-    <div class="despliegue">
-      <div class="despliegue-dentro">
-        <ul class="submenu" id="menu-productos" hidden>
-          <li><a href="#">SaaS Restaurante</a></li>
-        </ul>
-        <ul class="submenu" id="menu-soluciones" hidden>
-          <li><a href="#">Planes</a></li>
-        </ul>
-        <ul class="submenu" id="menu-acerca" hidden>
-          <li><a href="#">Nosotros</a></li>
-          <li><a href="#">Contáctanos</a></li>
-        </ul>
-      </div>
-    </div>
-  </header>
-
-  <!-- Desenfoca la página mientras la barra está abierta -->
-  <div class="velo" aria-hidden="true"></div>
-
-  <main>
-    <!-- Aquí va el video (R2, carpeta web/). Mientras, el hueco es negro. -->
-    <section class="video" aria-label="Video de presentación">
-      <h1>Un mundo sin piezas sueltas.</h1>
-    </section>
-  </main>
-</div>
+  </section>
+</main>
 
 </body>
 </html>

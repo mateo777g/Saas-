@@ -1,5 +1,5 @@
 // barra.js — la barra de la página de Fragmentless (index.html).
-// Al pasar el mouse o tocar un atajo, la barra crece y muestra su menú.
+// Al pasar el mouse o tocar un atajo, la barra crece y muestra su menú. Al bajar se esconde.
 (() => {
   const barra = document.querySelector('.barra');
   const nav = barra.querySelector('.atajos');
@@ -65,4 +65,20 @@
     if (activo) activo.focus();
   });
   addEventListener('resize', alinear);
+
+  // Al bajar, la barra se esconde hacia arriba; al subir, regresa. Abierta o con el foco
+  // del teclado adentro, se queda. Los saltitos de menos de 4 px no cuentan.
+  let ultimaY = scrollY;
+  addEventListener('scroll', () => {
+    const y = scrollY;
+    if (Math.abs(y - ultimaY) < 4) return;
+    const bajando = y > ultimaY;
+    ultimaY = y;
+    if (bajando && y > barra.offsetHeight && !('abierto' in barra.dataset) && !barra.contains(document.activeElement)) {
+      barra.dataset.escondida = '';
+    } else if (!bajando) {
+      delete barra.dataset.escondida;
+    }
+  }, { passive: true });
+  barra.addEventListener('focusin', () => { delete barra.dataset.escondida; });
 })();

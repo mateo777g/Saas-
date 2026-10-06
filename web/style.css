@@ -1,14 +1,19 @@
 /* style.css — la página de Fragmentless (index.html) */
 
-/* Barra blanca con el logo, los atajos (crece al tocar uno) y los botones a la derecha; debajo, el hueco del video con el eslogan al centro. */
+/* Barra blanca con el logo, los atajos (crece al tocar uno) y los botones a la derecha; debajo, la escena:
+   el hueco del video (azul) con el eslogan, que al bajar se gira de lado sobre fondo oscuro (escena.js). */
 :root {
   --fondo: #FFFFFF;
   --tinta: #0A0A0B;
   --tinta-suave: #6E6E73;
   --borde: #C9C9CC;
-  --hueco: #0A0A0B;
+  --azul: #1355E8;
+  --noche: #0A0A0B;
+  --barra-noche: #1C1C1E; /* gris un poco oscuro: la barra abierta, con su submenú, sobre la sección oscura */
+  --hueco: var(--azul);
   --sobre-hueco: #FFFFFF;
   --velo: rgba(10, 10, 11, 0.45);
+  --capa-video: rgba(10, 10, 11, 0.4);
   --letra: 'Outfit', 'Avenir Next', 'Segoe UI', system-ui, sans-serif;
   --margen: 28px;
   --alto-barra: 88px;
@@ -22,19 +27,30 @@ body {
   font-family: var(--letra);
 }
 
-.pagina {
-  padding-inline: var(--margen);
-  padding-block: 0 var(--margen);
-}
-
-/* Barra: mismo blanco que la página, de orilla a orilla */
+/* Barra: fija arriba, de orilla a orilla; al bajar se esconde y al subir regresa (barra.js) */
 .barra {
-  position: relative;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
   z-index: 10;
-  margin-inline: calc(-1 * var(--margen));
   padding-inline: var(--margen);
   background: var(--fondo);
+  transition: transform var(--abrir), background-color var(--abrir);
 }
+.barra[data-escondida] { transform: translateY(-100%); }
+
+/* Sobre la parte oscura de la escena, la barra es negra (escena.js pone data-noche);
+   al abrir un submenú, la barra entera se vuelve gris oscuro */
+:root[data-noche] body { background: var(--noche); }
+:root[data-noche] .barra {
+  --fondo: var(--noche);
+  --tinta: #FFFFFF;
+  --tinta-suave: #A1A1A6;
+  --borde: #3A3A3D;
+}
+:root[data-noche] .barra[data-abierto] { --fondo: var(--barra-noche); }
+
 .barra-fila {
   height: var(--alto-barra);
   display: flex;
@@ -49,6 +65,7 @@ body {
   color: var(--tinta);
   text-decoration: none;
   border-radius: 6px;
+  transition: color var(--abrir);
 }
 .logo svg { display: block; height: 22px; width: auto; } /* un poco más alto que la palabra */
 .logo span {
@@ -97,7 +114,7 @@ body {
   font-size: 14px;
   text-decoration: none;
   white-space: nowrap;
-  transition: border-color var(--abrir), color var(--abrir), opacity var(--abrir);
+  transition: background-color var(--abrir), border-color var(--abrir), color var(--abrir), opacity var(--abrir);
 }
 .boton-borde { border-color: var(--borde); color: var(--tinta-suave); }
 .boton-borde:hover { border-color: var(--tinta); color: var(--tinta); }
@@ -113,7 +130,7 @@ body {
   display: grid;
   grid-template-rows: 0fr;
   background: var(--fondo);
-  transition: grid-template-rows var(--abrir);
+  transition: grid-template-rows var(--abrir), background-color var(--abrir);
 }
 .barra[data-abierto] .despliegue { grid-template-rows: 1fr; }
 .despliegue-dentro { min-height: 0; overflow: hidden; }
@@ -185,19 +202,68 @@ body {
 }
 .barra[data-abierto] ~ .velo { opacity: 1; pointer-events: auto; }
 
-/* Hueco del video (por ahora negro) */
+/* La escena: mide 3.5 pantallas de scroll más la que se queda fija. Mientras la recorres,
+   lo de adentro no se mueve de la pantalla; escena.js lo acomoda según cuánto has bajado. */
+.escena { height: 450vh; }
+.escena-fija {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow: hidden;
+  background: var(--fondo);
+}
+.noche {
+  position: absolute;
+  inset: 0;
+  background: var(--noche);
+  opacity: 0;
+}
+
+/* Hueco del video (por ahora azul de la marca). Arranca debajo de la barra, a todo lo ancho;
+   escena.js lo encoge y lo gira sin cambiarle la forma. --k es cuánto lo encoge: las esquinas
+   crecen lo mismo para que en pantalla se vean siempre igual de redondas. */
 .video {
+  --radio: 16px;
+  position: absolute;
+  top: var(--alto-barra);
+  left: var(--margen);
+  right: var(--margen);
   height: calc(100vh - var(--alto-barra) - var(--margen));
   height: calc(100svh - var(--alto-barra) - var(--margen));
   min-height: 420px;
+  box-sizing: border-box;
   display: grid;
   place-items: center;
   padding-inline: 24px;
   background: var(--hueco);
-  border-radius: 16px;
+  border-radius: calc(var(--radio) / var(--k, 1));
   overflow: hidden;
+  will-change: transform;
+}
+/* Los videos llenan la tarjeta (recortando lo que sobre), uno encima del otro: el del panel claro
+   empieza invisible y entra cuando se oscurece la página (escena.js). El azul pasa a los videos
+   (se ve si no cargan): detrás de ellos asomaría por la orilla redonda. */
+.video:has(video) { background: none; }
+.video video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  background: var(--hueco);
+}
+.video .video-noche { opacity: 0; }
+/* Capa medio oscura para que se lea el eslogan; se va con él (--capa, escena.js) */
+.video::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--capa-video);
+  opacity: var(--capa, 1);
 }
 .video h1 {
+  position: relative;
+  z-index: 1; /* encima de la capa */
   margin: 0;
   color: var(--sobre-hueco);
   font-weight: 400;
@@ -208,6 +274,70 @@ body {
   text-wrap: balance;
 }
 
+/* Textos de la escena, blancos sobre lo oscuro. Empiezan invisibles; escena.js los va mostrando. */
+.texto-centro,
+.texto-lado {
+  position: absolute;
+  color: #FFFFFF;
+  opacity: 0;
+  visibility: hidden;
+}
+.escena h2 {
+  margin: 0;
+  font-weight: 400;
+  font-size: clamp(1.625rem, 1.7vw, 2.25rem);
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+  text-wrap: balance;
+}
+.escena p {
+  margin: 14px 0 0;
+  font-size: clamp(0.875rem, 0.74vw, 1rem);
+  line-height: 1.6;
+  color: rgba(255, 255, 255, 0.82);
+}
+
+/* El texto del centro va debajo de la tarjeta */
+.texto-centro {
+  top: 78vh;
+  top: 78svh;
+  left: var(--margen);
+  right: var(--margen);
+  text-align: center;
+}
+.texto-centro p {
+  max-width: 34em;
+  margin-inline: auto;
+  text-wrap: balance;
+}
+
+/* El de la izquierda, a media altura, cuando la tarjeta ya se fue a la derecha */
+.texto-lado {
+  top: 50%;
+  left: 9.3vw;
+  max-width: 30vw;
+  transform: translateY(-50%);
+}
+.texto-lado .boton { margin-top: 40px; }
+
+/* Las palabras de los párrafos se encienden una tras otra: --luz va de 0 a 1 (escena.js) */
+.se-enciende span {
+  opacity: calc(0.3 + 0.7 * clamp(0, var(--luz, 0) * var(--n) - var(--i), 1));
+}
+
+.boton-azul { gap: 8px; background: var(--azul); color: #FFFFFF; font-weight: 500; }
+.boton-azul:hover { opacity: 0.85; }
+.boton-azul svg {
+  width: 14px;
+  height: 14px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.escena .boton:focus-visible { outline-color: #FFFFFF; }
+
 @media (max-width: 760px) {
   /* En celular: logo y botones arriba; los atajos bajan a una segunda fila */
   :root { --margen: 16px; --alto-barra: 96px; }
@@ -217,7 +347,18 @@ body {
   .boton { height: 36px; padding-inline: 12px; font-size: 13px; }
   .atajo { padding-block: 8px; }
   .submenu a { font-size: 22px; }
-  .video { min-height: 380px; border-radius: 12px; }
+  .video { --radio: 12px; min-height: 380px; }
+  /* No cabe un texto al lado de la tarjeta: los dos textos salen debajo, uno después del otro */
+  .texto-centro { top: 66vh; top: 66svh; }
+  .texto-lado {
+    top: 66vh;
+    top: 66svh;
+    left: var(--margen);
+    right: var(--margen);
+    max-width: none;
+    transform: none;
+  }
+  .texto-lado .boton { margin-top: 28px; }
 }
 
 @media (prefers-reduced-motion: reduce) {

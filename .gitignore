@@ -24,6 +24,9 @@ clientes.json
 # Los anuncios que genera el panel (panel/biblioteca/): imágenes, no código.
 biblioteca/
 
+# Video de prueba de la página (web/prueba/): el de verdad vivirá en R2, nunca en el repo.
+web/prueba/
+
 # Por si la sesión del panel llegara a escribirse aquí por error.
 sesion.json
 

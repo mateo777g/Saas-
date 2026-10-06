@@ -45,17 +45,17 @@ body {
 .logo {
   display: inline-flex;
   align-items: center;
-  gap: 9px;
+  gap: 8px;
   color: var(--tinta);
   text-decoration: none;
   border-radius: 6px;
 }
-.logo svg { display: block; height: 31px; width: auto; }
+.logo svg { display: block; height: 22px; width: auto; } /* un poco más alto que la palabra */
 .logo span {
-  font-weight: 200;
+  font-weight: 400; /* mismo grosor que los atajos */
   font-size: 17px;
   line-height: 1;
-  letter-spacing: -0.2px;
+  letter-spacing: -0.31px; /* compensa lo que ensancha el 400: la palabra mide lo mismo que en 200 y nada se mueve */
 }
 
 .atajos {
@@ -131,12 +131,40 @@ body {
 }
 .submenu[hidden] { display: none; }
 .submenu a {
+  display: inline-block;
   color: var(--tinta);
   font-size: 24px;
   font-weight: 400;
   text-decoration: none;
 }
-.submenu a:hover { opacity: 0.6; }
+
+/* Al pasar el mouse por un submenú, cada letra rueda hacia arriba (una tras otra)
+   y desde abajo entra una copia: la sombra de la letra, 1.3em más abajo */
+.rueda {
+  display: inline-block;
+  height: 1.3em;
+  line-height: 1.3em;
+  overflow: hidden;
+  vertical-align: top;
+  white-space: nowrap;
+}
+.rueda span {
+  display: inline-block;
+  text-shadow: 0 1.3em currentColor;
+  transition: transform 0.35s cubic-bezier(0.6, 0, 0.2, 1);
+  transition-delay: calc(var(--i, 0) * 15ms);
+}
+@media (hover: hover) {
+  .submenu a:hover .rueda span { transform: translateY(-1.3em); }
+}
+.submenu a:focus-visible .rueda span { transform: translateY(-1.3em); }
+
+/* Al abrir la barra, los submenús suben un poco desde abajo */
+@keyframes subir {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: none; }
+}
+.barra[data-abierto] .submenu li { animation: subir 0.25s ease-out both; }
 
 .logo:focus-visible,
 .atajo:focus-visible,
@@ -194,4 +222,6 @@ body {
 
 @media (prefers-reduced-motion: reduce) {
   :root { --abrir: 0s; }
+  .barra[data-abierto] .submenu li { animation: none; }
+  .rueda span { transition: none; }
 }

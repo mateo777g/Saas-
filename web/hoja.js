@@ -31,9 +31,12 @@
     // Si lo de adentro mide más que la pantalla, el enganche la deja quieta por abajo, no cortada.
     fija.style.setProperty('--fija-arriba', `${Math.min(0, altoPantalla - fija.offsetHeight)}px`);
 
-    // Cuando la hoja (ya con su escala) pasa la mitad de la barra, la barra vuelve a ser blanca.
-    const debajoDeLaBarra = hoja.getBoundingClientRect().top <= filaBarra.offsetHeight / 2;
-    document.documentElement.toggleAttribute('data-hoja', debajoDeLaBarra);
+    // Desde que la hoja (ya con su escala) pasa la mitad de la barra y mientras siga debajo de ella, la barra
+    // se queda a la vista y negra, también con el submenú abierto (style.css). Pasada la hoja, vuelve a ser blanca.
+    const caja = hoja.getBoundingClientRect();
+    const mitadBarra = filaBarra.offsetHeight / 2;
+    document.documentElement.toggleAttribute('data-hoja', caja.top <= mitadBarra);
+    document.documentElement.toggleAttribute('data-en-hoja', caja.top <= mitadBarra && caja.bottom > mitadBarra);
   }
 
   function pedirCuadro() {

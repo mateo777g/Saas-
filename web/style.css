@@ -45,12 +45,16 @@ body {
   transition: transform var(--abrir), background-color var(--abrir);
 }
 .barra[data-escondida] { transform: translateY(-100%); }
+/* Al llegar la hoja de la sección 3, la barra regresa sola y no se esconde mientras estás en ella (hoja.js) */
+:root[data-en-hoja] .barra[data-escondida] { transform: none; }
 
 /* Sobre la parte oscura de la escena, la barra es negra (escena.js pone data-noche);
-   al abrir un submenú, la barra entera se vuelve gris oscuro. Cuando la hoja de la sección 3
-   pasa debajo de ella, vuelve a ser blanca (hoja.js pone data-hoja). */
+   al abrir un submenú, la barra entera se vuelve gris oscuro. Sobre la hoja blanca de la sección 3
+   sigue negra, y ahí con el submenú abierto también (hoja.js pone data-en-hoja): es la excepción.
+   Pasada la hoja, vuelve a ser blanca (hoja.js pone data-hoja). */
 :root[data-noche] body { background: var(--noche); }
-:root[data-noche]:not([data-hoja]) .barra {
+:root[data-noche]:not([data-hoja]) .barra,
+:root[data-en-hoja] .barra {
   --fondo: var(--noche);
   --tinta: #FFFFFF;
   --tinta-suave: #A1A1A6;
@@ -412,18 +416,20 @@ body {
 
 /* Las vistas del panel (vistas.js), del componente Coverflow Carousel: llenan la hoja, centradas a lo alto,
    sobre su blanco. Las tarjetas tienen la forma de las capturas (1919×1003) y son más grandes que las del
-   ejemplo (280×220): el 30 % del ancho de la pantalla (en celular, el 76 % hasta 300 px), y menos si la
+   ejemplo (280×220): el 34 % del ancho de la pantalla (en celular, el 80 % hasta 330 px), y menos si la
    pantalla es muy bajita para que quepan con el texto y los botones. El arreglo crece con ellas: el ejemplo,
    con su tarjeta de 280 px de ancho, las separa 220 px, manda cada lugar 180 px al fondo y las mira con una
    perspectiva de 1200 px desde 26 px más abajo de su centro. Esquinas, borde y sombra quedan como en el ejemplo. */
 .vistas {
-  --ancho: max(min(76vw, 300px), min(30vw, (100svh - 380px) * 1.9));
+  --ancho: max(min(80vw, 330px), min(34vw, (100svh - 380px) * 1.9));
   --alto: calc(var(--ancho) * 1003 / 1919);
   --espacio: calc(var(--ancho) * 220 / 280);
   --hondo: calc(var(--ancho) * 180 / 280);
   box-sizing: border-box;
   min-height: 100vh;
   min-height: 100svh;
+  /* En la sección 3 la barra siempre se ve: lo de adentro se centra en el blanco que queda debajo de ella */
+  padding-top: var(--alto-barra);
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -433,6 +439,9 @@ body {
   outline: none;
 }
 .vistas-escenario {
+  /* Lo que se centra va de la orilla de arriba de las tarjetas a los botones: el hueco vacío de 50 px
+     arriba de ellas (la pista mide su alto + 100 px) no cuenta */
+  margin-top: -50px;
   perspective: calc(var(--ancho) * 1200 / 280);
   perspective-origin: 50% calc(50% + var(--ancho) * 26 / 280);
 }
@@ -482,14 +491,14 @@ body {
 .vistas-texto h2 {
   margin: 0;
   font-weight: 500;
-  font-size: clamp(1.625rem, 3.4vw, 3rem);
+  font-size: clamp(1.375rem, 1.7vw, 2rem);
   line-height: 1.2;
   letter-spacing: -0.025em;
 }
 .vistas-texto p {
   margin: 12px auto 0;
   max-width: 26em;
-  font-size: clamp(0.9375rem, 1.1vw, 1.125rem);
+  font-size: clamp(0.875rem, 0.85vw, 1rem);
   line-height: 1.6;
   color: var(--tinta-suave);
   text-wrap: balance;

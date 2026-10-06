@@ -2,13 +2,17 @@
 // Al bajar, el hueco del video se encoge y se gira de lado, el fondo se oscurece (y el video del panel
 // oscuro cambia al del panel claro) y sale el texto del centro; luego la tarjeta se va a la derecha
 // y sale el texto de la izquierda con su botón. Con mouse, la tarjeta además mira hacia el cursor.
+// La tarjeta es la pantalla de una laptop: mientras se encoge le sale el marco y el teclado se desdobla
+// desde su orilla de abajo, y la laptop entera hace los mismos movimientos.
 // La tarjeta y el fondo los mueve el scroll: cada cuadro se calcula de cuánto has bajado dentro de la
 // escena. Los textos no: al llegar a su momento entran solos, con el reloj (style.css), y al pasarlo se van.
 (() => {
   const escena = document.querySelector('.escena');
   const fija = escena.querySelector('.escena-fija');
   const noche = escena.querySelector('.noche');
-  const video = escena.querySelector('.video');
+  const laptop = escena.querySelector('.laptop');
+  const video = laptop.querySelector('.video');
+  const teclado = laptop.querySelector('.teclado');
   const eslogan = video.querySelector('h1');
   const videoNoche = video.querySelector('.video-noche');
   const centro = escena.querySelector('.texto-centro');
@@ -37,6 +41,27 @@
   // (x: hacia arriba o abajo, y: hacia los lados). No salta: lo persigue, y en `demora` ms
   // recorre casi dos tercios del camino.
   const MIRADA = { x: 10, y: 12, demora: 120 };
+  // La bisagra: grados entre la pantalla y el teclado. Arriba, a todo lo ancho, el teclado está doblado
+  // hacia atrás, de canto detrás de la pantalla (no se ve); mientras la tarjeta se encoge baja y se abre.
+  const BISAGRA = { doblada: 270, abierta: 110 };
+  // Las teclas, fila por fila, como las de una laptop con teclado numérico a la derecha: lo que mide de
+  // ancho cada una, en teclas normales ("1*12" son doce de 1). Todas las filas miden 19. La de arriba
+  // (esc, las F y las de arriba del numérico) es más bajita. "1^" es una tecla alta, que baja a la fila
+  // de abajo (el + y el enter del numérico), y "_1" es el hueco que deja ahí. Las flechas van abajo a la
+  // derecha de las letras: ↑ junto al shift y ← ↓ → debajo, con el 1 del numérico encima de la →.
+  const TECLAS = {
+    filas: [
+      '1*19', // esc, F1–F12 … | inicio, fin, re pág, av pág
+      '1*13 2 1*4', // º 1 … = borrar | bloq num, /, *, -
+      '1.5 1*12 1.5 1*3 1^', // tab q … \ | 7 8 9, +
+      '1.75 1*11 2.25 1*3 _1', // mayús a … enter | 4 5 6
+      '2.25 1*10 1.75 1 1*3 1^', // shift z … shift, ↑ | 1 2 3, enter
+      '1.25 1 1 1.25 5 1 1 1.5 1*5 _1', // ctrl fn win alt espacio alt menú ctrl, ← ↓ → | 0 .
+    ],
+    numerico: 4, // lo que mide el teclado numérico: el trackpad va centrado debajo de lo demás
+    altoFunciones: 0.6, // la fila de arriba, respecto a las demás
+    junta: 0.16, // lo que queda entre tecla y tecla, en teclas
+  };
 
   // Tramos del recorrido: 0 es arriba de la escena y 1 el final.
   const TRAMOS = {
@@ -65,6 +90,42 @@
     p.parentElement.style.setProperty('--n', palabras.length);
   }
 
+  // Las teclas: cada una es un <span> acomodado en % dentro de .teclas, que mide lo que el teclado entero.
+  const cajaTeclas = teclado.querySelector('.teclas');
+  const anchoTeclas = 19;
+  const altoTeclas = TECLAS.altoFunciones + TECLAS.filas.length - 1;
+  teclado.style.setProperty('--proporcion', anchoTeclas / altoTeclas);
+  teclado.style.setProperty('--trackpad', -TECLAS.numerico / 2 / anchoTeclas);
+  const ponerTecla = (x, y, anchoTecla, altoTecla) => {
+    const orilla = TECLAS.junta / 2;
+    const tecla = document.createElement('span');
+    tecla.style.left = `${((x + orilla) / anchoTeclas) * 100}%`;
+    tecla.style.top = `${((y + orilla) / altoTeclas) * 100}%`;
+    tecla.style.width = `${((anchoTecla - TECLAS.junta) / anchoTeclas) * 100}%`;
+    tecla.style.height = `${((altoTecla - TECLAS.junta) / altoTeclas) * 100}%`;
+    cajaTeclas.append(tecla);
+  };
+  let filaY = 0;
+  TECLAS.filas.forEach((fila, i) => {
+    const altoFila = i === 0 ? TECLAS.altoFunciones : 1;
+    let x = 0;
+    for (const pieza of fila.split(' ')) {
+      const [medida, veces = 1] = pieza.split('*');
+      for (let n = 0; n < veces; n++) {
+        if (medida.startsWith('_')) {
+          x += Number(medida.slice(1));
+          continue;
+        }
+        const alta = medida.endsWith('^');
+        const anchoTecla = Number(alta ? medida.slice(0, -1) : medida);
+        ponerTecla(x, filaY, anchoTecla, alta ? altoFila + 1 : altoFila);
+        x += anchoTecla;
+      }
+    }
+    if (x !== anchoTeclas) console.error(`escena.js: la fila ${i + 1} del teclado mide ${x} y no ${anchoTeclas}`);
+    filaY += altoFila;
+  });
+
   const limitar = (v) => Math.min(1, Math.max(0, v));
   const deMenosAMasUno = (v) => Math.min(1, Math.max(-1, v));
   const tramo = (p, [desde, hasta]) => limitar((p - desde) / (hasta - desde));
@@ -90,11 +151,12 @@
     const p = recorrido > 0 ? limitar(-escena.getBoundingClientRect().top / recorrido) : 0;
 
     // La tarjeta: del hueco a todo lo ancho, a la pose del centro y de ahí a la del lado.
+    // Se mide la laptop, que es del tamaño de la pantalla (el teclado cuelga de su orilla de abajo).
     const poses = celular.matches ? POSES.celular : POSES.escritorio;
-    const ancho = video.offsetWidth;
-    const alto = video.offsetHeight;
-    const x0 = video.offsetLeft + ancho / 2;
-    const y0 = video.offsetTop + alto / 2;
+    const ancho = laptop.offsetWidth;
+    const alto = laptop.offsetHeight;
+    const x0 = laptop.offsetLeft + ancho / 2;
+    const y0 = laptop.offsetTop + alto / 2;
     const k = Math.min(poses.centro.ancho * anchoPantalla / ancho, poses.centro.alto * altoPantalla / alto);
     const giro = sinMovimiento.matches ? 0 : 1;
     const hueco = { x: x0, y: y0, k: 1, rx: 0, ry: 0, rz: 0 };
@@ -106,15 +168,12 @@
       x: poses.lado.x * anchoPantalla, y: poses.lado.y * altoPantalla, k: k * poses.lado.k,
       rx: poses.lado.rx * giro, ry: poses.lado.ry * giro, rz: poses.lado.rz * giro,
     };
-    const pose = mezclar(
-      mezclar(hueco, enCentro, suave(tramo(p, TRAMOS.encoger))),
-      alLado,
-      suave(tramo(p, TRAMOS.irseAlLado)),
-    );
+    const encogida = suave(tramo(p, TRAMOS.encoger));
+    const pose = mezclar(mezclar(hueco, enCentro, encogida), alLado, suave(tramo(p, TRAMOS.irseAlLado)));
 
     // Hacia dónde quiere mirar: el cursor respecto al centro de la tarjeta (a media pantalla de
     // distancia, el giro completo). Crece conforme se encoge: a todo lo ancho, arriba, no se gira.
-    const metida = suave(tramo(p, TRAMOS.encoger)) * giro;
+    const metida = encogida * giro;
     const meta = cursor
       ? {
           x: -deMenosAMasUno((cursor.y - pose.y) / (altoPantalla / 2)) * MIRADA.x * metida,
@@ -127,10 +186,17 @@
     mirada.x += (meta.x - mirada.x) * avance;
     mirada.y += (meta.y - mirada.y) * avance;
 
-    video.style.transform =
+    // scale3d y no scale: scale() no encoge lo hondo, y el teclado saldría al frente el doble de lo que mide.
+    laptop.style.transform =
       `translate(${pose.x - x0}px, ${pose.y - y0}px) perspective(${PROFUNDIDAD * k * ancho}px) ` +
-      `rotateX(${pose.rx + mirada.x}deg) rotateY(${pose.ry + mirada.y}deg) rotateZ(${pose.rz}deg) scale(${pose.k})`;
-    video.style.setProperty('--k', pose.k);
+      `rotateX(${pose.rx + mirada.x}deg) rotateY(${pose.ry + mirada.y}deg) rotateZ(${pose.rz}deg) ` +
+      `scale3d(${pose.k}, ${pose.k}, ${pose.k})`;
+    laptop.style.setProperty('--k', pose.k);
+
+    // Mientras se encoge, a la pantalla le sale el marco y el teclado se desdobla hasta quedar abierto.
+    laptop.style.setProperty('--marco', encogida);
+    const apertura = BISAGRA.doblada + (BISAGRA.abierta - BISAGRA.doblada) * encogida;
+    teclado.style.transform = `rotateX(${180 - apertura}deg)`;
 
     // El eslogan se va, y con él la capa oscura que lo hace legible.
     const quedaEslogan = 1 - tramo(p, TRAMOS.eslogan);

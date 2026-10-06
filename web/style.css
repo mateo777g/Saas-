@@ -231,10 +231,11 @@ body {
   opacity: 0;
 }
 
-/* Hueco del video (negro mientras carga el video). Arranca debajo de la barra, a todo lo ancho;
-   escena.js lo encoge y lo gira sin cambiarle la forma. --k es cuánto lo encoge: las esquinas
-   crecen lo mismo para que en pantalla se vean siempre igual de redondas. */
-.video {
+/* La laptop: la pantalla (el hueco del video) y el teclado, unidos por una bisagra. Arranca debajo de la
+   barra, a todo lo ancho, del tamaño de la pantalla; escena.js la encoge y la gira entera sin cambiarle
+   la forma. Es 3D de verdad (preserve-3d), así que no lleva overflow, opacidad ni filtros: la aplanarían.
+   --k es cuánto la encoge: las esquinas crecen lo mismo para que en pantalla se vean siempre igual de redondas. */
+.laptop {
   --radio: 16px;
   position: absolute;
   top: var(--alto-barra);
@@ -243,26 +244,42 @@ body {
   height: calc(100vh - var(--alto-barra) - var(--margen));
   height: calc(100svh - var(--alto-barra) - var(--margen));
   min-height: 420px;
+  transform-style: preserve-3d;
+  will-change: transform;
+}
+
+/* La pantalla: el hueco del video (negro mientras carga el video), con un marco negro alrededor como el
+   de una MacBook. --marco (escena.js) va de 0, a todo lo ancho y sin marco, a 1, con el marco entero.
+   El marco es el fondo de la pantalla, que se ve donde se recorta el video; sin marco no hay fondo:
+   detrás del video asomaría por la orilla redonda. */
+.video {
+  position: absolute;
+  inset: 0;
+  container-type: size; /* el marco se mide con el lado corto de la pantalla (cqmin) */
   box-sizing: border-box;
   display: grid;
   place-items: center;
   padding-inline: 24px;
-  background: var(--hueco);
+  background: rgb(10 10 11 / min(1, var(--marco, 0) * 100)); /* el negro de --hueco */
   border-radius: calc(var(--radio) / var(--k, 1));
+  /* La orilla de aluminio de la tapa, para que el marco no se pierda en el fondo negro */
+  box-shadow: inset 0 0 0 calc(1.5px / var(--k, 1)) rgb(255 255 255 / calc(var(--marco, 0) * 0.14));
   overflow: hidden;
-  will-change: transform;
 }
-/* Los videos llenan la tarjeta (recortando lo que sobre), uno encima del otro: el del panel claro
-   empieza invisible y entra cuando se oscurece la página (escena.js). El negro pasa a los videos
-   (se ve si no cargan): detrás de ellos asomaría por la orilla redonda. */
-.video:has(video) { background: none; }
+/* Los videos llenan la pantalla (recortando lo que sobre), uno encima del otro: el del panel claro
+   empieza invisible y entra cuando se oscurece la página (escena.js). El negro de --hueco va en los
+   videos (se ve si no cargan). El marco les recorta la orilla: 2.6 % del lado corto arriba y a los
+   lados, y 4.4 % abajo, como la barbilla de una MacBook. */
 .video video {
+  --bisel: calc(var(--marco, 0) * 2.6cqmin);
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
   object-fit: cover;
   background: var(--hueco);
+  clip-path: inset(var(--bisel) var(--bisel) calc(var(--marco, 0) * 4.4cqmin)
+    round max(0px, calc(var(--radio) / var(--k, 1) - var(--bisel))));
 }
 .video .video-noche { opacity: 0; }
 /* Capa medio oscura para que se lea el eslogan; se va con él (--capa, escena.js) */
@@ -284,6 +301,78 @@ body {
   letter-spacing: -0.02em;
   text-align: center;
   text-wrap: balance;
+}
+
+/* El teclado: la otra hoja de la laptop, del ancho de la pantalla, colgada de su orilla de abajo y
+   doblada hacia el frente por la bisagra (escena.js le pone el rotateX). De fondo mide lo alto de la
+   pantalla, sin pasar de 0.7 veces su ancho (la proporción de una MacBook; en celular la pantalla es
+   vertical). Hecho con CSS: aluminio gris oscuro, las teclas y el trackpad, medidos con su ancho (cqw) y
+   su fondo (cqh). Las teclas van arriba, junto a la bisagra, tan anchas como quepan: hasta el 94 % del
+   ancho y el 56 % del fondo (--proporcion: ancho entre alto de las teclas, escena.js). El trackpad, al
+   frente, centrado debajo de las letras (--trackpad: cuánto se corre por el teclado numérico, escena.js).
+   Ser contenedor no le quita el 3D: se comprobó que el canto se ve igual. */
+.teclado {
+  --aluminio: #2A2A2D;
+  --ancho-teclas: min(94cqw, 56cqh * var(--proporcion, 3.4));
+  position: absolute;
+  top: 100%;
+  left: 0;
+  width: 100%;
+  height: min(100%, calc((100vw - 2 * var(--margen)) * 0.7));
+  container-type: size;
+  display: grid;
+  grid-template-rows: 4% auto 1fr 30% 5%; /* en % y no en cqh: los cq de un contenedor no se miden con él mismo */
+  justify-items: center;
+  background: var(--aluminio);
+  border-radius: 0 0 calc(var(--radio) / var(--k, 1)) calc(var(--radio) / var(--k, 1));
+  transform-origin: 50% 0;
+  transform-style: preserve-3d; /* para el canto */
+}
+.teclado,
+.teclado * { backface-visibility: hidden; }
+/* Las teclas, como las de una laptop (escena.js las acomoda fila por fila), negras y sin luz. Las esquinas
+   se miden con el ancho de las teclas (cqw; una tecla normal mide 5.26cqw). */
+.teclas {
+  grid-row: 2;
+  position: relative;
+  width: var(--ancho-teclas);
+  aspect-ratio: var(--proporcion, 3.4);
+  container-type: inline-size;
+}
+.teclas span {
+  position: absolute;
+  border-radius: 0.75cqw;
+  background: linear-gradient(#18181B, #0C0C0E);
+}
+/* El trackpad, con sus dos botones de click abajo: una franja del 22 % de su alto, partida a la mitad.
+   Las juntas (la de arriba de los botones y la de en medio) son rayas oscuras de 1.5 px en pantalla. */
+.trackpad {
+  --junta: calc(1.5px / var(--k, 1));
+  --botones: 22%;
+  grid-row: 4;
+  height: 100%;
+  aspect-ratio: 1.6;
+  translate: calc(var(--ancho-teclas) * var(--trackpad, 0));
+  border-radius: calc(var(--radio) / var(--k, 1) * 0.6);
+  background:
+    linear-gradient(90deg, transparent calc(50% - var(--junta) / 2), #1C1C1E 0 calc(50% + var(--junta) / 2), transparent 0)
+      bottom / 100% var(--botones) no-repeat,
+    linear-gradient(#1C1C1E, #1C1C1E) 0 calc(100% - var(--botones)) / 100% var(--junta) no-repeat,
+    linear-gradient(#2C2C2F, #2C2C2F) bottom / 100% var(--botones) no-repeat,
+    #313134;
+  box-shadow: inset 0 0 0 calc(1px / var(--k, 1)) rgb(255 255 255 / 0.06);
+}
+/* El canto de enfrente: una tira delgada que baja de la orilla del teclado, doblada 90° hacia abajo */
+.canto {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  width: 100%;
+  height: 3%;
+  background: linear-gradient(#47474C, #1E1E20);
+  border-radius: 0 0 calc(var(--radio) / var(--k, 1)) calc(var(--radio) / var(--k, 1));
+  transform-origin: 50% 0;
+  transform: rotateX(-90deg);
 }
 
 /* Textos de la escena, blancos sobre lo oscuro. Se animan solos, con el reloj y no con el scroll:
@@ -564,7 +653,7 @@ body {
   .boton { height: 36px; padding-inline: 12px; font-size: 13px; }
   .atajo { padding-block: 8px; }
   .submenu a { font-size: 22px; }
-  .video { --radio: 12px; min-height: 380px; }
+  .laptop { --radio: 12px; min-height: 380px; }
   /* No cabe un texto al lado de la tarjeta: los dos textos salen debajo, uno después del otro */
   .texto-centro { top: 66vh; top: 66svh; }
   .texto-lado {
@@ -588,6 +677,8 @@ body {
   .barra[data-abierto] .submenu li { animation: none; }
   .rueda span { transition: none; }
   :is(.texto-centro, .texto-lado) :is(h2, p, .texto-boton) { transform: none; }
+  /* La tarjeta no se gira: el teclado de frente no se vería, solo estorbaría */
+  .teclado { display: none; }
   /* Las vistas cambian de golpe */
   .vistas-pista, .boton-vistas { transition: none; }
 }

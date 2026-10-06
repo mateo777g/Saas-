@@ -61,19 +61,31 @@
 <div class="velo" aria-hidden="true"></div>
 
 <main>
-  <!-- La escena (escena.js): al bajar, el hueco del video se encoge y se gira de lado, el fondo
-       se oscurece y sale el texto del centro; luego la tarjeta se va a la derecha y sale el de la izquierda. -->
+  <!-- La escena (escena.js): al bajar, el hueco del video se encoge, se vuelve la pantalla de una laptop
+       y se gira de lado, el fondo se oscurece y sale el texto del centro; luego la tarjeta se va a la
+       derecha y sale el de la izquierda. -->
   <section class="escena" aria-label="Presentación">
     <div class="escena-fija">
       <div class="noche" aria-hidden="true"></div>
 
-      <!-- Los videos de la página van sin audio. Sobre el fondo blanco se ve el panel oscuro; al
-           oscurecerse la página entra el panel claro. Por ahora son grabaciones de prueba (web/prueba/,
-           fuera de git); los de verdad vendrán de R2 (carpeta web/). Sin video, el hueco se ve negro. -->
-      <div class="video">
-        <video class="video-dia" src="prueba/panel-oscuro.mp4" autoplay muted loop playsinline aria-hidden="true"></video>
-        <video class="video-noche" src="prueba/panel-claro.mp4" autoplay muted loop playsinline aria-hidden="true"></video>
-        <h1>Un mundo sin piezas sueltas.</h1>
+      <!-- La laptop (escena.js la mueve entera): la pantalla es la tarjeta del video, y el teclado va pegado
+           a su orilla de abajo, como con una bisagra. Arriba, a todo lo ancho, no se ven ni el marco de la
+           pantalla ni el teclado: aparecen mientras se encoge. -->
+      <div class="laptop">
+        <!-- Los videos de la página van sin audio. Sobre el fondo blanco se ve el panel oscuro; al
+             oscurecerse la página entra el panel claro. Por ahora son grabaciones de prueba (web/prueba/,
+             fuera de git); los de verdad vendrán de R2 (carpeta web/). Sin video, el hueco se ve negro. -->
+        <div class="video">
+          <video class="video-dia" src="prueba/panel-oscuro.mp4" autoplay muted loop playsinline aria-hidden="true"></video>
+          <video class="video-noche" src="prueba/panel-claro.mp4" autoplay muted loop playsinline aria-hidden="true"></video>
+          <h1>Un mundo sin piezas sueltas.</h1>
+        </div>
+        <!-- El teclado, hecho con CSS: las teclas (escena.js las acomoda), el trackpad y el canto de enfrente -->
+        <div class="teclado" aria-hidden="true">
+          <div class="teclas"></div>
+          <div class="trackpad"></div>
+          <div class="canto"></div>
+        </div>
       </div>
 
       <div class="texto-centro">

@@ -10,6 +10,7 @@
 <link rel="stylesheet" href="style.css">
 <script src="barra.js" defer></script>
 <script src="escena.js" defer></script>
+<script src="hoja.js" defer></script>
 </head>
 <body>
 
@@ -67,7 +68,7 @@
 
       <!-- Los videos de la página van sin audio. Sobre el fondo blanco se ve el panel oscuro; al
            oscurecerse la página entra el panel claro. Por ahora son grabaciones de prueba (web/prueba/,
-           fuera de git); los de verdad vendrán de R2 (carpeta web/). Sin video, el hueco se ve azul. -->
+           fuera de git); los de verdad vendrán de R2 (carpeta web/). Sin video, el hueco se ve negro. -->
       <div class="video">
         <video class="video-dia" src="prueba/panel-oscuro.mp4" autoplay muted loop playsinline aria-hidden="true"></video>
         <video class="video-noche" src="prueba/panel-claro.mp4" autoplay muted loop playsinline aria-hidden="true"></video>
@@ -82,12 +83,26 @@
       <div class="texto-lado">
         <h2>Moderniza tu negocio.</h2>
         <p class="se-enciende">Compra la licencia ya mismo y disfruta del sistema.</p>
-        <a class="boton boton-azul" href="#">
-          Comprar licencia
-          <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M6 3.5 10.5 8 6 12.5"></path></svg>
-        </a>
+        <!-- La entrada va en esta caja y no en el botón, para no pelearse con su opacidad al pasar el mouse -->
+        <div class="texto-boton">
+          <a class="boton boton-blanco" href="#">
+            Comprar licencia
+            <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M6 3.5 10.5 8 6 12.5"></path></svg>
+          </a>
+        </div>
       </div>
     </div>
+  </section>
+
+  <!-- Sección 3 (hoja.js): una hoja blanca que sube encima de la escena ya quieta, como entraban los
+       planes en la página vieja. Llega a la pantalla, se queda quieta un tramo (el enganche) y sigue. -->
+  <section class="hoja">
+    <div class="hoja-fija">
+      <div class="hoja-contenido">
+        <!-- Lo de la sección 3: pendiente -->
+      </div>
+    </div>
+    <div class="hoja-enganche" aria-hidden="true"></div>
   </section>
 </main>
 

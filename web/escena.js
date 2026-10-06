@@ -2,7 +2,8 @@
 // Al bajar, el hueco del video se encoge y se gira de lado, el fondo se oscurece (y el video del panel
 // oscuro cambia al del panel claro) y sale el texto del centro; luego la tarjeta se va a la derecha
 // y sale el texto de la izquierda con su botón.
-// Lo mueve el scroll, no el reloj: cada cuadro se calcula de cuánto has bajado dentro de la escena.
+// La tarjeta y el fondo los mueve el scroll: cada cuadro se calcula de cuánto has bajado dentro de la
+// escena. Los textos no: al llegar a su momento entran solos, con el reloj (style.css), y al pasarlo se van.
 (() => {
   const escena = document.querySelector('.escena');
   const fija = escena.querySelector('.escena-fija');
@@ -38,16 +39,16 @@
     encoger: [0, 0.22],
     eslogan: [0, 0.1],
     noche: [0.02, 0.14],
-    tituloCentro: [0.16, 0.26],
-    luzCentro: [0.22, 0.42],
     irseAlLado: [0.48, 0.72],
-    salirCentro: [0.48, 0.56],
-    tituloLado: [0.62, 0.72],
-    luzLado: [0.68, 0.84],
-    boton: [0.78, 0.88],
+  };
+  // Entre qué puntos del recorrido está dentro cada texto (el de la izquierda se queda hasta el final).
+  const TEXTOS = {
+    centro: [0.16, 0.48],
+    lado: [0.62, Infinity],
   };
 
-  // Cada palabra de los párrafos que se encienden va en su propio <span> (ver .se-enciende en style.css).
+  // Cada palabra de los párrafos que se encienden va en su propio <span> (ver .se-enciende en style.css);
+  // el texto entero sabe cuántas son, para que su botón salga después de la última.
   for (const p of escena.querySelectorAll('.se-enciende')) {
     const palabras = p.textContent.trim().split(/\s+/);
     p.replaceChildren();
@@ -57,11 +58,12 @@
       span.style.setProperty('--i', i);
       p.append(span, i < palabras.length - 1 ? ' ' : '');
     });
-    p.style.setProperty('--n', palabras.length);
+    p.parentElement.style.setProperty('--n', palabras.length);
   }
 
   const limitar = (v) => Math.min(1, Math.max(0, v));
   const tramo = (p, [desde, hasta]) => limitar((p - desde) / (hasta - desde));
+  const adentro = (p, [desde, hasta]) => p >= desde && p < hasta;
   const suave = (t) => (t < 0.5 ? 4 * t * t * t : 1 - (-2 * t + 2) ** 3 / 2);
   const mezclar = (a, b, t) => {
     const r = {};
@@ -69,24 +71,14 @@
     return r;
   };
 
-  // Aparece subiendo un poco; sale desvaneciéndose. Lo invisible tampoco se puede tocar ni tabular.
-  function mostrar(el, cuanto, subida = 16) {
-    el.style.opacity = cuanto;
-    el.style.visibility = cuanto > 0 ? '' : 'hidden';
-    el.style.transform = cuanto < 1 ? `translateY(${(1 - cuanto) * subida}px)` : '';
-  }
-  function visible(el, cuanto) {
-    el.style.opacity = cuanto;
-    el.style.visibility = cuanto > 0 ? 'visible' : 'hidden';
-  }
-
   let pendiente = false;
 
   function pintar() {
     pendiente = false;
     const anchoPantalla = fija.clientWidth; // sin la barra de desplazamiento
     const altoPantalla = innerHeight;
-    const recorrido = escena.offsetHeight - fija.offsetHeight;
+    // La última pantalla de la escena no cuenta: en ella la hoja de la sección 3 sube encima (hoja.js).
+    const recorrido = escena.offsetHeight - fija.offsetHeight * 2;
     const p = recorrido > 0 ? limitar(-escena.getBoundingClientRect().top / recorrido) : 0;
 
     // La tarjeta: del hueco a todo lo ancho, a la pose del centro y de ahí a la del lado.
@@ -127,20 +119,10 @@
     if (videoNoche) videoNoche.style.opacity = oscuro;
     document.documentElement.toggleAttribute('data-noche', oscuro >= 0.5);
 
-    // Texto del centro: sale el título, se encienden las palabras y se va cuando la tarjeta se mueve.
-    const tituloCentro = suave(tramo(p, TRAMOS.tituloCentro));
-    visible(centro, 1 - tramo(p, TRAMOS.salirCentro));
-    mostrar(centro.querySelector('h2'), tituloCentro);
-    mostrar(centro.querySelector('p'), tituloCentro);
-    centro.querySelector('p').style.setProperty('--luz', tramo(p, TRAMOS.luzCentro));
-
-    // Texto de la izquierda: título, palabras que se encienden y al final el botón.
-    const tituloLado = suave(tramo(p, TRAMOS.tituloLado));
-    visible(lado, tituloLado > 0 ? 1 : 0);
-    mostrar(lado.querySelector('h2'), tituloLado);
-    mostrar(lado.querySelector('p'), tituloLado);
-    lado.querySelector('p').style.setProperty('--luz', tramo(p, TRAMOS.luzLado));
-    mostrar(lado.querySelector('.boton'), suave(tramo(p, TRAMOS.boton)));
+    // Los textos: aquí solo se decide si están dentro; la animación la hace style.css. El del centro
+    // se va cuando la tarjeta empieza a moverse, y el de la izquierda entra cuando ya va llegando.
+    centro.toggleAttribute('data-dentro', adentro(p, TEXTOS.centro));
+    lado.toggleAttribute('data-dentro', adentro(p, TEXTOS.lado));
   }
 
   function pedirCuadro() {

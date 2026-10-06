@@ -1,7 +1,7 @@
 /* style.css — la página de Fragmentless (index.html) */
 
 /* Barra blanca con el logo, los atajos (crece al tocar uno) y los botones a la derecha; debajo, la escena:
-   el hueco del video (azul) con el eslogan, que al bajar se gira de lado sobre fondo oscuro (escena.js). */
+   el hueco del video (negro mientras carga) con el eslogan, que al bajar se gira de lado sobre fondo oscuro (escena.js). */
 :root {
   --fondo: #FFFFFF;
   --tinta: #0A0A0B;
@@ -10,7 +10,7 @@
   --azul: #1355E8;
   --noche: #0A0A0B;
   --barra-noche: #1C1C1E; /* gris un poco oscuro: la barra abierta, con su submenú, sobre la sección oscura */
-  --hueco: var(--azul);
+  --hueco: #0A0A0B; /* negro de la marca: lo que se ve mientras el video carga */
   --sobre-hueco: #FFFFFF;
   --velo: rgba(10, 10, 11, 0.45);
   --capa-video: rgba(10, 10, 11, 0.4);
@@ -41,15 +41,16 @@ body {
 .barra[data-escondida] { transform: translateY(-100%); }
 
 /* Sobre la parte oscura de la escena, la barra es negra (escena.js pone data-noche);
-   al abrir un submenú, la barra entera se vuelve gris oscuro */
+   al abrir un submenú, la barra entera se vuelve gris oscuro. Cuando la hoja de la sección 3
+   pasa debajo de ella, vuelve a ser blanca (hoja.js pone data-hoja). */
 :root[data-noche] body { background: var(--noche); }
-:root[data-noche] .barra {
+:root[data-noche]:not([data-hoja]) .barra {
   --fondo: var(--noche);
   --tinta: #FFFFFF;
   --tinta-suave: #A1A1A6;
   --borde: #3A3A3D;
 }
-:root[data-noche] .barra[data-abierto] { --fondo: var(--barra-noche); }
+:root[data-noche]:not([data-hoja]) .barra[data-abierto] { --fondo: var(--barra-noche); }
 
 .barra-fila {
   height: var(--alto-barra);
@@ -202,9 +203,10 @@ body {
 }
 .barra[data-abierto] ~ .velo { opacity: 1; pointer-events: auto; }
 
-/* La escena: mide 3.5 pantallas de scroll más la que se queda fija. Mientras la recorres,
-   lo de adentro no se mueve de la pantalla; escena.js lo acomoda según cuánto has bajado. */
-.escena { height: 450vh; }
+/* La escena: mide 3.5 pantallas de scroll, más la que se queda fija, más una en la que la hoja de la
+   sección 3 sube encima. Mientras la recorres, lo de adentro no se mueve de la pantalla; escena.js
+   lo acomoda según cuánto has bajado. */
+.escena { height: 550vh; }
 .escena-fija {
   position: sticky;
   top: 0;
@@ -219,7 +221,7 @@ body {
   opacity: 0;
 }
 
-/* Hueco del video (por ahora azul de la marca). Arranca debajo de la barra, a todo lo ancho;
+/* Hueco del video (negro mientras carga el video). Arranca debajo de la barra, a todo lo ancho;
    escena.js lo encoge y lo gira sin cambiarle la forma. --k es cuánto lo encoge: las esquinas
    crecen lo mismo para que en pantalla se vean siempre igual de redondas. */
 .video {
@@ -241,7 +243,7 @@ body {
   will-change: transform;
 }
 /* Los videos llenan la tarjeta (recortando lo que sobre), uno encima del otro: el del panel claro
-   empieza invisible y entra cuando se oscurece la página (escena.js). El azul pasa a los videos
+   empieza invisible y entra cuando se oscurece la página (escena.js). El negro pasa a los videos
    (se ve si no cargan): detrás de ellos asomaría por la orilla redonda. */
 .video:has(video) { background: none; }
 .video video {
@@ -274,14 +276,35 @@ body {
   text-wrap: balance;
 }
 
-/* Textos de la escena, blancos sobre lo oscuro. Empiezan invisibles; escena.js los va mostrando. */
+/* Textos de la escena, blancos sobre lo oscuro. Se animan solos, con el reloj y no con el scroll:
+   cuando llegas a su momento, escena.js les pone data-dentro y sube el título con su párrafo, se
+   encienden las palabras una tras otra y al final sale el botón. Al quitárselo se desvanecen juntos. */
 .texto-centro,
 .texto-lado {
+  --entrar: 0.7s cubic-bezier(0.2, 0.7, 0.2, 1);
+  --salir: 0.35s;
+  --palabras: 0.35s; /* cuándo empiezan a encenderse las palabras */
+  --paso: 70ms;      /* entre una palabra y la siguiente */
   position: absolute;
   color: #FFFFFF;
-  opacity: 0;
-  visibility: hidden;
+  visibility: hidden; /* fuera, tampoco se pueden tocar ni tabular; se esconden cuando terminan de irse */
+  transition: visibility 0s var(--salir);
 }
+:is(.texto-centro, .texto-lado)[data-dentro] { visibility: visible; transition: none; }
+
+/* Entran subiendo 16 px; al irse solo se desvanecen, y ya invisibles vuelven abajo */
+:is(.texto-centro, .texto-lado) :is(h2, p, .texto-boton) {
+  opacity: 0;
+  transform: translateY(16px);
+  transition: opacity var(--salir) ease, transform 0s var(--salir);
+}
+:is(.texto-centro, .texto-lado)[data-dentro] :is(h2, p, .texto-boton) {
+  opacity: 1;
+  transform: none;
+  transition: opacity var(--entrar) var(--espera, 0s), transform var(--entrar) var(--espera, 0s);
+}
+/* El botón, cuando ya se encendió la última palabra (--n: cuántas son, escena.js) */
+.texto-boton { --espera: calc(var(--palabras) + var(--n) * var(--paso) + 0.15s); }
 .escena h2 {
   margin: 0;
   font-weight: 400;
@@ -318,16 +341,21 @@ body {
   max-width: 30vw;
   transform: translateY(-50%);
 }
-.texto-lado .boton { margin-top: 40px; }
+.texto-boton { margin-top: 40px; }
 
-/* Las palabras de los párrafos se encienden una tras otra: --luz va de 0 a 1 (escena.js) */
+/* Las palabras de los párrafos se encienden una tras otra (--i: su lugar, escena.js) */
 .se-enciende span {
-  opacity: calc(0.3 + 0.7 * clamp(0, var(--luz, 0) * var(--n) - var(--i), 1));
+  opacity: 0.3;
+  transition: opacity var(--salir) ease;
+}
+:is(.texto-centro, .texto-lado)[data-dentro] .se-enciende span {
+  opacity: 1;
+  transition: opacity 0.4s ease calc(var(--palabras) + var(--i) * var(--paso));
 }
 
-.boton-azul { gap: 8px; background: var(--azul); color: #FFFFFF; font-weight: 500; }
-.boton-azul:hover { opacity: 0.85; }
-.boton-azul svg {
+.boton-blanco { gap: 8px; background: #FFFFFF; color: var(--noche); font-weight: 500; }
+.boton-blanco:hover { opacity: 0.85; }
+.boton-blanco svg {
   width: 14px;
   height: 14px;
   fill: none;
@@ -337,6 +365,43 @@ body {
   stroke-linejoin: round;
 }
 .escena .boton:focus-visible { outline-color: #FFFFFF; }
+
+/* Sección 3: la hoja blanca. Se monta sobre la última pantalla de la escena (margin-top negativo),
+   así sube encima de ella en vez de empujarla. hoja.js le da --subida (0 = su borde de arriba toca
+   el de abajo de la pantalla, 1 = llegó arriba): arranca al 90 % con las esquinas redondas y crece
+   desde su borde de abajo hasta llenar la pantalla. Medido de la página vieja. */
+.hoja {
+  --subida: 0;
+  --aparecer: 0;
+  --enganche: 50vh; /* scroll de más en el que la hoja se queda quieta antes de seguir; 0 = sin enganche */
+  position: relative;
+  z-index: 1;
+  margin-top: -100vh;
+  min-height: 100vh;
+  background: var(--fondo); /* el mismo blanco de la barra */
+  color: var(--tinta);
+  border-radius: calc(20px * (1 - var(--subida))) calc(20px * (1 - var(--subida))) 0 0;
+  transform: scale(calc(0.9 + 0.1 * var(--subida)));
+  /* Crece desde el borde de abajo de la hoja sin contar el enganche */
+  transform-origin: 50% calc(100% - var(--enganche));
+  will-change: transform;
+}
+/* El enganche: mide una pantalla y se queda pegada mientras la hoja recorre su tramo de más.
+   Si lo de adentro no cabe en la pantalla, se pega por abajo (--fija-arriba, hoja.js). */
+.hoja-fija {
+  position: sticky;
+  top: var(--fija-arriba, 0px);
+  min-height: 100vh;
+  display: grid;
+  place-items: start center;
+}
+.hoja-enganche { height: var(--enganche); }
+/* Lo de adentro aparece entre el 25 % y el 75 % de la subida, subiendo 24 px */
+.hoja-contenido {
+  opacity: var(--aparecer);
+  transform: translateY(calc((1 - var(--aparecer)) * 24px));
+  transition: opacity 120ms linear, transform 120ms linear;
+}
 
 @media (max-width: 760px) {
   /* En celular: logo y botones arriba; los atajos bajan a una segunda fila */
@@ -358,11 +423,12 @@ body {
     max-width: none;
     transform: none;
   }
-  .texto-lado .boton { margin-top: 28px; }
+  .texto-boton { margin-top: 28px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
   :root { --abrir: 0s; }
   .barra[data-abierto] .submenu li { animation: none; }
   .rueda span { transition: none; }
+  :is(.texto-centro, .texto-lado) :is(h2, p, .texto-boton) { transform: none; }
 }

@@ -14,8 +14,8 @@
   --sobre-hueco: #FFFFFF;
   --velo: rgba(10, 10, 11, 0.45);
   --capa-video: rgba(10, 10, 11, 0.4);
-  /* Los resortes del carrusel de la sección 3 (de Motion), muestreados en 20 tramos: el de las tarjetas
-     (bounce 0.1 en 0.25 s) y el de la pista cuando la sueltas después de arrastrar (rigidez 200, freno 40) */
+  /* Los resortes del carrusel de la sección 3 (de Motion), muestreados en 20 tramos: el de pasar de vista
+     (bounce 0.1 en 0.25 s) y el de la pista cuando la sueltas sin pasar de vista (rigidez 200, freno 40) */
   --resorte: linear(0, 0.0698, 0.2176, 0.3835, 0.5372, 0.6662, 0.7677, 0.8438, 0.8986, 0.9367, 0.9623, 0.9789,
     0.9893, 0.9954, 0.9989, 1.0006, 1.0013, 1.0015, 1.0014, 1.0012, 1);
   --resorte-regreso: linear(0, 0.0794, 0.2179, 0.3532, 0.4701, 0.5675, 0.6474, 0.7127, 0.7659, 0.8093, 0.8446,
@@ -414,76 +414,27 @@ body {
   width: 100%;
 }
 
-/* Las vistas del panel (vistas.js), del componente Coverflow Carousel: llenan la hoja, centradas a lo alto,
-   sobre su blanco. Las tarjetas tienen la forma de las capturas (1919×1003) y son más grandes que las del
-   ejemplo (280×220): el 34 % del ancho de la pantalla (en celular, el 80 % hasta 330 px), y menos si la
-   pantalla es muy bajita para que quepan con el texto y los botones. El arreglo crece con ellas: el ejemplo,
-   con su tarjeta de 280 px de ancho, las separa 220 px, manda cada lugar 180 px al fondo y las mira con una
-   perspectiva de 1200 px desde 26 px más abajo de su centro. Esquinas, borde y sombra quedan como en el ejemplo. */
+/* Las vistas del panel (vistas.js), como la página del iPhone: llenan la hoja, con la barra siempre a la
+   vista arriba. El texto de la vista que se ve y los botones van arriba; la tablet, abajo, tocando la orilla
+   de abajo de la pantalla (las muñecas se cortan ahí) y del tamaño que quepa en lo que sobra. */
 .vistas {
-  --ancho: max(min(80vw, 330px), min(34vw, (100svh - 380px) * 1.9));
-  --alto: calc(var(--ancho) * 1003 / 1919);
-  --espacio: calc(var(--ancho) * 220 / 280);
-  --hondo: calc(var(--ancho) * 180 / 280);
   box-sizing: border-box;
   min-height: 100vh;
   min-height: 100svh;
-  /* En la sección 3 la barra siempre se ve: lo de adentro se centra en el blanco que queda debajo de ella */
-  padding-top: var(--alto-barra);
+  padding-top: calc(var(--alto-barra) + 48px);
   display: flex;
   flex-direction: column;
-  justify-content: center;
-  overflow-x: clip; /* las de las orillas no ensanchan la página */
+  overflow-x: clip; /* en celular las manos se salen por los lados */
   -webkit-user-select: none;
   user-select: none;
   outline: none;
 }
-.vistas-escenario {
-  /* Lo que se centra va de la orilla de arriba de las tarjetas a los botones: el hueco vacío de 50 px
-     arriba de ellas (la pista mide su alto + 100 px) no cuenta */
-  margin-top: -50px;
-  perspective: calc(var(--ancho) * 1200 / 280);
-  perspective-origin: 50% calc(50% + var(--ancho) * 26 / 280);
-}
-/* La que se arrastra (vistas.js); al soltarla regresa a su lugar con el resorte de regreso */
-.vistas-pista {
-  position: relative;
-  height: calc(var(--alto) + 100px);
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  transform-style: preserve-3d;
-  touch-action: pan-y;
-  transition: transform 0.7s var(--resorte-regreso);
-}
-.vistas-pista[data-arrastrando] { transition: none; }
-.vistas-tarjeta {
-  position: absolute;
-  inset: 0;
-  margin: auto;
-  box-sizing: border-box;
-  width: var(--ancho);
-  height: var(--alto);
-  overflow: hidden;
-  border: 1px solid rgba(10, 10, 11, 0.1);
-  border-radius: 16px;
-  background: var(--fondo);
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
-  transition: transform 0.25s var(--resorte), opacity 0.25s var(--resorte);
-}
-.vistas-tarjeta[hidden] { display: none; }
-.vistas-tarjeta img {
-  display: block;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
 
-/* El texto de la vista del frente, arriba de los botones */
+/* El texto de la vista que se ve, arriba de los botones */
 .vistas-textos {
   display: grid;
   width: min(34em, calc(100% - 2 * var(--margen)));
-  margin: 16px auto 0;
+  margin: 0 auto;
   text-align: center;
 }
 .vistas-texto { grid-area: 1 / 1; visibility: hidden; }
@@ -532,6 +483,65 @@ body {
 .boton-vistas:active { transform: scale(0.97); }
 .boton-vistas:focus-visible { outline: 2px solid #A1A1A1; outline-offset: 2px; }
 
+/* El hueco para la tablet: lo que sobra debajo de los botones. Su tamaño no depende de lo de adentro
+   (container-type), así la tablet se mide con él: tan ancha como quepa a lo alto, sin pasar del 92 % del ancho. */
+.vistas-escenario {
+  flex: 1 1 0;
+  min-height: 0;
+  margin-top: 32px;
+  container-type: size;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+.vistas-tableta {
+  position: relative;
+  flex: none;
+  width: min(92cqw, 100cqh * 2542 / 1428); /* la imagen mide 2542×1428 */
+}
+/* Las manos con la tablet (generada con la pantalla verde, que se le quitó): va encima de las capturas, que
+   se ven por el hueco de la pantalla y quedan debajo de los pulgares. No atrapa el puntero: se arrastra la pantalla. */
+.vistas-manos {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: auto;
+  pointer-events: none;
+}
+/* El hueco de la pantalla, medido en la imagen (17.309 %, 3.992 %, 65.382 % × 70.588 %), con 4 px de la
+   imagen de más por lado: se mete debajo del marco para que por su orilla suave no se asome el blanco */
+.vistas-pantalla {
+  position: absolute;
+  left: 17.152%;
+  top: 3.712%;
+  width: 65.697%;
+  height: 71.148%;
+  overflow: hidden;
+  background: var(--noche);
+  touch-action: pan-y;
+}
+/* Las capturas en fila; la pista se corre una pantalla por vista (vistas.js). Al soltarla sin pasar de
+   vista regresa con el resorte de regreso. Las capturas son más anchas que la pantalla: se recortan por la
+   derecha, para que se vea la barra lateral del panel. */
+.vistas-pista {
+  display: flex;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  transition: transform 0.25s var(--resorte);
+}
+.vistas-pista[data-arrastrando] { transition: none; }
+.vistas-pista[data-regresa] { transition: transform 0.7s var(--resorte-regreso); }
+.vistas-captura { flex: 0 0 100%; height: 100%; }
+.vistas-captura img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: left center;
+}
+
 /* Solo para lectores de pantalla */
 .solo-lector {
   position: absolute;
@@ -566,6 +576,11 @@ body {
     transform: none;
   }
   .texto-boton { margin-top: 28px; }
+  /* En celular sobra alto: el texto, los botones y la tablet van juntos hasta abajo, y la tablet es más
+     ancha que la pantalla (las manos se salen por los lados) para que su pantalla se vea grande */
+  .vistas { padding-top: calc(var(--alto-barra) + 32px); justify-content: flex-end; }
+  .vistas-escenario { flex: none; container-type: inline-size; }
+  .vistas-tableta { width: 125cqw; }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -573,7 +588,6 @@ body {
   .barra[data-abierto] .submenu li { animation: none; }
   .rueda span { transition: none; }
   :is(.texto-centro, .texto-lado) :is(h2, p, .texto-boton) { transform: none; }
-  /* El carrusel sin giros ni fondo: las vistas cambian de golpe (vistas.js) */
-  .vistas-escenario { perspective: none; }
-  .vistas-pista, .vistas-tarjeta, .boton-vistas { transition: none; }
+  /* Las vistas cambian de golpe */
+  .vistas-pista, .boton-vistas { transition: none; }
 }

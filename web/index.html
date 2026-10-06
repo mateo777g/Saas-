@@ -100,22 +100,13 @@
   <section class="hoja">
     <div class="hoja-fija">
       <div class="hoja-contenido">
-        <!-- Las vistas del panel (vistas.js): sus capturas en fila, la del frente derecha y las de los lados
-             giradas y más al fondo. Se pasan con los botones, las flechas del teclado o arrastrando a los lados.
-             Arriba de los botones va el texto de la del frente: el de vistas-textos con su mismo lugar en la
-             lista. Por ahora son capturas de prueba (web/prueba/, fuera de git). -->
+        <!-- Las vistas del panel (vistas.js), como la página del iPhone: arriba el texto de la vista que se ve
+             y los botones; abajo unas manos que sostienen una tablet, y en su pantalla las capturas pasan de
+             lado una tras otra. Se pasan con los botones, las flechas del teclado o arrastrando la pantalla.
+             El texto de cada vista es el de vistas-textos con su mismo lugar en la lista. La tablet es una
+             imagen generada con la pantalla vacía (imagenes/tableta-manos.webp); las capturas van detrás y se
+             ven por el hueco, debajo de los pulgares. Por ahora son capturas de prueba (web/prueba/, fuera de git). -->
         <div class="vistas" role="region" aria-roledescription="carrusel" aria-label="Vistas del panel" tabindex="0">
-          <div class="vistas-escenario">
-            <ul class="vistas-pista">
-              <li class="vistas-tarjeta"><img src="prueba/vista-sesion.webp" alt="La pantalla para iniciar sesión en el panel" draggable="false"></li>
-              <li class="vistas-tarjeta"><img src="prueba/vista-inicio.webp" alt="La vista Inicio del panel" draggable="false"></li>
-              <li class="vistas-tarjeta"><img src="prueba/vista-menu.webp" alt="La vista Mi menú del panel" draggable="false"></li>
-              <li class="vistas-tarjeta"><img src="prueba/vista-mesas.webp" alt="La vista Mesas del panel" draggable="false"></li>
-              <li class="vistas-tarjeta"><img src="prueba/vista-agente.webp" alt="La vista Agente IA del panel" draggable="false"></li>
-              <li class="vistas-tarjeta"><img src="prueba/vista-contenido.webp" alt="La vista Crear contenido del panel" draggable="false"></li>
-              <li class="vistas-tarjeta"><img src="prueba/vista-biblioteca.webp" alt="La vista Mi biblioteca del panel" draggable="false"></li>
-            </ul>
-          </div>
           <!-- Todos ocupan el mismo lugar y solo se ve el de la vista del frente: así los botones no brincan
                cuando una descripción tiene más renglones que otra -->
           <div class="vistas-textos">
@@ -151,6 +142,22 @@
           <div class="vistas-botones">
             <button type="button" class="boton-vistas" data-paso="-1" aria-label="Vista anterior">Anterior</button>
             <button type="button" class="boton-vistas" data-paso="1" aria-label="Vista siguiente">Siguiente</button>
+          </div>
+          <div class="vistas-escenario">
+            <div class="vistas-tableta">
+              <div class="vistas-pantalla">
+                <ul class="vistas-pista">
+                  <li class="vistas-captura"><img src="prueba/vista-sesion.webp" alt="La pantalla para iniciar sesión en el panel" draggable="false"></li>
+                  <li class="vistas-captura"><img src="prueba/vista-inicio.webp" alt="La vista Inicio del panel" draggable="false"></li>
+                  <li class="vistas-captura"><img src="prueba/vista-menu.webp" alt="La vista Mi menú del panel" draggable="false"></li>
+                  <li class="vistas-captura"><img src="prueba/vista-mesas.webp" alt="La vista Mesas del panel" draggable="false"></li>
+                  <li class="vistas-captura"><img src="prueba/vista-agente.webp" alt="La vista Agente IA del panel" draggable="false"></li>
+                  <li class="vistas-captura"><img src="prueba/vista-contenido.webp" alt="La vista Crear contenido del panel" draggable="false"></li>
+                  <li class="vistas-captura"><img src="prueba/vista-biblioteca.webp" alt="La vista Mi biblioteca del panel" draggable="false"></li>
+                </ul>
+              </div>
+              <img class="vistas-manos" src="imagenes/tableta-manos.webp" alt="" width="2542" height="1428" draggable="false">
+            </div>
           </div>
           <p class="solo-lector" aria-live="polite"></p>
         </div>

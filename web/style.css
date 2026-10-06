@@ -1,0 +1,197 @@
+/* style.css — la página de Fragmentless (index.html) */
+
+/* Barra blanca con el logo, los atajos (crece al tocar uno) y los botones a la derecha; debajo, el hueco del video con el eslogan al centro. */
+:root {
+  --fondo: #FFFFFF;
+  --tinta: #0A0A0B;
+  --tinta-suave: #6E6E73;
+  --borde: #C9C9CC;
+  --hueco: #0A0A0B;
+  --sobre-hueco: #FFFFFF;
+  --velo: rgba(10, 10, 11, 0.45);
+  --letra: 'Outfit', 'Avenir Next', 'Segoe UI', system-ui, sans-serif;
+  --margen: 28px;
+  --alto-barra: 88px;
+  --abrir: 0.3s ease;
+}
+
+body {
+  margin: 0;
+  background: var(--fondo);
+  color: var(--tinta);
+  font-family: var(--letra);
+}
+
+.pagina {
+  padding-inline: var(--margen);
+  padding-block: 0 var(--margen);
+}
+
+/* Barra: mismo blanco que la página, de orilla a orilla */
+.barra {
+  position: relative;
+  z-index: 10;
+  margin-inline: calc(-1 * var(--margen));
+  padding-inline: var(--margen);
+  background: var(--fondo);
+}
+.barra-fila {
+  height: var(--alto-barra);
+  display: flex;
+  align-items: center;
+  gap: 56px;
+}
+
+.logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  color: var(--tinta);
+  text-decoration: none;
+  border-radius: 6px;
+}
+.logo svg { display: block; height: 31px; width: auto; }
+.logo span {
+  font-weight: 200;
+  font-size: 17px;
+  line-height: 1;
+  letter-spacing: -0.2px;
+}
+
+.atajos {
+  display: flex;
+  align-items: center;
+  gap: 28px;
+}
+.atajo {
+  padding-block: 12px;
+  padding-inline: 0;
+  border: 0;
+  background: none;
+  color: var(--tinta);
+  font: inherit;
+  font-size: 15px;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: color var(--abrir);
+}
+/* Con la barra abierta, el atajo activo queda negro y los demás en gris */
+.barra[data-abierto] .atajo { color: var(--tinta-suave); }
+.barra[data-abierto] .atajo[aria-expanded="true"] { color: var(--tinta); }
+
+/* Botones de la derecha: Iniciar Sesión (con borde) y Empieza (negro) */
+.acciones {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.boton {
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  height: 40px;
+  padding-inline: 16px;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  font-size: 14px;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: border-color var(--abrir), color var(--abrir), opacity var(--abrir);
+}
+.boton-borde { border-color: var(--borde); color: var(--tinta-suave); }
+.boton-borde:hover { border-color: var(--tinta); color: var(--tinta); }
+.boton-negro { background: var(--tinta); color: var(--fondo); font-weight: 500; }
+.boton-negro:hover { opacity: 0.85; }
+
+/* Lo que se despliega: de borde a borde, crece hacia abajo */
+.despliegue {
+  position: absolute;
+  top: calc(100% - 1px); /* se encima 1 px para que no se vea una raya entre la barra y lo desplegado */
+  left: 0;
+  right: 0;
+  display: grid;
+  grid-template-rows: 0fr;
+  background: var(--fondo);
+  transition: grid-template-rows var(--abrir);
+}
+.barra[data-abierto] .despliegue { grid-template-rows: 1fr; }
+.despliegue-dentro { min-height: 0; overflow: hidden; }
+
+.submenu {
+  box-sizing: border-box;
+  min-height: 240px;
+  margin: 0;
+  padding-block: 28px 56px;
+  padding-inline: var(--inicio-atajos, var(--margen)) var(--margen);
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.submenu[hidden] { display: none; }
+.submenu a {
+  color: var(--tinta);
+  font-size: 24px;
+  font-weight: 400;
+  text-decoration: none;
+}
+.submenu a:hover { opacity: 0.6; }
+
+.logo:focus-visible,
+.atajo:focus-visible,
+.boton:focus-visible,
+.submenu a:focus-visible { outline: 2px solid var(--tinta); outline-offset: 4px; }
+
+/* Velo: desenfoca la página mientras la barra está abierta */
+.velo {
+  position: fixed;
+  inset: 0;
+  z-index: 5;
+  background: var(--velo);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--abrir);
+}
+.barra[data-abierto] ~ .velo { opacity: 1; pointer-events: auto; }
+
+/* Hueco del video (por ahora negro) */
+.video {
+  height: calc(100vh - var(--alto-barra) - var(--margen));
+  height: calc(100svh - var(--alto-barra) - var(--margen));
+  min-height: 420px;
+  display: grid;
+  place-items: center;
+  padding-inline: 24px;
+  background: var(--hueco);
+  border-radius: 16px;
+  overflow: hidden;
+}
+.video h1 {
+  margin: 0;
+  color: var(--sobre-hueco);
+  font-weight: 400;
+  font-size: clamp(2.25rem, 5.2vw, 4.75rem);
+  line-height: 1.08;
+  letter-spacing: -0.02em;
+  text-align: center;
+  text-wrap: balance;
+}
+
+@media (max-width: 760px) {
+  /* En celular: logo y botones arriba; los atajos bajan a una segunda fila */
+  :root { --margen: 16px; --alto-barra: 96px; }
+  .barra-fila { flex-wrap: wrap; align-content: center; gap: 4px 0; }
+  .atajos { order: 3; width: 100%; gap: 20px; }
+  .acciones { order: 2; gap: 8px; }
+  .boton { height: 36px; padding-inline: 12px; font-size: 13px; }
+  .atajo { padding-block: 8px; }
+  .submenu a { font-size: 22px; }
+  .video { min-height: 380px; border-radius: 12px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root { --abrir: 0s; }
+}

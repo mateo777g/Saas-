@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fragmentless</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@200;400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="pagina">
+  <header class="barra">
+    <div class="barra-fila">
+      <a class="logo" href="./">
+        <!-- ∫∫ acostada: girada 90°, una integral encima de la otra -->
+        <svg viewBox="104 25 322 350" aria-hidden="true">
+          <g fill="currentColor" transform="rotate(90 265 200)">
+            <path d="M 299.5 47.5 A 19 19 0 1 1 272.15 57.5 C 258 54 245 72 238 100 C 232 124 222 172 216 200 C 210 230 204 264 196 292 C 182 340 156 360 122 360 C 112 360 106 355.7 100.5 352.5 A 19 19 0 1 1 127.85 342.5 C 142 346 155 328 162 300 C 168 276 178 228 184 200 C 190 170 196 136 204 108 C 218 60 244 40 278 40 C 288 40 294 44.3 299.5 47.5 Z"></path>
+            <path transform="translate(130 0)" d="M 299.5 47.5 A 19 19 0 1 1 272.15 57.5 C 258 54 245 72 238 100 C 232 124 222 172 216 200 C 210 230 204 264 196 292 C 182 340 156 360 122 360 C 112 360 106 355.7 100.5 352.5 A 19 19 0 1 1 127.85 342.5 C 142 346 155 328 162 300 C 168 276 178 228 184 200 C 190 170 196 136 204 108 C 218 60 244 40 278 40 C 288 40 294 44.3 299.5 47.5 Z"></path>
+          </g>
+        </svg>
+        <span>fragmentless</span>
+      </a>
+
+      <nav class="atajos" aria-label="Atajos">
+        <button type="button" class="atajo" aria-expanded="false" aria-controls="menu-productos">Productos</button>
+        <button type="button" class="atajo" aria-expanded="false" aria-controls="menu-soluciones">Soluciones</button>
+        <button type="button" class="atajo" aria-expanded="false" aria-controls="menu-acerca">Acerca de</button>
+      </nav>
+
+      <div class="acciones">
+        <a class="boton boton-borde" href="#">Iniciar Sesión</a>
+        <a class="boton boton-negro" href="#">Empieza</a>
+      </div>
+    </div>
+
+    <!-- Lo que se despliega al tocar un atajo: la barra crece hacia abajo -->
+    <div class="despliegue">
+      <div class="despliegue-dentro">
+        <ul class="submenu" id="menu-productos" hidden>
+          <li><a href="#">SaaS Restaurante</a></li>
+        </ul>
+        <ul class="submenu" id="menu-soluciones" hidden>
+          <li><a href="#">Planes</a></li>
+        </ul>
+        <ul class="submenu" id="menu-acerca" hidden>
+          <li><a href="#">Nosotros</a></li>
+          <li><a href="#">Contáctanos</a></li>
+        </ul>
+      </div>
+    </div>
+  </header>
+
+  <!-- Desenfoca la página mientras la barra está abierta -->
+  <div class="velo" aria-hidden="true"></div>
+
+  <main>
+    <!-- Aquí va el video (R2, carpeta web/). Mientras, el hueco es negro. -->
+    <section class="video" aria-label="Video de presentación">
+      <h1>Un mundo sin piezas sueltas.</h1>
+    </section>
+  </main>
+</div>
+
+<script>
+// Barra: al pasar el mouse o tocar un atajo, la barra crece y muestra su menú.
+(() => {
+  const barra = document.querySelector('.barra');
+  const nav = barra.querySelector('.atajos');
+  const atajos = [...barra.querySelectorAll('.atajo')];
+  const velo = document.querySelector('.velo');
+  const conMouse = matchMedia('(hover: hover)');
+
+  // Los submenús empiezan donde empiezan los atajos.
+  function alinear() {
+    barra.style.setProperty('--inicio-atajos', nav.getBoundingClientRect().left + 'px');
+  }
+
+  function abrir(atajo) {
+    for (const a of atajos) {
+      const activo = a === atajo;
+      a.setAttribute('aria-expanded', String(activo));
+      document.getElementById(a.getAttribute('aria-controls')).hidden = !activo;
+    }
+    alinear();
+    barra.dataset.abierto = '';
+  }
+
+  function cerrar() {
+    delete barra.dataset.abierto;
+    for (const a of atajos) a.setAttribute('aria-expanded', 'false');
+  }
+
+  for (const a of atajos) {
+    a.addEventListener('mouseenter', () => { if (conMouse.matches) abrir(a); });
+    a.addEventListener('click', (e) => {
+      // Con mouse el clic solo abre; con dedo o teclado abre y cierra.
+      const yaAbierto = a.getAttribute('aria-expanded') === 'true';
+      if (yaAbierto && !(conMouse.matches && e.detail > 0)) cerrar();
+      else abrir(a);
+    });
+  }
+
+  barra.addEventListener('mouseleave', () => { if (conMouse.matches) cerrar(); });
+  barra.addEventListener('focusout', (e) => { if (!barra.contains(e.relatedTarget)) cerrar(); });
+  velo.addEventListener('click', cerrar);
+  document.addEventListener('keydown', (e) => {
+    if (e.key !== 'Escape' || !('abierto' in barra.dataset)) return;
+    const activo = atajos.find((a) => a.getAttribute('aria-expanded') === 'true');
+    cerrar();
+    if (activo) activo.focus();
+  });
+  addEventListener('resize', alinear);
+})();
+</script>
+
+</body>
+</html>

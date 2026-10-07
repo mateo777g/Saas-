@@ -46,13 +46,14 @@ body {
   transition: transform var(--abrir), background-color var(--abrir);
 }
 .barra[data-escondida] { transform: translateY(-100%); }
-/* Al llegar la hoja de la sección 3, la barra regresa sola y no se esconde mientras estás en ella (hoja.js) */
+/* Al llegar la hoja de la sección 3, la barra regresa sola y no se esconde mientras estás en ella o en la
+   franja negra de la sección 4 (hoja.js) */
 :root[data-en-hoja] .barra[data-escondida] { transform: none; }
 
 /* Sobre la parte oscura de la escena, la barra es negra (escena.js pone data-noche);
    al abrir un submenú, la barra entera se vuelve gris oscuro. Sobre la hoja blanca de la sección 3
-   sigue negra, y ahí con el submenú abierto también (hoja.js pone data-en-hoja): es la excepción.
-   Pasada la hoja, vuelve a ser blanca (hoja.js pone data-hoja). */
+   y la franja negra de la sección 4 sigue negra, y ahí con el submenú abierto también (hoja.js pone
+   data-en-hoja): es la excepción. Pasada la franja, vuelve a ser blanca (hoja.js pone data-hoja). */
 :root[data-noche] body { background: var(--noche); }
 :root[data-noche]:not([data-hoja]) .barra,
 :root[data-en-hoja] .barra {
@@ -154,8 +155,6 @@ body {
 .pildora-llena { background: var(--azul); color: #FFFFFF; }
 .pildora:active { transform: scale(0.97); }
 .pildora:focus-visible { outline: 2px solid var(--azul); outline-offset: 2px; }
-/* La chica, la de los cuadros de la sección 4 (medida en la portada de Apple: 36 px de alto) */
-.pildora-chica { height: 36px; padding: 0 15px; font-size: 14px; }
 
 .boton-borde { border-color: var(--borde); color: var(--tinta-suave); }
 .boton-borde:hover { border-color: var(--tinta); color: var(--tinta); }
@@ -267,6 +266,7 @@ body {
    --k es cuánto la encoge: las esquinas crecen lo mismo para que en pantalla se vean siempre igual de redondas. */
 .laptop {
   --radio: 16px;
+  --aluminio: #2A2A2D; /* el del teclado y el de la tapa */
   position: absolute;
   top: var(--alto-barra);
   left: var(--margen);
@@ -295,6 +295,7 @@ body {
   /* La orilla de aluminio de la tapa, para que el marco no se pierda en el fondo negro */
   box-shadow: inset 0 0 0 calc(1.5px / var(--k, 1)) rgb(255 255 255 / calc(var(--marco, 0) * 0.14));
   overflow: hidden;
+  backface-visibility: hidden; /* al cerrarse la laptop, por detrás se ve la tapa y no el video al revés */
 }
 /* Los videos llenan la pantalla (recortando lo que sobre), uno encima del otro: el del panel claro
    empieza invisible y entra cuando se oscurece la página (escena.js). El negro de --hueco va en los
@@ -333,6 +334,19 @@ body {
   text-wrap: balance;
 }
 
+/* La tapa: la espalda de la pantalla, de aluminio liso, viendo hacia atrás. Se ve cuando la laptop se cierra
+   y la pantalla queda boca abajo sobre el teclado; va 2 px (en pantalla) detrás de ella para quedar encima
+   de las teclas y no pelearse con ellas por el mismo plano. */
+.tapa {
+  position: absolute;
+  inset: 0;
+  border-radius: calc(var(--radio) / var(--k, 1));
+  background: var(--aluminio);
+  box-shadow: inset 0 0 0 calc(1.5px / var(--k, 1)) rgb(255 255 255 / 0.14);
+  transform: rotateY(180deg) translateZ(calc(2px / var(--k, 1)));
+  backface-visibility: hidden;
+}
+
 /* El teclado: la otra hoja de la laptop, del ancho de la pantalla, colgada de su orilla de abajo y
    doblada hacia el frente por la bisagra (escena.js le pone el rotateX). De fondo mide lo alto de la
    pantalla, sin pasar de 0.7 veces su ancho (la proporción de una MacBook; en celular la pantalla es
@@ -342,7 +356,6 @@ body {
    centrado debajo de las letras (--trackpad: cuánto se corre por el teclado numérico, medido en la imagen).
    Ser contenedor no le quita el 3D: se comprobó que el canto se ve igual. */
 .teclado {
-  --aluminio: #2A2A2D;
   --proporcion: 3.16; /* 2000×633 */
   --trackpad: -0.116;
   --ancho-teclas: min(94cqw, 56cqh * var(--proporcion));
@@ -646,10 +659,54 @@ body {
   object-position: left center;
 }
 
-/* Sección 4: dos cuadros con foto, como los de la portada de Apple (medidos ahí, en una pantalla de 1902 px:
-   931×580, con 12 px de blanco alrededor y entre ellos; título de 40 px, una línea de 21 px y las píldoras
-   chicas a 14 px una de otra). Mide como media pantalla. Las letras van en blanco sobre la foto, con una
-   sombra suave del lado del texto para que se lean. --foco: hacia dónde se recorta la foto en celular. */
+/* Sección 4: una franja negra entre la hoja y los cuadros, como la del Apple Watch en la página de Apple
+   (medida ahí: el título en mayúsculas de 31 px de alto, la imagen grande en medio y abajo dos renglones de
+   28 px cada 32 px, todo en blanco y centrado). Arriba lleva una línea blanca del grueso del blanco de los
+   cuadros (12 px) que la separa de las manos. Mide el 78 % de la pantalla de alto, con todo y la línea. */
+.franja {
+  box-sizing: border-box;
+  display: grid;
+  min-height: 78vh;
+  min-height: 78svh;
+  border-top: 12px solid var(--fondo);
+  background: var(--noche);
+  color: #FFFFFF;
+  text-align: center;
+}
+/* Lo de adentro va centrado a lo alto en lo que queda debajo de la barra, que sobre la franja siempre se ve
+   (hoja.js) */
+.franja-contenido {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: calc(var(--alto-barra) + 24px) var(--margen) 24px;
+}
+.franja h2 {
+  margin: 0;
+  font-weight: 500; /* todas las palabras igual, sin resaltar ninguna */
+  font-size: 46px; /* 31 px de alto en mayúsculas, como el de Apple */
+  line-height: 1;
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
+}
+.franja img {
+  width: min(626px, 100%); /* 626 × 343 */
+  height: auto;
+  margin: 20px 0 24px;
+}
+.franja p {
+  max-width: 24em;
+  margin: 0;
+  font-size: 28px;
+  line-height: 32px;
+  text-wrap: balance;
+}
+
+/* Sección 5: dos cuadros con foto, como los de la portada de Apple (medidos ahí, en una pantalla de 1902 px:
+   931×580, con 12 px de blanco alrededor y entre ellos; título de 40 px y una línea de 21 px). Mide como
+   media pantalla. Las letras van en blanco sobre la foto, con una sombra suave del lado del texto para que
+   se lean. --foco: hacia dónde se recorta la foto en celular; --frente: su máscara de lo de enfrente. */
 .mosaico {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -673,11 +730,21 @@ body {
   object-fit: cover;
   object-position: var(--foco, 50%) 50%;
 }
+/* La capa oscura (la misma del eslogan del video) y la sombra suave del lado del texto van solo sobre lo de
+   enfrente: las personas, la mesa, las sillas, los papeles. Los arcos del fondo quedan con su color, y la
+   tablet de la mesera también (se ve clara entre lo oscuro). --frente es una máscara sacada de la misma foto
+   (opaca = enfrente, con la orilla suavizada) y se recorta igual que ella. */
+.cuadro::before,
 .cuadro::after {
   content: '';
   position: absolute;
   inset: 0;
   pointer-events: none;
+  mask: var(--frente) var(--foco, 50%) 50% / cover no-repeat;
+}
+.cuadro::before {
+  z-index: 1; /* encima de la foto, que va después */
+  background: var(--capa-video);
 }
 .cuadro-arriba::after { background: linear-gradient(rgb(10 10 11 / 0.6), rgb(10 10 11 / 0) 55%); }
 .cuadro-abajo::after { background: linear-gradient(to top, rgb(10 10 11 / 0.6), rgb(10 10 11 / 0) 55%); }
@@ -701,12 +768,6 @@ body {
   font-size: 21px;
   line-height: 1.19;
   text-wrap: balance;
-}
-.cuadro-botones {
-  display: flex;
-  justify-content: center;
-  gap: 14px;
-  margin-top: 16px;
 }
 
 /* Solo para lectores de pantalla */
@@ -749,6 +810,12 @@ body {
   .vistas-escenario { flex: none; container-type: inline-size; }
   .vistas-tableta { width: 125cqw; }
   /* Los cuadros, uno debajo del otro y más altos que anchos, para que quepa el texto sobre la foto */
+  /* En celular la imagen no crece a lo alto (la limita el ancho): la franja se queda en media pantalla */
+  .franja { min-height: 50vh; }
+  .franja-contenido { padding: 32px var(--margen) 36px; }
+  .franja h2 { font-size: 32px; }
+  .franja img { margin: 16px 0 20px; }
+  .franja p { font-size: 19px; line-height: 24px; }
   .mosaico { grid-template-columns: 1fr; }
   .cuadro { aspect-ratio: 4 / 5; }
   .cuadro-texto { left: 20px; right: 20px; }

@@ -70,16 +70,19 @@
 
       <!-- La laptop (escena.js la mueve entera): la pantalla es la tarjeta del video, y el teclado va pegado
            a su orilla de abajo, como con una bisagra. Arriba, a todo lo ancho, no se ven ni el marco de la
-           pantalla ni el teclado: aparecen mientras se encoge. -->
+           pantalla ni el teclado: aparecen mientras se encoge. Al subir la hoja de la sección 3 se cierra,
+           y entonces se ve la tapa por detrás. -->
       <div class="laptop">
         <!-- Los videos de la página van sin audio. Sobre el fondo blanco se ve el panel oscuro; al
              oscurecerse la página entra el panel claro. Por ahora son grabaciones de prueba (web/prueba/,
              fuera de git); los de verdad vendrán de R2 (carpeta web/). Sin video, el hueco se ve negro. -->
         <div class="video">
-          <video class="video-dia" src="prueba/panel-oscuro.mp4" autoplay muted loop playsinline aria-hidden="true"></video>
+          <video class="video-dia" src="prueba/panel-oscuro2.mp4" autoplay muted loop playsinline aria-hidden="true"></video>
           <video class="video-noche" src="prueba/panel-claro.mp4" autoplay muted loop playsinline aria-hidden="true"></video>
           <h1>Un mundo sin piezas sueltas.</h1>
         </div>
+        <!-- La tapa por detrás de la pantalla: solo se ve al cerrarse -->
+        <div class="tapa" aria-hidden="true"></div>
         <!-- El teclado: las teclas (una imagen, style.css), el trackpad y el canto de enfrente -->
         <div class="teclado" aria-hidden="true">
           <div class="teclas"></div>
@@ -176,30 +179,33 @@
     <div class="hoja-enganche" aria-hidden="true"></div>
   </section>
 
-  <!-- Sección 4: dos cuadros con foto, como los de la portada de Apple: el blanco de la página los rodea y
-       cada uno lleva su título, una línea y dos botones; el de la izquierda con el texto arriba y el de la
+  <!-- Sección 4: una franja negra como la del Apple Watch en la página de Apple: arriba el título en blanco,
+       en medio la libreta con las ventas anotadas a mano y la calculadora (Higgsfield, GPT Image 2.5 Sunburst,
+       sin fondo) y abajo una línea que dice para qué. -->
+  <section class="franja" aria-labelledby="franja-titulo">
+    <div class="franja-contenido">
+      <h2 id="franja-titulo">Adiós a la libreta</h2>
+      <img src="imagenes/libreta.webp" alt="Una libreta abierta con las ventas de la semana anotadas a lápiz y sumadas, un lápiz y una calculadora" width="1943" height="1064" loading="lazy">
+      <p>¿Sigues anotando tus ventas a mano y sumando con la calculadora? Nuestro sistema lo hace por ti.</p>
+    </div>
+  </section>
+
+  <!-- Sección 5: dos cuadros con foto, como los de la portada de Apple: el blanco de la página los rodea y
+       cada uno lleva su título y una línea; el de la izquierda con el texto arriba y el de la
        derecha abajo. Las fotos se generaron en Higgsfield (GPT Image 2.5 Sunburst). -->
   <section class="mosaico" aria-label="Lo que hace el sistema">
-    <article class="cuadro cuadro-arriba">
-      <img src="imagenes/mesera.webp" alt="Una mesera, de espaldas, anota la cuenta en una tablet junto a una mesa con tres clientes" width="1920" height="1086" loading="lazy" style="--foco: 60%">
+    <article class="cuadro cuadro-arriba" style="--foco: 60%; --frente: url('imagenes/mesera-frente.webp')">
+      <img src="imagenes/mesera.webp" alt="Una mesera, de espaldas, anota la cuenta en una tablet junto a una mesa con tres clientes" width="1920" height="1086" loading="lazy">
       <div class="cuadro-texto">
         <h2>Punto de venta</h2>
         <p>Toma pedidos y cierra cuentas desde la mesa.</p>
-        <div class="cuadro-botones">
-          <a class="pildora pildora-llena pildora-chica" href="#">Más información</a>
-          <a class="pildora pildora-chica" href="#">Comprar</a>
-        </div>
       </div>
     </article>
-    <article class="cuadro cuadro-abajo">
-      <img src="imagenes/cuentas.webp" alt="Alguien, de espaldas, hace las cuentas del restaurante con calculadora entre montones de tickets" width="1920" height="1086" loading="lazy" style="--foco: 55%">
+    <article class="cuadro cuadro-abajo" style="--foco: 55%; --frente: url('imagenes/cuentas-frente.webp')">
+      <img src="imagenes/cuentas.webp" alt="Alguien, de espaldas, hace las cuentas del restaurante con calculadora entre montones de tickets" width="1920" height="1086" loading="lazy">
       <div class="cuadro-texto">
-        <h2>Agente IA</h2>
+        <h2>Agente de IA</h2>
         <p>Deja la calculadora: pregúntale cuánto vendiste.</p>
-        <div class="cuadro-botones">
-          <a class="pildora pildora-llena pildora-chica" href="#">Más información</a>
-          <a class="pildora pildora-chica" href="#">Comprar</a>
-        </div>
       </div>
     </article>
   </section>

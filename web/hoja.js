@@ -7,6 +7,7 @@
   const hoja = document.querySelector('.hoja');
   const fija = hoja.querySelector('.hoja-fija');
   const filaBarra = document.querySelector('.barra-fila');
+  const franja = document.querySelector('.franja');
 
   const limitar = (v) => Math.min(1, Math.max(0, v));
 
@@ -31,12 +32,14 @@
     // Si lo de adentro mide más que la pantalla, el enganche la deja quieta por abajo, no cortada.
     fija.style.setProperty('--fija-arriba', `${Math.min(0, altoPantalla - fija.offsetHeight)}px`);
 
-    // Desde que la hoja (ya con su escala) pasa la mitad de la barra y mientras siga debajo de ella, la barra
-    // se queda a la vista y negra, también con el submenú abierto (style.css). Pasada la hoja, vuelve a ser blanca.
+    // Desde que la hoja (ya con su escala) pasa la mitad de la barra y mientras ella o la franja negra que le
+    // sigue (sección 4) estén debajo, la barra se queda a la vista y negra, también con el submenú abierto
+    // (style.css). Pasada la franja, vuelve a ser blanca.
     const caja = hoja.getBoundingClientRect();
     const mitadBarra = filaBarra.offsetHeight / 2;
     document.documentElement.toggleAttribute('data-hoja', caja.top <= mitadBarra);
-    document.documentElement.toggleAttribute('data-en-hoja', caja.top <= mitadBarra && caja.bottom > mitadBarra);
+    document.documentElement.toggleAttribute('data-en-hoja',
+      caja.top <= mitadBarra && franja.getBoundingClientRect().bottom > mitadBarra);
   }
 
   function pedirCuadro() {

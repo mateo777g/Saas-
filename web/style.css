@@ -9,6 +9,7 @@
   --borde: #C9C9CC;
   --azul: #1355E8;
   --azul-claro: #8AB4FF; /* el primer color que les pasa a los títulos de la escena */
+  --azul-noche: #3D7BFF; /* el azul de la marca más claro (mismo tono), para que la píldora vacía se vea sobre negro */
   --noche: #0A0A0B;
   --barra-noche: #1C1C1E; /* gris un poco oscuro: la barra abierta, con su submenú, sobre la sección oscura */
   --hueco: #0A0A0B; /* negro de la marca: lo que se ve mientras el video carga */
@@ -33,6 +34,10 @@ body {
   color: var(--tinta);
   font-family: var(--letra);
 }
+
+/* El texto seleccionado se marca en gris, no en el azul del sistema. Medio transparente para que sirva igual
+   sobre blanco (gris claro con letra negra), sobre negro (gris oscuro con letra blanca) y sobre el video. */
+::selection { background: rgba(142, 142, 147, 0.45); }
 
 /* Barra: fija arriba, de orilla a orilla; al bajar se esconde y al subir regresa (barra.js) */
 .barra {
@@ -487,6 +492,9 @@ body {
   gap: 12px 17px;
   margin-top: 40px;
 }
+/* Sobre el negro de la escena, la vacía (Comprar) va en el azul más claro para que se vea; con el cursor
+   encima se rellena del azul de la marca, igual que en todas */
+.texto-botones .pildora:not(.pildora-llena):not(:hover) { border-color: var(--azul-noche); color: var(--azul-noche); }
 
 /* Las palabras de los párrafos se encienden una tras otra (--i: su lugar, escena.js) */
 .se-enciende span {
@@ -567,23 +575,34 @@ body {
   outline: none;
 }
 
-/* El texto de la vista que se ve, arriba de los botones */
+/* El texto de la vista que se ve, arriba de los botones: el título es la frase fija en gris y el nombre de
+   la vista en negro, en un renglón centrado. Los nombres van encimados y su caja mide lo que el de la vista
+   del frente (--ancho-nombre, vistas.js): al cambiar de vista la caja se estira o se encoge con el mismo
+   resorte de la pista, y la frase fija se corre suave para que el renglón siga centrado. */
 .vistas-textos {
-  display: grid;
-  width: min(34em, calc(100% - 2 * var(--margen)));
+  width: calc(100% - 2 * var(--margen));
   margin: 0 auto;
   text-align: center;
 }
-.vistas-texto { grid-area: 1 / 1; visibility: hidden; }
-.vistas-texto[data-dentro] { visibility: visible; }
-.vistas-texto h2 {
+.vistas-textos h2 {
   margin: 0;
   font-weight: 500;
   font-size: clamp(1.375rem, 1.7vw, 2rem);
   line-height: 1.2;
   letter-spacing: -0.025em;
 }
-.vistas-texto p {
+.vistas-fijo { color: var(--tinta-suave); }
+.vistas-nombres {
+  display: inline-grid;
+  width: var(--ancho-nombre, auto);
+  text-align: left;
+  white-space: nowrap;
+  transition: width 0.25s var(--resorte);
+}
+.vistas-nombre { grid-area: 1 / 1; justify-self: start; }
+.vistas-descripciones { display: grid; }
+.vistas-descripcion {
+  grid-area: 1 / 1;
   margin: 12px auto 0;
   max-width: 26em;
   font-size: clamp(0.875rem, 0.85vw, 1rem);
@@ -591,6 +610,8 @@ body {
   color: var(--tinta-suave);
   text-wrap: balance;
 }
+:is(.vistas-nombre, .vistas-descripcion) { visibility: hidden; }
+:is(.vistas-nombre, .vistas-descripcion)[data-dentro] { visibility: visible; }
 
 /* Anterior y Siguiente (.pildora, junto a los botones de la barra), 17 px entre ellos */
 .vistas-botones {
@@ -673,14 +694,14 @@ body {
   color: #FFFFFF;
   text-align: center;
 }
-/* Lo de adentro va centrado a lo alto en lo que queda debajo de la barra, que sobre la franja siempre se ve
-   (hoja.js) */
+/* Lo de adentro va centrado a lo alto en toda la franja: el mismo aire arriba y abajo (entre los dos suman
+   lo que antes, para que la franja no cambie de tamaño) */
 .franja-contenido {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: calc(var(--alto-barra) + 24px) var(--margen) 24px;
+  padding: calc(var(--alto-barra) / 2 + 24px) var(--margen);
 }
 .franja h2 {
   margin: 0;
@@ -807,6 +828,10 @@ body {
   /* En celular sobra alto: el texto, los botones y la tablet van juntos hasta abajo, y la tablet es más
      ancha que la pantalla (las manos se salen por los lados) para que su pantalla se vea grande */
   .vistas { padding-top: calc(var(--alto-barra) + 32px); justify-content: flex-end; }
+  /* El título no cabe en un renglón: la frase fija arriba y el nombre de la vista, centrado, abajo */
+  .vistas-fijo { display: block; }
+  .vistas-nombres { width: auto; }
+  .vistas-nombre { justify-self: center; }
   .vistas-escenario { flex: none; container-type: inline-size; }
   .vistas-tableta { width: 125cqw; }
   /* Los cuadros, uno debajo del otro y más altos que anchos, para que quepa el texto sobre la foto */
@@ -833,5 +858,5 @@ body {
   /* La tarjeta no se gira: el teclado de frente no se vería, solo estorbaría */
   .teclado { display: none; }
   /* Las vistas cambian de golpe */
-  .vistas-pista, .pildora { transition: none; }
+  .vistas-pista, .vistas-nombres, .pildora { transition: none; }
 }

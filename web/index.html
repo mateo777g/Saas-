@@ -116,40 +116,34 @@
         <!-- Las vistas del panel (vistas.js), como la página del iPhone: arriba el texto de la vista que se ve
              y los botones; abajo unas manos que sostienen una tablet, y en su pantalla las capturas pasan de
              lado una tras otra. Se pasan con los botones, las flechas del teclado o arrastrando la pantalla.
-             El texto de cada vista es el de vistas-textos con su mismo lugar en la lista. La tablet es una
+             El nombre y la descripción de cada vista son los de su mismo lugar en la lista. La tablet es una
              imagen generada con la pantalla vacía (imagenes/tableta-manos.webp); las capturas van detrás y se
              ven por el hueco, debajo de los pulgares. Por ahora son capturas de prueba (web/prueba/, fuera de git). -->
         <div class="vistas" role="region" aria-roledescription="carrusel" aria-label="Vistas del panel" tabindex="0">
-          <!-- Todos ocupan el mismo lugar y solo se ve el de la vista del frente: así los botones no brincan
-               cuando una descripción tiene más renglones que otra -->
+          <!-- El título empieza con una frase fija y sigue con el nombre de la vista del frente. Los nombres y
+               las descripciones ocupan cada uno el mismo lugar y solo se ve el de la vista del frente: así los
+               botones no brincan cuando una descripción tiene más renglones que otra -->
           <div class="vistas-textos">
-            <div class="vistas-texto">
-              <h2>Inicia sesión</h2>
-              <p>Entra con tu correo y tu contraseña para administrar tu restaurante.</p>
-            </div>
-            <div class="vistas-texto">
-              <h2>Inicio</h2>
-              <p>Lo vendido hoy, tus mesas, lo más vendido y lo último de tu menú, de un vistazo.</p>
-            </div>
-            <div class="vistas-texto">
-              <h2>Mi menú</h2>
-              <p>Agrega tus platillos con foto, precio y categoría, y ocúltalos cuando se agoten.</p>
-            </div>
-            <div class="vistas-texto">
-              <h2>Mesas</h2>
-              <p>Qué mesas están ocupadas, desde hace cuánto y cuánto llevan de cuenta.</p>
-            </div>
-            <div class="vistas-texto">
-              <h2>Agente IA</h2>
-              <p>Pregúntale lo que quieras de tu negocio: te responde con las cifras de tus ventas cerradas.</p>
-            </div>
-            <div class="vistas-texto">
-              <h2>Crear contenido</h2>
-              <p>Elige un platillo y el formato, y la IA arma tu anuncio para Instagram con los datos de tu negocio.</p>
-            </div>
-            <div class="vistas-texto">
-              <h2>Mi biblioteca</h2>
-              <p>Todos tus anuncios guardados por día, posts e historias, listos para descargar.</p>
+            <h2>
+              <span class="vistas-fijo">Nuestro sistema tiene:</span>
+              <span class="vistas-nombres">
+                <span class="vistas-nombre">Inicio de sesión</span>
+                <span class="vistas-nombre">Inicio</span>
+                <span class="vistas-nombre">Menú</span>
+                <span class="vistas-nombre">Mesas</span>
+                <span class="vistas-nombre">Agente de IA</span>
+                <span class="vistas-nombre">Creación de contenido</span>
+                <span class="vistas-nombre">Biblioteca</span>
+              </span>
+            </h2>
+            <div class="vistas-descripciones">
+              <p class="vistas-descripcion">Entra con tu correo y tu contraseña para administrar tu restaurante.</p>
+              <p class="vistas-descripcion">Lo vendido hoy, tus mesas, lo más vendido y lo último de tu menú, de un vistazo.</p>
+              <p class="vistas-descripcion">Agrega tus platillos con foto, precio y categoría, y ocúltalos cuando se agoten.</p>
+              <p class="vistas-descripcion">Qué mesas están ocupadas, desde hace cuánto y cuánto llevan de cuenta.</p>
+              <p class="vistas-descripcion">Pregúntale lo que quieras de tu negocio: te responde con las cifras de tus ventas cerradas.</p>
+              <p class="vistas-descripcion">Elige un platillo y el formato, y la IA arma tu anuncio para Instagram con los datos de tu negocio.</p>
+              <p class="vistas-descripcion">Todos tus anuncios guardados por día, posts e historias, listos para descargar.</p>
             </div>
           </div>
           <div class="vistas-botones">

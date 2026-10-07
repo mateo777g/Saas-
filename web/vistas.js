@@ -10,7 +10,9 @@
   const pantalla = vistas.querySelector('.vistas-pantalla');
   const pista = vistas.querySelector('.vistas-pista');
   const capturas = [...pista.children];
-  const textos = [...vistas.querySelectorAll('.vistas-texto')];
+  const cajaNombres = vistas.querySelector('.vistas-nombres');
+  const nombres = [...cajaNombres.children];
+  const descripciones = [...vistas.querySelectorAll('.vistas-descripcion')];
   const aviso = vistas.querySelector('.solo-lector');
   const sinMovimiento = matchMedia('(prefers-reduced-motion: reduce)');
   const n = capturas.length;
@@ -29,13 +31,24 @@
     pista.style.transform = `translateX(calc(${-actual * 100}% + ${arrastrado}px))`;
   }
 
+  // La caja de los nombres mide lo que el de la vista del frente, para que el título quede centrado
+  // (style.css). El ancho de cada nombre lo da el ResizeObserver de abajo, sin la escala de la hoja (que
+  // arranca al 90 %), y cambia al cargar la letra y al cambiar el ancho de la pantalla (la letra crece con él).
+  const anchos = nombres.map((nombre) => nombre.offsetWidth);
+
+  function medirNombre() {
+    cajaNombres.style.setProperty('--ancho-nombre', `${anchos[actual]}px`);
+  }
+
   function acomodar() {
     correr();
     capturas.forEach((captura, i) => {
       if (i === actual) captura.removeAttribute('aria-hidden');
       else captura.setAttribute('aria-hidden', 'true');
     });
-    textos.forEach((texto, i) => texto.toggleAttribute('data-dentro', i === actual));
+    nombres.forEach((nombre, i) => nombre.toggleAttribute('data-dentro', i === actual));
+    descripciones.forEach((descripcion, i) => descripcion.toggleAttribute('data-dentro', i === actual));
+    medirNombre();
     aviso.textContent = `Vista ${actual + 1} de ${n}`;
   }
 
@@ -114,5 +127,10 @@
   pantalla.addEventListener('pointerup', soltar);
   pantalla.addEventListener('pointercancel', soltar);
 
+  const observador = new ResizeObserver((cambios) => {
+    for (const cambio of cambios) anchos[nombres.indexOf(cambio.target)] = cambio.borderBoxSize[0].inlineSize;
+    medirNombre();
+  });
+  nombres.forEach((nombre) => observador.observe(nombre));
   acomodar();
 })();

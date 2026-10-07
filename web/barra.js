@@ -30,6 +30,34 @@
     barra.style.setProperty('--inicio-atajos', nav.getBoundingClientRect().left + 'px');
   }
 
+  // Mientras la barra está abierta la página no se mueve: ni con la rueda del mouse (salvo Ctrl + rueda, que
+  // es el zoom), ni con el dedo, ni con las teclas de bajar. No se le quita el scroll a la página para que su
+  // barra de scroll no desaparezca y nada brinque de lado. Con el mouse, la barra se cierra al salir de ella,
+  // así que tampoco se alcanza a arrastrar la barra de scroll.
+  const TECLAS_SCROLL = new Set([' ', 'PageUp', 'PageDown', 'Home', 'End', 'ArrowUp', 'ArrowDown']);
+
+  function frenar(e) {
+    if (!e.ctrlKey) e.preventDefault();
+  }
+
+  function frenarTeclas(e) {
+    if (!TECLAS_SCROLL.has(e.key)) return;
+    if (e.key === ' ' && e.target.closest('button')) return; // con la barra de espacio se pica el botón
+    e.preventDefault();
+  }
+
+  function bloquearScroll(bloquear) {
+    if (bloquear) {
+      addEventListener('wheel', frenar, { passive: false });
+      addEventListener('touchmove', frenar, { passive: false });
+      addEventListener('keydown', frenarTeclas);
+    } else {
+      removeEventListener('wheel', frenar);
+      removeEventListener('touchmove', frenar);
+      removeEventListener('keydown', frenarTeclas);
+    }
+  }
+
   function abrir(atajo) {
     for (const a of atajos) {
       const activo = a === atajo;
@@ -38,11 +66,13 @@
     }
     alinear();
     barra.dataset.abierto = '';
+    bloquearScroll(true);
   }
 
   function cerrar() {
     delete barra.dataset.abierto;
     for (const a of atajos) a.setAttribute('aria-expanded', 'false');
+    bloquearScroll(false);
   }
 
   for (const a of atajos) {

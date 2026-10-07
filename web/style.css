@@ -10,7 +10,7 @@
   --azul: #1355E8;
   --azul-claro: #8AB4FF; /* el primer color que les pasa a los títulos de la escena */
   --azul-noche: #3D7BFF; /* el azul de la marca más claro (mismo tono), para que la píldora vacía se vea sobre negro */
-  --noche: #0A0A0B;
+  --noche: #000000; /* las secciones oscuras y la barra sobre ellas: negro total, no el de la marca */
   --barra-noche: #1C1C1E; /* gris un poco oscuro: la barra abierta, con su submenú, sobre la sección oscura */
   --hueco: #0A0A0B; /* negro de la marca: lo que se ve mientras el video carga */
   --sobre-hueco: #FFFFFF;
@@ -233,14 +233,12 @@ body {
 .boton:focus-visible,
 .submenu a:focus-visible { outline: 2px solid var(--tinta); outline-offset: 4px; }
 
-/* Velo: desenfoca la página mientras la barra está abierta */
+/* Velo: oscurece la página mientras la barra está abierta, sin desenfocarla */
 .velo {
   position: fixed;
   inset: 0;
   z-index: 5;
   background: var(--velo);
-  -webkit-backdrop-filter: blur(12px);
-  backdrop-filter: blur(12px);
   opacity: 0;
   pointer-events: none;
   transition: opacity var(--abrir);
@@ -575,8 +573,8 @@ body {
   outline: none;
 }
 
-/* El texto de la vista que se ve, arriba de los botones: el título es la frase fija en gris y el nombre de
-   la vista en negro, en un renglón centrado. Los nombres van encimados y su caja mide lo que el de la vista
+/* El texto de la vista que se ve, arriba de los botones: el título es la frase fija y el nombre de la vista,
+   los dos en negro, en un renglón centrado. Los nombres van encimados y su caja mide lo que el de la vista
    del frente (--ancho-nombre, vistas.js): al cambiar de vista la caja se estira o se encoge con el mismo
    resorte de la pista, y la frase fija se corre suave para que el renglón siga centrado. */
 .vistas-textos {
@@ -591,7 +589,6 @@ body {
   line-height: 1.2;
   letter-spacing: -0.025em;
 }
-.vistas-fijo { color: var(--tinta-suave); }
 .vistas-nombres {
   display: inline-grid;
   width: var(--ancho-nombre, auto);
@@ -726,8 +723,8 @@ body {
 
 /* Sección 5: dos cuadros con foto, como los de la portada de Apple (medidos ahí, en una pantalla de 1902 px:
    931×580, con 12 px de blanco alrededor y entre ellos; título de 40 px y una línea de 21 px). Mide como
-   media pantalla. Las letras van en blanco sobre la foto, con una sombra suave del lado del texto para que
-   se lean. --foco: hacia dónde se recorta la foto en celular; --frente: su máscara de lo de enfrente. */
+   media pantalla. Las letras van en blanco sobre la foto tal cual, sin capas encima.
+   --foco: hacia dónde se recorta la foto en celular. */
 .mosaico {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -751,29 +748,10 @@ body {
   object-fit: cover;
   object-position: var(--foco, 50%) 50%;
 }
-/* La capa oscura (la misma del eslogan del video) y la sombra suave del lado del texto van solo sobre lo de
-   enfrente: las personas, la mesa, las sillas, los papeles. Los arcos del fondo quedan con su color, y la
-   tablet de la mesera también (se ve clara entre lo oscuro). --frente es una máscara sacada de la misma foto
-   (opaca = enfrente, con la orilla suavizada) y se recorta igual que ella. */
-.cuadro::before,
-.cuadro::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  mask: var(--frente) var(--foco, 50%) 50% / cover no-repeat;
-}
-.cuadro::before {
-  z-index: 1; /* encima de la foto, que va después */
-  background: var(--capa-video);
-}
-.cuadro-arriba::after { background: linear-gradient(rgb(10 10 11 / 0.6), rgb(10 10 11 / 0) 55%); }
-.cuadro-abajo::after { background: linear-gradient(to top, rgb(10 10 11 / 0.6), rgb(10 10 11 / 0) 55%); }
 .cuadro-texto {
   position: absolute;
   left: 24px;
   right: 24px;
-  z-index: 1; /* encima de la sombra */
 }
 .cuadro-arriba .cuadro-texto { top: 48px; }
 .cuadro-abajo .cuadro-texto { bottom: 60px; }
@@ -790,6 +768,84 @@ body {
   line-height: 1.19;
   text-wrap: balance;
 }
+
+/* Sección 6: un espacio blanco de media pantalla para los logos de los restaurantes que trabajen con
+   Fragmentless (vacío hasta que haya clientes). El fondo va puesto porque el de la página es negro desde
+   la escena. */
+.clientes {
+  min-height: 50vh;
+  min-height: 50svh;
+  background: var(--fondo);
+}
+
+/* El pie, en negro total como las secciones oscuras: a la izquierda el logo (igual que en la barra), el
+   eslogan y las redes; a la derecha los atajos de la barra, cada uno con lo de su submenú; abajo, tras una
+   línea, los derechos y los avisos legales. Letras blancas y enlaces en gris que se ponen blancos al pasar. */
+.pie {
+  --tinta: #FFFFFF;
+  --tinta-suave: #A1A1A6;
+  --borde: #3A3A3D;
+  padding: 64px var(--margen) 32px;
+  background: var(--noche);
+  color: var(--tinta);
+  font-size: 14px;
+}
+.pie ul { margin: 0; padding: 0; list-style: none; }
+.pie a { text-decoration: none; }
+.pie :is(.pie-redes, .pie-atajos, .pie-legal) a {
+  color: var(--tinta-suave);
+  transition: color var(--abrir);
+}
+@media (hover: hover) {
+  .pie :is(.pie-redes, .pie-atajos, .pie-legal) a:hover { color: var(--tinta); }
+}
+.pie a:focus-visible { outline: 2px solid var(--tinta); outline-offset: 4px; border-radius: 4px; }
+
+.pie-arriba {
+  display: flex;
+  justify-content: space-between;
+  gap: 48px;
+}
+/* El eslogan grande y en blanco, con el grosor y el apretado del del video */
+.pie-eslogan {
+  margin: 24px 0 0;
+  font-size: clamp(2.75rem, 5.5vw, 6.5rem); /* 104 px en una pantalla de 1919 */
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+  text-wrap: balance;
+}
+.pie .pie-redes {
+  display: flex;
+  gap: 16px;
+  margin-top: 24px;
+}
+.pie-redes a { display: block; }
+.pie-redes svg { display: block; width: 20px; height: 20px; fill: currentColor; }
+
+.pie-atajos {
+  display: flex;
+  gap: 96px;
+}
+.pie-atajos h2 {
+  margin: 0 0 16px;
+  font-size: 15px; /* como los atajos de la barra */
+  font-weight: 400;
+}
+.pie-atajos li + li { margin-top: 12px; }
+
+.pie-abajo {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 12px 24px;
+  margin-top: 64px;
+  padding-top: 24px;
+  border-top: 1px solid var(--borde);
+  font-size: 13px;
+  color: var(--tinta-suave);
+}
+.pie-abajo p { margin: 0; }
+.pie-legal { display: flex; gap: 24px; }
 
 /* Solo para lectores de pantalla */
 .solo-lector {
@@ -848,6 +904,11 @@ body {
   .cuadro-abajo .cuadro-texto { bottom: 40px; }
   .cuadro h2 { font-size: 28px; }
   .cuadro p { font-size: 17px; }
+  /* El pie, uno debajo del otro: la marca, los atajos en dos columnas y abajo los derechos y los avisos */
+  .pie { padding-top: 48px; }
+  .pie-arriba { flex-direction: column; gap: 40px; }
+  .pie-atajos { display: grid; grid-template-columns: 1fr 1fr; gap: 32px 24px; }
+  .pie-abajo { flex-direction: column; margin-top: 40px; }
 }
 
 @media (prefers-reduced-motion: reduce) {

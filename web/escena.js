@@ -58,19 +58,24 @@
     lado: [0.62, Infinity],
   };
 
-  // Cada palabra de los párrafos que se encienden va en su propio <span> (ver .se-enciende en style.css);
-  // el texto entero sabe cuántas son, para que su botón salga después de la última.
-  for (const p of escena.querySelectorAll('.se-enciende')) {
-    const palabras = p.textContent.trim().split(/\s+/);
-    p.replaceChildren();
+  // Cada palabra de los párrafos que se encienden y de los títulos que se pintan va en su propio <span>
+  // (ver .se-enciende y .se-pinta en style.css), con su lugar en --i.
+  const partirEnPalabras = (elemento) => {
+    const palabras = elemento.textContent.trim().split(/\s+/);
+    elemento.replaceChildren();
     palabras.forEach((palabra, i) => {
       const span = document.createElement('span');
       span.textContent = palabra;
       span.style.setProperty('--i', i);
-      p.append(span, i < palabras.length - 1 ? ' ' : '');
+      elemento.append(span, i < palabras.length - 1 ? ' ' : '');
     });
-    p.parentElement.style.setProperty('--n', palabras.length);
+    return palabras.length;
+  };
+  // El texto entero sabe cuántas palabras tiene su párrafo, para que sus botones salgan después de la última.
+  for (const p of escena.querySelectorAll('.se-enciende')) {
+    p.parentElement.style.setProperty('--n', partirEnPalabras(p));
   }
+  for (const titulo of escena.querySelectorAll('.se-pinta')) partirEnPalabras(titulo);
 
   const limitar = (v) => Math.min(1, Math.max(0, v));
   const deMenosAMasUno = (v) => Math.min(1, Math.max(-1, v));

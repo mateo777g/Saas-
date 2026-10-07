@@ -8,6 +8,7 @@
   --tinta-suave: #6E6E73;
   --borde: #C9C9CC;
   --azul: #1355E8;
+  --azul-claro: #8AB4FF; /* el primer color que les pasa a los títulos de la escena */
   --noche: #0A0A0B;
   --barra-noche: #1C1C1E; /* gris un poco oscuro: la barra abierta, con su submenú, sobre la sección oscura */
   --hueco: #0A0A0B; /* negro de la marca: lo que se ve mientras el video carga */
@@ -127,6 +128,33 @@ body {
   white-space: nowrap;
   transition: background-color var(--abrir), border-color var(--abrir), color var(--abrir), opacity var(--abrir);
 }
+/* Píldoras como las de la página del iPhone (medidas de ahí: 44 px de alto), en el azul de la marca: la
+   llena y la vacía, solo con el borde. Van en pares (Más información y Comprar en la escena, Anterior y
+   Siguiente en las vistas). Al picarlas se encogen un poco. */
+.pildora {
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  height: 44px;
+  padding: 0 22px;
+  border: 1px solid var(--azul);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--azul);
+  font: inherit;
+  font-size: 17px;
+  line-height: 1;
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: transform 150ms ease-out, background-color 150ms ease-out, color 150ms ease-out;
+}
+/* La vacía, con el cursor encima, se rellena de su azul y queda igual que la llena (que no cambia) */
+.pildora:hover,
+.pildora-llena { background: var(--azul); color: #FFFFFF; }
+.pildora:active { transform: scale(0.97); }
+.pildora:focus-visible { outline: 2px solid var(--azul); outline-offset: 2px; }
+
 .boton-borde { border-color: var(--borde); color: var(--tinta-suave); }
 .boton-borde:hover { border-color: var(--tinta); color: var(--tinta); }
 .boton-negro { background: var(--tinta); color: var(--fondo); font-weight: 500; }
@@ -389,18 +417,18 @@ body {
 :is(.texto-centro, .texto-lado)[data-dentro] { visibility: visible; transition: none; }
 
 /* Entran subiendo 16 px; al irse solo se desvanecen, y ya invisibles vuelven abajo */
-:is(.texto-centro, .texto-lado) :is(h2, p, .texto-boton) {
+:is(.texto-centro, .texto-lado) :is(h2, p, .texto-botones) {
   opacity: 0;
   transform: translateY(16px);
   transition: opacity var(--salir) ease, transform 0s var(--salir);
 }
-:is(.texto-centro, .texto-lado)[data-dentro] :is(h2, p, .texto-boton) {
+:is(.texto-centro, .texto-lado)[data-dentro] :is(h2, p, .texto-botones) {
   opacity: 1;
   transform: none;
   transition: opacity var(--entrar) var(--espera, 0s), transform var(--entrar) var(--espera, 0s);
 }
 /* El botón, cuando ya se encendió la última palabra (--n: cuántas son, escena.js) */
-.texto-boton { --espera: calc(var(--palabras) + var(--n) * var(--paso) + 0.15s); }
+.texto-botones { --espera: calc(var(--palabras) + var(--n) * var(--paso) + 0.15s); }
 .escena h2 {
   margin: 0;
   font-weight: 400;
@@ -437,7 +465,13 @@ body {
   max-width: 30vw;
   transform: translateY(-50%);
 }
-.texto-boton { margin-top: 40px; }
+/* Más información y Comprar, uno junto al otro (si no caben en el ancho del texto, uno debajo del otro) */
+.texto-botones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 17px;
+  margin-top: 40px;
+}
 
 /* Las palabras de los párrafos se encienden una tras otra (--i: su lugar, escena.js) */
 .se-enciende span {
@@ -449,18 +483,20 @@ body {
   transition: opacity 0.4s ease calc(var(--palabras) + var(--i) * var(--paso));
 }
 
-.boton-blanco { gap: 8px; background: #FFFFFF; color: var(--noche); font-weight: 500; }
-.boton-blanco:hover { opacity: 0.85; }
-.boton-blanco svg {
-  width: 14px;
-  height: 14px;
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 1.6;
-  stroke-linecap: round;
-  stroke-linejoin: round;
+/* A los títulos les pasan dos colores encima, palabra por palabra de izquierda a derecha, mientras entran
+   (--i: su lugar, escena.js): llegan en azul claro, el azul de la marca las va cubriendo y luego el blanco,
+   y se quedan blancos. Medido de un video de scale.com a 30 cuadros por segundo: cada palabra empieza 35 ms
+   después de la de su izquierda y tarda 0.13 s en cambiar de color; el azul entra a los 50 ms y el blanco
+   a los 0.4 s. */
+:is(.texto-centro, .texto-lado)[data-dentro] .se-pinta span {
+  animation: pintar 0.53s linear calc(var(--i) * 35ms) both;
 }
-.escena .boton:focus-visible { outline-color: #FFFFFF; }
+@keyframes pintar {
+  0%, 9.4% { color: var(--azul-claro); }
+  34%, 75.5% { color: var(--azul); }
+  100% { color: #FFFFFF; }
+}
+
 
 /* Sección 3: la hoja blanca. Se monta sobre la última pantalla de la escena (margin-top negativo),
    así sube encima de ella en vez de empujarla. hoja.js le da --subida (0 = su borde de arriba toca
@@ -541,33 +577,13 @@ body {
   text-wrap: balance;
 }
 
-/* Anterior y Siguiente, como los del ejemplo: blancos con borde gris; al picarlos se encogen un poco */
+/* Anterior y Siguiente (.pildora, junto a los botones de la barra), 17 px entre ellos */
 .vistas-botones {
   display: flex;
   justify-content: center;
-  gap: 16px;
+  gap: 17px;
   margin-top: 28px;
 }
-.boton-vistas {
-  box-sizing: border-box;
-  height: 36px;
-  padding: 0 16px;
-  border: 1px solid #E5E5E5;
-  border-radius: 8px;
-  background: var(--fondo);
-  color: var(--tinta);
-  font: inherit;
-  font-size: 14px;
-  font-weight: 500;
-  line-height: 20px;
-  white-space: nowrap;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
-  cursor: pointer;
-  transition: transform 150ms ease-out;
-}
-.boton-vistas:hover { background: #F5F5F5; }
-.boton-vistas:active { transform: scale(0.97); }
-.boton-vistas:focus-visible { outline: 2px solid #A1A1A1; outline-offset: 2px; }
 
 /* El hueco para la tablet: lo que sobra debajo de los botones. Su tamaño no depende de lo de adentro
    (container-type), así la tablet se mide con él: tan ancha como quepa a lo alto, sin pasar del 92 % del ancho. */
@@ -661,7 +677,7 @@ body {
     max-width: none;
     transform: none;
   }
-  .texto-boton { margin-top: 28px; }
+  .texto-botones { margin-top: 28px; }
   /* En celular sobra alto: el texto, los botones y la tablet van juntos hasta abajo, y la tablet es más
      ancha que la pantalla (las manos se salen por los lados) para que su pantalla se vea grande */
   .vistas { padding-top: calc(var(--alto-barra) + 32px); justify-content: flex-end; }
@@ -673,9 +689,9 @@ body {
   :root { --abrir: 0s; }
   .barra[data-abierto] .submenu li { animation: none; }
   .rueda span { transition: none; }
-  :is(.texto-centro, .texto-lado) :is(h2, p, .texto-boton) { transform: none; }
+  :is(.texto-centro, .texto-lado) :is(h2, p, .texto-botones) { transform: none; }
   /* La tarjeta no se gira: el teclado de frente no se vería, solo estorbaría */
   .teclado { display: none; }
   /* Las vistas cambian de golpe */
-  .vistas-pista, .boton-vistas { transition: none; }
+  .vistas-pista, .pildora { transition: none; }
 }

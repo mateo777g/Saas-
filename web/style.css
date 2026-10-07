@@ -154,6 +154,8 @@ body {
 .pildora-llena { background: var(--azul); color: #FFFFFF; }
 .pildora:active { transform: scale(0.97); }
 .pildora:focus-visible { outline: 2px solid var(--azul); outline-offset: 2px; }
+/* La chica, la de los cuadros de la sección 4 (medida en la portada de Apple: 36 px de alto) */
+.pildora-chica { height: 36px; padding: 0 15px; font-size: 14px; }
 
 .boton-borde { border-color: var(--borde); color: var(--tinta-suave); }
 .boton-borde:hover { border-color: var(--tinta); color: var(--tinta); }
@@ -644,6 +646,69 @@ body {
   object-position: left center;
 }
 
+/* Sección 4: dos cuadros con foto, como los de la portada de Apple (medidos ahí, en una pantalla de 1902 px:
+   931×580, con 12 px de blanco alrededor y entre ellos; título de 40 px, una línea de 21 px y las píldoras
+   chicas a 14 px una de otra). Mide como media pantalla. Las letras van en blanco sobre la foto, con una
+   sombra suave del lado del texto para que se lean. --foco: hacia dónde se recorta la foto en celular. */
+.mosaico {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  padding: 12px;
+  background: var(--fondo);
+}
+.cuadro {
+  position: relative;
+  aspect-ratio: 931 / 580;
+  overflow: hidden;
+  background: var(--noche); /* mientras carga la foto */
+  color: #FFFFFF;
+  text-align: center;
+}
+.cuadro img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: var(--foco, 50%) 50%;
+}
+.cuadro::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.cuadro-arriba::after { background: linear-gradient(rgb(10 10 11 / 0.6), rgb(10 10 11 / 0) 55%); }
+.cuadro-abajo::after { background: linear-gradient(to top, rgb(10 10 11 / 0.6), rgb(10 10 11 / 0) 55%); }
+.cuadro-texto {
+  position: absolute;
+  left: 24px;
+  right: 24px;
+  z-index: 1; /* encima de la sombra */
+}
+.cuadro-arriba .cuadro-texto { top: 48px; }
+.cuadro-abajo .cuadro-texto { bottom: 60px; }
+.cuadro h2 {
+  margin: 0;
+  font-weight: 500;
+  font-size: 40px;
+  line-height: 1.1;
+  letter-spacing: -0.01em;
+}
+.cuadro p {
+  margin: 4px 0 0;
+  font-size: 21px;
+  line-height: 1.19;
+  text-wrap: balance;
+}
+.cuadro-botones {
+  display: flex;
+  justify-content: center;
+  gap: 14px;
+  margin-top: 16px;
+}
+
 /* Solo para lectores de pantalla */
 .solo-lector {
   position: absolute;
@@ -683,6 +748,14 @@ body {
   .vistas { padding-top: calc(var(--alto-barra) + 32px); justify-content: flex-end; }
   .vistas-escenario { flex: none; container-type: inline-size; }
   .vistas-tableta { width: 125cqw; }
+  /* Los cuadros, uno debajo del otro y más altos que anchos, para que quepa el texto sobre la foto */
+  .mosaico { grid-template-columns: 1fr; }
+  .cuadro { aspect-ratio: 4 / 5; }
+  .cuadro-texto { left: 20px; right: 20px; }
+  .cuadro-arriba .cuadro-texto { top: 36px; }
+  .cuadro-abajo .cuadro-texto { bottom: 40px; }
+  .cuadro h2 { font-size: 28px; }
+  .cuadro p { font-size: 17px; }
 }
 
 @media (prefers-reduced-motion: reduce) {

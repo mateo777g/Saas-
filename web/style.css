@@ -306,14 +306,16 @@ body {
 /* El teclado: la otra hoja de la laptop, del ancho de la pantalla, colgada de su orilla de abajo y
    doblada hacia el frente por la bisagra (escena.js le pone el rotateX). De fondo mide lo alto de la
    pantalla, sin pasar de 0.7 veces su ancho (la proporción de una MacBook; en celular la pantalla es
-   vertical). Hecho con CSS: aluminio gris oscuro, las teclas y el trackpad, medidos con su ancho (cqw) y
-   su fondo (cqh). Las teclas van arriba, junto a la bisagra, tan anchas como quepan: hasta el 94 % del
-   ancho y el 56 % del fondo (--proporcion: ancho entre alto de las teclas, escena.js). El trackpad, al
-   frente, centrado debajo de las letras (--trackpad: cuánto se corre por el teclado numérico, escena.js).
+   vertical). El aluminio gris oscuro y el trackpad son CSS, medidos con su ancho (cqw) y su fondo (cqh);
+   las teclas son una imagen. Van arriba, junto a la bisagra, tan anchas como quepan: hasta el 94 % del
+   ancho y el 56 % del fondo (--proporcion: ancho entre alto de la imagen). El trackpad, al frente,
+   centrado debajo de las letras (--trackpad: cuánto se corre por el teclado numérico, medido en la imagen).
    Ser contenedor no le quita el 3D: se comprobó que el canto se ve igual. */
 .teclado {
   --aluminio: #2A2A2D;
-  --ancho-teclas: min(94cqw, 56cqh * var(--proporcion, 3.4));
+  --proporcion: 3.16; /* 2000×633 */
+  --trackpad: -0.116;
+  --ancho-teclas: min(94cqw, 56cqh * var(--proporcion));
   position: absolute;
   top: 100%;
   left: 0;
@@ -330,19 +332,14 @@ body {
 }
 .teclado,
 .teclado * { backface-visibility: hidden; }
-/* Las teclas, como las de una laptop (escena.js las acomoda fila por fila), negras y sin luz. Las esquinas
-   se miden con el ancho de las teclas (cqw; una tecla normal mide 5.26cqw). */
+/* Las teclas: una imagen generada en Higgsfield (GPT Image 2.5 Sunburst, job 961d813b…), vistas desde
+   arriba, con letras y teclado numérico, sin luz y sin el logo de Windows (se tapó con Pillow). Entre tecla
+   y tecla es transparente: ahí se ve el aluminio. */
 .teclas {
   grid-row: 2;
-  position: relative;
   width: var(--ancho-teclas);
-  aspect-ratio: var(--proporcion, 3.4);
-  container-type: inline-size;
-}
-.teclas span {
-  position: absolute;
-  border-radius: 0.75cqw;
-  background: linear-gradient(#18181B, #0C0C0E);
+  aspect-ratio: var(--proporcion);
+  background: url('imagenes/teclado.webp') center / 100% 100% no-repeat;
 }
 /* El trackpad, con sus dos botones de click abajo: una franja del 22 % de su alto, partida a la mitad.
    Las juntas (la de arriba de los botones y la de en medio) son rayas oscuras de 1.5 px en pantalla. */
@@ -352,7 +349,7 @@ body {
   grid-row: 4;
   height: 100%;
   aspect-ratio: 1.6;
-  translate: calc(var(--ancho-teclas) * var(--trackpad, 0));
+  translate: calc(var(--ancho-teclas) * var(--trackpad));
   border-radius: calc(var(--radio) / var(--k, 1) * 0.6);
   background:
     linear-gradient(90deg, transparent calc(50% - var(--junta) / 2), #1C1C1E 0 calc(50% + var(--junta) / 2), transparent 0)

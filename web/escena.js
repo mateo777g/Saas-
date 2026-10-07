@@ -44,24 +44,6 @@
   // La bisagra: grados entre la pantalla y el teclado. Arriba, a todo lo ancho, el teclado está doblado
   // hacia atrás, de canto detrás de la pantalla (no se ve); mientras la tarjeta se encoge baja y se abre.
   const BISAGRA = { doblada: 270, abierta: 110 };
-  // Las teclas, fila por fila, como las de una laptop con teclado numérico a la derecha: lo que mide de
-  // ancho cada una, en teclas normales ("1*12" son doce de 1). Todas las filas miden 19. La de arriba
-  // (esc, las F y las de arriba del numérico) es más bajita. "1^" es una tecla alta, que baja a la fila
-  // de abajo (el + y el enter del numérico), y "_1" es el hueco que deja ahí. Las flechas van abajo a la
-  // derecha de las letras: ↑ junto al shift y ← ↓ → debajo, con el 1 del numérico encima de la →.
-  const TECLAS = {
-    filas: [
-      '1*19', // esc, F1–F12 … | inicio, fin, re pág, av pág
-      '1*13 2 1*4', // º 1 … = borrar | bloq num, /, *, -
-      '1.5 1*12 1.5 1*3 1^', // tab q … \ | 7 8 9, +
-      '1.75 1*11 2.25 1*3 _1', // mayús a … enter | 4 5 6
-      '2.25 1*10 1.75 1 1*3 1^', // shift z … shift, ↑ | 1 2 3, enter
-      '1.25 1 1 1.25 5 1 1 1.5 1*5 _1', // ctrl fn win alt espacio alt menú ctrl, ← ↓ → | 0 .
-    ],
-    numerico: 4, // lo que mide el teclado numérico: el trackpad va centrado debajo de lo demás
-    altoFunciones: 0.6, // la fila de arriba, respecto a las demás
-    junta: 0.16, // lo que queda entre tecla y tecla, en teclas
-  };
 
   // Tramos del recorrido: 0 es arriba de la escena y 1 el final.
   const TRAMOS = {
@@ -89,42 +71,6 @@
     });
     p.parentElement.style.setProperty('--n', palabras.length);
   }
-
-  // Las teclas: cada una es un <span> acomodado en % dentro de .teclas, que mide lo que el teclado entero.
-  const cajaTeclas = teclado.querySelector('.teclas');
-  const anchoTeclas = 19;
-  const altoTeclas = TECLAS.altoFunciones + TECLAS.filas.length - 1;
-  teclado.style.setProperty('--proporcion', anchoTeclas / altoTeclas);
-  teclado.style.setProperty('--trackpad', -TECLAS.numerico / 2 / anchoTeclas);
-  const ponerTecla = (x, y, anchoTecla, altoTecla) => {
-    const orilla = TECLAS.junta / 2;
-    const tecla = document.createElement('span');
-    tecla.style.left = `${((x + orilla) / anchoTeclas) * 100}%`;
-    tecla.style.top = `${((y + orilla) / altoTeclas) * 100}%`;
-    tecla.style.width = `${((anchoTecla - TECLAS.junta) / anchoTeclas) * 100}%`;
-    tecla.style.height = `${((altoTecla - TECLAS.junta) / altoTeclas) * 100}%`;
-    cajaTeclas.append(tecla);
-  };
-  let filaY = 0;
-  TECLAS.filas.forEach((fila, i) => {
-    const altoFila = i === 0 ? TECLAS.altoFunciones : 1;
-    let x = 0;
-    for (const pieza of fila.split(' ')) {
-      const [medida, veces = 1] = pieza.split('*');
-      for (let n = 0; n < veces; n++) {
-        if (medida.startsWith('_')) {
-          x += Number(medida.slice(1));
-          continue;
-        }
-        const alta = medida.endsWith('^');
-        const anchoTecla = Number(alta ? medida.slice(0, -1) : medida);
-        ponerTecla(x, filaY, anchoTecla, alta ? altoFila + 1 : altoFila);
-        x += anchoTecla;
-      }
-    }
-    if (x !== anchoTeclas) console.error(`escena.js: la fila ${i + 1} del teclado mide ${x} y no ${anchoTeclas}`);
-    filaY += altoFila;
-  });
 
   const limitar = (v) => Math.min(1, Math.max(0, v));
   const deMenosAMasUno = (v) => Math.min(1, Math.max(-1, v));

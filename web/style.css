@@ -385,7 +385,7 @@ body {
   grid-row: 2;
   width: var(--ancho-teclas);
   aspect-ratio: var(--proporcion);
-  background: url('imagenes/teclado.webp') center / 100% 100% no-repeat;
+  background: url('prueba/teclado.webp') center / 100% 100% no-repeat;
 }
 /* El trackpad, con sus dos botones de click abajo: una franja del 22 % de su alto, partida a la mitad.
    Las juntas (la de arriba de los botones y la de en medio) son rayas oscuras de 1.5 px en pantalla. */

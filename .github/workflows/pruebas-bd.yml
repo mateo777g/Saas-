@@ -1,0 +1,32 @@
+# Pruebas de la base de datos (libreta 2, "Migraciones versionadas"): en cada push, a
+# cualquier rama, levanta un Supabase local desde cero con todas las migraciones y corre
+# las pruebas pgTAP de supabase/tests. Si falla una sola, la rama no se une a main.
+#
+# Versiones fijas: las acciones van por commit (con su etiqueta al lado) y la CLI por
+# número; la CLI fija a su vez las imágenes de Docker de Supabase.
+
+name: Pruebas de la base de datos
+
+on:
+  push:
+    branches: ['**']
+
+permissions:
+  contents: read
+
+jobs:
+  pruebas:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: supabase/setup-cli@45a513f8c64c0bc8e0e3dfe572b5c95be85f6359 # v3.0.1
+        with:
+          version: 2.120.0
+
+      - name: Levantar Postgres local con las migraciones
+        run: supabase db start
+
+      - name: Correr las pruebas pgTAP
+        run: supabase test db

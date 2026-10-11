@@ -1,0 +1,91 @@
+/* Lo de toda la app: las letras (servidas por la propia app, licencia OFL), los colores y las
+   reglas de texto de diseno.py que no necesitan componente (texto() y etiqueta() son clases). */
+
+@import '@fontsource/plus-jakarta-sans/400.css';
+@import '@fontsource/plus-jakarta-sans/500.css';
+@import '@fontsource/plus-jakarta-sans/600.css';
+@import '@fontsource/plus-jakarta-sans/700.css';
+@import '@fontsource/plus-jakarta-sans/800.css';
+@import '@fontsource/jetbrains-mono/400.css';
+@import '@fontsource/jetbrains-mono/500.css';
+@import '@fontsource/outfit/200.css';
+@import './colores.css';
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  height: 100%;
+}
+
+body {
+  background: var(--suelo);
+  color: var(--texto);
+  font-family: var(--jakarta);
+  font-size: 14px;
+  font-weight: 500;
+  -webkit-font-smoothing: antialiased;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+  color: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+[hidden] {
+  display: none !important;
+}
+
+:focus-visible {
+  outline: 2px solid var(--suave);
+  outline-offset: 2px;
+}
+
+::selection {
+  background: var(--linea-fuerte);
+}
+
+/* etiqueta(): las etiquetas en mayúsculas ("CORREO", "GENERAL", la fecha), mono, separadas
+   0.14em, en el gris tenue. */
+.etiqueta {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  font-weight: 400;
+  letter-spacing: 0.14em;
+  color: var(--tenue);
+}
+
+.mono {
+  font-family: var(--mono);
+}
+
+/* Para lectores de pantalla: se lee, no se ve. */
+.solo-lector {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0s !important;
+    animation-duration: 0s !important;
+  }
+}

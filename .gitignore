@@ -37,3 +37,7 @@ sesion.json
 
 __pycache__/
 *.pyc
+
+# La app web (app/): lo que instala npm y lo que compila Vite se rehacen solos.
+node_modules/
+app/dist/

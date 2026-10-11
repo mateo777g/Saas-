@@ -1,0 +1,53 @@
+/* Los colores del diseño manchas + vidrio, tal cual views/tema.py (D_CLARO y D_OSCURO). Cada
+   color lleva el nombre de lo que ES; las pantallas y las piezas nunca escriben un color a mano,
+   lo piden aquí: var(--texto), var(--linea)... El tema lo pone public/tema-inicial.js en
+   <html data-tema="claro|oscuro"> antes de pintar, y Ajustes lo cambia (src/lib/tema.ts). */
+
+:root[data-tema='claro'] {
+  color-scheme: light;
+  --suelo: #fafaf8;                    /* el fondo de la página */
+  --acento: #e8622a;                   /* naranja del logo: insignia "IA", Conectar Mercado Pago */
+  --sobre-acento: #ffffff;
+  --vidrio: rgba(255, 255, 255, 0.8);  /* blanco al 80 % + desenfoque 18 */
+  --vidrio-linea: rgba(0, 0, 0, 0.078);
+  --sombra: rgba(0, 0, 0, 0.18);       /* blur 60, caída 24 */
+  --solido: #ffffff;                   /* tablas, ventanas, la tarjeta del login */
+  --texto: #0b0b0b;
+  --suave: #5f5f5a;                    /* descripciones, iconos de los campos */
+  --tenue: #8b8b85;                    /* etiquetas mono, pistas */
+  --linea: rgba(0, 0, 0, 0.09);
+  --linea-fuerte: rgba(0, 0, 0, 0.18);
+  --chip: rgba(0, 0, 0, 0.043);        /* fondo de chips, iconos y el selector */
+  --tinta: #0b0b0b;                    /* lo activo: opción del menú, botón principal */
+  --sobre-tinta: #ffffff;
+  --velo: rgba(0, 0, 0, 0.35);         /* detrás de una ventana */
+}
+
+:root[data-tema='oscuro'] {
+  color-scheme: dark;
+  --suelo: #161616;
+  --acento: #1355e8;                   /* azul del logo */
+  --sobre-acento: #ffffff;
+  --vidrio: rgba(14, 14, 14, 0.78);
+  --vidrio-linea: rgba(255, 255, 255, 0.09);
+  --sombra: rgba(0, 0, 0, 0.55);
+  --solido: #1b1b1b;
+  --texto: #f5f5f2;
+  --suave: #a6a6a0;
+  --tenue: #7c7c77;
+  --linea: rgba(255, 255, 255, 0.1);
+  --linea-fuerte: rgba(255, 255, 255, 0.2);
+  --chip: rgba(255, 255, 255, 0.06);
+  --tinta: #f5f5f2;
+  --sobre-tinta: #0b0b0b;
+  --velo: rgba(0, 0, 0, 0.6);
+}
+
+/* Iguales en los dos temas. */
+:root {
+  --verde: #3f9b5a;                    /* el punto de "en vivo" y la palomita de éxito */
+  --sombra-segmento: rgba(0, 0, 0, 0.15);
+  --jakarta: 'Plus Jakarta Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --mono: 'JetBrains Mono', ui-monospace, 'Cascadia Mono', Consolas, monospace;
+  --outfit: 'Outfit', 'Plus Jakarta Sans', system-ui, sans-serif;
+}

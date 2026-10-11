@@ -1,6 +1,8 @@
 // Los iconos de trazo del panel de Flet (panel/assets/iconos/*.svg), tal cual: viewBox 24,
 // trazo 1.7, puntas redondas. Solo va lo de adentro del <svg>; Icono.svelte pone el resto y
-// el color sale de currentColor. Generado de esos archivos: si cambia uno, se regenera.
+// el color sale de currentColor. Generado de esos archivos: si cambia uno, se regenera. Los
+// pocos que en Flet llevan otro grosor (check 3, mas 2, check-fino y flecha 2.2) lo traen en
+// cada trazo, que le gana al 1.7 de Icono.svelte.
 export const ICONOS: Record<string, string> = {
   'actualizar': '<path d="M21 12a9 9 0 1 1-3-6.7L21 8"></path><path d="M21 3v5h-5"></path>',
   'agregar': '<circle cx="12" cy="12" r="9"></circle><path d="M12 8v8"></path><path d="M8 12h8"></path>',
@@ -14,8 +16,8 @@ export const ICONOS: Record<string, string> = {
   'carpeta-abrir': '<path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v1"></path><path d="M3 7v10a2 2 0 0 0 2 2h12.5a2 2 0 0 0 1.9-1.4l2-6A1 1 0 0 0 20.5 10H7.3a2 2 0 0 0-1.9 1.4L3 19"></path>',
   'carpeta': '<path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>',
   'cerrar': '<path d="M18 6L6 18"></path><path d="M6 6l12 12"></path>',
-  'check-fino': '<path d="M5 12l5 5L20 7"></path>',
-  'check': '<path d="M5 12l5 5L20 7"></path>',
+  'check-fino': '<path stroke-width="2.2" d="M5 12l5 5L20 7"></path>',
+  'check': '<path stroke-width="3" d="M5 12l5 5L20 7"></path>',
   'combinar': '<rect x="8" y="8" width="13" height="13" rx="2"></rect><path d="M4 16V5a1 1 0 0 1 1-1h11"></path><path d="M14.5 11.5v6"></path><path d="M11.5 14.5h6"></path>',
   'contraste': '<circle cx="12" cy="12" r="9"></circle><path d="M12 3a9 9 0 0 1 0 18z" fill="currentColor"></path>',
   'copiar': '<rect x="9" y="9" width="12" height="12" rx="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>',
@@ -26,7 +28,7 @@ export const ICONOS: Record<string, string> = {
   'eliminar': '<path d="M3 6h18"></path><path d="M8 6V4h8v2"></path><path d="M19 6l-1 14H6L5 6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path>',
   'entrar': '<path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"></path><path d="M10 17l5-5-5-5"></path><path d="M15 12H3"></path>',
   'exportar': '<path d="M12 4v11"></path><path d="M7.5 10.5L12 15l4.5-4.5"></path><path d="M5 20h14"></path>',
-  'flecha': '<path d="M12 19V5"></path><path d="M5 12l7-7 7 7"></path>',
+  'flecha': '<path stroke-width="2.2" d="M12 19V5"></path><path stroke-width="2.2" d="M5 12l7-7 7 7"></path>',
   'guardar': '<path d="M5 3h11l3 3v13a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2z"></path><path d="M8 3v5h7V3"></path><path d="M8 21v-6h8v6"></path>',
   'historia': '<rect x="7" y="2" width="10" height="20" rx="2"></rect>',
   'historial': '<path d="M3 12a9 9 0 1 0 3-6.7L3 8"></path><path d="M3 3v5h5"></path><path d="M12 7v5l3 2"></path>',
@@ -35,7 +37,7 @@ export const ICONOS: Record<string, string> = {
   'info': '<circle cx="12" cy="12" r="9"></circle><path d="M12 11v5"></path><path d="M12 8h.01"></path>',
   'inicio': '<rect x="3" y="3" width="7" height="7" rx="1.5"></rect><rect x="14" y="3" width="7" height="7" rx="1.5"></rect><rect x="3" y="14" width="7" height="7" rx="1.5"></rect><rect x="14" y="14" width="7" height="7" rx="1.5"></rect>',
   'luna': '<path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"></path>',
-  'mas': '<path d="M12 5v14"></path><path d="M5 12h14"></path>',
+  'mas': '<path stroke-width="2" d="M12 5v14"></path><path stroke-width="2" d="M5 12h14"></path>',
   'menu': '<path d="M8 6h13"></path><path d="M8 12h13"></path><path d="M8 18h13"></path><circle cx="4" cy="6" r="1"></circle><circle cx="4" cy="12" r="1"></circle><circle cx="4" cy="18" r="1"></circle>',
   'mes': '<rect x="3" y="3" width="18" height="18" rx="2"></rect><path d="M8 17v-5"></path><path d="M12 17V8"></path><path d="M16 17v-3"></path>',
   'mesas': '<path d="M3 9h18"></path><path d="M5 9v10"></path><path d="M19 9v10"></path><path d="M8 5h8"></path>',
@@ -48,4 +50,8 @@ export const ICONOS: Record<string, string> = {
   'sol': '<circle cx="12" cy="12" r="4"></circle><path d="M12 2v2"></path><path d="M12 20v2"></path><path d="M4.9 4.9l1.4 1.4"></path><path d="M17.7 17.7l1.4 1.4"></path><path d="M2 12h2"></path><path d="M20 12h2"></path><path d="M4.9 19.1l1.4-1.4"></path><path d="M17.7 6.3l1.4-1.4"></path>',
   'tienda': '<path d="M3 9l1.5-5h15L21 9"></path><path d="M3 9h18"></path><path d="M5 9v11h14V9"></path><path d="M10 20v-6h4v6"></path>',
   'volver': '<path d="M3 12a9 9 0 1 0 3-6.7L3 8"></path><path d="M3 3v5h5"></path>',
+  // Nuevos, de la maqueta aprobada del panel de Fragmentless (Tbt7H3G1QRXykzNKe1GXHh), en el
+  // mismo estilo: no existen en Flet.
+  'calendario-mas': '<rect x="3" y="4" width="18" height="17" rx="2"></rect><path d="M16 2v4"></path><path d="M8 2v4"></path><path d="M3 10h18"></path><path d="M12 13v5"></path><path d="M9.5 15.5h5"></path>',
+  'usuario-mas': '<path d="M15 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="8.5" cy="7" r="4"></circle><path d="M19 8v6"></path><path d="M22 11h-6"></path>',
 };

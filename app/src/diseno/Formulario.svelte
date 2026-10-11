@@ -1,0 +1,113 @@
+<!--
+  Lo de adentro de una ventana que guarda algo: los campos, la caja de error y el botón
+  principal abajo a la derecha. Las reglas de siempre (libreta 4): el error sale en la caja, sin
+  rojo, y se quita al volver a escribir; mientras guarda, el botón dice "Guardando…" con la
+  rueda; el éxito se ve en el mismo botón, con la palomita verde, y 1.6 s después se cierra.
+  Enter en un campo también guarda.
+
+  `guardar` hace la llamada y regresa el texto del éxito ("Gerente ligado") o el del error, ya
+  listo para leerse. Quien necesite quitar el error desde otro control (un Selector) enlaza
+  `error` con bind:error.
+-->
+<script lang="ts">
+  import { onDestroy, type Snippet } from 'svelte';
+  import Boton from './Boton.svelte';
+  import CajaError from './CajaError.svelte';
+
+  const ESPERA_EXITO = 1600;
+
+  let {
+    boton,
+    guardar,
+    alTerminar,
+    error = $bindable(null),
+    children,
+  }: {
+    boton: { etiqueta: string; icono: string };
+    guardar: () => Promise<{ listo: string } | { error: string }>;
+    alTerminar: () => void;
+    error?: string | null;
+    children: Snippet;
+  } = $props();
+
+  let estado = $state<'reposo' | 'guardando' | 'listo'>('reposo');
+  let textoListo = $state('');
+  let temporizador: ReturnType<typeof setTimeout> | undefined;
+
+  async function enviar(e: SubmitEvent) {
+    e.preventDefault();
+    if (estado !== 'reposo') return;
+    error = null;
+    estado = 'guardando';
+    const resultado = await guardar();
+    if ('error' in resultado) {
+      error = resultado.error;
+      estado = 'reposo';
+      return;
+    }
+    textoListo = resultado.listo;
+    estado = 'listo';
+    temporizador = setTimeout(alTerminar, ESPERA_EXITO);
+  }
+
+  onDestroy(() => clearTimeout(temporizador));
+</script>
+
+<form onsubmit={enviar} oninput={() => (error = null)} novalidate>
+  <div class="campos">
+    {@render children()}
+  </div>
+
+  {#if error}
+    <div class="error">
+      <CajaError mensaje={error} />
+    </div>
+  {/if}
+
+  <div class="pie">
+    <Boton
+      tipo="submit"
+      tono="tinta"
+      icono={boton.icono}
+      etiqueta={estado === 'guardando' ? 'Guardando…' : estado === 'listo' ? textoListo : boton.etiqueta}
+      cargando={estado === 'guardando'}
+      exito={estado === 'listo'}
+    />
+  </div>
+</form>
+
+<style>
+  .campos {
+    margin-top: 22px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  /* Dos campos lado a lado (INICIO y MESES, INICIO y FIN). */
+  .campos :global(.par) {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+
+  /* La pista suelta debajo de los campos, como la de "Nace con la licencia prendida…". */
+  .campos :global(.pista) {
+    margin: 0;
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 1.45;
+    color: var(--tenue);
+  }
+
+  .error {
+    margin-top: 14px;
+  }
+
+  .pie {
+    margin-top: 20px;
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+  }
+</style>

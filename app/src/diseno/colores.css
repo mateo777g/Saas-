@@ -47,6 +47,9 @@
 :root {
   --verde: #3f9b5a;                    /* el punto de "en vivo" y la palomita de éxito */
   --sombra-segmento: rgba(0, 0, 0, 0.15);
+  --oro-claro: #facc15;                /* la pastilla GOLD de tu insignia, de un oro al otro */
+  --oro-oscuro: #ca8a04;
+  --sobre-oro: #ffffff;
   --jakarta: 'Plus Jakarta Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
   --mono: 'JetBrains Mono', ui-monospace, 'Cascadia Mono', Consolas, monospace;
   --outfit: 'Outfit', 'Plus Jakarta Sans', system-ui, sans-serif;

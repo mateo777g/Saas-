@@ -1,11 +1,13 @@
 <!--
   El portero: decide qué pantalla se ve. Sin sesión, el login. Con sesión, le pregunta a Postgres
-  qué panel le toca (lib/sesion.ts): el de Fragmentless o el del gerente. Si la sesión se cierra
-  desde otro lado (otra pestaña, o Supabase ya no la acepta), regresa al login.
+  qué panel le toca (lib/sesion.ts): el de Fragmentless o el del gerente (por ahora la página
+  temporal Pendiente, hasta la pieza 3). Si la sesión se cierra desde otro lado (otra pestaña,
+  o Supabase ya no la acepta), regresa al login.
 -->
 <script lang="ts">
   import { onMount } from 'svelte';
   import Login from './pantallas/Login.svelte';
+  import PanelFragmentless from './pantallas/PanelFragmentless.svelte';
   import Pendiente from './pantallas/Pendiente.svelte';
   import { abrirPanel, type Panel } from './lib/sesion';
   import { cerrarSesion, supabase } from './lib/supabase';
@@ -31,7 +33,7 @@
       vista = { tipo: 'login', aviso: null };
       return;
     }
-    const resultado = await abrirPanel(data.session.user.id);
+    const resultado = await abrirPanel(data.session.user);
     vista =
       'panel' in resultado
         ? { tipo: 'panel', panel: resultado.panel }
@@ -55,6 +57,8 @@
 
 {#if vista.tipo === 'login'}
   <Login aviso={vista.aviso} alEntrar={(panel) => (vista = { tipo: 'panel', panel })} />
-{:else if vista.tipo === 'panel'}
+{:else if vista.tipo === 'panel' && vista.panel.tipo === 'fragmentless'}
+  <PanelFragmentless correo={vista.panel.correo} alSalir={salir} />
+{:else if vista.tipo === 'panel' && vista.panel.tipo === 'gerente'}
   <Pendiente panel={vista.panel} alSalir={salir} />
 {/if}

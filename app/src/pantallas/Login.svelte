@@ -63,7 +63,7 @@
       return;
     }
 
-    const resultado = await abrirPanel(data.session.user.id);
+    const resultado = await abrirPanel(data.session.user);
     if ('panel' in resultado) {
       alEntrar(resultado.panel);
       return; // la pantalla ya se reemplazó

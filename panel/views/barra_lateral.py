@@ -35,7 +35,7 @@ SECCIONES_PIE = [
     ("Cerrar sesión", "salir", CERRAR),
 ]
 # La línea de soporte del desarrollador.
-URL_AYUDA = "https://wa.me/5212723662604"
+URL_AYUDA = "https://wa.me/5212721467532"
 # Una insignia junto al texto de una opción (la pastilla naranja).
 INSIGNIAS = {"agente_financiero": "IA", "contenido": "IA"}
 

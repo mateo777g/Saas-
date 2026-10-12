@@ -67,8 +67,12 @@
     color: var(--texto);
     font-size: 13.5px;
     font-weight: 500;
-    font-variant-numeric: tabular-nums;
     outline: none;
+  }
+
+  /* Como en la maqueta: solo las fechas llevan los números del mismo ancho. */
+  input[type='date'] {
+    font-variant-numeric: tabular-nums;
   }
 
   input:focus {

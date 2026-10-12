@@ -26,6 +26,14 @@ const REGLAS: Record<string, string> = {
   miembros_nombre_check: 'Escribe su nombre completo.',
 };
 
+// Los finales de los mensajes de la migración distribuidores que empiezan con su nombre
+// («Juanito Pérez ya tiene su cuenta ligada»).
+const CON_NOMBRE = [
+  / ya tiene su cuenta ligada$/,
+  / está de baja; primero usa Reactivar$/,
+  / todavía tiene \d+ clientes?; quítasel(o|os) primero$/,
+];
+
 // El mensaje para la caja de error cuando falla una llamada a Postgres. Las funciones de la base
 // ya lanzan sus errores en español ("Falta la fecha de inicio"), y salen tal cual. Postgres
 // escribe los suyos en inglés y empezando con minúscula (es su regla de estilo): esos se
@@ -45,7 +53,10 @@ export function mensajeDeError(error: unknown): string {
     if (regla) return REGLAS[regla];
   }
   // Un código de Postgres (5 caracteres; los de PostgREST empiezan con PGRST) con un mensaje que
-  // empieza con mayúscula: es de nuestras funciones.
-  if (/^[0-9A-Z]{5}$/.test(e.code ?? '') && /^[A-ZÁÉÍÓÚÑ]/.test(mensaje)) return mensaje;
+  // empieza con mayúscula, o uno de los que empiezan con el nombre de un distribuidor (que pudo
+  // escribirse en minúscula): es de nuestras funciones.
+  if (/^[0-9A-Z]{5}$/.test(e.code ?? '') && (/^[A-ZÁÉÍÓÚÑ]/.test(mensaje) || CON_NOMBRE.some((r) => r.test(mensaje)))) {
+    return mensaje;
+  }
   return ALGO_SALIO_PANEL;
 }

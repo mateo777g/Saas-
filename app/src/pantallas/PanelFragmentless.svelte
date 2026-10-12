@@ -1,8 +1,9 @@
 <!--
-  Tu panel (libreta 8, paso 1), portado de la maqueta aprobada el 10 de octubre de 2026
-  (Tbt7H3G1QRXykzNKe1GXHh): suelo liso, la barra lateral de vidrio con Inicio, Clientes y
-  Cerrar sesión, la barra de arriba con el chip de cuántos restaurantes hay, Actualizar y Dar de
-  alta, y debajo la vista elegida. La vista Distribuidores llega con el paso 2.
+  Tu panel (libreta 8, pasos 1 y 2), portado de la maqueta aprobada el 10 de octubre de 2026
+  (Tbt7H3G1QRXykzNKe1GXHh): suelo liso, la barra lateral de vidrio con Inicio, Clientes,
+  Distribuidores y Cerrar sesión, la barra de arriba con el chip de cuántos restaurantes (o
+  distribuidores) hay, Actualizar y Dar de alta (Nuevo distribuidor en Distribuidores), y debajo
+  la vista elegida.
 
   Lee todo de una vez al abrir, con Actualizar y después de cada cambio (lib/panel.ts). Las
   ventanas escriben en Saas-Restaurantes de verdad.
@@ -13,22 +14,29 @@
   import BarraLateral from '../diseno/BarraLateral.svelte';
   import Boton from '../diseno/Boton.svelte';
   import { plural } from '../lib/formato';
-  import { leerPanel, type Cliente, type DatosPanel } from '../lib/panel';
+  import { leerPanel, type Cliente, type DatosPanel, type Distribuidor } from '../lib/panel';
+  import AltaDistribuidor from './fragmentless/AltaDistribuidor.svelte';
   import AltaRestaurante from './fragmentless/AltaRestaurante.svelte';
+  import BajaOReactivar from './fragmentless/BajaOReactivar.svelte';
   import Clientes from './fragmentless/Clientes.svelte';
+  import ClientesDistribuidor from './fragmentless/ClientesDistribuidor.svelte';
+  import CorregirDistribuidor from './fragmentless/CorregirDistribuidor.svelte';
+  import Distribuidores, { type AccionDistribuidor } from './fragmentless/Distribuidores.svelte';
   import Inicio from './fragmentless/Inicio.svelte';
+  import LigarCuenta from './fragmentless/LigarCuenta.svelte';
   import LigarGerente from './fragmentless/LigarGerente.svelte';
   import PausarCorregir from './fragmentless/PausarCorregir.svelte';
   import SumarMeses from './fragmentless/SumarMeses.svelte';
 
-  type Vista = 'inicio' | 'clientes';
+  type Vista = 'inicio' | 'clientes' | 'distribuidores';
   type VentanaAbierta =
-    | { tipo: 'alta' }
-    | { tipo: 'ligar' | 'sumar' | 'fijar'; cliente: Cliente };
+    | { tipo: 'alta' | 'alta-distribuidor' }
+    | { tipo: 'ligar' | 'sumar' | 'fijar'; cliente: Cliente }
+    | { tipo: 'distribuidor'; accion: AccionDistribuidor; distribuidor: Distribuidor };
 
   let { correo, alSalir }: { correo: string; alSalir: () => void } = $props();
 
-  const TITULOS: Record<Vista, string> = { inicio: 'Inicio', clientes: 'Clientes' };
+  const TITULOS: Record<Vista, string> = { inicio: 'Inicio', clientes: 'Clientes', distribuidores: 'Distribuidores' };
 
   let vista = $state<Vista>('inicio');
   let datos = $state<DatosPanel | null>(null);
@@ -46,10 +54,15 @@
     leyendo = false;
   }
 
-  // El chip de la barra de arriba: cuántos restaurantes hay, con el punto verde; si no se pudo
-  // leer, por qué.
+  // El chip de la barra de arriba: cuántos restaurantes hay (en Distribuidores, cuántos
+  // distribuidores), con el punto verde; si no se pudo leer, por qué.
   const estado = $derived.by(() => {
     if (!datos) return null;
+    if (vista === 'distribuidores') {
+      const d = datos.distribuidores;
+      if (d.ok) return { texto: plural(d.datos.length, 'distribuidor', 'distribuidores'), vivo: true };
+      return { texto: d.deRed ? 'Sin conexión' : 'No se pudo leer', vivo: false };
+    }
     if (datos.resumen.ok) return { texto: plural(datos.resumen.datos.total, 'restaurante', 'restaurantes'), vivo: true };
     return { texto: datos.resumen.deRed ? 'Sin conexión' : 'No se pudo leer', vivo: false };
   });
@@ -61,6 +74,13 @@
 
   const cerrarVentana = () => (ventana = null);
 
+  // Sus clientes no se cierra al asignar o quitar; si se cierra antes de que el panel se vuelva a
+  // leer, se lee al cerrar.
+  function cerrarYLeer() {
+    ventana = null;
+    leer();
+  }
+
   onMount(leer);
 </script>
 
@@ -70,6 +90,7 @@
     opciones={[
       { valor: 'inicio', texto: 'Inicio', icono: 'inicio' },
       { valor: 'clientes', texto: 'Clientes', icono: 'tienda' },
+      { valor: 'distribuidores', texto: 'Distribuidores', icono: 'usuarios' },
     ]}
     acciones={[{ valor: 'salir', texto: 'Cerrar sesión', icono: 'salir' }]}
     activa={vista}
@@ -79,7 +100,11 @@
 
   <BarraArriba titulo={TITULOS[vista]} {estado}>
     <Boton etiqueta="Actualizar" icono="actualizar" apagado={leyendo} onclick={leer} />
-    <Boton etiqueta="Dar de alta" icono="mas" tono="tinta" onclick={() => (ventana = { tipo: 'alta' })} />
+    {#if vista === 'distribuidores'}
+      <Boton etiqueta="Nuevo distribuidor" icono="mas" tono="tinta" onclick={() => (ventana = { tipo: 'alta-distribuidor' })} />
+    {:else}
+      <Boton etiqueta="Dar de alta" icono="mas" tono="tinta" onclick={() => (ventana = { tipo: 'alta' })} />
+    {/if}
   </BarraArriba>
 
   <main class="cuerpo">
@@ -88,13 +113,19 @@
         {datos}
         alSumar={(cliente) => (ventana = { tipo: 'sumar', cliente })}
         alVerClientes={() => (vista = 'clientes')}
+        alVerDistribuidores={() => (vista = 'distribuidores')}
       />
-    {:else}
+    {:else if vista === 'clientes'}
       <Clientes
         clientes={datos?.clientes ?? null}
         alLigar={(cliente) => (ventana = { tipo: 'ligar', cliente })}
         alSumar={(cliente) => (ventana = { tipo: 'sumar', cliente })}
         alFijar={(cliente) => (ventana = { tipo: 'fijar', cliente })}
+      />
+    {:else}
+      <Distribuidores
+        distribuidores={datos?.distribuidores ?? null}
+        alElegir={(accion, distribuidor) => (ventana = { tipo: 'distribuidor', accion, distribuidor })}
       />
     {/if}
   </main>
@@ -107,6 +138,23 @@
     <SumarMeses cliente={ventana.cliente} alCerrar={cerrarVentana} alGuardar={leer} />
   {:else if ventana?.tipo === 'fijar'}
     <PausarCorregir cliente={ventana.cliente} alCerrar={cerrarVentana} alGuardar={leer} />
+  {:else if ventana?.tipo === 'alta-distribuidor'}
+    <AltaDistribuidor alCerrar={cerrarVentana} alGuardar={leer} />
+  {:else if ventana?.tipo === 'distribuidor'}
+    {#if ventana.accion === 'ligar'}
+      <LigarCuenta distribuidor={ventana.distribuidor} alCerrar={cerrarVentana} alGuardar={leer} />
+    {:else if ventana.accion === 'clientes'}
+      <ClientesDistribuidor distribuidor={ventana.distribuidor} {datos} alCerrar={cerrarYLeer} alCambiar={leer} />
+    {:else if ventana.accion === 'corregir'}
+      <CorregirDistribuidor distribuidor={ventana.distribuidor} alCerrar={cerrarVentana} alGuardar={leer} />
+    {:else}
+      <BajaOReactivar
+        distribuidor={ventana.distribuidor}
+        baja={ventana.accion === 'baja'}
+        alCerrar={cerrarVentana}
+        alGuardar={leer}
+      />
+    {/if}
   {/if}
 </div>
 

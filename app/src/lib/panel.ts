@@ -1,7 +1,8 @@
 // Lo que lee y escribe el panel de Fragmentless. Todo pasa por funciones de Postgres que
 // primero revisan que quien llama esté en plataforma_admins: las de lectura (migraciones
-// panel_lectura y panel_hoy) ya traen todo contado, y las 4 de escritura (migración
-// plataforma) son lo único que cambia datos. La app no cuenta nada.
+// panel_lectura y panel_hoy) ya traen todo contado, y las 4 de escritura de los restaurantes
+// (migración plataforma) y las 5 de los distribuidores (migración distribuidores) son lo único
+// que cambia datos. La app no cuenta nada.
 import { esDeRed, mensajeDeError } from './errores';
 import { supabase } from './supabase';
 
@@ -91,7 +92,7 @@ export async function leerHoy(): Promise<string | null> {
   return data as string;
 }
 
-// ─── Las 4 funciones que cambian datos ───────────────────────────────────────
+// ─── Las funciones que cambian datos ──────────────────────────────────────────
 // Cada una regresa lo que devuelve la función, o el mensaje para la caja de error.
 
 export type Resultado<T> = { ok: true; valor: T } | { ok: false; mensaje: string };
@@ -137,4 +138,46 @@ export function fijarLicencia(restauranteId: string, activa: boolean, inicio: st
     p_inicio: inicio,
     p_fin: fin,
   });
+}
+
+// ─── Las 5 de los distribuidores (migración distribuidores, paso 2) ──────────
+// Postgres quita los espacios de más y guarda vacío un teléfono o un correo en blanco.
+
+// Nace activo, sin cuenta y sin clientes. Regresa su id.
+export function altaDistribuidor(nombre: string, telefono: string, correo: string) {
+  return escribir<number>('alta_distribuidor', { p_nombre: nombre, p_telefono: telefono, p_correo: correo });
+}
+
+// La cuenta ya debe existir (Authentication → Add user) y no puede ser de Fragmentless ni de
+// nadie en un restaurante: una cuenta, un panel.
+export function ligarDistribuidor(distribuidorId: number, correo: string) {
+  return escribir<null>('ligar_distribuidor', { p_distribuidor_id: distribuidorId, p_correo: correo });
+}
+
+export function editarDistribuidor(distribuidorId: number, nombre: string, telefono: string, correo: string) {
+  return escribir<null>('editar_distribuidor', {
+    p_distribuidor_id: distribuidorId,
+    p_nombre: nombre,
+    p_telefono: telefono,
+    p_correo: correo,
+  });
+}
+
+// Asignar un cliente (aunque hoy sea de otro distribuidor) o, con null, quitárselo: pasa a directo.
+export function asignarDistribuidor(restauranteId: string, distribuidorId: number | null) {
+  return escribir<null>('asignar_distribuidor', {
+    p_restaurante_id: restauranteId,
+    p_distribuidor_id: distribuidorId,
+  });
+}
+
+// Dar de baja (false) o reactivar (true). Con clientes no se da de baja.
+export function fijarDistribuidorActivo(distribuidorId: number, activo: boolean) {
+  return escribir<null>('fijar_distribuidor_activo', { p_distribuidor_id: distribuidorId, p_activo: activo });
+}
+
+// En negritas, lo que ya venció o vence hoy (Clientes, Vencen pronto y los clientes de cada
+// distribuidor).
+export function urgente(c: Cliente): boolean {
+  return c.estado === 'vencida' || (c.estado === 'vence_pronto' && c.dias_restantes === 0);
 }

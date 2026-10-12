@@ -12,7 +12,7 @@
   import Tabla from '../../diseno/Tabla.svelte';
   import Vidrio from '../../diseno/Vidrio.svelte';
   import { fecha, vigencia } from '../../lib/formato';
-  import type { Cliente, Lectura } from '../../lib/panel';
+  import { urgente, type Cliente, type Lectura } from '../../lib/panel';
 
   let {
     clientes,
@@ -25,11 +25,6 @@
     alSumar: (cliente: Cliente) => void;
     alFijar: (cliente: Cliente) => void;
   } = $props();
-
-  // En negritas, lo que ya venció o vence hoy.
-  function urgente(c: Cliente) {
-    return c.estado === 'vencida' || (c.estado === 'vence_pronto' && c.dias_restantes === 0);
-  }
 </script>
 
 <div class="clientes">

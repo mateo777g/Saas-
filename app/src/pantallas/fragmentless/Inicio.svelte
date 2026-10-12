@@ -1,11 +1,12 @@
 <!--
   Inicio de tu panel, portado de la maqueta aprobada el 10 de octubre de 2026
   (Tbt7H3G1QRXykzNKe1GXHh). Arriba, las 3 cifras de panel_resumen y tu insignia; en medio, Altas
-  por mes; abajo, Tus distribuidores (panel_distribuidores) y Vencen pronto (las filas de
-  panel_clientes que vencieron o vencen en los próximos 7 días), con Sumar meses.
+  por mes; abajo, Tus distribuidores (panel_distribuidores), con «Ver distribuidores →», y Vencen
+  pronto (las filas de panel_clientes que vencieron o vencen en los próximos 7 días), con Sumar
+  meses y «Ver clientes →».
 
-  En el paso 1 (libreta 8) Tus distribuidores no lleva «Ver distribuidores →»: la vista llega
-  con el paso 2, y mientras no haya ninguno dice «Darlos de alta llega con el paso 2.».
+  Sin distribuidores, la tarjeta dice «Da de alta el primero en Distribuidores.» (decidido el 12
+  de octubre de 2026; en el paso 1 decía que llegaban con el paso 2).
 -->
 <script lang="ts">
   import BotonCuadro from '../../diseno/BotonCuadro.svelte';
@@ -16,7 +17,7 @@
   import Tabla from '../../diseno/Tabla.svelte';
   import Vidrio from '../../diseno/Vidrio.svelte';
   import { fecha, plural, vigencia } from '../../lib/formato';
-  import type { Cliente, DatosPanel } from '../../lib/panel';
+  import { urgente, type Cliente, type DatosPanel } from '../../lib/panel';
   import GraficaAltas from './GraficaAltas.svelte';
   import Insignia from './Insignia.svelte';
 
@@ -24,10 +25,12 @@
     datos,
     alSumar,
     alVerClientes,
+    alVerDistribuidores,
   }: {
     datos: DatosPanel | null;
     alSumar: (cliente: Cliente) => void;
     alVerClientes: () => void;
+    alVerDistribuidores: () => void;
   } = $props();
 
   const NO_SE_PUDO = 'No se pudo cargar.';
@@ -72,11 +75,6 @@
       (d) => !q || d.nombre.toLowerCase().includes(q) || (d.correo ?? '').toLowerCase().includes(q),
     );
   });
-
-  // En negritas, lo que ya venció o vence hoy.
-  function urgente(c: Cliente) {
-    return c.estado === 'vencida' || (c.estado === 'vence_pronto' && c.dias_restantes === 0);
-  }
 </script>
 
 <div class="inicio">
@@ -138,7 +136,7 @@
       {:else if !datos.distribuidores.ok}
         <NotaTabla titulo="No se pudieron leer tus distribuidores." texto={datos.distribuidores.mensaje} />
       {:else if datos.distribuidores.datos.length === 0}
-        <NotaTabla titulo="Todavía no hay distribuidores." texto="Darlos de alta llega con el paso 2." />
+        <NotaTabla titulo="Todavía no hay distribuidores." texto="Da de alta el primero en Distribuidores." />
       {:else if distribuidores.length === 0}
         <NotaTabla titulo="Ningún distribuidor se llama así." texto="Prueba con otro nombre o correo." />
       {:else}
@@ -156,6 +154,9 @@
         {/each}
       {/if}
     </Tabla>
+    <div>
+      <Boton tamano="chico" etiqueta="Ver distribuidores" icono="derecha" iconoAlFinal onclick={alVerDistribuidores} />
+    </div>
   </Vidrio>
 
   <Vidrio como="section" class="tarjeta pronto" aria-label="Vencen pronto">

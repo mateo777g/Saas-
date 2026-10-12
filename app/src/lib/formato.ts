@@ -30,6 +30,24 @@ export function mesLargo(iso: string): string {
   return `${MESES_LARGOS[mes - 1]} ${anio}`;
 }
 
+// La fecha de Inicio, como en Flet: '2026-10-10' → 'SÁBADO, 10 DE OCTUBRE'. El día de la
+// semana sale de la misma fecha (que dio Postgres), no del reloj del aparato.
+const DIAS = ['DOMINGO', 'LUNES', 'MARTES', 'MIÉRCOLES', 'JUEVES', 'VIERNES', 'SÁBADO'];
+
+export function fechaLarga(iso: string): string {
+  const { anio, mes, dia } = partes(iso);
+  const semana = new Date(Date.UTC(anio, mes - 1, dia)).getUTCDay();
+  return `${DIAS[semana]}, ${dia} DE ${MESES_LARGOS[mes - 1].toUpperCase()}`;
+}
+
+// El saludo según la hora (0 a 23) que dio Postgres, con los cortes de Flet (models/tiempo.py):
+// antes de las 12, días; antes de las 19, tardes; después, noches.
+export function saludoPorHora(hora: number): string {
+  if (hora < 12) return 'Buenos días';
+  if (hora < 19) return 'Buenas tardes';
+  return 'Buenas noches';
+}
+
 // 1 → '1 restaurante'; 12 → '12 restaurantes'.
 export function plural(n: number, uno: string, varios: string): string {
   return `${n} ${n === 1 ? uno : varios}`;

@@ -1,31 +1,22 @@
 // Quién entró y qué panel le toca. La app no decide nada por su cuenta: le pregunta a Postgres.
 //   Fragmentless   tiene su fila en plataforma_admins (solo Fragmentless la ve, por RLS)
-//   gerente        mis_sucursales() le regresa al menos un restaurante
+//   gerente        mis_sucursales() le regresa al menos un restaurante (lib/gerente.ts)
 //   nadie          ni lo uno ni lo otro (Juanito, o Don Chuy antes de ligarlo): se le cierra la
 //                  sesión y el login se lo dice (libreta 4, decidido el 11 de octubre de 2026)
 import type { User } from '@supabase/supabase-js';
 import { cerrarSesion, supabase } from './supabase';
 import { ALGO_SALIO, SIN_CONEXION, esDeRed } from './errores';
+import { leerGerente, type DatosGerente } from './gerente';
 
 export const SIN_PANEL =
   'Esta cuenta no tiene acceso a ningún panel. Si crees que es un error, escríbele a Fragmentless.';
 
-// Una fila de mis_sucursales() (migración gerente_lectura): todo ya contado por Postgres.
-export type Sucursal = {
-  id: string;
-  nombre: string;
-  slug: string;
-  estado: 'funciona' | 'vencida' | 'pausada';
-  licencia_fin: string | null;
-  hoy: string; // la fecha de hoy en la zona del restaurante, 'aaaa-mm-dd'
-  hora: number; // la hora de ahora en esa zona, 0 a 23
-  mi_nombre: string;
-};
-
-// Fragmentless lleva el correo de su sesión, que sale al pie de su barra lateral.
+// Fragmentless lleva el correo de su sesión, que sale al pie de su barra lateral; el gerente,
+// todo lo que su panel muestra al abrir (sus sucursales, su apodo y sus planes), para que el
+// saludo no cambie de nombre en cuanto aparece.
 export type Panel =
   | { tipo: 'fragmentless'; correo: string }
-  | { tipo: 'gerente'; sucursales: Sucursal[] };
+  | { tipo: 'gerente'; usuarioId: string; datos: DatosGerente };
 
 async function averiguar(usuario: User): Promise<Panel | null> {
   const admins = await supabase
@@ -35,9 +26,8 @@ async function averiguar(usuario: User): Promise<Panel | null> {
   if (admins.error) throw admins.error;
   if (admins.data.length > 0) return { tipo: 'fragmentless', correo: usuario.email ?? '' };
 
-  const sucursales = await supabase.rpc('mis_sucursales');
-  if (sucursales.error) throw sucursales.error;
-  if (sucursales.data.length > 0) return { tipo: 'gerente', sucursales: sucursales.data };
+  const gerente = await leerGerente(usuario.id);
+  if (gerente.sucursales.length > 0) return { tipo: 'gerente', usuarioId: usuario.id, datos: gerente };
   return null;
 }
 

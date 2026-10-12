@@ -50,8 +50,11 @@ export const ICONOS: Record<string, string> = {
   'sol': '<circle cx="12" cy="12" r="4"></circle><path d="M12 2v2"></path><path d="M12 20v2"></path><path d="M4.9 4.9l1.4 1.4"></path><path d="M17.7 17.7l1.4 1.4"></path><path d="M2 12h2"></path><path d="M20 12h2"></path><path d="M4.9 19.1l1.4-1.4"></path><path d="M17.7 6.3l1.4-1.4"></path>',
   'tienda': '<path d="M3 9l1.5-5h15L21 9"></path><path d="M3 9h18"></path><path d="M5 9v11h14V9"></path><path d="M10 20v-6h4v6"></path>',
   'volver': '<path d="M3 12a9 9 0 1 0 3-6.7L3 8"></path><path d="M3 3v5h5"></path>',
-  // Nuevos, de la maqueta aprobada del panel de Fragmentless (Tbt7H3G1QRXykzNKe1GXHh), en el
-  // mismo estilo: no existen en Flet.
+  // Nuevos, de las maquetas aprobadas (panel de Fragmentless Tbt7H3G1QRXykzNKe1GXHh, Inicio del
+  // gerente 5SVLK2avzLCq5TaW6mrqq6), en el mismo estilo: no existen en Flet.
+  'abajo': '<path d="M6 9l6 6 6-6"></path>',
+  // La palomita de la sucursal en la que está, con el trazo de siempre (la de Flet lleva 3).
+  'check-delgado': '<path d="M5 12l5 5L20 7"></path>',
   'calendario-mas': '<rect x="3" y="4" width="18" height="17" rx="2"></rect><path d="M16 2v4"></path><path d="M8 2v4"></path><path d="M3 10h18"></path><path d="M12 13v5"></path><path d="M9.5 15.5h5"></path>',
   'usuario-mas': '<path d="M15 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="8.5" cy="7" r="4"></circle><path d="M19 8v6"></path><path d="M22 11h-6"></path>',
 };

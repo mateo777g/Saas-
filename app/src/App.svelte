@@ -1,14 +1,13 @@
 <!--
   El portero: decide qué pantalla se ve. Sin sesión, el login. Con sesión, le pregunta a Postgres
-  qué panel le toca (lib/sesion.ts): el de Fragmentless o el del gerente (por ahora la página
-  temporal Pendiente, hasta la pieza 3). Si la sesión se cierra desde otro lado (otra pestaña,
-  o Supabase ya no la acepta), regresa al login.
+  qué panel le toca (lib/sesion.ts): el de Fragmentless o el del gerente. Si la sesión se cierra
+  desde otro lado (otra pestaña, o Supabase ya no la acepta), regresa al login.
 -->
 <script lang="ts">
   import { onMount } from 'svelte';
   import Login from './pantallas/Login.svelte';
   import PanelFragmentless from './pantallas/PanelFragmentless.svelte';
-  import Pendiente from './pantallas/Pendiente.svelte';
+  import PanelGerente from './pantallas/PanelGerente.svelte';
   import { abrirPanel, type Panel } from './lib/sesion';
   import { cerrarSesion, supabase } from './lib/supabase';
   import { ALGO_SALIO, SIN_CONEXION, esDeRed } from './lib/errores';
@@ -45,6 +44,13 @@
     vista = { tipo: 'login', aviso: { mensaje: 'Cerraste sesión.', tipo: 'info' } };
   }
 
+  // Con el panel abierto, la cuenta dejó de tener acceso (ya no es gerente de ningún
+  // restaurante): se cierra la sesión y el login dice por qué, como al entrar.
+  async function sinAcceso(mensaje: string) {
+    await cerrarSesion();
+    vista = { tipo: 'login', aviso: { mensaje, tipo: 'alerta' } };
+  }
+
   onMount(() => {
     abrir();
     const { data } = supabase.auth.onAuthStateChange((evento) => {
@@ -56,9 +62,18 @@
 </script>
 
 {#if vista.tipo === 'login'}
-  <Login aviso={vista.aviso} alEntrar={(panel) => (vista = { tipo: 'panel', panel })} />
+  <!-- Con cada aviso nuevo el login se vuelve a montar: el de "sesión cerrada" que llega primero
+       no tapa el que llega después ("Cerraste sesión.", "Esta cuenta no tiene acceso…"). -->
+  {#key vista.aviso}
+    <Login aviso={vista.aviso} alEntrar={(panel) => (vista = { tipo: 'panel', panel })} />
+  {/key}
 {:else if vista.tipo === 'panel' && vista.panel.tipo === 'fragmentless'}
   <PanelFragmentless correo={vista.panel.correo} alSalir={salir} />
 {:else if vista.tipo === 'panel' && vista.panel.tipo === 'gerente'}
-  <Pendiente panel={vista.panel} alSalir={salir} />
+  <PanelGerente
+    usuarioId={vista.panel.usuarioId}
+    datos={vista.panel.datos}
+    alSalir={salir}
+    alSinAcceso={sinAcceso}
+  />
 {/if}

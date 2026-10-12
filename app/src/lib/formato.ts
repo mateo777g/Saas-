@@ -40,6 +40,14 @@ export function fechaLarga(iso: string): string {
   return `${DIAS[semana]}, ${dia} DE ${MESES_LARGOS[mes - 1].toUpperCase()}`;
 }
 
+// La fecha en palabras, como en la suscripción terminada: '2026-11-08' → '8 de noviembre de 2026';
+// sin fecha, la raya.
+export function fechaEnPalabras(iso: string | null): string {
+  if (!iso) return '—';
+  const { anio, mes, dia } = partes(iso);
+  return `${dia} de ${MESES_LARGOS[mes - 1]} de ${anio}`;
+}
+
 // El saludo según la hora (0 a 23) que dio Postgres, con los cortes de Flet (models/tiempo.py):
 // antes de las 12, días; antes de las 19, tardes; después, noches.
 export function saludoPorHora(hora: number): string {

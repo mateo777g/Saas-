@@ -3,3 +3,6 @@
 // El WhatsApp de Fragmentless (+52 1 272 146 7532, por ahora un número temporal): lo abren Ayuda,
 // en la barra del gerente, y "Escribir a Fragmentless", en la pantalla de suscripción terminada.
 export const WHATSAPP_FRAGMENTLESS = 'https://wa.me/5212721467532';
+
+// El mismo número, como se lee al pie de la suscripción terminada.
+export const WHATSAPP_FRAGMENTLESS_TEXTO = '+52 1 272 146 7532';

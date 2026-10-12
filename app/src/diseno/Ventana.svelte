@@ -1,7 +1,7 @@
 <!--
   ventana() de diseno.py: una tarjeta sólida de radio 26 con la sombra del vidrio, sobre el velo
   del tema. Arriba, la cabeza de la maqueta: la etiqueta ("NUEVO CLIENTE"), el título de 24 y la
-  X; debajo, si hay, un texto. Lo demás lo pone quien la abre (casi siempre un Formulario).
+  X; debajo, si hay, un texto (13, o 12.5 en Perfil, como en Flet). Lo demás lo pone quien la abre (casi siempre un Formulario).
 
   Es un <dialog> del navegador: mientras está abierta, lo de atrás no se puede tocar ni recibe
   el foco. Se cierra con la X, con Escape o con un clic en el velo, como en la maqueta
@@ -16,6 +16,7 @@
     titulo,
     texto,
     ancho = 460,
+    tamanoTexto = 13,
     alCerrar,
     children,
   }: {
@@ -23,6 +24,7 @@
     titulo: string;
     texto?: string;
     ancho?: number;
+    tamanoTexto?: number;
     alCerrar: () => void;
     children: Snippet;
   } = $props();
@@ -63,7 +65,7 @@
       <BotonCuadro icono="cerrar" ayuda="Cerrar" onclick={alCerrar} />
     </div>
     {#if texto}
-      <p class="texto">{texto}</p>
+      <p class="texto" style:font-size="{tamanoTexto}px">{texto}</p>
     {/if}
     {@render children()}
   </div>
@@ -130,7 +132,6 @@
 
   .texto {
     margin: 6px 0 0;
-    font-size: 13px;
     font-weight: 500;
     line-height: 1.45;
     color: var(--suave);

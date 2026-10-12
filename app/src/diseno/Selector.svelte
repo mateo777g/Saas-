@@ -1,10 +1,13 @@
 <!--
   selector() de diseno.py: el selector segmentado (Prendida / Pausada al pausar una licencia,
   Hoy / Semana / Mes en Inicio). Caja de chip, radio 12, relleno 3; el elegido en sólido con una
-  sombra de 1 px. `alto` es el de cada segmento (30 en Flet, 34 en las ventanas) y `lleno` los
-  reparte a lo ancho, todos iguales.
+  sombra de 1 px. `alto` es el de cada segmento (30 en Flet, 34 en las ventanas, 38 en el tema de
+  Ajustes) y `lleno` los reparte a lo ancho, todos iguales. Un segmento puede llevar icono, como
+  Oscuro / Claro en Ajustes.
 -->
 <script lang="ts" generics="T extends string">
+  import Icono from './Icono.svelte';
+
   let {
     opciones,
     elegida,
@@ -13,7 +16,7 @@
     alto = 30,
     lleno = false,
   }: {
-    opciones: { valor: T; texto: string }[];
+    opciones: { valor: T; texto: string; icono?: string }[];
     elegida: T;
     alElegir: (valor: T) => void;
     etiqueta: string;
@@ -36,6 +39,7 @@
       aria-pressed={opcion.valor === elegida}
       onclick={() => alElegir(opcion.valor)}
     >
+      {#if opcion.icono}<Icono nombre={opcion.icono} tamano={16} />{/if}
       {opcion.texto}
     </button>
   {/each}
@@ -57,6 +61,10 @@
 
   button {
     height: var(--alto);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
     padding: 0 12px;
     border: 0;
     border-radius: 9px;

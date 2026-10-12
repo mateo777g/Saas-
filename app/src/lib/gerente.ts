@@ -1,6 +1,7 @@
-// Lo que lee el panel del gerente en el paso 1. Sus restaurantes, con su estado, su fecha y su
-// hora, vienen de mis_sucursales() (migración gerente_lectura); el apodo, de su fila en
-// perfiles; el plan, de cada restaurante. La app no cuenta nada.
+// Lo que lee y guarda el panel del gerente en el paso 1. Sus restaurantes, con su estado, su
+// fecha y su hora, vienen de mis_sucursales() (migración gerente_lectura); el apodo, de su fila
+// en perfiles; el plan, de cada restaurante. La app no cuenta nada.
+import { mensajeDeError } from './errores';
 import { supabase } from './supabase';
 
 // Una fila de mis_sucursales(): todo ya contado por Postgres.
@@ -59,6 +60,21 @@ async function leerPlanes(ids: string[]): Promise<Record<string, string>> {
     return {};
   }
   return Object.fromEntries(data.map((r: { id: string; plan: string }) => [r.id, PLANES[r.plan] ?? r.plan]));
+}
+
+// El botón Guardar de Perfil: guardar_perfil (migración perfiles) corrige su nombre en todas sus
+// sucursales y guarda su apodo. Postgres quita los espacios de sobra, deja sin apodo si va vacío y
+// revisa los 20 de máximo; sus errores ya vienen en español y salen tal cual.
+export async function guardarPerfil(
+  nombre: string,
+  apodo: string,
+): Promise<{ ok: true } | { ok: false; mensaje: string }> {
+  const { error } = await supabase.rpc('guardar_perfil', { p_nombre: nombre, p_apodo: apodo });
+  if (error) {
+    console.error('[gerente] guardar_perfil no se pudo:', error);
+    return { ok: false, mensaje: mensajeDeError(error) };
+  }
+  return { ok: true };
 }
 
 // Cuál sale al abrir: la última que eligió en este aparato, si sigue en su lista (funcione o no);

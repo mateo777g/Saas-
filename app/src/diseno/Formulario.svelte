@@ -6,7 +6,9 @@
   Enter en un campo también guarda.
 
   `guardar` hace la llamada y regresa el texto del éxito ("Gerente ligado") o el del error, ya
-  listo para leerse. Quien necesite quitar el error desde otro control (un Selector) enlaza
+  listo para leerse. Con `sinAviso` la ventana se cierra en cuanto guarda, sin palomita, como
+  Perfil en Flet. `espacio` (entre campos) y `antesDelBoton` son 14 y 20 en las ventanas del
+  panel de Fragmentless, 18 y 24 en Perfil. Quien necesite quitar el error desde otro control (un Selector) enlaza
   `error` con bind:error.
 -->
 <script lang="ts">
@@ -21,12 +23,18 @@
     guardar,
     alTerminar,
     error = $bindable(null),
+    sinAviso = false,
+    espacio = 14,
+    antesDelBoton = 20,
     children,
   }: {
     boton: { etiqueta: string; icono: string };
     guardar: () => Promise<{ listo: string } | { error: string }>;
     alTerminar: () => void;
     error?: string | null;
+    sinAviso?: boolean;
+    espacio?: number;
+    antesDelBoton?: number;
     children: Snippet;
   } = $props();
 
@@ -45,6 +53,10 @@
       estado = 'reposo';
       return;
     }
+    if (sinAviso) {
+      alTerminar();
+      return;
+    }
     textoListo = resultado.listo;
     estado = 'listo';
     temporizador = setTimeout(alTerminar, ESPERA_EXITO);
@@ -54,7 +66,7 @@
 </script>
 
 <form onsubmit={enviar} oninput={() => (error = null)} novalidate>
-  <div class="campos">
+  <div class="campos" style:gap="{espacio}px">
     {@render children()}
   </div>
 
@@ -64,7 +76,7 @@
     </div>
   {/if}
 
-  <div class="pie">
+  <div class="pie" style:margin-top="{antesDelBoton}px">
     <Boton
       tipo="submit"
       tono="tinta"
@@ -81,7 +93,6 @@
     margin-top: 22px;
     display: flex;
     flex-direction: column;
-    gap: 14px;
   }
 
   /* Dos campos lado a lado (INICIO y MESES, INICIO y FIN). */
@@ -105,7 +116,6 @@
   }
 
   .pie {
-    margin-top: 20px;
     display: flex;
     justify-content: flex-end;
     gap: 10px;

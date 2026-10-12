@@ -1,11 +1,12 @@
 <!--
   El portero: decide qué pantalla se ve. Sin sesión, el login. Con sesión, le pregunta a Postgres
-  qué panel le toca (lib/sesion.ts): el de Fragmentless o el del gerente. Si la sesión se cierra
+  qué panel le toca (lib/sesion.ts): el de Fragmentless, el del distribuidor o el del gerente. Si la sesión se cierra
   desde otro lado (otra pestaña, o Supabase ya no la acepta), regresa al login.
 -->
 <script lang="ts">
   import { onMount } from 'svelte';
   import Login from './pantallas/Login.svelte';
+  import PanelDistribuidor from './pantallas/PanelDistribuidor.svelte';
   import PanelFragmentless from './pantallas/PanelFragmentless.svelte';
   import PanelGerente from './pantallas/PanelGerente.svelte';
   import { abrirPanel, type Panel } from './lib/sesion';
@@ -44,8 +45,9 @@
     vista = { tipo: 'login', aviso: { mensaje: 'Cerraste sesión.', tipo: 'info' } };
   }
 
-  // Con el panel abierto, la cuenta dejó de tener acceso (ya no es gerente de ningún
-  // restaurante): se cierra la sesión y el login dice por qué, como al entrar.
+  // Con el panel abierto, la cuenta dejó de tener acceso (ya no es gerente de ningún restaurante,
+  // o ya no está ligada a un distribuidor): se cierra la sesión y el login dice por qué, como al
+  // entrar.
   async function sinAcceso(mensaje: string) {
     await cerrarSesion();
     vista = { tipo: 'login', aviso: { mensaje, tipo: 'alerta' } };
@@ -69,6 +71,14 @@
   {/key}
 {:else if vista.tipo === 'panel' && vista.panel.tipo === 'fragmentless'}
   <PanelFragmentless correo={vista.panel.correo} alSalir={salir} />
+{:else if vista.tipo === 'panel' && vista.panel.tipo === 'distribuidor'}
+  <PanelDistribuidor
+    usuarioId={vista.panel.usuarioId}
+    correo={vista.panel.correo}
+    cuenta={vista.panel.cuenta}
+    alSalir={salir}
+    alSinAcceso={sinAcceso}
+  />
 {:else if vista.tipo === 'panel' && vista.panel.tipo === 'gerente'}
   <PanelGerente
     usuarioId={vista.panel.usuarioId}

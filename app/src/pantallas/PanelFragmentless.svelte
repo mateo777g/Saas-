@@ -1,9 +1,10 @@
 <!--
   Tu panel (libreta 8, pasos 1 y 2), portado de la maqueta aprobada el 10 de octubre de 2026
   (Tbt7H3G1QRXykzNKe1GXHh): suelo liso, la barra lateral de vidrio con Inicio, Clientes,
-  Distribuidores y Cerrar sesión, la barra de arriba con el chip de cuántos restaurantes (o
-  distribuidores) hay, Actualizar y Dar de alta (Nuevo distribuidor en Distribuidores), y debajo
-  la vista elegida.
+  Distribuidores, Ajustes y Cerrar sesión, la barra de arriba con el chip de cuántos restaurantes
+  (o distribuidores) hay, Actualizar y Dar de alta (Nuevo distribuidor en Distribuidores), y
+  debajo la vista elegida. Ajustes es el mismo del gerente, solo con el tema, y arriba solo lleva
+  su chip (decidido el 12 de octubre de 2026).
 
   Lee todo de una vez al abrir, con Actualizar y después de cada cambio (lib/panel.ts). Las
   ventanas escriben en Saas-Restaurantes de verdad.
@@ -27,8 +28,9 @@
   import LigarGerente from './fragmentless/LigarGerente.svelte';
   import PausarCorregir from './fragmentless/PausarCorregir.svelte';
   import SumarMeses from './fragmentless/SumarMeses.svelte';
+  import Ajustes from './gerente/Ajustes.svelte';
 
-  type Vista = 'inicio' | 'clientes' | 'distribuidores';
+  type Vista = 'inicio' | 'clientes' | 'distribuidores' | 'ajustes';
   type VentanaAbierta =
     | { tipo: 'alta' | 'alta-distribuidor' }
     | { tipo: 'ligar' | 'sumar' | 'fijar'; cliente: Cliente }
@@ -36,7 +38,12 @@
 
   let { correo, alSalir }: { correo: string; alSalir: () => void } = $props();
 
-  const TITULOS: Record<Vista, string> = { inicio: 'Inicio', clientes: 'Clientes', distribuidores: 'Distribuidores' };
+  const TITULOS: Record<Vista, string> = {
+    inicio: 'Inicio',
+    clientes: 'Clientes',
+    distribuidores: 'Distribuidores',
+    ajustes: 'Ajustes',
+  };
 
   let vista = $state<Vista>('inicio');
   let datos = $state<DatosPanel | null>(null);
@@ -55,8 +62,9 @@
   }
 
   // El chip de la barra de arriba: cuántos restaurantes hay (en Distribuidores, cuántos
-  // distribuidores), con el punto verde; si no se pudo leer, por qué.
+  // distribuidores), con el punto verde; si no se pudo leer, por qué. En Ajustes, el del gerente.
   const estado = $derived.by(() => {
+    if (vista === 'ajustes') return { texto: 'Se guardan en este navegador', vivo: true };
     if (!datos) return null;
     if (vista === 'distribuidores') {
       const d = datos.distribuidores;
@@ -92,17 +100,22 @@
       { valor: 'clientes', texto: 'Clientes', icono: 'tienda' },
       { valor: 'distribuidores', texto: 'Distribuidores', icono: 'usuarios' },
     ]}
-    acciones={[{ valor: 'salir', texto: 'Cerrar sesión', icono: 'salir' }]}
+    acciones={[
+      { valor: 'ajustes', texto: 'Ajustes', icono: 'ajustes' },
+      { valor: 'salir', texto: 'Cerrar sesión', icono: 'salir' },
+    ]}
     activa={vista}
     alElegir={elegir}
     pie={{ inicial: 'F', nombre: 'Fragmentless', linea: correo }}
   />
 
   <BarraArriba titulo={TITULOS[vista]} {estado}>
-    <Boton etiqueta="Actualizar" icono="actualizar" apagado={leyendo} onclick={leer} />
+    {#if vista !== 'ajustes'}
+      <Boton etiqueta="Actualizar" icono="actualizar" apagado={leyendo} onclick={leer} />
+    {/if}
     {#if vista === 'distribuidores'}
       <Boton etiqueta="Nuevo distribuidor" icono="mas" tono="tinta" onclick={() => (ventana = { tipo: 'alta-distribuidor' })} />
-    {:else}
+    {:else if vista !== 'ajustes'}
       <Boton etiqueta="Dar de alta" icono="mas" tono="tinta" onclick={() => (ventana = { tipo: 'alta' })} />
     {/if}
   </BarraArriba>
@@ -122,11 +135,13 @@
         alSumar={(cliente) => (ventana = { tipo: 'sumar', cliente })}
         alFijar={(cliente) => (ventana = { tipo: 'fijar', cliente })}
       />
-    {:else}
+    {:else if vista === 'distribuidores'}
       <Distribuidores
         distribuidores={datos?.distribuidores ?? null}
         alElegir={(accion, distribuidor) => (ventana = { tipo: 'distribuidor', accion, distribuidor })}
       />
+    {:else}
+      <Ajustes />
     {/if}
   </main>
 

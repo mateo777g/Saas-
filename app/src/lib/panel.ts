@@ -177,7 +177,7 @@ export function fijarDistribuidorActivo(distribuidorId: number, activo: boolean)
 }
 
 // En negritas, lo que ya venció o vence hoy (Clientes, Vencen pronto y los clientes de cada
-// distribuidor).
-export function urgente(c: Cliente): boolean {
+// distribuidor, también en el panel del distribuidor).
+export function urgente(c: Pick<Cliente, 'estado' | 'dias_restantes'>): boolean {
   return c.estado === 'vencida' || (c.estado === 'vence_pronto' && c.dias_restantes === 0);
 }

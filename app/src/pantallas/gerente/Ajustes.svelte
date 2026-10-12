@@ -6,7 +6,8 @@
   izquierda); el hueco de la derecha es para la hora de corte, que llega con las ventas.
 
   El tema se guarda en este navegador (lib/tema.ts) y se ve al momento en todo el panel. La barra
-  de arriba (con su chip) la pone el panel.
+  de arriba (con su chip) la pone el panel. Desde el 12 de octubre de 2026 la usan tal cual los
+  paneles de Fragmentless y del distribuidor.
 -->
 <script lang="ts">
   import Icono from '../../diseno/Icono.svelte';

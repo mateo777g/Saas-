@@ -1,0 +1,15 @@
+{
+  "name": "fragmentless-api",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "check": "tsc --noEmit",
+    "publicar-pruebas": "wrangler deploy --env pruebas"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "5.20260928.1",
+    "typescript": "5.9.3",
+    "wrangler": "4.143.0"
+  }
+}

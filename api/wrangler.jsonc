@@ -1,0 +1,35 @@
+// El Worker de Fragmentless (libreta 3, Seguridad). Arriba, el de verdad, «api», que se
+// publica desde GitHub cuando existan los dominios (con su ruta api.fragmentless.com). Abajo,
+// en env.pruebas, su copia «api-pruebas», que recibe primero cada cambio y se prueba con el
+// Restaurante de prueba: npm run publicar-pruebas.
+// En wrangler las vars y los bindings no se heredan: cada uno lleva los suyos.
+// Aquí no hay ningún secreto: la URL de Supabase y su llave publicable son las mismas que ya
+// van dentro de la app. Las llaves secretas se pegan en el dashboard de Cloudflare.
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "api",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-09-26",
+  "workers_dev": false,
+  "observability": { "enabled": true },
+  "vars": {
+    "SUPABASE_URL": "https://jntciroxrgxqyhtdtxhw.supabase.co",
+    "SUPABASE_LLAVE_PUBLICABLE": "sb_publishable__z6hdwI-FsCuiVGtdySVOw_7BCCZFCG",
+    "ORIGENES": "https://app.fragmentless.com,https://pidemenu.mx"
+  },
+  "r2_buckets": [{ "binding": "BUCKET", "bucket_name": "fragmentless" }],
+  "env": {
+    "pruebas": {
+      "name": "api-pruebas",
+      "workers_dev": true,
+      "preview_urls": false,
+      "observability": { "enabled": true },
+      "vars": {
+        "SUPABASE_URL": "https://jntciroxrgxqyhtdtxhw.supabase.co",
+        "SUPABASE_LLAVE_PUBLICABLE": "sb_publishable__z6hdwI-FsCuiVGtdySVOw_7BCCZFCG",
+        "ORIGENES": "http://localhost:8125,http://gerente.localhost:8125"
+      },
+      "r2_buckets": [{ "binding": "BUCKET", "bucket_name": "fragmentless" }]
+    }
+  }
+}

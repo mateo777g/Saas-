@@ -54,6 +54,8 @@ export const ICONOS: Record<string, string> = {
   // gerente 5SVLK2avzLCq5TaW6mrqq6, suscripción terminada X4t62jG6dDG1hKfR4ZyyXZ), en el mismo
   // estilo: no existen en Flet.
   'abajo': '<path d="M6 9l6 6 6-6"></path>',
+  // La flecha de subir una categoría (maqueta del Menú CC2rrjbgxC2yykNa33a3sA).
+  'arriba': '<path d="M6 15l6-6 6 6"></path>',
   // La palomita de la sucursal en la que está, con el trazo de siempre (la de Flet lleva 3).
   'check-delgado': '<path d="M5 12l5 5L20 7"></path>',
   'mensaje': '<path d="M7.9 20A9 9 0 1 0 4 16.1L2 22z"></path>',

@@ -76,3 +76,10 @@ export function entero(texto: string): number | null {
   const limpio = texto.trim();
   return /^\d+$/.test(limpio) ? Number(limpio) : null;
 }
+
+// Un precio como lo dio Postgres: sin centavos si es entero ($1,500), con ellos si los tiene
+// ($22.50). Como _formatear_precio() de Flet.
+export function dinero(n: number): string {
+  const entero = Math.round(n * 100) % 100 === 0;
+  return `$${n.toLocaleString('en-US', { minimumFractionDigits: entero ? 0 : 2, maximumFractionDigits: 2 })}`;
+}

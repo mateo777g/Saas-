@@ -9,7 +9,8 @@
   listo para leerse. Con `sinAviso` la ventana se cierra en cuanto guarda, sin palomita, como
   Perfil en Flet. `espacio` (entre campos) y `antesDelBoton` son 14 y 20 en las ventanas del
   panel de Fragmentless, 18 y 24 en Perfil. Quien necesite quitar el error desde otro control (un Selector) enlaza
-  `error` con bind:error.
+  `error` con bind:error. `izquierda` va abajo a la izquierda, frente al botón principal
+  («Eliminar producto»).
 -->
 <script lang="ts">
   import { onDestroy, type Snippet } from 'svelte';
@@ -26,6 +27,7 @@
     sinAviso = false,
     espacio = 14,
     antesDelBoton = 20,
+    izquierda,
     children,
   }: {
     boton: { etiqueta: string; icono: string };
@@ -35,6 +37,7 @@
     sinAviso?: boolean;
     espacio?: number;
     antesDelBoton?: number;
+    izquierda?: Snippet;
     children: Snippet;
   } = $props();
 
@@ -77,6 +80,10 @@
   {/if}
 
   <div class="pie" style:margin-top="{antesDelBoton}px">
+    {#if izquierda}
+      {@render izquierda()}
+      <span class="crece"></span>
+    {/if}
     <Boton
       tipo="submit"
       tono="tinta"
@@ -117,7 +124,12 @@
 
   .pie {
     display: flex;
+    align-items: center;
     justify-content: flex-end;
     gap: 10px;
+  }
+
+  .crece {
+    flex-grow: 1;
   }
 </style>

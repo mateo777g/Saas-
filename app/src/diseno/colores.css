@@ -20,6 +20,8 @@
   --chip: rgba(0, 0, 0, 0.043);        /* fondo de chips, iconos y el selector */
   --tinta: #0b0b0b;                    /* lo activo: opción del menú, botón principal */
   --sobre-tinta: #ffffff;
+  --sobre-tinta-suave: rgba(255, 255, 255, 0.64); /* el texto chico de la barra de Ocultar varios */
+  --sobre-tinta-linea: rgba(255, 255, 255, 0.24); /* el borde de su botón Elegir todos */
   --velo: rgba(0, 0, 0, 0.35);         /* detrás de una ventana */
 }
 
@@ -40,6 +42,8 @@
   --chip: rgba(255, 255, 255, 0.06);
   --tinta: #f5f5f2;
   --sobre-tinta: #0b0b0b;
+  --sobre-tinta-suave: rgba(0, 0, 0, 0.64);
+  --sobre-tinta-linea: rgba(0, 0, 0, 0.24);
   --velo: rgba(0, 0, 0, 0.6);
 }
 
@@ -47,6 +51,8 @@
 :root {
   --verde: #3f9b5a;                    /* el punto de "en vivo" y la palomita de éxito */
   --sombra-segmento: rgba(0, 0, 0, 0.15);
+  --globo: #2a2a2a;                    /* los avisos flotantes (aviso() de piezas.py) */
+  --globo-texto: #ffffff;
   --oro-claro: #facc15;                /* la pastilla GOLD de tu insignia, de un oro al otro */
   --oro-oscuro: #ca8a04;
   --sobre-oro: #ffffff;

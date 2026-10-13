@@ -3,8 +3,10 @@
   aprobada el 10 de octubre de 2026 (5SVLK2avzLCq5TaW6mrqq6, estado "Paso 1"): la barra lateral
   de vidrio con Inicio, Ayuda, Ajustes y Cerrar sesión, la barra de arriba con la cajita de
   sucursales y la tarjeta del saludo. Ajustes y la ventana Perfil (el pie de la barra) vienen de
-  Flet (libreta 4, decidido el 11 de octubre de 2026). Si la sucursal en la que está no funciona
-  hoy (vencida o pausada, lo dice Postgres), en lugar de todo eso sale la suscripción terminada.
+  Flet (libreta 4, decidido el 11 de octubre de 2026). Mi menú, bajo GENERAL como en Flet, viene
+  de la maqueta del Menú (CC2rrjbgxC2yykNa33a3sA) y trae su propia barra de arriba. Si la
+  sucursal en la que está no funciona hoy (vencida o pausada, lo dice Postgres), en lugar de todo
+  eso sale la suscripción terminada.
 
   Vuelve a leer cada vez que Don Chuy regresa a la pestaña (decidido el 11 de octubre de 2026):
   así el saludo sigue la hora y una licencia que venció con el panel abierto se nota en cuanto
@@ -27,6 +29,7 @@
   import Ajustes from './gerente/Ajustes.svelte';
   import CajaSucursales from './gerente/CajaSucursales.svelte';
   import Inicio from './gerente/Inicio.svelte';
+  import Menu from './gerente/Menu.svelte';
   import Perfil from './gerente/Perfil.svelte';
   import Suscripcion from './gerente/Suscripcion.svelte';
 
@@ -47,7 +50,7 @@
   let datos = $state(iniciales);
   // svelte-ignore state_referenced_locally
   let actualId = $state(sucursalInicial(iniciales.sucursales).id);
-  let vista = $state<'inicio' | 'ajustes'>('inicio');
+  let vista = $state<'inicio' | 'menu' | 'ajustes'>('inicio');
   let perfilAbierto = $state(false);
 
   // Si la que estaba ya no sale en su lista, se elige otra con la misma regla de al abrir.
@@ -85,7 +88,7 @@
   function alPulsar(valor: string) {
     if (valor === 'salir') alSalir();
     else if (valor === 'ayuda') window.open(WHATSAPP_FRAGMENTLESS, '_blank', 'noopener');
-    else if (valor === 'inicio' || valor === 'ajustes') vista = valor;
+    else if (valor === 'inicio' || valor === 'menu' || valor === 'ajustes') vista = valor;
   }
 
   onMount(() => {
@@ -103,7 +106,11 @@
   <div class="panel">
     <BarraLateral
       subtitulo={plan ? `Plan ${plan}` : ''}
-      opciones={[{ valor: 'inicio', texto: 'Inicio', icono: 'inicio' }]}
+      opciones={[
+        { valor: 'inicio', texto: 'Inicio', icono: 'inicio' },
+        { grupo: 'GENERAL' },
+        { valor: 'menu', texto: 'Mi menú', icono: 'menu' },
+      ]}
       acciones={[
         { valor: 'ayuda', texto: 'Ayuda', icono: 'ayuda' },
         { valor: 'ajustes', texto: 'Ajustes', icono: 'ajustes' },
@@ -119,21 +126,28 @@
       }}
     />
 
-    {#if vista === 'inicio'}
-      <BarraArriba titulo="Inicio">
-        <CajaSucursales sucursales={datos.sucursales} {actual} alElegir={elegir} />
-      </BarraArriba>
+    {#if vista === 'menu'}
+      <!-- Otra sucursal es otro menú: se vuelve a abrir desde cero. -->
+      {#key actual.id}
+        <Menu sucursal={actual} />
+      {/key}
     {:else}
-      <BarraArriba titulo="Ajustes" estado={{ texto: 'Se guardan en este navegador', vivo: true }} />
-    {/if}
-
-    <main class="cuerpo">
       {#if vista === 'inicio'}
-        <Inicio sucursal={actual} {nombre} />
+        <BarraArriba titulo="Inicio">
+          <CajaSucursales sucursales={datos.sucursales} {actual} alElegir={elegir} />
+        </BarraArriba>
       {:else}
-        <Ajustes />
+        <BarraArriba titulo="Ajustes" estado={{ texto: 'Se guardan en este navegador', vivo: true }} />
       {/if}
-    </main>
+
+      <main class="cuerpo">
+        {#if vista === 'inicio'}
+          <Inicio sucursal={actual} {nombre} />
+        {:else}
+          <Ajustes />
+        {/if}
+      </main>
+    {/if}
   </div>
 
   {#if perfilAbierto}

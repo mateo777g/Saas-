@@ -26,12 +26,14 @@ const REGLAS: Record<string, string> = {
   miembros_nombre_check: 'Escribe su nombre completo.',
 };
 
-// Los finales de los mensajes de la migración distribuidores que empiezan con su nombre
-// («Juanito Pérez ya tiene su cuenta ligada»).
+// Los finales de los mensajes que empiezan con un nombre: los de la migración distribuidores
+// («Juanito Pérez ya tiene su cuenta ligada») y el de eliminar una categoría con productos
+// (migración menu: «tacos todavía tiene 6 productos; …»).
 const CON_NOMBRE = [
   / ya tiene su cuenta ligada$/,
   / está de baja; primero usa Reactivar$/,
   / todavía tiene \d+ clientes?; quítasel(o|os) primero$/,
+  / todavía tiene \d+ productos?; muével(o|os) a otra categoría o elimínal(o|os) primero$/,
 ];
 
 // El mensaje para la caja de error cuando falla una llamada a Postgres. Las funciones de la base
@@ -44,6 +46,9 @@ export function mensajeDeError(error: unknown): string {
   const e = error as { code?: string; message?: string; details?: string };
   const mensaje = e.message ?? '';
 
+  if (e.code === '23505' && mensaje.includes('"categorias_nombre_unico"')) {
+    return 'Ya tienes una categoría con ese nombre.';
+  }
   if (e.code === '23505' && mensaje.includes('"restaurantes_slug_key"')) {
     const slug = /\(slug\)=\((.*)\)/.exec(e.details ?? '')?.[1];
     if (slug !== undefined) return `Ya hay un restaurante con el slug ${slug}. Elige otro.`;

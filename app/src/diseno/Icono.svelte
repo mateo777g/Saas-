@@ -1,15 +1,21 @@
 <!--
   icono() de diseno.py: un icono de trazo de panel/assets/iconos, del tamaño pedido. Toma el
   color del texto que lo rodea (currentColor); para otro color, se le pone `color` al padre.
+  Con `trazos` dibuja esos en lugar de los de iconos.ts (los íconos de las categorías del menú,
+  IconoCategoria.svelte).
 -->
 <script lang="ts">
   import { ICONOS } from './iconos';
 
-  let { nombre, tamano = 18 }: { nombre: string; tamano?: number } = $props();
+  let {
+    nombre,
+    tamano = 18,
+    trazos: propios,
+  }: { nombre: string; tamano?: number; trazos?: string } = $props();
 
-  const trazos = $derived(ICONOS[nombre]);
+  const trazos = $derived(propios ?? ICONOS[nombre]);
   $effect(() => {
-    if (!trazos) console.error(`[icono] no existe el icono "${nombre}" en src/diseno/iconos.ts`);
+    if (!trazos) console.error(`[icono] no existe el icono "${nombre}"`);
   });
 </script>
 

@@ -5,7 +5,9 @@
 
   El botón sigue las reglas de siempre (libreta 4), como en Formulario: "Guardando…" con la rueda,
   el error en la caja sin rojo, el éxito en el mismo botón con la palomita verde y 1.6 s después
-  se cierra. Se cierra también con Cancelar, Escape o un clic en el velo.
+  se cierra. Se cierra también con Cancelar, Escape o un clic en el velo. Si el éxito debe hacer
+  otra cosa que Cancelar (en Mi menú, Cancelar regresa a la ventana del producto y el éxito cierra
+  las dos), va en `alTerminar`; `textoCargando` cambia el «Guardando…» («Eliminando…»).
 -->
 <script lang="ts">
   import { onDestroy, onMount } from 'svelte';
@@ -22,6 +24,8 @@
     boton,
     confirmar,
     alCerrar,
+    alTerminar,
+    textoCargando = 'Guardando…',
   }: {
     icono: string;
     titulo: string;
@@ -29,6 +33,8 @@
     boton: { etiqueta: string; icono: string };
     confirmar: () => Promise<{ listo: string } | { error: string }>;
     alCerrar: () => void;
+    alTerminar?: () => void;
+    textoCargando?: string;
   } = $props();
 
   let dialogo: HTMLDialogElement;
@@ -53,12 +59,17 @@
     }
     textoListo = resultado.listo;
     estado = 'listo';
-    temporizador = setTimeout(alCerrar, ESPERA_EXITO);
+    temporizador = setTimeout(alTerminar ?? alCerrar, ESPERA_EXITO);
+  }
+
+  // Mientras trabaja o ya terminó, no se cancela a medias (como _cerrar() de Flet).
+  function cancelar() {
+    if (estado === 'reposo') alCerrar();
   }
 
   function alCancelar(e: Event) {
     e.preventDefault();
-    alCerrar();
+    cancelar();
   }
 </script>
 
@@ -70,7 +81,7 @@
   aria-labelledby={idTitulo}
   oncancel={alCancelar}
   onclick={(e) => {
-    if (e.target === dialogo) alCerrar();
+    if (e.target === dialogo) cancelar();
   }}
 >
   <div class="ventana">
@@ -85,11 +96,11 @@
     {/if}
 
     <div class="pie">
-      <Boton etiqueta="Cancelar" icono="cerrar" onclick={alCerrar} />
+      <Boton etiqueta="Cancelar" icono="cerrar" apagado={estado !== 'reposo'} onclick={cancelar} />
       <Boton
         tono="tinta"
         icono={boton.icono}
-        etiqueta={estado === 'guardando' ? 'Guardando…' : estado === 'listo' ? textoListo : boton.etiqueta}
+        etiqueta={estado === 'guardando' ? textoCargando : estado === 'listo' ? textoListo : boton.etiqueta}
         cargando={estado === 'guardando'}
         exito={estado === 'listo'}
         onclick={enviar}

@@ -35,7 +35,9 @@
   onMount(() => {
     dialogo.showModal();
     // Como en la maqueta: el foco va al primer campo, no a la X.
-    dialogo.querySelector<HTMLElement>('input, select, textarea')?.focus({ preventScroll: true });
+    dialogo
+      .querySelector<HTMLElement>('input:not([type="file"]), select, textarea')
+      ?.focus({ preventScroll: true });
   });
 
   function alCancelar(e: Event) {

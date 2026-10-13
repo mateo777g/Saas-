@@ -4,7 +4,8 @@
   luego las opciones, con la activa en una píldora de tinta y las demás en gris, que se
   encienden con el cursor encima; abajo las acciones (Cerrar sesión) y el pie: el círculo con
   la inicial, el nombre y una línea en mono, sobre una raya fina. Si el pie trae alPulsar, es un
-  botón (el gerente abre ahí su Perfil).
+  botón (el gerente abre ahí su Perfil). Entre las opciones puede ir un título de grupo en mono
+  ({ grupo: 'GENERAL' }), como en Flet.
 -->
 <script lang="ts">
   import Icono from './Icono.svelte';
@@ -12,6 +13,7 @@
   import Vidrio from './Vidrio.svelte';
 
   type Opcion = { valor: string; texto: string; icono: string };
+  type Grupo = { grupo: string };
 
   let {
     subtitulo,
@@ -22,7 +24,7 @@
     pie,
   }: {
     subtitulo: string;
-    opciones: Opcion[];
+    opciones: (Opcion | Grupo)[];
     acciones?: Opcion[];
     activa: string;
     alElegir: (valor: string) => void;
@@ -61,8 +63,12 @@
   </div>
 
   <div class="opciones">
-    {#each opciones as o (o.valor)}
-      {@render opcion(o)}
+    {#each opciones as o ('grupo' in o ? `grupo-${o.grupo}` : o.valor)}
+      {#if 'grupo' in o}
+        <span class="etiqueta titulo-grupo">{o.grupo}</span>
+      {:else}
+        {@render opcion(o)}
+      {/if}
     {/each}
   </div>
 
@@ -142,6 +148,10 @@
     display: flex;
     flex-direction: column;
     gap: 2px;
+  }
+
+  .titulo-grupo {
+    padding: 14px 14px 6px;
   }
 
   .opcion {

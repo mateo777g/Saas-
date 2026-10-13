@@ -6,6 +6,7 @@
 
   Cada fila la pinta quien usa la tabla, con class="fila"; adentro puede usar class="celda" (y
   "fuerte", "tenue" o "numero") para el texto de cada columna. Si no hay filas, va una NotaTabla.
+  `relleno` y `altoFila` cambian las filas: las de Mi menú miden 64 con su foto de 44 adentro.
 -->
 <script lang="ts">
   import type { Snippet } from 'svelte';
@@ -13,15 +14,19 @@
   let {
     columnas,
     encabezados,
+    relleno = '12px 16px',
+    altoFila = 0,
     children,
   }: {
     columnas: string;
     encabezados: { texto: string; derecha?: boolean }[];
+    relleno?: string;
+    altoFila?: number;
     children: Snippet;
   } = $props();
 </script>
 
-<div class="tabla" style:--columnas={columnas}>
+<div class="tabla" style:--columnas={columnas} style:--relleno={relleno} style:--alto-fila="{altoFila}px">
   <div class="fila cabecera">
     {#each encabezados as e, i (i)}
       <span class="etiqueta" class:derecha={e.derecha}>{e.texto}</span>
@@ -49,12 +54,14 @@
     grid-template-columns: var(--columnas);
     gap: 16px;
     align-items: center;
-    padding: 12px 16px;
+    min-height: var(--alto-fila);
+    padding: var(--relleno);
     border-bottom: 1px solid var(--linea);
   }
 
   .tabla .cabecera {
     height: 40px;
+    min-height: 40px;
     flex: none;
     padding-block: 0;
   }

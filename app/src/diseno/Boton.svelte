@@ -10,6 +10,8 @@
     cargando  la rueda que gira en lugar del icono, sin clic ("Guardando…" de una ventana)
     exito     la palomita verde en lugar del icono, sin clic (el éxito se ve en el botón, ~1.6 s)
     iconoAlFinal  el icono después del texto, como la flecha de "Ver clientes →"
+    chip      el relleno de chip, sin perder el borde (Cancelar de Ocultar varios)
+    ayuda     lo que sale con el cursor encima ("Primero crea una categoría")
 -->
 <script lang="ts">
   import Icono from './Icono.svelte';
@@ -23,6 +25,8 @@
     cargando = false,
     exito = false,
     iconoAlFinal = false,
+    chip = false,
+    ayuda,
     tipo = 'button',
     onclick,
   }: {
@@ -34,6 +38,8 @@
     cargando?: boolean;
     exito?: boolean;
     iconoAlFinal?: boolean;
+    chip?: boolean;
+    ayuda?: string;
     tipo?: 'button' | 'submit';
     onclick?: (e: MouseEvent) => void;
   } = $props();
@@ -45,6 +51,8 @@
   type={tipo}
   class="boton {tono} {tamano}"
   class:apagado
+  class:chip
+  title={ayuda}
   disabled={apagado || cargando || exito}
   {onclick}
 >
@@ -89,6 +97,10 @@
 
   .apagado {
     opacity: 0.4;
+  }
+
+  .chip {
+    background: var(--chip);
   }
 
   .tinta {

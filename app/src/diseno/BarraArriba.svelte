@@ -2,7 +2,8 @@
   La barra de arriba de cada vista ("ESTRUCTURA DE UNA VISTA" en plan panel.txt): vidrio sin
   sombra, 60 de alto, radio 18, de la barra lateral hasta 16 del borde derecho. Lleva el título
   de la vista, el chip de estado (punto verde mientras todo se lee bien) y, a la derecha, los
-  botones que le pase la vista.
+  botones que le pase la vista. `junto` va pegado al título, antes del chip (el selector
+  Productos | Categorías de Mi menú).
 -->
 <script lang="ts">
   import type { Snippet } from 'svelte';
@@ -11,16 +12,19 @@
   let {
     titulo,
     estado = null,
+    junto,
     children,
   }: {
     titulo: string;
     estado?: { texto: string; vivo: boolean } | null;
+    junto?: Snippet;
     children?: Snippet;
   } = $props();
 </script>
 
 <Vidrio como="header" class="barra-arriba" radio={18} sombra={false}>
   <h1 class="titulo">{titulo}</h1>
+  {@render junto?.()}
   {#if estado}
     <span class="chip">
       {#if estado.vivo}<span class="punto"></span>{/if}

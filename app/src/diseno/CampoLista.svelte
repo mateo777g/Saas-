@@ -1,7 +1,8 @@
 <!--
   Un campo para elegir de una lista, con la etiqueta encima y la pista debajo como campo():
   la lista del navegador, 44 de alto, radio 12, en sólido. Las opciones van en grupos
-  («Directos», «De otro distribuidor»); un grupo vacío no sale. Mientras no se elige nada,
+  («Directos», «De otro distribuidor»); un grupo vacío no sale, y uno sin etiqueta pone sus
+  opciones sueltas (las categorías de un producto). Mientras no se elige nada,
   muestra `placeholder` («Elige un cliente»), que no se puede volver a elegir.
 -->
 <script lang="ts">
@@ -27,11 +28,17 @@
   <select {id} value={valor} onchange={(e) => (valor = e.currentTarget.value)}>
     <option value="" disabled selected={valor === ''}>{placeholder}</option>
     {#each grupos.filter((g) => g.opciones.length > 0) as g (g.etiqueta)}
-      <optgroup label={g.etiqueta}>
+      {#if g.etiqueta}
+        <optgroup label={g.etiqueta}>
+          {#each g.opciones as o (o.valor)}
+            <option value={o.valor} selected={o.valor === valor}>{o.texto}</option>
+          {/each}
+        </optgroup>
+      {:else}
         {#each g.opciones as o (o.valor)}
           <option value={o.valor} selected={o.valor === valor}>{o.texto}</option>
         {/each}
-      </optgroup>
+      {/if}
     {/each}
   </select>
   {#if pista}

@@ -134,6 +134,32 @@ begin
 end
 $$ language plpgsql;
 
+-- La sesión de un aparato ligado: quien no es gerente solo funciona desde ahí (migración
+-- empleados). Se suma a la sesión de tests.authenticate_as.
+create function tests.en_aparato(p_sesion uuid)
+returns void as $$
+begin
+  perform set_config('request.jwt.claims',
+    (coalesce(nullif(current_setting('request.jwt.claims', true), ''), '{}')::jsonb
+      || jsonb_build_object('session_id', p_sesion))::text, true);
+end
+$$ language plpgsql;
+
+
+-- Cuántas filas cambió una orden, para las que RLS deja pasar sin error y sin efecto.
+create function tests.filas(p_sql text)
+returns integer
+language plpgsql
+as $$
+declare
+  n integer;
+begin
+  execute p_sql;
+  get diagnostics n = row_count;
+  return n;
+end;
+$$;
+
 grant usage on schema tests to anon, authenticated;
 grant execute on all functions in schema tests to anon, authenticated;
 
@@ -183,6 +209,10 @@ begin
     ('cccccccc-cccc-4ccc-8ccc-cccccccccccc', tests.get_supabase_uid('gerente_c'),     'Gerente C',           '{gerente}', true),
     ('dddddddd-dddd-4ddd-8ddd-dddddddddddd', tests.get_supabase_uid('gerente_d'),     'Gerente D',           '{gerente}', true),
     ('eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee', tests.get_supabase_uid('gerente_e'),     'Gerente E',           '{gerente}', true);
+
+  -- La tableta compartida de A, con la sesión del mesero: así entra el personal (migración empleados).
+  insert into public.dispositivos (restaurante_id, nombre, token_hash, sesion_id)
+  values ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 'Tableta caja', repeat('a', 64), '5e5e5e5e-0000-4000-8000-00000000000a');
 end;
 $$;
 
@@ -234,10 +264,10 @@ select is_empty(
   $$ select c.relname
      from pg_class c join pg_namespace n on n.oid = c.relnamespace
      where n.nspname = 'public'
-       and c.relname in ('restaurantes', 'plataforma_admins', 'distribuidores', 'miembros')
+       and c.relname in ('restaurantes', 'plataforma_admins', 'distribuidores')
        and (has_table_privilege('authenticated', c.oid, 'INSERT, UPDATE, DELETE')
             or has_any_column_privilege('authenticated', c.oid, 'INSERT, UPDATE')) $$,
-  '1 · Nadie con sesión escribe directo en las 4 tablas de la plataforma'
+  '1 · Nadie con sesión escribe directo en restaurantes, plataforma_admins ni distribuidores'
 );
 
 -- Cuando llegue menu_publico, será la única excepción.
@@ -292,6 +322,7 @@ select is_empty(
 );
 
 select tests.authenticate_as('mesero_a');
+select tests.en_aparato('5e5e5e5e-0000-4000-8000-00000000000a');
 
 select results_eq(
   'select id from public.restaurantes',
@@ -355,10 +386,10 @@ select throws_ok(
   '4 · Gerente A no puede borrar el restaurante B'
 );
 
-select throws_ok(
-  $$ update public.miembros set nombre = 'Hackeado' where restaurante_id = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb' $$,
-  '42501', null,
-  '4 · Gerente A no puede cambiar miembros de B'
+select is(
+  tests.filas($$ update public.miembros set nombre = 'Hackeado' where restaurante_id = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb' $$),
+  0,
+  '4 · Gerente A no cambia miembros de B: 0 filas'
 );
 
 select throws_ok(
@@ -416,16 +447,17 @@ select throws_ok(
   '8 · Gerente C no puede escribir en su restaurante'
 );
 
-select throws_ok(
-  $$ update public.miembros set nombre = 'Otro nombre' where restaurante_id = 'cccccccc-cccc-4ccc-8ccc-cccccccccccc' $$,
-  '42501', null,
-  '8 · Gerente C no puede escribir en sus miembros'
+select is(
+  tests.filas($$ update public.miembros set nombre = 'Otro nombre' where restaurante_id = 'cccccccc-cccc-4ccc-8ccc-cccccccccccc' $$),
+  0,
+  '8 · Gerente C no cambia sus miembros: 0 filas'
 );
 
 
 -- ─── 9 · Mesero de A dado de baja ─────────────────────────────────────────────
 
 select tests.authenticate_as('mesero_baja_a');
+select tests.en_aparato('5e5e5e5e-0000-4000-8000-00000000000a');
 
 select is_empty(
   $$ select id::text from public.restaurantes

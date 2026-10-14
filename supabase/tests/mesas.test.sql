@@ -134,6 +134,17 @@ begin
 end
 $$ language plpgsql;
 
+-- La sesión de un aparato ligado: quien no es gerente solo funciona desde ahí (migración
+-- empleados). Se suma a la sesión de tests.authenticate_as.
+create function tests.en_aparato(p_sesion uuid)
+returns void as $$
+begin
+  perform set_config('request.jwt.claims',
+    (coalesce(nullif(current_setting('request.jwt.claims', true), ''), '{}')::jsonb
+      || jsonb_build_object('session_id', p_sesion))::text, true);
+end
+$$ language plpgsql;
+
 grant usage on schema tests to anon, authenticated;
 grant execute on all functions in schema tests to anon, authenticated;
 
@@ -201,6 +212,10 @@ begin
     ('dddddddd-dddd-4ddd-8ddd-dddddddddddd', tests.get_supabase_uid('gerente_d'), 'Gerente D', '{gerente}', true),
     ('eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee', tests.get_supabase_uid('gerente_e'), 'Gerente E', '{gerente}', true);
 
+  -- La tableta compartida de A, con la sesión del mesero: así entra el personal (migración empleados).
+  insert into public.dispositivos (restaurante_id, nombre, token_hash, sesion_id)
+  values ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 'Tableta caja', repeat('a', 64), '5e5e5e5e-0000-4000-8000-00000000000a');
+
   insert into public.mesas (id, restaurante_id, nombre) overriding system value values
     (701, a, 'Mesa 1'),
     (702, a, 'Mesa 2'),
@@ -260,6 +275,7 @@ select results_eq(
 );
 
 select tests.authenticate_as('mesero_a');
+select tests.en_aparato('5e5e5e5e-0000-4000-8000-00000000000a');
 
 select set_eq(
   'select id from public.mesas',
@@ -295,6 +311,7 @@ select throws_ok(
 );
 
 select tests.authenticate_as('mesero_a');
+select tests.en_aparato('5e5e5e5e-0000-4000-8000-00000000000a');
 
 select throws_ok(
   $$ insert into public.mesas (restaurante_id, nombre)
@@ -378,6 +395,7 @@ select throws_ok(
 );
 
 select tests.authenticate_as('mesero_baja_a');
+select tests.en_aparato('5e5e5e5e-0000-4000-8000-00000000000a');
 
 select is_empty(
   'select id from public.mesas',
@@ -517,6 +535,7 @@ select throws_ok(
 );
 
 select tests.authenticate_as('mesero_a');
+select tests.en_aparato('5e5e5e5e-0000-4000-8000-00000000000a');
 
 select throws_ok(
   $$ select public.mover_mesa(701, 'abajo') $$,
@@ -536,6 +555,7 @@ select throws_ok(
 -- ─── eliminar_mesa ────────────────────────────────────────────────────────────
 
 select tests.authenticate_as('mesero_a');
+select tests.en_aparato('5e5e5e5e-0000-4000-8000-00000000000a');
 
 select throws_ok(
   'select public.eliminar_mesa(701)',

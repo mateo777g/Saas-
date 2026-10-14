@@ -16,14 +16,15 @@ export function esDeRed(error: unknown): boolean {
 }
 
 // Lo que Postgres dice en inglés cuando una fila no cumple una regla de su tabla, traducido por
-// el nombre de la regla (migración plataforma). Los textos son los de la maqueta del panel de
-// Fragmentless (Tbt7H3G1QRXykzNKe1GXHh).
+// el nombre de la regla (migraciones plataforma y mesas). Los textos son los de la maqueta del
+// panel de Fragmentless (Tbt7H3G1QRXykzNKe1GXHh) y los de Flet para las mesas.
 const REGLAS: Record<string, string> = {
   restaurantes_nombre_check: 'Escribe el nombre del restaurante.',
   restaurantes_slug_formato:
     'El slug solo lleva minúsculas, números y guiones, sin guion al inicio ni al final ni dos seguidos.',
   restaurantes_licencia_con_fin: 'No se puede prender una licencia sin fecha de fin.',
   miembros_nombre_check: 'Escribe su nombre completo.',
+  mesas_nombre_check: 'Escribe un nombre para la mesa.',
 };
 
 // Los finales de los mensajes que empiezan con un nombre: los de la migración distribuidores
@@ -48,6 +49,9 @@ export function mensajeDeError(error: unknown): string {
 
   if (e.code === '23505' && mensaje.includes('"categorias_nombre_unico"')) {
     return 'Ya tienes una categoría con ese nombre.';
+  }
+  if (e.code === '23505' && mensaje.includes('"mesas_nombre_unico"')) {
+    return 'Ya tienes una mesa con ese nombre.';
   }
   if (e.code === '23505' && mensaje.includes('"restaurantes_slug_key"')) {
     const slug = /\(slug\)=\((.*)\)/.exec(e.details ?? '')?.[1];

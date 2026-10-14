@@ -3,8 +3,9 @@
   aprobada el 10 de octubre de 2026 (5SVLK2avzLCq5TaW6mrqq6, estado "Paso 1"): la barra lateral
   de vidrio con Inicio, Ayuda, Ajustes y Cerrar sesión, la barra de arriba con la cajita de
   sucursales y la tarjeta del saludo. Ajustes y la ventana Perfil (el pie de la barra) vienen de
-  Flet (libreta 4, decidido el 11 de octubre de 2026). Mi menú, bajo GENERAL como en Flet, viene
-  de la maqueta del Menú (CC2rrjbgxC2yykNa33a3sA) y trae su propia barra de arriba. Si la
+  Flet (libreta 4, decidido el 11 de octubre de 2026). Mi menú y Mesas, bajo GENERAL como en
+  Flet, vienen de sus maquetas (CC2rrjbgxC2yykNa33a3sA y 4TKmJzMwyWMCAVU2MwEDwc) y traen su
+  propia barra de arriba. Si la
   sucursal en la que está no funciona hoy (vencida o pausada, lo dice Postgres), en lugar de todo
   eso sale la suscripción terminada.
 
@@ -30,6 +31,7 @@
   import CajaSucursales from './gerente/CajaSucursales.svelte';
   import Inicio from './gerente/Inicio.svelte';
   import Menu from './gerente/Menu.svelte';
+  import Mesas from './gerente/Mesas.svelte';
   import Perfil from './gerente/Perfil.svelte';
   import Suscripcion from './gerente/Suscripcion.svelte';
 
@@ -50,7 +52,7 @@
   let datos = $state(iniciales);
   // svelte-ignore state_referenced_locally
   let actualId = $state(sucursalInicial(iniciales.sucursales).id);
-  let vista = $state<'inicio' | 'menu' | 'ajustes'>('inicio');
+  let vista = $state<'inicio' | 'menu' | 'mesas' | 'ajustes'>('inicio');
   let perfilAbierto = $state(false);
 
   // Si la que estaba ya no sale en su lista, se elige otra con la misma regla de al abrir.
@@ -88,7 +90,7 @@
   function alPulsar(valor: string) {
     if (valor === 'salir') alSalir();
     else if (valor === 'ayuda') window.open(WHATSAPP_FRAGMENTLESS, '_blank', 'noopener');
-    else if (valor === 'inicio' || valor === 'menu' || valor === 'ajustes') vista = valor;
+    else if (valor === 'inicio' || valor === 'menu' || valor === 'mesas' || valor === 'ajustes') vista = valor;
   }
 
   onMount(() => {
@@ -110,6 +112,7 @@
         { valor: 'inicio', texto: 'Inicio', icono: 'inicio' },
         { grupo: 'GENERAL' },
         { valor: 'menu', texto: 'Mi menú', icono: 'menu' },
+        { valor: 'mesas', texto: 'Mesas', icono: 'mesas' },
       ]}
       acciones={[
         { valor: 'ayuda', texto: 'Ayuda', icono: 'ayuda' },
@@ -130,6 +133,11 @@
       <!-- Otra sucursal es otro menú: se vuelve a abrir desde cero. -->
       {#key actual.id}
         <Menu sucursal={actual} />
+      {/key}
+    {:else if vista === 'mesas'}
+      <!-- Otra sucursal son otras mesas: se vuelve a abrir desde cero. -->
+      {#key actual.id}
+        <Mesas sucursal={actual} />
       {/key}
     {:else}
       {#if vista === 'inicio'}

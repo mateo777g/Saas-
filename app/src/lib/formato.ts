@@ -48,6 +48,28 @@ export function fechaEnPalabras(iso: string | null): string {
   return `${dia} de ${MESES_LARGOS[mes - 1]} de ${anio}`;
 }
 
+// El día anterior a una fecha: '2026-10-01' → '2026-09-30'. Cuenta sobre el texto, sin reloj.
+export function diaAnterior(iso: string): string {
+  const { anio, mes, dia } = partes(iso);
+  return new Date(Date.UTC(anio, mes - 1, dia - 1)).toISOString().slice(0, 10);
+}
+
+// Un momento que dio Postgres ('2026-10-15T19:20:00+00:00') visto en la zona del restaurante: su
+// fecha ('2026-10-15') y su hora ('14:20'). Usa la zona que se le pasa, nunca la del aparato.
+export function enZona(momento: string, zona: string): { dia: string; hora: string } {
+  const pedazos = new Intl.DateTimeFormat('en-CA', {
+    timeZone: zona,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hourCycle: 'h23',
+  }).formatToParts(new Date(momento));
+  const de = (tipo: Intl.DateTimeFormatPartTypes) => pedazos.find((p) => p.type === tipo)?.value ?? '';
+  return { dia: `${de('year')}-${de('month')}-${de('day')}`, hora: `${de('hour')}:${de('minute')}` };
+}
+
 // El saludo según la hora (0 a 23) que dio Postgres, con los cortes de Flet (models/tiempo.py):
 // antes de las 12, días; antes de las 19, tardes; después, noches.
 export function saludoPorHora(hora: number): string {

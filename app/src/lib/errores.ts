@@ -5,6 +5,9 @@ export const SIN_CONEXION = 'No hay conexión con el servidor. Revisa tu interne
 export const ALGO_SALIO = 'Algo salió mal al iniciar sesión. Intenta de nuevo.';
 export const ALGO_SALIO_PANEL = 'Algo salió mal. Intenta de nuevo.';
 
+// Un error con su texto ya en español, listo para la caja de error de la ventana.
+export class Fallo extends Error {}
+
 // ¿El error es porque no se pudo hablar con el servidor? Los navegadores lo dicen distinto:
 // Chrome "Failed to fetch", Firefox "NetworkError…", Safari "Load failed". Supabase lo envuelve
 // en su propio error (AuthRetryableFetchError en el login), con ese texto adentro.
@@ -52,6 +55,9 @@ export function mensajeDeError(error: unknown): string {
   }
   if (e.code === '23505' && mensaje.includes('"mesas_nombre_unico"')) {
     return 'Ya tienes una mesa con ese nombre.';
+  }
+  if (e.code === '23505' && mensaje.includes('"miembros_nombre_unico"')) {
+    return 'Ya hay alguien en tu equipo con ese nombre.';
   }
   if (e.code === '23505' && mensaje.includes('"restaurantes_slug_key"')) {
     const slug = /\(slug\)=\((.*)\)/.exec(e.details ?? '')?.[1];

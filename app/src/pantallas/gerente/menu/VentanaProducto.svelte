@@ -16,8 +16,8 @@
   import Confirmar from '../../../diseno/Confirmar.svelte';
   import Formulario from '../../../diseno/Formulario.svelte';
   import Ventana from '../../../diseno/Ventana.svelte';
-  import { borrarFoto, convertirAWebp, Fallo, revisarFoto, subirFoto, urlFoto } from '../../../lib/fotos';
-  import { ALGO_SALIO_PANEL } from '../../../lib/errores';
+  import { borrarFoto, convertirAWebp, revisarFoto, subirFoto, urlFoto } from '../../../lib/fotos';
+  import { ALGO_SALIO_PANEL, Fallo } from '../../../lib/errores';
   import {
     crearProducto,
     editarProducto,

@@ -10,7 +10,7 @@
   Perfil en Flet. `espacio` (entre campos) y `antesDelBoton` son 14 y 20 en las ventanas del
   panel de Fragmentless, 18 y 24 en Perfil. Quien necesite quitar el error desde otro control (un Selector) enlaza
   `error` con bind:error. `izquierda` va abajo a la izquierda, frente al botón principal
-  («Eliminar producto»).
+  («Eliminar producto»). `textoCargando` cambia el «Guardando…» («Creando…»).
 -->
 <script lang="ts">
   import { onDestroy, type Snippet } from 'svelte';
@@ -27,6 +27,7 @@
     sinAviso = false,
     espacio = 14,
     antesDelBoton = 20,
+    textoCargando = 'Guardando…',
     izquierda,
     children,
   }: {
@@ -37,6 +38,7 @@
     sinAviso?: boolean;
     espacio?: number;
     antesDelBoton?: number;
+    textoCargando?: string;
     izquierda?: Snippet;
     children: Snippet;
   } = $props();
@@ -88,7 +90,7 @@
       tipo="submit"
       tono="tinta"
       icono={boton.icono}
-      etiqueta={estado === 'guardando' ? 'Guardando…' : estado === 'listo' ? textoListo : boton.etiqueta}
+      etiqueta={estado === 'guardando' ? textoCargando : estado === 'listo' ? textoListo : boton.etiqueta}
       cargando={estado === 'guardando'}
       exito={estado === 'listo'}
     />

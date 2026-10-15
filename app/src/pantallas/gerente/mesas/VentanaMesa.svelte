@@ -8,8 +8,7 @@
   import Campo from '../../../diseno/Campo.svelte';
   import Formulario from '../../../diseno/Formulario.svelte';
   import Ventana from '../../../diseno/Ventana.svelte';
-  import { ALGO_SALIO_PANEL } from '../../../lib/errores';
-  import { Fallo } from '../../../lib/fotos';
+  import { ALGO_SALIO_PANEL, Fallo } from '../../../lib/errores';
   import { crearMesa, renombrarMesa, type Mesa } from '../../../lib/mesas';
 
   let {

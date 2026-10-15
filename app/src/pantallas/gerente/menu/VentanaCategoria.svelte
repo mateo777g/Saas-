@@ -12,8 +12,7 @@
   import IconoCategoria from '../../../diseno/IconoCategoria.svelte';
   import { ICONOS_CATEGORIAS } from '../../../diseno/iconosCategorias';
   import Ventana from '../../../diseno/Ventana.svelte';
-  import { ALGO_SALIO_PANEL } from '../../../lib/errores';
-  import { Fallo } from '../../../lib/fotos';
+  import { ALGO_SALIO_PANEL, Fallo } from '../../../lib/errores';
   import { plural } from '../../../lib/formato';
   import {
     crearCategoria,

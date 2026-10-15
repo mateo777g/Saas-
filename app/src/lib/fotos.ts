@@ -2,21 +2,15 @@
 // calidad 80, como Flet en models/cloudflare_storage.py), y el Worker api-pruebas las guarda en
 // R2 o las borra, después de preguntarle a Postgres con la sesión de quien llama (libreta 3, «Las
 // fotos en R2»). La app nunca escribe en R2 directo: solo guarda la ruta que le da el Worker.
-import { ALGO_SALIO_PANEL, esDeRed, SIN_CONEXION } from './errores';
-import { supabase } from './supabase';
+import { ALGO_SALIO_PANEL, esDeRed, Fallo, SIN_CONEXION } from './errores';
+import { llamarWorker } from './worker';
 
-const API = import.meta.env.VITE_API_URL;
 const R2_PUBLICO = import.meta.env.VITE_R2_PUBLICO;
-if (!API || !R2_PUBLICO) {
-  throw new Error('Faltan VITE_API_URL o VITE_R2_PUBLICO en app/.env');
-}
+if (!R2_PUBLICO) throw new Error('Falta VITE_R2_PUBLICO en app/.env');
 
 const LADO_MAXIMO = 1600;
 const CALIDAD = 80;
 const MAXIMO_ORIGINAL = 15 * 1024 * 1024;
-
-// Un error con su texto ya en español, listo para la caja de error de la ventana.
-export class Fallo extends Error {}
 
 // La dirección pública de una foto (la del bucket; libreta 3: el Worker no sirve las fotos).
 export function urlFoto(ruta: string): string {
@@ -86,6 +80,7 @@ export async function webpDeRespaldo(datos: ImageData): Promise<Blob> {
 // ('restaurantes/<id>/menu/<32 caracteres>.webp'), que es lo que se guarda en el producto.
 export async function subirFoto(restauranteId: string, foto: Blob): Promise<string> {
   const respuesta = await llamarWorker(
+    'fotos',
     'POST',
     `/menu/foto?restaurante=${encodeURIComponent(restauranteId)}`,
     foto,
@@ -102,42 +97,8 @@ export async function subirFoto(restauranteId: string, foto: Blob): Promise<stri
 // Chuy, pero queda en la consola, nunca se traga.
 export async function borrarFoto(ruta: string): Promise<void> {
   try {
-    await llamarWorker('DELETE', `/menu/foto?ruta=${encodeURIComponent(ruta)}`);
+    await llamarWorker('fotos', 'DELETE', `/menu/foto?ruta=${encodeURIComponent(ruta)}`);
   } catch (error) {
     console.error(`[fotos] no se pudo borrar la foto ${ruta}; queda en R2:`, error);
   }
-}
-
-async function llamarWorker(
-  metodo: 'POST' | 'DELETE',
-  camino: string,
-  foto?: Blob,
-): Promise<{ ruta?: unknown } | null> {
-  const { data, error } = await supabase.auth.getSession();
-  if (error || !data.session) {
-    console.error('[fotos] no hay sesión para hablar con el Worker:', error);
-    throw new Fallo('Tu sesión venció. Vuelve a entrar.');
-  }
-
-  let respuesta: Response;
-  try {
-    respuesta = await fetch(`${API}${camino}`, {
-      method: metodo,
-      headers: {
-        Authorization: `Bearer ${data.session.access_token}`,
-        ...(foto ? { 'Content-Type': 'image/webp' } : {}),
-      },
-      body: foto,
-    });
-  } catch (falla) {
-    console.error(`[fotos] ${metodo} ${camino}: no se pudo hablar con el Worker:`, falla);
-    throw new Fallo(SIN_CONEXION);
-  }
-
-  const cuerpo = await respuesta.json().catch(() => null);
-  if (!respuesta.ok) {
-    console.error(`[fotos] ${metodo} ${camino}: el Worker dijo ${respuesta.status}:`, cuerpo);
-    throw new Fallo(typeof cuerpo?.error === 'string' ? cuerpo.error : ALGO_SALIO_PANEL);
-  }
-  return cuerpo;
 }

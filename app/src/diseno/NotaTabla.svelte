@@ -3,7 +3,7 @@
   ningún restaurante.") o no se pudo leer: una línea fuerte y otra suave, al centro. Debajo
   puede llevar un botón («Ir a Categorías»). `relleno` es el de arriba y abajo: 40 en el panel
   de Fragmentless, 48 en Mi menú (como en Flet). `angosta` corta el texto a 52 caracteres por
-  línea, como en la maqueta del Menú.
+  línea, como en la maqueta del Menú, o a `largoLinea` (56 en Empleados).
 -->
 <script lang="ts">
   import type { Snippet } from 'svelte';
@@ -13,13 +13,21 @@
     texto = '',
     relleno = 40,
     angosta = false,
+    largoLinea = 52,
     children,
-  }: { titulo: string; texto?: string; relleno?: number; angosta?: boolean; children?: Snippet } = $props();
+  }: {
+    titulo: string;
+    texto?: string;
+    relleno?: number;
+    angosta?: boolean;
+    largoLinea?: number;
+    children?: Snippet;
+  } = $props();
 </script>
 
 <div class="nota" role="status" style:padding-block="{relleno}px">
   <b>{titulo}</b>
-  {#if texto}<span class:angosta>{texto}</span>{/if}
+  {#if texto}<span class:angosta style:--largo="{largoLinea}ch">{texto}</span>{/if}
   {#if children}<div class="debajo">{@render children()}</div>{/if}
 </div>
 
@@ -45,7 +53,7 @@
   }
 
   .angosta {
-    max-width: 52ch;
+    max-width: var(--largo);
     line-height: 1.45;
   }
 

@@ -3,8 +3,7 @@
 // archivado y el borrado los deciden las funciones de la base (mover_categoria,
 // eliminar_producto, eliminar_categoria). Se leen solo los que no están archivados: los
 // archivados ya no salen en ningún lado del panel.
-import { esDeRed, mensajeDeError, SIN_CONEXION } from './errores';
-import { Fallo } from './fotos';
+import { esDeRed, Fallo, mensajeDeError, SIN_CONEXION } from './errores';
 import { supabase } from './supabase';
 
 export type Categoria = { id: number; nombre: string; icono: string };

@@ -2,8 +2,7 @@
 // agrega y renombra directo en la tabla, solo las columnas que Postgres le deja; el orden, el
 // archivado y el borrado los deciden las funciones de la base (mover_mesa y eliminar_mesa). Se
 // leen solo las que no están archivadas: las archivadas ya no salen en ningún lado del panel.
-import { esDeRed, mensajeDeError, SIN_CONEXION } from './errores';
-import { Fallo } from './fotos';
+import { esDeRed, Fallo, mensajeDeError, SIN_CONEXION } from './errores';
 import { supabase } from './supabase';
 
 export type Mesa = { id: number; nombre: string };

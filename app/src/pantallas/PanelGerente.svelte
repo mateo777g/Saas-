@@ -4,8 +4,8 @@
   de vidrio con Inicio, Ayuda, Ajustes y Cerrar sesión, la barra de arriba con la cajita de
   sucursales y la tarjeta del saludo. Ajustes y la ventana Perfil (el pie de la barra) vienen de
   Flet (libreta 4, decidido el 11 de octubre de 2026). Mi menú y Mesas, bajo GENERAL como en
-  Flet, vienen de sus maquetas (CC2rrjbgxC2yykNa33a3sA y 4TKmJzMwyWMCAVU2MwEDwc) y traen su
-  propia barra de arriba. Si la
+  Flet, vienen de sus maquetas (CC2rrjbgxC2yykNa33a3sA y 4TKmJzMwyWMCAVU2MwEDwc), y Empleados de
+  la suya (36iXMMqXCfVv4NuVR7vNSc); las tres traen su propia barra de arriba. Si la
   sucursal en la que está no funciona hoy (vencida o pausada, lo dice Postgres), en lugar de todo
   eso sale la suscripción terminada.
 
@@ -29,6 +29,7 @@
   import { SIN_PANEL } from '../lib/sesion';
   import Ajustes from './gerente/Ajustes.svelte';
   import CajaSucursales from './gerente/CajaSucursales.svelte';
+  import Empleados from './gerente/Empleados.svelte';
   import Inicio from './gerente/Inicio.svelte';
   import Menu from './gerente/Menu.svelte';
   import Mesas from './gerente/Mesas.svelte';
@@ -52,7 +53,7 @@
   let datos = $state(iniciales);
   // svelte-ignore state_referenced_locally
   let actualId = $state(sucursalInicial(iniciales.sucursales).id);
-  let vista = $state<'inicio' | 'menu' | 'mesas' | 'ajustes'>('inicio');
+  let vista = $state<'inicio' | 'menu' | 'mesas' | 'equipo' | 'ajustes'>('inicio');
   let perfilAbierto = $state(false);
 
   // Si la que estaba ya no sale en su lista, se elige otra con la misma regla de al abrir.
@@ -90,7 +91,9 @@
   function alPulsar(valor: string) {
     if (valor === 'salir') alSalir();
     else if (valor === 'ayuda') window.open(WHATSAPP_FRAGMENTLESS, '_blank', 'noopener');
-    else if (valor === 'inicio' || valor === 'menu' || valor === 'mesas' || valor === 'ajustes') vista = valor;
+    else if (valor === 'inicio' || valor === 'menu' || valor === 'mesas' || valor === 'equipo' || valor === 'ajustes') {
+      vista = valor;
+    }
   }
 
   onMount(() => {
@@ -113,6 +116,7 @@
         { grupo: 'GENERAL' },
         { valor: 'menu', texto: 'Mi menú', icono: 'menu' },
         { valor: 'mesas', texto: 'Mesas', icono: 'mesas' },
+        { valor: 'equipo', texto: 'Empleados', icono: 'usuarios' },
       ]}
       acciones={[
         { valor: 'ayuda', texto: 'Ayuda', icono: 'ayuda' },
@@ -138,6 +142,11 @@
       <!-- Otra sucursal son otras mesas: se vuelve a abrir desde cero. -->
       {#key actual.id}
         <Mesas sucursal={actual} />
+      {/key}
+    {:else if vista === 'equipo'}
+      <!-- Otra sucursal es otro equipo: se vuelve a abrir desde cero. -->
+      {#key actual.id}
+        <Empleados sucursal={actual} {usuarioId} />
       {/key}
     {:else}
       {#if vista === 'inicio'}

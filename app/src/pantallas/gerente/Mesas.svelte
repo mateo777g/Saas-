@@ -20,8 +20,7 @@
   import NotaTabla from '../../diseno/NotaTabla.svelte';
   import Tabla from '../../diseno/Tabla.svelte';
   import Vidrio from '../../diseno/Vidrio.svelte';
-  import { ALGO_SALIO_PANEL, esDeRed, SIN_CONEXION } from '../../lib/errores';
-  import { Fallo } from '../../lib/fotos';
+  import { ALGO_SALIO_PANEL, esDeRed, Fallo, SIN_CONEXION } from '../../lib/errores';
   import { plural } from '../../lib/formato';
   import type { Sucursal } from '../../lib/gerente';
   import { eliminarMesa, leerMesas, moverMesa, type Mesa } from '../../lib/mesas';

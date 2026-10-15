@@ -72,4 +72,7 @@ export const ICONOS: Record<string, string> = {
   'baja': '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M22 11h-6"></path>',
   'desligar': '<path d="m18.84 12.25 1.72-1.71a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="m5.17 11.75-1.71 1.71a5 5 0 0 0 7.07 7.07l1.71-1.71"></path><path d="M8 2v3"></path><path d="M2 8h3"></path><path d="M16 19v3"></path><path d="M19 16h3"></path>',
   'borrar': '<path d="M10 5a2 2 0 0 0-1.344.519l-6.328 5.74a1 1 0 0 0 0 1.481l6.328 5.741A2 2 0 0 0 10 19h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2z"></path><path d="m12 9 6 6"></path><path d="m18 9-6 6"></path>',
+  // El − del mínimo y el máximo de un grupo (maqueta de Opciones y áreas GhrEVWPmevfBZtWzi4exKi),
+  // con el grosor del + de Flet.
+  'menos': '<path stroke-width="2" d="M5 12h14"></path>',
 };

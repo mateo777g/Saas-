@@ -1,8 +1,9 @@
 <!--
   La sección Categorías de Mi menú (maqueta del Menú CC2rrjbgxC2yykNa33a3sA): la lista en el orden
   del menú en línea (también el del filtro y el de la tabla de Productos), cada una con su número,
-  su ícono, su nombre, cuántos productos tiene y cuántos están ocultos, las flechas de subir y
-  bajar (se guarda al instante, como el ojito) y el lápiz.
+  su ícono, su nombre, cuántos productos tiene y cuántos están ocultos, su área (maqueta de Opciones
+  y áreas GhrEVWPmevfBZtWzi4exKi), las flechas de subir y bajar (se guarda al instante, como el
+  ojito) y el lápiz.
 -->
 <script lang="ts">
   import BotonCuadro from '../../../diseno/BotonCuadro.svelte';
@@ -22,6 +23,8 @@
     alEditar: (c: Categoria) => void;
   } = $props();
 
+  const nombreArea = $derived(new Map(menu.areas.map((a) => [a.id, a.nombre])));
+
   // «6 productos · 1 oculto», o «Sin productos».
   function cuenta(id: number) {
     const suyos = menu.productos.filter((p) => p.categoria_id === id);
@@ -38,10 +41,10 @@
 </div>
 
 <Tabla
-  columnas="3fr 2fr 128px"
+  columnas="3fr 1.6fr 1.5fr 128px"
   relleno="0 16px"
   altoFila={64}
-  encabezados={[{ texto: 'CATEGORÍA' }, { texto: 'PRODUCTOS' }, { texto: '' }]}
+  encabezados={[{ texto: 'CATEGORÍA' }, { texto: 'PRODUCTOS' }, { texto: 'ÁREA' }, { texto: '' }]}
 >
   {#if !menu.categorias.length}
     <NotaTabla
@@ -58,6 +61,13 @@
           <span class="nombre">{c.nombre}</span>
         </span>
         <span class="cuenta">{cuenta(c.id)}</span>
+        <span>
+          {#if c.area_preparacion_id !== null}
+            <span class="area">{nombreArea.get(c.area_preparacion_id) ?? '—'}</span>
+          {:else}
+            <span class="area mesero">Lo sirve el mesero</span>
+          {/if}
+        </span>
         <span class="acciones">
           <BotonCuadro
             icono="arriba"
@@ -144,6 +154,29 @@
     font-size: 12.5px;
     font-weight: 500;
     color: var(--suave);
+  }
+
+  .area {
+    max-width: 100%;
+    height: 26px;
+    display: inline-flex;
+    align-items: center;
+    padding: 0 10px;
+    border-radius: 8px;
+    background: var(--chip);
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--suave);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .area.mesero {
+    border: 1px dashed var(--linea-fuerte);
+    background: transparent;
+    font-weight: 500;
+    color: var(--tenue);
   }
 
   .acciones {

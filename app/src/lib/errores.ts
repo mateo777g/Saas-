@@ -28,16 +28,19 @@ const REGLAS: Record<string, string> = {
   restaurantes_licencia_con_fin: 'No se puede prender una licencia sin fecha de fin.',
   miembros_nombre_check: 'Escribe su nombre completo.',
   mesas_nombre_check: 'Escribe un nombre para la mesa.',
+  areas_preparacion_nombre_check: 'Escribe un nombre para el área.',
 };
 
 // Los finales de los mensajes que empiezan con un nombre: los de la migración distribuidores
-// («Juanito Pérez ya tiene su cuenta ligada») y el de eliminar una categoría con productos
-// (migración menu: «tacos todavía tiene 6 productos; …»).
+// («Juanito Pérez ya tiene su cuenta ligada»), el de eliminar una categoría con productos
+// (migración menu: «tacos todavía tiene 6 productos; …») y el de eliminar un área con categorías
+// (migración opciones: «barra todavía tiene 2 categorías; …»).
 const CON_NOMBRE = [
   / ya tiene su cuenta ligada$/,
   / está de baja; primero usa Reactivar$/,
   / todavía tiene \d+ clientes?; quítasel(o|os) primero$/,
   / todavía tiene \d+ productos?; muével(o|os) a otra categoría o elimínal(o|os) primero$/,
+  / todavía tiene \d+ categorías?; cámbiala(s)? de área primero$/,
 ];
 
 // El mensaje para la caja de error cuando falla una llamada a Postgres. Las funciones de la base
@@ -52,6 +55,9 @@ export function mensajeDeError(error: unknown): string {
 
   if (e.code === '23505' && mensaje.includes('"categorias_nombre_unico"')) {
     return 'Ya tienes una categoría con ese nombre.';
+  }
+  if (e.code === '23505' && mensaje.includes('"areas_preparacion_nombre_unico"')) {
+    return 'Ya tienes un área con ese nombre.';
   }
   if (e.code === '23505' && mensaje.includes('"mesas_nombre_unico"')) {
     return 'Ya tienes una mesa con ese nombre.';

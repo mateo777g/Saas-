@@ -1,12 +1,14 @@
-// Lo que lee y escribe Mi menú (migración menu): las categorías y los productos del restaurante.
-// El gerente escribe directo en las tablas, solo las columnas que Postgres le deja; el orden, el
-// archivado y el borrado los deciden las funciones de la base (mover_categoria,
-// eliminar_producto, eliminar_categoria). Se leen solo los que no están archivados: los
-// archivados ya no salen en ningún lado del panel.
+// Lo que lee y escribe Mi menú (migraciones menu y opciones): las categorías, los productos, los
+// grupos de opciones y las áreas de preparación del restaurante. El gerente escribe directo en las
+// tablas solo lo que Postgres le deja (las categorías, las áreas y el ojito de los productos); el
+// orden, el archivado, el borrado, los grupos con sus opciones y el producto con sus grupos los
+// deciden las funciones de la base. Se leen solo los que no están archivados: los archivados ya no
+// salen en ningún lado del panel.
 import { esDeRed, Fallo, mensajeDeError, SIN_CONEXION } from './errores';
 import { supabase } from './supabase';
 
-export type Categoria = { id: number; nombre: string; icono: string };
+// area_preparacion_id vacía = «Lo sirve el mesero».
+export type Categoria = { id: number; nombre: string; icono: string; area_preparacion_id: number | null };
 
 export type Producto = {
   id: number;
@@ -16,17 +18,34 @@ export type Producto = {
   precio: number;
   imagen_ruta: string | null;
   visible: boolean;
+  // Los grupos que lleva, en el orden de Opciones.
+  grupos: number[];
 };
 
-// Las categorías en su orden (el del menú en línea) y los productos en el de la tabla: por el
-// lugar de su categoría y, dentro de ella, por el suyo.
-export type Menu = { categorias: Categoria[]; productos: Producto[] };
+export type Opcion = { id: number; nombre: string; precio_extra: number; visible: boolean };
+
+// Un grupo con sus opciones en su orden y los productos que lo llevan.
+export type Grupo = {
+  id: number;
+  nombre: string;
+  minimo: number;
+  maximo: number;
+  opciones: Opcion[];
+  productos: number[];
+};
+
+export type Area = { id: number; nombre: string };
+
+// Las categorías en su orden (el del menú en línea), los productos en el de la tabla (por el lugar
+// de su categoría y, dentro de ella, por el suyo), los grupos en el orden en que Pepe elige y las
+// áreas en el orden en que se crearon.
+export type Menu = { categorias: Categoria[]; productos: Producto[]; grupos: Grupo[]; areas: Area[] };
 
 export async function leerMenu(restauranteId: string): Promise<Menu> {
-  const [categorias, productos] = await Promise.all([
+  const [categorias, productos, grupos, opciones, ligas, areas] = await Promise.all([
     supabase
       .from('categorias')
-      .select('id, nombre, icono')
+      .select('id, nombre, icono, area_preparacion_id')
       .eq('restaurante_id', restauranteId)
       .is('archivado_at', null)
       .order('orden')
@@ -38,12 +57,47 @@ export async function leerMenu(restauranteId: string): Promise<Menu> {
       .is('archivado_at', null)
       .order('orden')
       .order('id'),
+    supabase
+      .from('grupos_opciones')
+      .select('id, nombre, minimo, maximo')
+      .eq('restaurante_id', restauranteId)
+      .order('orden')
+      .order('id'),
+    supabase
+      .from('opciones')
+      .select('id, grupo_id, nombre, precio_extra, visible')
+      .eq('restaurante_id', restauranteId)
+      .order('orden')
+      .order('id'),
+    supabase.from('producto_grupos').select('producto_id, grupo_id').eq('restaurante_id', restauranteId),
+    supabase
+      .from('areas_preparacion')
+      .select('id, nombre')
+      .eq('restaurante_id', restauranteId)
+      .is('archivado_at', null)
+      .order('id'),
   ]);
-  if (categorias.error) throw categorias.error;
-  if (productos.error) throw productos.error;
+  for (const r of [categorias, productos, grupos, opciones, ligas, areas]) if (r.error) throw r.error;
 
-  const lista = productos.data.map((p) => ({ ...p, precio: Number(p.precio) }));
-  return { categorias: categorias.data, productos: ordenarProductos(categorias.data, lista) };
+  const vivos = new Set(productos.data!.map((p) => p.id));
+  const listaGrupos: Grupo[] = grupos.data!.map((g) => ({
+    ...g,
+    opciones: opciones.data!
+      .filter((o) => o.grupo_id === g.id)
+      .map(({ id, nombre, precio_extra, visible }) => ({ id, nombre, precio_extra: Number(precio_extra), visible })),
+    productos: ligas.data!.filter((l) => l.grupo_id === g.id && vivos.has(l.producto_id)).map((l) => l.producto_id),
+  }));
+  const lista = productos.data!.map((p) => ({
+    ...p,
+    precio: Number(p.precio),
+    grupos: listaGrupos.filter((g) => g.productos.includes(p.id)).map((g) => g.id),
+  }));
+  return {
+    categorias: categorias.data!,
+    productos: ordenarProductos(categorias.data!, lista),
+    grupos: listaGrupos,
+    areas: areas.data!,
+  };
 }
 
 // Los productos (ya en su orden dentro de cada categoría) acomodados por el lugar de su
@@ -72,28 +126,31 @@ function revisarFilas(contexto: string, filas: unknown[] | null, esperadas: numb
 
 // ─── Productos ──────────────────────────────────────────────────────────────
 
-// Lo que se escribe en la ventana del producto. La foto va aparte (fotos.ts): aquí solo su ruta.
+// Lo que se escribe en la ventana del producto. La foto va aparte (fotos.ts): aquí solo su ruta,
+// y sin ruta al editar la foto se queda como estaba.
 export type DatosProducto = {
   categoria_id: number;
   nombre: string;
   descripcion: string;
   precio: number;
   imagen_ruta?: string;
+  grupos: number[];
 };
 
-export async function crearProducto(restauranteId: string, datos: DatosProducto): Promise<void> {
-  const { data, error } = await supabase
-    .from('productos')
-    .insert({ restaurante_id: restauranteId, ...datos })
-    .select('id');
-  if (error) throw fallo('no se pudo crear el producto', error);
-  revisarFilas('crear producto', data, 1, 'No se pudo guardar el producto. Intenta de nuevo.');
-}
-
-export async function editarProducto(id: number, datos: DatosProducto): Promise<void> {
-  const { data, error } = await supabase.from('productos').update(datos).eq('id', id).select('id');
-  if (error) throw fallo('no se pudo guardar el producto', error);
-  revisarFilas('editar producto', data, 1, 'No se pudo guardar el producto. Intenta de nuevo.');
+// «Agregar producto» y «Guardar cambios»: Postgres guarda el producto y sus grupos juntos
+// (guardar_producto); si algo falla, no queda nada a medias. id vacío = producto nuevo.
+export async function guardarProducto(restauranteId: string, id: number | null, datos: DatosProducto): Promise<void> {
+  const { error } = await supabase.rpc('guardar_producto', {
+    p_restaurante_id: restauranteId,
+    p_producto_id: id,
+    p_categoria_id: datos.categoria_id,
+    p_nombre: datos.nombre,
+    p_descripcion: datos.descripcion,
+    p_precio: datos.precio,
+    p_imagen_ruta: datos.imagen_ruta ?? null,
+    p_grupos: datos.grupos,
+  });
+  if (error) throw fallo('guardar_producto no se pudo', error);
 }
 
 // El ojito y Ocultar varios: cambia la visibilidad de esos productos de una vez. Regresa cuántos
@@ -116,17 +173,20 @@ export async function eliminarProducto(id: number): Promise<{ resultado: 'borrad
 
 // ─── Categorías ─────────────────────────────────────────────────────────────
 
-export async function crearCategoria(restauranteId: string, nombre: string, icono: string): Promise<void> {
+// Lo que se escribe en la ventana de la categoría. area vacía = «Lo sirve el mesero».
+export type DatosCategoria = { nombre: string; icono: string; area_preparacion_id: number | null };
+
+export async function crearCategoria(restauranteId: string, datos: DatosCategoria): Promise<void> {
   const { data, error } = await supabase
     .from('categorias')
-    .insert({ restaurante_id: restauranteId, nombre, icono })
+    .insert({ restaurante_id: restauranteId, ...datos })
     .select('id');
   if (error) throw fallo('no se pudo crear la categoría', error);
   revisarFilas('crear categoría', data, 1, 'No se pudo guardar la categoría. Intenta de nuevo.');
 }
 
-export async function editarCategoria(id: number, nombre: string, icono: string): Promise<void> {
-  const { data, error } = await supabase.from('categorias').update({ nombre, icono }).eq('id', id).select('id');
+export async function editarCategoria(id: number, datos: DatosCategoria): Promise<void> {
+  const { data, error } = await supabase.from('categorias').update(datos).eq('id', id).select('id');
   if (error) throw fallo('no se pudo guardar la categoría', error);
   revisarFilas('editar categoría', data, 1, 'No se pudo guardar la categoría. Intenta de nuevo.');
 }
@@ -141,4 +201,67 @@ export async function moverCategoria(id: number, hacia: 'arriba' | 'abajo'): Pro
 export async function eliminarCategoria(id: number): Promise<void> {
   const { error } = await supabase.rpc('eliminar_categoria', { p_categoria_id: id });
   if (error) throw fallo('eliminar_categoria no se pudo', error);
+}
+
+// ─── Grupos de opciones ─────────────────────────────────────────────────────
+
+// Lo que manda la ventana del grupo: sus opciones en su orden (con id las que ya existían) y los
+// productos que lo llevan.
+export type DatosGrupo = {
+  nombre: string;
+  minimo: number;
+  maximo: number;
+  opciones: { id: number | null; nombre: string; precio_extra: number; visible: boolean }[];
+  productos: number[];
+};
+
+// «Agregar grupo» y «Guardar cambios»: Postgres guarda todo junto (guardar_grupo) y borra las
+// opciones que ya no llegaron. id vacío = grupo nuevo, al final.
+export async function guardarGrupo(restauranteId: string, id: number | null, datos: DatosGrupo): Promise<void> {
+  const { error } = await supabase.rpc('guardar_grupo', {
+    p_restaurante_id: restauranteId,
+    p_grupo_id: id,
+    p_nombre: datos.nombre,
+    p_minimo: datos.minimo,
+    p_maximo: datos.maximo,
+    p_opciones: datos.opciones,
+    p_productos: datos.productos,
+  });
+  if (error) throw fallo('guardar_grupo no se pudo', error);
+}
+
+// Las flechas de Opciones: lo sube o lo baja un lugar; Postgres renumera los demás.
+export async function moverGrupo(id: number, hacia: 'arriba' | 'abajo'): Promise<void> {
+  const { error } = await supabase.rpc('mover_grupo', { p_grupo_id: id, p_hacia: hacia });
+  if (error) throw fallo('mover_grupo no se pudo', error);
+}
+
+// Lo borra con sus opciones y lo quita de sus productos; las ventas pasadas no cambian.
+export async function eliminarGrupo(id: number): Promise<void> {
+  const { error } = await supabase.rpc('eliminar_grupo', { p_grupo_id: id });
+  if (error) throw fallo('eliminar_grupo no se pudo', error);
+}
+
+// ─── Áreas de preparación ───────────────────────────────────────────────────
+
+export async function crearArea(restauranteId: string, nombre: string): Promise<void> {
+  const { data, error } = await supabase
+    .from('areas_preparacion')
+    .insert({ restaurante_id: restauranteId, nombre })
+    .select('id');
+  if (error) throw fallo('no se pudo crear el área', error);
+  revisarFilas('crear área', data, 1, 'No se pudo guardar el área. Intenta de nuevo.');
+}
+
+export async function renombrarArea(id: number, nombre: string): Promise<void> {
+  const { data, error } = await supabase.from('areas_preparacion').update({ nombre }).eq('id', id).select('id');
+  if (error) throw fallo('no se pudo guardar el área', error);
+  revisarFilas('renombrar área', data, 1, 'No se pudo guardar el área. Intenta de nuevo.');
+}
+
+// Postgres no deja si alguna categoría va a ella o si es la última; la borra, o la archiva si ya
+// recibió comandas.
+export async function eliminarArea(id: number): Promise<void> {
+  const { error } = await supabase.rpc('eliminar_area', { p_area_id: id });
+  if (error) throw fallo('eliminar_area no se pudo', error);
 }

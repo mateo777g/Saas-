@@ -1,8 +1,10 @@
 <!--
   Nuevo producto y Editar producto: dialogo_platillo.py de Flet con «producto» y la categoría de
   una lista (maqueta del Menú CC2rrjbgxC2yykNa33a3sA). La foto, el nombre, la descripción, la
-  categoría y el precio; al editar, abajo a la izquierda, Eliminar producto. Mientras guarda, la
-  etiqueta de arriba dice en qué paso va (SUBIENDO FOTO…, GUARDANDO…), como en Flet.
+  categoría y el precio, y debajo sus grupos de opciones (maqueta de Opciones y áreas
+  GhrEVWPmevfBZtWzi4exKi), que se guardan junto con el producto (guardar_producto); al editar, abajo
+  a la izquierda, Eliminar producto. Mientras guarda, la etiqueta de arriba dice en qué paso va
+  (SUBIENDO FOTO…, GUARDANDO…), como en Flet.
 
   Las fotos siguen el orden de siempre: subir antes de guardar; si el guardado falla, se borra la
   foto que se acababa de subir; al cambiarla, la vieja se borra solo después de guardar. Eliminar
@@ -19,19 +21,21 @@
   import { borrarFoto, convertirAWebp, revisarFoto, subirFoto, urlFoto } from '../../../lib/fotos';
   import { ALGO_SALIO_PANEL, Fallo } from '../../../lib/errores';
   import {
-    crearProducto,
-    editarProducto,
     eliminarProducto,
+    guardarProducto,
     type Categoria,
     type DatosProducto,
+    type Grupo,
     type Producto,
   } from '../../../lib/menu';
   import Foto from './Foto.svelte';
+  import GruposProducto from './GruposProducto.svelte';
 
   let {
     restauranteId,
     producto,
     categorias,
+    grupos,
     categoriaInicial,
     alCambiar,
     alCerrar,
@@ -39,6 +43,7 @@
     restauranteId: string;
     producto: Producto | null;
     categorias: Categoria[];
+    grupos: Grupo[];
     categoriaInicial: number | null;
     alCambiar: () => void;
     alCerrar: () => void;
@@ -58,6 +63,7 @@
   let descripcion = $state(inicial?.descripcion ?? '');
   let categoria = $state(String(inicial?.categoria_id ?? categoriaDeEntrada ?? ''));
   let precio = $state(inicial ? textoPrecio(inicial.precio) : '');
+  let elegidos = $state<number[]>(inicial?.grupos ?? []);
   let archivo = $state<File | null>(null);
   let vistaPrevia = $state<string | null>(null);
   let error = $state<string | null>(null);
@@ -108,6 +114,7 @@
       nombre: limpio,
       descripcion: descripcion.trim(),
       precio: Math.round(numero * 100) / 100,
+      grupos: [...elegidos],
     };
   }
 
@@ -123,8 +130,7 @@
         datos.imagen_ruta = rutaNueva;
       }
       paso = 'guardando';
-      if (inicial) await editarProducto(inicial.id, datos);
-      else await crearProducto(restauranteId, datos);
+      await guardarProducto(restauranteId, inicial?.id ?? null, datos);
     } catch (falla) {
       if (!(falla instanceof Fallo)) console.error('[menu] no se pudo guardar el producto:', falla);
       // La foto de un producto que no se guardó no se queda en R2.
@@ -216,6 +222,8 @@
           />
         </div>
       </div>
+
+      <GruposProducto {grupos} bind:elegidos apagado={paso !== null} />
 
       {#snippet izquierda()}
         {#if inicial}

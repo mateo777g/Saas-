@@ -1,12 +1,14 @@
 <!--
   Nueva categoría y Editar categoría (maqueta del Menú CC2rrjbgxC2yykNa33a3sA): el nombre, uno de
-  los 28 íconos y debajo cómo sale en el menú. Al editar, abajo a la izquierda, Eliminar
+  los 28 íconos, debajo cómo sale en el menú y su área (maqueta de Opciones y áreas
+  GhrEVWPmevfBZtWzi4exKi): una nueva sale con la primera. Al editar, abajo a la izquierda, Eliminar
   categoría: con productos no se puede (lo dice la caja de error, sin abrir nada); sin productos,
   pide confirmar en su propia ventana, y Cancelar regresa aquí.
 -->
 <script lang="ts">
   import Boton from '../../../diseno/Boton.svelte';
   import Campo from '../../../diseno/Campo.svelte';
+  import CampoLista from '../../../diseno/CampoLista.svelte';
   import Confirmar from '../../../diseno/Confirmar.svelte';
   import Formulario from '../../../diseno/Formulario.svelte';
   import IconoCategoria from '../../../diseno/IconoCategoria.svelte';
@@ -41,6 +43,11 @@
   const inicial = categoria;
   let nombre = $state(inicial?.nombre ?? '');
   let icono = $state(inicial?.icono ?? '');
+  // En la lista, «mesero» es «Lo sirve el mesero» (la columna vacía). Una nueva sale con la primera.
+  // svelte-ignore state_referenced_locally
+  let area = $state(
+    inicial ? (inicial.area_preparacion_id === null ? 'mesero' : String(inicial.area_preparacion_id)) : String(menu.areas[0]?.id ?? 'mesero'),
+  );
   let error = $state<string | null>(null);
   let paso = $state<null | 'guardando' | 'listo'>(null);
   let confirmando = $state(false);
@@ -65,11 +72,13 @@
     if (!limpio) return { error: 'El nombre de la categoría es obligatorio.' };
     if (repetida) return { error: `Ya tienes una categoría que se llama «${repetida.nombre}».` };
     if (!icono) return { error: 'Elige un ícono para la categoría.' };
+    if (!area) return { error: 'Elige a qué área van sus productos.' };
 
+    const datos = { nombre: limpio, icono, area_preparacion_id: area === 'mesero' ? null : Number(area) };
     paso = 'guardando';
     try {
-      if (inicial) await editarCategoria(inicial.id, limpio, icono);
-      else await crearCategoria(restauranteId, limpio, icono);
+      if (inicial) await editarCategoria(inicial.id, datos);
+      else await crearCategoria(restauranteId, datos);
     } catch (falla) {
       if (!(falla instanceof Fallo)) console.error('[menu] no se pudo guardar la categoría:', falla);
       paso = null;
@@ -159,6 +168,23 @@
         <span class="cuadro-icono">{#if icono}<IconoCategoria id={icono} tamano={18} />{/if}</span>
         <span class="nombre" class:vacia={!nombre.trim()}>{nombre.trim() || 'Así sale en tu menú'}</span>
       </div>
+
+      <CampoLista
+        id="categoria-area"
+        etiqueta="ÁREA"
+        bind:valor={area}
+        placeholder="Elige un área"
+        grupos={[
+          {
+            etiqueta: '',
+            opciones: [
+              ...menu.areas.map((a) => ({ valor: String(a.id), texto: a.nombre })),
+              { valor: 'mesero', texto: 'Lo sirve el mesero' },
+            ],
+          },
+        ]}
+        pista="Ahí llegan sus productos al mandar a cocina. Lo que sirve el mesero no llega a ninguna pantalla."
+      />
 
       {#snippet izquierda()}
         {#if inicial}

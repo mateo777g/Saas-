@@ -1,13 +1,15 @@
 <!--
   Mi menú, portado de la maqueta del Menú aprobada el 13 de octubre de 2026
   (CC2rrjbgxC2yykNa33a3sA), que es «Mi menú» de Flet (menu_view.py) con «producto» y las
-  categorías de cada restaurante. Arriba: el título, Productos | Categorías, el chip, Ocultar
-  varios (solo en Productos) y el botón negro de la sección (Nuevo producto o Nueva categoría).
-  Abajo, la tarjeta de vidrio con la sección elegida, y encima las ventanas.
+  categorías de cada restaurante, más Opciones y Áreas (maqueta de Opciones y áreas
+  GhrEVWPmevfBZtWzi4exKi, aprobada el 15 de octubre de 2026). Arriba: el título, Productos |
+  Categorías | Opciones | Áreas, el chip, Ocultar varios (solo en Productos) y el botón negro de la
+  sección (Nuevo producto, Nueva categoría, Nuevo grupo o Nueva área). Abajo, la tarjeta de vidrio
+  con la sección elegida, y encima las ventanas.
 
-  Lee las categorías y los productos de la sucursal al abrir y después de cada cambio. El ojito,
-  Ocultar varios y las flechas cambian la tabla en cuanto Postgres dice que sí; si falla, sale el
-  aviso de abajo (aviso() de Flet).
+  Lee el menú de la sucursal al abrir y después de cada cambio. El ojito, Ocultar varios y las
+  flechas cambian la tabla en cuanto Postgres dice que sí; si falla, sale el aviso de abajo
+  (aviso() de Flet).
 -->
 <script lang="ts">
   import { onMount, tick } from 'svelte';
@@ -26,15 +28,24 @@
     cambiarVisibilidad,
     leerMenu,
     moverCategoria,
+    moverGrupo,
     ordenarProductos,
+    type Area,
     type Categoria,
+    type Grupo,
     type Menu,
     type Producto,
   } from '../../lib/menu';
+  import Areas from './menu/Areas.svelte';
   import Categorias from './menu/Categorias.svelte';
+  import Opciones from './menu/Opciones.svelte';
   import Productos from './menu/Productos.svelte';
+  import VentanaArea from './menu/VentanaArea.svelte';
   import VentanaCategoria from './menu/VentanaCategoria.svelte';
+  import VentanaGrupo from './menu/VentanaGrupo.svelte';
   import VentanaProducto from './menu/VentanaProducto.svelte';
+
+  type Seccion = 'productos' | 'categorias' | 'opciones' | 'areas';
 
   let { sucursal }: { sucursal: Sucursal } = $props();
 
@@ -44,14 +55,18 @@
     | { estado: 'error'; deRed: boolean };
 
   let lectura = $state<Lectura>({ estado: 'leyendo' });
-  let seccion = $state<'productos' | 'categorias'>('productos');
+  let seccion = $state<Seccion>('productos');
   let busqueda = $state('');
   let filtro = $state<number | null>(null);
   let eligiendo = $state(false);
   const elegidos = new SvelteSet<number>();
   let ocultando = $state(false);
   let ventana = $state<
-    { tipo: 'producto'; producto: Producto | null } | { tipo: 'categoria'; categoria: Categoria | null } | null
+    | { tipo: 'producto'; producto: Producto | null }
+    | { tipo: 'categoria'; categoria: Categoria | null }
+    | { tipo: 'grupo'; grupo: Grupo | null }
+    | { tipo: 'area'; area: Area | null }
+    | null
   >(null);
   let aviso = $state<string | null>(null);
   let tarjeta = $state<HTMLElement>();
@@ -61,8 +76,14 @@
   const estado = $derived.by(() => {
     if (lectura.estado === 'leyendo') return { texto: 'Cargando tu menú…', vivo: true };
     if (lectura.estado === 'error') return { texto: lectura.deRed ? 'Sin conexión' : 'No se pudo leer', vivo: false };
-    const { productos, categorias } = lectura.menu;
+    const { productos, categorias, grupos, areas } = lectura.menu;
     if (seccion === 'categorias') return { texto: plural(categorias.length, 'categoría', 'categorías'), vivo: true };
+    if (seccion === 'areas') return { texto: plural(areas.length, 'área', 'áreas'), vivo: true };
+    if (seccion === 'opciones') {
+      const agotadas = grupos.reduce((n, g) => n + g.opciones.filter((o) => !o.visible).length, 0);
+      const texto = plural(grupos.length, 'grupo', 'grupos');
+      return { texto: agotadas ? `${texto} · ${plural(agotadas, 'opción agotada', 'opciones agotadas')}` : texto, vivo: true };
+    }
     const visibles = productos.filter((p) => p.visible).length;
     return { texto: `${visibles} de ${productos.length} a la vista en tu menú`, vivo: true };
   });
@@ -80,7 +101,18 @@
 
   onMount(leer);
 
-  function cambiarSeccion(valor: 'productos' | 'categorias') {
+  // La tabla vacía de cada sección, mientras lee o si no pudo leer.
+  const VACIA: Record<Seccion, { columnas: string; encabezados: string[] }> = {
+    productos: {
+      columnas: '2.2fr 2.8fr 1.1fr 0.8fr 1fr 80px',
+      encabezados: ['PRODUCTO', 'DESCRIPCIÓN', 'CATEGORÍA', 'PRECIO', 'VISIBILIDAD', ''],
+    },
+    categorias: { columnas: '3fr 1.6fr 1.5fr 128px', encabezados: ['CATEGORÍA', 'PRODUCTOS', 'ÁREA', ''] },
+    opciones: { columnas: '3fr 1.3fr 1.1fr 128px', encabezados: ['GRUPO', 'CÓMO SE ELIGE', 'PRODUCTOS', ''] },
+    areas: { columnas: '1.4fr 3fr 88px', encabezados: ['ÁREA', 'LE LLEGAN', ''] },
+  };
+
+  function cambiarSeccion(valor: Seccion) {
     seccion = valor;
     salirDeEleccion();
   }
@@ -133,22 +165,26 @@
     salirDeEleccion();
   }
 
-  // Las flechas: la tabla cambia en cuanto se pulsa y se guarda al instante; si Postgres no
-  // pudo, sale el aviso y se vuelve a leer lo que de verdad quedó.
-  async function mover(c: Categoria, hacia: 'arriba' | 'abajo') {
-    if (!menu) return;
-    const lista = menu.categorias;
-    const aqui = lista.findIndex((x) => x.id === c.id);
+  // Las flechas de Categorías y de Opciones: la tabla cambia en cuanto se pulsa y se guarda al
+  // instante; si Postgres no pudo, sale el aviso y se vuelve a leer lo que de verdad quedó.
+  async function mover<T extends { id: number }>(
+    lista: T[],
+    fila: T,
+    hacia: 'arriba' | 'abajo',
+    guardar: (id: number, hacia: 'arriba' | 'abajo') => Promise<void>,
+    despues?: () => void,
+  ) {
+    const aqui = lista.findIndex((x) => x.id === fila.id);
     const alla = hacia === 'arriba' ? aqui - 1 : aqui + 1;
     if (aqui < 0 || alla < 0 || alla >= lista.length) return;
     [lista[aqui], lista[alla]] = [lista[alla], lista[aqui]];
-    menu.productos = ordenarProductos(lista, menu.productos);
+    despues?.();
     await tick();
     const atributo = hacia === 'arriba' ? 'data-subir' : 'data-bajar';
-    const boton = tarjeta?.querySelector<HTMLButtonElement>(`[${atributo}="${c.id}"]`);
+    const boton = tarjeta?.querySelector<HTMLButtonElement>(`[${atributo}="${fila.id}"]`);
     if (boton && !boton.disabled) boton.focus({ preventScroll: true });
     try {
-      await moverCategoria(c.id, hacia);
+      await guardar(fila.id, hacia);
     } catch (falla) {
       aviso = (falla as Error).message;
       await leer();
@@ -163,6 +199,8 @@
       opciones={[
         { valor: 'productos', texto: 'Productos' },
         { valor: 'categorias', texto: 'Categorías' },
+        { valor: 'opciones', texto: 'Opciones' },
+        { valor: 'areas', texto: 'Áreas' },
       ]}
       elegida={seccion}
       alElegir={cambiarSeccion}
@@ -190,13 +228,29 @@
       ayuda={menu && !menu.categorias.length ? 'Primero crea una categoría' : undefined}
       onclick={() => (ventana = { tipo: 'producto', producto: null })}
     />
-  {:else}
+  {:else if seccion === 'categorias'}
     <Boton
       etiqueta="Nueva categoría"
       icono="mas"
       tono="tinta"
       apagado={!menu}
       onclick={() => (ventana = { tipo: 'categoria', categoria: null })}
+    />
+  {:else if seccion === 'opciones'}
+    <Boton
+      etiqueta="Nuevo grupo"
+      icono="mas"
+      tono="tinta"
+      apagado={!menu}
+      onclick={() => (ventana = { tipo: 'grupo', grupo: null })}
+    />
+  {:else}
+    <Boton
+      etiqueta="Nueva área"
+      icono="mas"
+      tono="tinta"
+      apagado={!menu}
+      onclick={() => (ventana = { tipo: 'area', area: null })}
     />
   {/if}
 </BarraArriba>
@@ -218,21 +272,25 @@
           alIrACategorias={() => cambiarSeccion('categorias')}
           alOcultar={ocultarElegidos}
         />
-      {:else}
+      {:else if seccion === 'categorias'}
         <Categorias
           {menu}
-          alMover={mover}
+          alMover={(c, hacia) =>
+            mover(menu.categorias, c, hacia, moverCategoria, () => (menu.productos = ordenarProductos(menu.categorias, menu.productos)))}
           alEditar={(c) => (ventana = { tipo: 'categoria', categoria: c })}
         />
+      {:else if seccion === 'opciones'}
+        <Opciones
+          {menu}
+          alMover={(g, hacia) => mover(menu.grupos, g, hacia, moverGrupo)}
+          alEditar={(g) => (ventana = { tipo: 'grupo', grupo: g })}
+        />
+      {:else}
+        <Areas {menu} alEditar={(a) => (ventana = { tipo: 'area', area: a })} />
       {/if}
     {:else}
       <!-- Mientras lee o si no pudo: la tabla vacía con su nota, como en Flet. -->
-      <Tabla
-        columnas={seccion === 'productos' ? '2.2fr 2.8fr 1.1fr 0.8fr 1fr 80px' : '3fr 2fr 128px'}
-        encabezados={seccion === 'productos'
-          ? ['PRODUCTO', 'DESCRIPCIÓN', 'CATEGORÍA', 'PRECIO', 'VISIBILIDAD', ''].map((texto) => ({ texto }))
-          : ['CATEGORÍA', 'PRODUCTOS', ''].map((texto) => ({ texto }))}
-      >
+      <Tabla columnas={VACIA[seccion].columnas} encabezados={VACIA[seccion].encabezados.map((texto) => ({ texto }))}>
         {#if lectura.estado === 'leyendo'}
           <NotaTabla relleno={48} angosta titulo="Cargando tu menú…" />
         {:else if lectura.estado === 'error' && lectura.deRed}
@@ -250,6 +308,7 @@
     restauranteId={sucursal.id}
     producto={ventana.producto}
     categorias={menu.categorias}
+    grupos={menu.grupos}
     categoriaInicial={filtro}
     alCambiar={leer}
     alCerrar={() => (ventana = null)}
@@ -258,6 +317,22 @@
   <VentanaCategoria
     restauranteId={sucursal.id}
     categoria={ventana.categoria}
+    {menu}
+    alCambiar={leer}
+    alCerrar={() => (ventana = null)}
+  />
+{:else if menu && ventana?.tipo === 'grupo'}
+  <VentanaGrupo
+    restauranteId={sucursal.id}
+    grupo={ventana.grupo}
+    {menu}
+    alCambiar={leer}
+    alCerrar={() => (ventana = null)}
+  />
+{:else if menu && ventana?.tipo === 'area'}
+  <VentanaArea
+    restauranteId={sucursal.id}
+    area={ventana.area}
     {menu}
     alCambiar={leer}
     alCerrar={() => (ventana = null)}

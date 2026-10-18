@@ -335,7 +335,7 @@ begin
 end;
 $$;
 
-select plan(114);
+select plan(116);
 
 
 -- ─── 1 · Permisos ─────────────────────────────────────────────────────────────
@@ -930,8 +930,14 @@ select throws_ok(
   '7 · Una cuenta de A no se junta con una de B'
 );
 
+select lives_ok($$ select public.pedir_cuenta(tests.id('v1')) $$, 'La Mesa 3 pide la cuenta antes de juntarse');
 select lives_ok($$ select public.juntar_mesas(tests.id('v2'), tests.id('v1')) $$, 'La caja junta la Mesa 2 con la Mesa 3');
 reset role;
+
+select is(
+  (select cuenta_pedida_at from public.ventas where id = tests.id('v1')), null,
+  'Juntar le quita a la Mesa 3 la marca de que pidió la cuenta: la cuenta que vio el cliente cambió'
+);
 
 select results_eq(
   $$ select estado, cancelada_motivo, total,

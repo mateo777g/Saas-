@@ -33,14 +33,18 @@ const REGLAS: Record<string, string> = {
 
 // Los finales de los mensajes que empiezan con un nombre: los de la migración distribuidores
 // («Juanito Pérez ya tiene su cuenta ligada»), el de eliminar una categoría con productos
-// (migración menu: «tacos todavía tiene 6 productos; …») y el de eliminar un área con categorías
-// (migración opciones: «barra todavía tiene 2 categorías; …»).
+// (migración menu: «tacos todavía tiene 6 productos; …»), el de eliminar un área con categorías
+// (migración opciones: «barra todavía tiene 2 categorías; …») y los de una mesa con la cuenta
+// abierta (migración cuentas: «terraza tiene una cuenta abierta…», «barra ya tiene una cuenta
+// abierta»).
 const CON_NOMBRE = [
   / ya tiene su cuenta ligada$/,
   / está de baja; primero usa Reactivar$/,
   / todavía tiene \d+ clientes?; quítasel(o|os) primero$/,
   / todavía tiene \d+ productos?; muével(o|os) a otra categoría o elimínal(o|os) primero$/,
   / todavía tiene \d+ categorías?; cámbiala(s)? de área primero$/,
+  / tiene una cuenta abierta\. Cóbrala o cámbiala de mesa antes de eliminarla\.$/,
+  / ya tiene una cuenta abierta$/,
 ];
 
 // El mensaje para la caja de error cuando falla una llamada a Postgres. Las funciones de la base
@@ -74,9 +78,9 @@ export function mensajeDeError(error: unknown): string {
     if (regla) return REGLAS[regla];
   }
   // Un código de Postgres (5 caracteres; los de PostgREST empiezan con PGRST) con un mensaje que
-  // empieza con mayúscula, o uno de los que empiezan con el nombre de un distribuidor (que pudo
-  // escribirse en minúscula): es de nuestras funciones.
-  if (/^[0-9A-Z]{5}$/.test(e.code ?? '') && (/^[A-ZÁÉÍÓÚÑ]/.test(mensaje) || CON_NOMBRE.some((r) => r.test(mensaje)))) {
+  // empieza con mayúscula o con comillas («Taco de pastor» está agotado…), o uno de los que
+  // empiezan con un nombre (que pudo escribirse en minúscula): es de nuestras funciones.
+  if (/^[0-9A-Z]{5}$/.test(e.code ?? '') && (/^[A-ZÁÉÍÓÚÑ«¿]/.test(mensaje) || CON_NOMBRE.some((r) => r.test(mensaje)))) {
     return mensaje;
   }
   return ALGO_SALIO_PANEL;

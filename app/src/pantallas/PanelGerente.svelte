@@ -5,7 +5,9 @@
   sucursales y la tarjeta del saludo. Ajustes y la ventana Perfil (el pie de la barra) vienen de
   Flet (libreta 4, decidido el 11 de octubre de 2026). Mi menú y Mesas, bajo GENERAL como en
   Flet, vienen de sus maquetas (CC2rrjbgxC2yykNa33a3sA y 4TKmJzMwyWMCAVU2MwEDwc), y Empleados de
-  la suya (36iXMMqXCfVv4NuVR7vNSc); las tres traen su propia barra de arriba. Si la
+  la suya (36iXMMqXCfVv4NuVR7vNSc); las tres traen su propia barra de arriba. «Abrir» en los
+  accesos de Inicio abre ahí mismo el punto de venta o la cocina, con su sesión (maqueta Mesero y
+  cocina TYq97pKacRCYBqcvRp1bZ2). Si la
   sucursal en la que está no funciona hoy (vencida o pausada, lo dice Postgres), en lugar de todo
   eso sale la suscripción terminada.
 
@@ -27,6 +29,7 @@
     type Sucursal,
   } from '../lib/gerente';
   import { SIN_PANEL } from '../lib/sesion';
+  import AccesoAbierto from './gerente/AccesoAbierto.svelte';
   import Ajustes from './gerente/Ajustes.svelte';
   import CajaSucursales from './gerente/CajaSucursales.svelte';
   import Empleados from './gerente/Empleados.svelte';
@@ -53,7 +56,7 @@
   let datos = $state(iniciales);
   // svelte-ignore state_referenced_locally
   let actualId = $state(sucursalInicial(iniciales.sucursales).id);
-  let vista = $state<'inicio' | 'menu' | 'mesas' | 'equipo' | 'ajustes'>('inicio');
+  let vista = $state<'inicio' | 'menu' | 'mesas' | 'equipo' | 'ajustes' | 'pos' | 'cocina'>('inicio');
   let perfilAbierto = $state(false);
 
   // Si la que estaba ya no sale en su lista, se elige otra con la misma regla de al abrir.
@@ -123,7 +126,7 @@
         { valor: 'ajustes', texto: 'Ajustes', icono: 'ajustes' },
         { valor: 'salir', texto: 'Cerrar sesión', icono: 'salir' },
       ]}
-      activa={vista}
+      activa={vista === 'pos' || vista === 'cocina' ? 'inicio' : vista}
       alElegir={alPulsar}
       pie={{
         inicial: nombre.charAt(0).toUpperCase(),
@@ -143,6 +146,11 @@
       {#key actual.id}
         <Mesas sucursal={actual} />
       {/key}
+    {:else if vista === 'pos' || vista === 'cocina'}
+      <!-- Otra sucursal es otro punto de venta: se vuelve a abrir desde cero. -->
+      {#key actual.id}
+        <AccesoAbierto que={vista} sucursal={actual} {usuarioId} alVolver={() => (vista = 'inicio')} />
+      {/key}
     {:else if vista === 'equipo'}
       <!-- Otra sucursal es otro equipo: se vuelve a abrir desde cero. -->
       {#key actual.id}
@@ -159,7 +167,7 @@
 
       <main class="cuerpo">
         {#if vista === 'inicio'}
-          <Inicio sucursal={actual} {nombre} />
+          <Inicio sucursal={actual} {nombre} alAbrir={(que) => (vista = que)} />
         {:else}
           <Ajustes />
         {/if}

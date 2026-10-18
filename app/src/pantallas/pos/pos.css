@@ -1,0 +1,170 @@
+/* Las piezas del punto de venta, tal cual la maqueta Mesero y cocina (TYq97pKacRCYBqcvRp1bZ2),
+   para todas sus pantallas: van aquí y no en cada componente porque se repiten entre ellas (el
+   renglón sale en la cuenta, en Agregar y en la hoja). Todo vive dentro de .pos. */
+
+.pos {
+  position: relative;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.pos .crece { flex-grow: 1; }
+.pos .etq { font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.14em; color: var(--tenue); text-transform: uppercase; }
+
+/* Arriba de cada pantalla */
+.pos .cel-arriba { display: flex; align-items: center; gap: 10px; min-height: 44px; flex: none; }
+.pos .cel-logo { width: 32px; height: 32px; border-radius: 10px; background: var(--acento); color: var(--sobre-acento); display: flex; align-items: center; justify-content: center; flex: none; }
+.pos .cel-lugar { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.pos .cel-lugar b { font-size: 13.5px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pos .cel-lugar span { font-family: var(--mono); font-size: 10.5px; color: var(--tenue); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pos .cel-volver { display: inline-flex; align-items: center; gap: 6px; height: 36px; padding: 0 12px 0 8px; border-radius: 12px; border: 1px solid var(--linea); background: transparent; color: var(--texto); font-size: 12.5px; font-weight: 600; flex: none; max-width: 60%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pos .cuadro { width: 36px; height: 36px; flex: none; display: inline-flex; align-items: center; justify-content: center; padding: 0; border: 1px solid var(--linea); border-radius: 10px; background: transparent; color: var(--texto); transition: background-color 150ms; }
+.pos .cuadro:hover:not(:disabled) { background: var(--chip); }
+.pos .cuadro:disabled { opacity: 0.35; cursor: default; }
+.pos .cuadro-icono { width: 36px; height: 36px; flex: none; display: flex; align-items: center; justify-content: center; border-radius: 11px; background: var(--chip); }
+
+/* Los botones grandes de abajo */
+.pos .cel-pie { flex: none; display: flex; gap: 10px; padding-top: 12px; }
+.pos .cel-boton { flex: 1; height: 52px; border: 0; border-radius: 14px; background: var(--tinta); color: var(--sobre-tinta); font-size: 15px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; gap: 8px; white-space: nowrap; min-width: 0; }
+.pos .cel-boton:disabled { opacity: 0.35; cursor: default; }
+.pos .cel-boton.contorno { flex: none; padding: 0 18px; background: transparent; color: var(--texto); border: 1px solid var(--linea); }
+.pos .cel-boton.sin-red { opacity: 0.55; }
+.pos .cel-titulo { margin: 0; font-size: 24px; font-weight: 800; letter-spacing: -0.5px; line-height: 1.15; }
+.pos .cel-texto { margin: 0; font-size: 13.5px; line-height: 1.5; color: var(--suave); }
+
+/* Lo que se desliza entre lo de arriba y lo de abajo */
+.pos .desliza { flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 14px; padding-top: 14px; scrollbar-width: none; }
+.pos .desliza::-webkit-scrollbar { display: none; }
+
+.pos .punto { width: 7px; height: 7px; border-radius: 4px; background: var(--verde); flex: none; }
+.pos .caja-pos { flex: none; margin-top: 10px; }
+
+/* El aviso de «Lista» */
+.pos .aviso-lista { flex: none; margin-top: 10px; display: flex; align-items: center; gap: 10px; padding: 8px 8px 8px 14px; border-radius: 16px; width: 100%; color: var(--texto); }
+.pos .aviso-lista .punto { width: 9px; height: 9px; border-radius: 5px; }
+.pos .aviso-lista .abrir { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; border: 0; background: transparent; padding: 0; text-align: left; color: inherit; }
+.pos .aviso-lista b { font-size: 14px; font-weight: 700; }
+.pos .aviso-lista span { font-size: 12px; color: var(--suave); }
+.pos .aviso-lista .cuadro { border: 0; }
+
+/* Las mesas */
+.pos .rejilla-mesas { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.pos .mesa { min-height: 100px; padding: 12px 14px; border-radius: 18px; border: 1px solid var(--linea); background: var(--solido); color: var(--texto); display: flex; flex-direction: column; align-items: flex-start; justify-content: space-between; gap: 8px; text-align: left; min-width: 0; }
+.pos .mesa.libre { background: transparent; border-style: dashed; border-color: var(--linea-fuerte); }
+.pos .mesa.lista { border-color: var(--verde); box-shadow: inset 0 0 0 1px var(--verde); }
+.pos .mesa-arriba { display: flex; flex-direction: column; gap: 6px; align-items: flex-start; min-width: 0; max-width: 100%; }
+.pos .mesa-nombre { font-size: 15.5px; font-weight: 700; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pos .mesa-abajo { display: flex; flex-direction: column; gap: 2px; width: 100%; }
+.pos .mesa-total { font-family: var(--mono); font-size: 14px; font-weight: 500; font-variant-numeric: tabular-nums; }
+.pos .mesa-quien { font-size: 11.5px; color: var(--tenue); }
+.pos .mesa-libre { font-size: 12.5px; color: var(--tenue); }
+.pos .marca-estado { display: inline-flex; align-items: center; gap: 6px; height: 22px; padding: 0 8px; border-radius: 7px; background: var(--chip); font-size: 11px; font-weight: 700; color: var(--suave); white-space: nowrap; }
+.pos .marca-estado.lista { color: var(--verde); }
+.pos .marca-estado.cuenta { background: var(--tinta); color: var(--sobre-tinta); }
+.pos .fila-llevar { display: flex; align-items: center; gap: 12px; min-height: 68px; padding: 10px 14px; border-radius: 18px; border: 1px solid var(--linea); background: var(--solido); color: var(--texto); text-align: left; width: 100%; }
+.pos .fila-llevar .t { min-width: 0; flex: 1; display: flex; flex-direction: column; gap: 4px; align-items: flex-start; }
+.pos .fila-llevar b { font-size: 15px; font-weight: 700; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pos .fila-llevar .tipo { font-size: 11.5px; color: var(--tenue); }
+.pos .vacio { padding: 36px 8px; display: flex; flex-direction: column; align-items: center; gap: 6px; text-align: center; }
+.pos .vacio b { font-size: 14.5px; font-weight: 700; }
+.pos .vacio span { font-size: 12.5px; color: var(--suave); line-height: 1.45; max-width: 34ch; }
+
+/* La cuenta */
+.pos .cuenta-titulo { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.pos .cuenta-titulo b { font-size: 17px; font-weight: 800; letter-spacing: -0.2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pos .cuenta-titulo span { font-family: var(--mono); font-size: 10.5px; color: var(--tenue); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pos .bloque { display: flex; flex-direction: column; gap: 6px; }
+.pos .bloque-cabeza { display: flex; align-items: center; gap: 8px; min-height: 22px; padding: 0 2px; }
+.pos .renglon { display: grid; grid-template-columns: 26px minmax(0, 1fr) auto; gap: 4px 10px; align-items: start; padding: 10px 12px; border-radius: 14px; background: var(--solido); border: 1px solid var(--linea); }
+.pos .renglon.solo { grid-template-columns: minmax(0, 1fr); }
+.pos .borrador .renglon { background: transparent; border-style: dashed; border-color: var(--linea-fuerte); grid-template-columns: minmax(0, 1fr) auto; }
+.pos .renglon .cant { font-family: var(--mono); font-size: 13.5px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.pos .renglon .que { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.pos .renglon .que b { font-size: 13.5px; font-weight: 700; }
+.pos .renglon .det { font-size: 12px; color: var(--suave); line-height: 1.4; }
+.pos .renglon .nota-r { font-size: 12px; color: var(--suave); line-height: 1.4; }
+.pos .renglon .nota-r::before { content: 'Nota: '; color: var(--tenue); }
+.pos .renglon .por { font-size: 11px; color: var(--tenue); }
+.pos .renglon .imp { font-family: var(--mono); font-size: 13px; font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
+.pos .renglon .abajo-r { grid-column: 1 / -1; display: flex; align-items: center; gap: 8px; margin-top: 6px; }
+.pos .paso { display: inline-flex; align-items: center; border: 1px solid var(--linea); border-radius: 10px; height: 32px; }
+.pos .paso button { width: 32px; height: 30px; border: 0; background: transparent; color: var(--texto); display: flex; align-items: center; justify-content: center; }
+.pos .paso span { min-width: 24px; text-align: center; font-family: var(--mono); font-size: 13px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.pos .quitar { display: inline-flex; align-items: center; gap: 4px; height: 32px; padding: 0 8px; border: 0; background: transparent; color: var(--suave); font-size: 12px; font-weight: 600; }
+.pos .m-total { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding: 12px 4px 2px; border-top: 1px solid var(--linea); }
+.pos .m-total b { font-size: 14px; font-weight: 700; }
+.pos .m-total span { font-family: var(--mono); font-size: 20px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.pos .m-total small { display: block; font-family: var(--jakarta); font-size: 11.5px; font-weight: 500; color: var(--tenue); }
+
+/* Agregar productos */
+.pos .chips { display: flex; gap: 6px; overflow-x: auto; flex: none; margin-top: 12px; padding-bottom: 2px; scrollbar-width: none; }
+.pos .chips::-webkit-scrollbar { display: none; }
+.pos .chip-cat { height: 34px; padding: 0 14px; border-radius: 11px; border: 1px solid var(--linea); background: transparent; font-size: 13px; font-weight: 600; white-space: nowrap; color: var(--suave); }
+.pos .chip-cat[aria-pressed='true'] { background: var(--tinta); color: var(--sobre-tinta); border-color: var(--tinta); }
+.pos .producto { display: flex; align-items: center; gap: 12px; min-height: 62px; padding: 8px 12px 8px 14px; border-radius: 16px; border: 1px solid var(--linea); background: var(--solido); color: var(--texto); text-align: left; width: 100%; }
+.pos .producto .t { min-width: 0; flex: 1; display: flex; flex-direction: column; gap: 2px; }
+.pos .producto b { font-size: 14px; font-weight: 700; }
+.pos .producto .det { font-size: 11.5px; color: var(--tenue); }
+.pos .producto .precio { font-family: var(--mono); font-size: 13px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.pos .producto.agotado { background: transparent; color: var(--tenue); cursor: default; }
+.pos .producto.agotado b { color: var(--tenue); }
+.pos .cuantos { min-width: 26px; height: 26px; padding: 0 7px; border-radius: 13px; background: var(--tinta); color: var(--sobre-tinta); font-family: var(--mono); font-size: 12px; font-weight: 600; display: flex; align-items: center; justify-content: center; }
+.pos .cuantos.fantasma { background: transparent; color: var(--suave); border: 1px solid var(--linea); }
+
+/* Las hojas que suben desde abajo */
+.pos .hoja-velo { position: absolute; inset: 0; z-index: 5; background: var(--velo); display: flex; align-items: flex-end; }
+.pos .hoja { width: 100%; max-height: 90%; overflow-y: auto; background: var(--solido); border-radius: 28px 28px 0 0; padding: 10px 16px 30px; display: flex; flex-direction: column; gap: 16px; scrollbar-width: none; }
+.pos .hoja::-webkit-scrollbar { display: none; }
+.pos .agarre { align-self: center; width: 40px; height: 4px; border-radius: 2px; background: var(--linea-fuerte); flex: none; }
+.pos .hoja-cabeza { display: flex; align-items: flex-start; gap: 12px; }
+.pos .hoja-cabeza .t { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.pos .hoja-cabeza h3 { margin: 0; font-size: 20px; font-weight: 800; letter-spacing: -0.3px; }
+.pos .hoja-cabeza span { font-family: var(--mono); font-size: 12px; color: var(--suave); }
+.pos .grupo-op { display: flex; flex-direction: column; gap: 6px; }
+.pos .grupo-op-cabeza { display: flex; align-items: baseline; gap: 8px; }
+.pos .grupo-op-cabeza b { font-size: 14px; font-weight: 700; }
+.pos .grupo-op-cabeza span { font-size: 12px; color: var(--tenue); }
+.pos .op { display: flex; align-items: center; gap: 12px; min-height: 46px; padding: 0 14px; border: 1px solid var(--linea); border-radius: 13px; background: transparent; color: var(--texto); text-align: left; width: 100%; font-size: 14px; font-weight: 600; }
+.pos .op .marca { width: 18px; height: 18px; flex: none; border: 1.5px solid var(--tenue); display: flex; align-items: center; justify-content: center; }
+.pos .op .marca.redonda { border-radius: 9px; }
+.pos .op .marca.cuadrada { border-radius: 5px; }
+.pos .op[aria-checked='true'] { border-color: var(--tinta); }
+.pos .op[aria-checked='true'] .marca { border: 0; background: var(--tinta); color: var(--sobre-tinta); }
+.pos .op .extra { margin-left: auto; font-family: var(--mono); font-size: 12.5px; font-weight: 500; color: var(--suave); }
+.pos .op:disabled { color: var(--tenue); border-style: dashed; cursor: default; }
+.pos .campo { min-width: 0; display: flex; flex-direction: column; gap: 8px; }
+.pos .campo input { width: 100%; height: 46px; padding: 0 14px; border: 1px solid var(--linea); border-radius: 13px; background: transparent; color: var(--texto); font-size: 14px; font-weight: 500; outline: none; }
+.pos .campo input:focus { border-color: var(--suave); }
+.pos .campo input::placeholder { color: var(--tenue); }
+.pos .fila-cant { display: flex; align-items: center; gap: 12px; }
+.pos .fila-cant .paso { height: 46px; border-radius: 13px; flex: none; }
+.pos .fila-cant .paso button { width: 46px; height: 44px; }
+.pos .fila-cant .paso span { min-width: 30px; font-size: 15px; }
+.pos .menu-hoja { display: flex; flex-direction: column; gap: 6px; }
+.pos .menu-hoja button { display: flex; align-items: center; gap: 12px; min-height: 52px; padding: 0 14px; border: 1px solid var(--linea); border-radius: 14px; background: transparent; color: var(--texto); font-size: 14.5px; font-weight: 600; text-align: left; }
+.pos .menu-hoja button .sub { margin-left: auto; font-size: 12px; font-weight: 500; color: var(--tenue); }
+.pos .confirmar-texto { margin: 0; font-size: 14px; line-height: 1.5; color: var(--suave); }
+
+/* La cuenta para el cliente, en grande */
+.pos .ticket { flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 4px; padding-top: 18px; }
+.pos .ticket-linea { display: grid; grid-template-columns: 36px minmax(0, 1fr) auto; gap: 10px; align-items: baseline; padding: 10px 0; border-bottom: 1px solid var(--linea); }
+.pos .ticket-linea .cant { font-family: var(--mono); font-size: 18px; font-weight: 600; }
+.pos .ticket-linea .que { font-size: 18px; font-weight: 700; line-height: 1.3; }
+.pos .ticket-linea .que small { display: block; font-size: 13px; font-weight: 500; color: var(--suave); }
+.pos .ticket-linea .imp { font-family: var(--mono); font-size: 17px; font-variant-numeric: tabular-nums; }
+.pos .ticket-total { display: flex; align-items: baseline; justify-content: space-between; padding-top: 18px; }
+.pos .ticket-total b { font-size: 20px; font-weight: 800; }
+.pos .ticket-total span { font-family: var(--mono); font-size: 36px; font-weight: 600; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+.pos .ticket-pie { font-size: 12px; color: var(--tenue); text-align: right; }
+
+/* El globo de abajo (aviso() de piezas.py) */
+.pos .globo { position: absolute; left: 50%; bottom: 104px; transform: translateX(-50%); z-index: 6; display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 16px; border-radius: 20px; background: var(--globo); color: var(--globo-texto); font-size: 13px; font-weight: 600; white-space: nowrap; box-shadow: 0 12px 30px var(--sombra); }
+.pos .globo svg { color: var(--verde); }
+
+@media (prefers-reduced-motion: reduce) {
+  .pos .cuadro { transition: none; }
+}

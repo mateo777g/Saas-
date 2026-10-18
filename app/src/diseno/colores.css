@@ -58,6 +58,10 @@
   --sobre-oro: #ffffff;
   --qr-fondo: #ffffff;                 /* el QR de Vincular aparato: oscuro sobre claro en los dos temas */
   --qr-tinta: #000000;
+  --amarillo: #e9b519;                 /* la comanda que lleva 10 minutos esperando */
+  --sobre-amarillo: #0b0b0b;
+  --rojo: #d4473e;                     /* la que lleva 20 */
+  --sobre-rojo: #ffffff;
   --jakarta: 'Plus Jakarta Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
   --mono: 'JetBrains Mono', ui-monospace, 'Cascadia Mono', Consolas, monospace;
   --outfit: 'Outfit', 'Plus Jakarta Sans', system-ui, sans-serif;

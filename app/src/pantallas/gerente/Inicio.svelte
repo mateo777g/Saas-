@@ -2,16 +2,21 @@
   Inicio del gerente en el paso 1 (maqueta 5SVLK2avzLCq5TaW6mrqq6, estado "Paso 1"): la tarjeta
   de vidrio con la fecha y el saludo, lo no negociable de Inicio. La fecha y la hora son las del
   restaurante y las da Postgres (mis_sucursales), nunca el reloj del aparato (libreta 4,
-  decidido el 11 de octubre de 2026). Las cifras, Mesas ahora, Tus meseros y los accesos
-  aparecen cuando exista su módulo.
+  decidido el 11 de octubre de 2026). Debajo, «Accesos para tu equipo» (parte 4a del punto de
+  venta). Las cifras, Mesas ahora y Tus meseros aparecen cuando exista su módulo (pieza 5).
 -->
 <script lang="ts">
   import Integral from '../../diseno/Integral.svelte';
   import Vidrio from '../../diseno/Vidrio.svelte';
   import { fechaLarga, saludoPorHora } from '../../lib/formato';
   import type { Sucursal } from '../../lib/gerente';
+  import Accesos from './Accesos.svelte';
 
-  let { sucursal, nombre }: { sucursal: Sucursal; nombre: string } = $props();
+  let {
+    sucursal,
+    nombre,
+    alAbrir,
+  }: { sucursal: Sucursal; nombre: string; alAbrir: (que: 'pos' | 'cocina') => void } = $props();
 </script>
 
 <div class="inicio">
@@ -24,6 +29,7 @@
       {saludoPorHora(sucursal.hora)}, {nombre}.<span>Así va tu negocio hoy.</span>
     </p>
   </Vidrio>
+  <Accesos {alAbrir} />
 </div>
 
 <style>

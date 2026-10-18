@@ -4,14 +4,16 @@
   de quien pone su PIN solo funciona desde este aparato.
 
     Sin ligar      pide el código de 6 letras (o lo trae el QR).
-    Compartido     «¿Quién eres?» → PIN → Hola. Tras 2 minutos sin tocarla, su sesión se cierra y
-                   vuelve a pedir el PIN de quien estaba, con «Cambiar de persona». Al recargar la
+    Compartido     «¿Quién eres?» → PIN → adentro. Tras 2 minutos sin tocarla, su sesión se cierra
+                   y vuelve a pedir el PIN de quien estaba, con «Cambiar de persona»; la pantalla
+                   de cocina es la excepción y nunca lo vuelve a pedir (libreta 5). Al recargar la
                    página empieza desde la lista.
     De una persona va directo a su PIN, y una vez adentro se queda, hasta que el gerente desliga
                    el aparato o da de baja a esa persona.
 
-  Cada vez que se vuelve a la pestaña, revisa con Postgres que el aparato siga ligado y que quien
-  está adentro siga en el equipo.
+  Adentro, cada quien ve lo de sus roles (Adentro.svelte): las mesas del punto de venta, la caja o
+  la cocina. Cada vez que se vuelve a la pestaña, revisa con Postgres que el aparato siga ligado y
+  que quien está adentro siga en el equipo.
 -->
 <script lang="ts">
   import { onMount } from 'svelte';
@@ -29,7 +31,7 @@
   } from './lib/aparato';
   import { ALGO_SALIO_PANEL } from './lib/errores';
   import Arriba from './pantallas/aparato/Arriba.svelte';
-  import Hola from './pantallas/aparato/Hola.svelte';
+  import Adentro from './pantallas/aparato/Adentro.svelte';
   import Pin from './pantallas/aparato/Pin.svelte';
   import QuienEres from './pantallas/aparato/QuienEres.svelte';
   import SinLigar from './pantallas/aparato/SinLigar.svelte';
@@ -42,7 +44,7 @@
     | { tipo: 'problema'; mensaje: string }
     | { tipo: 'nombres' }
     | { tipo: 'pin'; persona: PersonaAparato; otraVez: boolean }
-    | { tipo: 'hola'; persona: PersonaAparato };
+    | { tipo: 'adentro'; persona: PersonaAparato };
 
   // El código que trae el QR (…/equipo?codigo=KMRPTX). Sirve una sola vez: se quita de la
   // dirección para que recargar no lo vuelva a usar, y se olvida en cuanto se liga o se desliga.
@@ -55,6 +57,8 @@
   let pantalla = $state<Pantalla>({ tipo: 'cargando' });
   // El último toque, con el reloj que solo avanza (no el de la hora del aparato).
   let ultimoToque = performance.now();
+  // La pantalla que se ve adentro: en la de cocina no corren los 2 minutos.
+  let pestana = 'mesas';
 
   async function abrir() {
     if (!ligado) {
@@ -82,7 +86,7 @@
       return;
     }
     if (ligado.adentro === suya.id && (await haySesion())) {
-      pantalla = { tipo: 'hola', persona: suya };
+      pantalla = { tipo: 'adentro', persona: suya };
       return;
     }
     if (ligado.adentro !== null || (await haySesion())) await cerrarSesion();
@@ -122,7 +126,7 @@
   function alEntrar(persona: PersonaAparato) {
     ligado = leerLigado();
     ultimoToque = performance.now();
-    pantalla = { tipo: 'hola', persona };
+    pantalla = { tipo: 'adentro', persona };
   }
 
   async function cambiarDePersona() {
@@ -131,8 +135,9 @@
   }
 
   // Tras 2 minutos sin tocar la tableta compartida, quien estaba sale y se le pide su PIN otra vez.
+  // La cocina no: el taquero entra una vez y la pantalla queda abierta (libreta 5, «La cocina»).
   async function revisarDosMinutos() {
-    if (pantalla.tipo !== 'hola' || !lista?.compartido) return;
+    if (pantalla.tipo !== 'adentro' || !lista?.compartido || pestana === 'cocina') return;
     if (performance.now() - ultimoToque < DOS_MINUTOS) return;
     const persona = pantalla.persona;
     pantalla = { tipo: 'pin', persona, otraVez: true };
@@ -153,7 +158,7 @@
     }
     lista = nueva;
     const actual = pantalla;
-    if ((actual.tipo === 'hola' || actual.tipo === 'pin') && !nueva.personas.some((p) => p.id === actual.persona.id)) {
+    if ((actual.tipo === 'adentro' || actual.tipo === 'pin') && !nueva.personas.some((p) => p.id === actual.persona.id)) {
       await cambiarDePersona();
     }
   }
@@ -178,41 +183,45 @@
   });
 </script>
 
-<div class="aparato">
-  <div class="columna-aparato">
-    {#if pantalla.tipo === 'cargando'}
-      <Arriba />
-    {:else if pantalla.tipo === 'sin-ligar'}
-      <SinLigar codigoInicial={codigoDelQr} aviso={pantalla.aviso} {alLigar} />
-    {:else if pantalla.tipo === 'problema'}
-      <Arriba lugar={lista ? { restaurante: lista.restaurante, aparato: lista.aparato } : null} />
-      <div class="cuerpo">
-        <div class="centro">
-          <h1 class="titulo">No pudimos abrir este aparato</h1>
-          <CajaError mensaje={pantalla.mensaje} />
+{#if lista && pantalla.tipo === 'adentro'}
+  {#key pantalla.persona.id}
+    <Adentro {lista} persona={pantalla.persona} alPestana={(p) => (pestana = p)} />
+  {/key}
+{:else}
+  <div class="aparato">
+    <div class="columna-aparato">
+      {#if pantalla.tipo === 'cargando'}
+        <Arriba />
+      {:else if pantalla.tipo === 'sin-ligar'}
+        <SinLigar codigoInicial={codigoDelQr} aviso={pantalla.aviso} {alLigar} />
+      {:else if pantalla.tipo === 'problema'}
+        <Arriba lugar={lista ? { restaurante: lista.restaurante, aparato: lista.aparato } : null} />
+        <div class="cuerpo">
+          <div class="centro">
+            <h1 class="titulo">No pudimos abrir este aparato</h1>
+            <CajaError mensaje={pantalla.mensaje} />
+          </div>
+          <button type="button" class="boton contorno" onclick={abrir}>Intentar de nuevo</button>
         </div>
-        <button type="button" class="boton contorno" onclick={abrir}>Intentar de nuevo</button>
-      </div>
-    {:else if ligado && lista && pantalla.tipo === 'nombres'}
-      <QuienEres {lista} alElegir={(persona) => (pantalla = { tipo: 'pin', persona, otraVez: false })} />
-    {:else if ligado && lista && pantalla.tipo === 'pin'}
-      {@const persona = pantalla.persona}
-      {#key `${persona.id}-${pantalla.otraVez}`}
-        <Pin
-          {ligado}
-          {lista}
-          {persona}
-          otraVez={pantalla.otraVez}
-          alEntrar={() => alEntrar(persona)}
-          alVolver={lista.compartido ? abrir : undefined}
-          alDesligado={desligado}
-        />
-      {/key}
-    {:else if lista && pantalla.tipo === 'hola'}
-      <Hola {lista} persona={pantalla.persona} alCambiar={lista.compartido ? cambiarDePersona : undefined} />
-    {/if}
+      {:else if ligado && lista && pantalla.tipo === 'nombres'}
+        <QuienEres {lista} alElegir={(persona) => (pantalla = { tipo: 'pin', persona, otraVez: false })} />
+      {:else if ligado && lista && pantalla.tipo === 'pin'}
+        {@const persona = pantalla.persona}
+        {#key `${persona.id}-${pantalla.otraVez}`}
+          <Pin
+            {ligado}
+            {lista}
+            {persona}
+            otraVez={pantalla.otraVez}
+            alEntrar={() => alEntrar(persona)}
+            alVolver={lista.compartido ? abrir : undefined}
+            alDesligado={desligado}
+          />
+        {/key}
+      {/if}
+    </div>
   </div>
-</div>
+{/if}
 
 <style>
   /* La pantalla del aparato: 390 de ancho como el celular de la maqueta; en una tableta, al

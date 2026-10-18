@@ -1,6 +1,7 @@
 <!--
   caja_error() de diseno.py: el error en línea, sin rojo. Chip con borde fino e icono de alerta;
-  el aviso que no es error ("Cerraste sesión.") lleva el de info.
+  el aviso que no es error ("Cerraste sesión.") lleva el de info, y el de sin internet del punto
+  de venta, el de sin red (maqueta Mesero y cocina).
 -->
 <script lang="ts">
   import Icono from './Icono.svelte';
@@ -9,10 +10,10 @@
     mensaje,
     tipo = 'alerta',
     tamano = 12.5,
-  }: { mensaje: string; tipo?: 'alerta' | 'info'; tamano?: number } = $props();
+  }: { mensaje: string; tipo?: 'alerta' | 'info' | 'sinred'; tamano?: number } = $props();
 </script>
 
-<div class="caja" role={tipo === 'alerta' ? 'alert' : 'status'} style:font-size="{tamano}px">
+<div class="caja" role={tipo === 'info' ? 'status' : 'alert'} style:font-size="{tamano}px">
   <span class="icono"><Icono nombre={tipo} tamano={16} /></span>
   <span>{mensaje}</span>
 </div>

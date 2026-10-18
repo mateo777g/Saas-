@@ -75,4 +75,18 @@ export const ICONOS: Record<string, string> = {
   // El − del mínimo y el máximo de un grupo (maqueta de Opciones y áreas GhrEVWPmevfBZtWzi4exKi),
   // con el grosor del + de Flet.
   'menos': '<path stroke-width="2" d="M5 12h14"></path>',
+  // Los del punto de venta (maqueta Mesero y cocina TYq97pKacRCYBqcvRp1bZ2), de Lucide (licencia
+  // ISC) con el mismo trazo.
+  'puntos': '<circle cx="5" cy="12" r="1.2"></circle><circle cx="12" cy="12" r="1.2"></circle><circle cx="19" cy="12" r="1.2"></circle>',
+  'cuenta': '<path d="M6 2h12v20l-3-2-3 2-3-2-3 2z"></path><path d="M9 7h6"></path><path d="M9 11h6"></path><path d="M9 15h4"></path>',
+  'cambiar': '<path d="M17 3l4 4-4 4"></path><path d="M3 7h18"></path><path d="M7 21l-4-4 4-4"></path><path d="M21 17H3"></path>',
+  'juntar': '<path d="M8 6l4-4 4 4"></path><path d="M12 2v10.3a4 4 0 0 1-1.2 2.8L4 22"></path><path d="M20 22l-5-5"></path>',
+  'bolsa': '<path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path><path d="M3 6h18"></path><path d="M16 10a4 4 0 0 1-8 0"></path>',
+  'moto': '<circle cx="5.5" cy="17.5" r="3.5"></circle><circle cx="18.5" cy="17.5" r="3.5"></circle><path d="M15 6h2l3 7.5"></path><path d="M5.5 17.5L9 10h6l3.5 7.5"></path>',
+  'sinred': '<path d="M2 2l20 20"></path><path d="M8.5 16.5a5 5 0 0 1 7 0"></path><path d="M2 8.8a15 15 0 0 1 4.2-2.6"></path><path d="M10.7 5.1A15 15 0 0 1 22 8.8"></path><path d="M5 12.9a10 10 0 0 1 5.2-2.8"></path><path d="M16.8 13.6a10 10 0 0 1 2.2-.7"></path><path d="M12 20h.01"></path>',
+  'regresar': '<path d="M9 14L4 9l5-5"></path><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"></path>',
+  'afuera': '<path d="M15 3h6v6"></path><path d="M10 14L21 3"></path><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>',
+  'billete': '<rect x="2" y="6" width="20" height="12" rx="2"></rect><circle cx="12" cy="12" r="2"></circle><path d="M6 12h.01"></path><path d="M18 12h.01"></path>',
+  'cocina': '<path d="M17 21a1 1 0 0 0 1-1v-5.35c0-.457.316-.844.727-1.041a4 4 0 0 0-2.134-7.589 5 5 0 0 0-9.186 0 4 4 0 0 0-2.134 7.588c.411.198.727.585.727 1.041V20a1 1 0 0 0 1 1Z"></path><path d="M6 17h12"></path>',
+  'reloj': '<circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 2"></path>',
 };

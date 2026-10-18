@@ -56,9 +56,18 @@ export function guardarLigado(ligado: Ligado): void {
   }
 }
 
+// Al olvidarse, el aparato también olvida lo del punto de venta (los borradores de cada quien,
+// lib/pos.ts) y el área que mostraba la cocina (Cocina.svelte): ligado otra vez, empieza limpio
+// (decidido el 17 de octubre de 2026). En una compu que también es el panel del gerente, eso
+// incluye su borrador sin mandar.
+const PREFIJOS_DEL_POS = ['fragmentless-pos-', 'fragmentless-cocina-'];
+
 export function olvidarLigado(): void {
   try {
     localStorage.removeItem(LLAVE_LIGADO);
+    for (const llave of Object.keys(localStorage)) {
+      if (PREFIJOS_DEL_POS.some((p) => llave.startsWith(p))) localStorage.removeItem(llave);
+    }
   } catch (error) {
     console.error('[aparato] no se pudo olvidar el aparato:', error);
   }

@@ -359,7 +359,7 @@ begin
 end;
 $$;
 
-select plan(60);
+select plan(61);
 
 
 -- ─── Permisos ─────────────────────────────────────────────────────────────────
@@ -631,6 +631,11 @@ select is(
   jsonb_path_query_array(public.reporte_del_dia('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'), '$.otros[*].accion'),
   '["cambiar_mesa", "quitar_descuento", "juntar_mesas"]'::jsonb,
   'Otros cambios trae los de las cuentas de hoy, en orden; el cambio de mesa de ayer no'
+);
+select is(
+  jsonb_path_query_array(public.reporte_del_dia('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'), '$.otros[*].cuenta'),
+  '["Mesa 1", "Mesa 1", "Mesa 5"]'::jsonb,
+  'Cada otro cambio dice de qué cuenta es'
 );
 
 select is(

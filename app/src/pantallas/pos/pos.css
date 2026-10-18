@@ -168,3 +168,75 @@
 @media (prefers-reduced-motion: reduce) {
   .pos .cuadro { transition: none; }
 }
+
+
+/* La caja y la hoja de cobro (parte 4b), tal cual la maqueta La caja (FKj5RPPYE1tz6dcaU6F4kX). */
+.pos .boton-chico { display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 10px; border-radius: 10px; border: 1px solid var(--linea); background: transparent; color: var(--texto); font-size: 12px; font-weight: 600; white-space: nowrap; transition: opacity 150ms; }
+.pos .boton-chico:hover:not(:disabled) { opacity: 0.86; }
+.pos .boton-chico:disabled { opacity: 0.4; cursor: default; }
+.pos .inicial { width: 34px; height: 34px; border-radius: 17px; background: var(--chip); border: 1px solid var(--linea); display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; flex: none; }
+.pos .chip-estado { display: inline-flex; align-items: center; gap: 8px; height: 28px; padding: 0 12px; border-radius: 14px; background: var(--chip); font-size: 12px; font-weight: 500; color: var(--suave); white-space: nowrap; }
+.pos .turno { flex: none; margin-top: 12px; padding: 12px 14px; border-radius: 18px; border: 1px solid var(--linea); background: var(--solido); display: flex; flex-direction: column; gap: 10px; }
+.pos .turno-cabeza { display: flex; align-items: center; gap: 10px; }
+.pos .turno-cabeza .t { min-width: 0; flex: 1; display: flex; flex-direction: column; gap: 2px; }
+.pos .turno-cabeza b { font-size: 14.5px; font-weight: 700; }
+.pos .turno-cabeza span { font-size: 11.5px; color: var(--tenue); }
+.pos .turno-botones { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+.pos .turno-botones .boton-chico { justify-content: center; height: 36px; padding: 0 6px; }
+.pos .turno-botones .boton-chico.tinta { border: 0; background: var(--tinta); color: var(--sobre-tinta); }
+.pos .punto.apagado { background: var(--tenue); }
+.pos .efectivo-linea { flex: none; margin-top: 12px; display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-radius: 14px; background: var(--chip); font-size: 12.5px; color: var(--suave); }
+.pos .efectivo-linea b { color: var(--texto); font-family: var(--mono); font-weight: 600; font-variant-numeric: tabular-nums; }
+.pos .fila-cobro { display: flex; align-items: center; gap: 12px; min-height: 64px; padding: 10px 14px; border-radius: 18px; border: 1px solid var(--linea); background: var(--solido); text-align: left; width: 100%; }
+.pos .fila-cobro .t { min-width: 0; flex: 1; display: flex; flex-direction: column; gap: 4px; align-items: flex-start; }
+.pos .fila-cobro b { font-size: 15px; font-weight: 700; }
+.pos .fila-cobro .tipo { font-size: 11.5px; color: var(--tenue); }
+.pos .fila-cobro .der { display: flex; flex-direction: column; align-items: flex-end; gap: 3px; flex: none; }
+.pos .fila-cobro .falta-chica { font-size: 11px; font-weight: 600; color: var(--suave); white-space: nowrap; }
+.pos .fila-cobro.cobrada { background: transparent; }
+.pos .mesa-falta { font-size: 11.5px; font-weight: 600; color: var(--suave); }
+.pos .resumen { display: flex; flex-direction: column; gap: 6px; padding: 12px 14px; border-radius: 16px; background: var(--chip); }
+.pos .resumen-fila { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; font-size: 13px; color: var(--suave); }
+.pos .resumen-fila span:last-child { font-family: var(--mono); font-variant-numeric: tabular-nums; color: var(--texto); }
+.pos .resumen-fila.fuerte { padding-top: 6px; border-top: 1px solid var(--linea); color: var(--texto); font-weight: 700; font-size: 14px; }
+.pos .resumen-fila.fuerte span:last-child { font-size: 20px; font-weight: 600; }
+.pos .resumen-fila small { font-size: 11.5px; color: var(--tenue); }
+.pos .chips-cobro { display: flex; flex-wrap: wrap; gap: 6px; }
+.pos .chips-cobro .chip-cat { height: 34px; padding: 0 12px; font-size: 12.5px; }
+.pos .chips-cobro .chip-cat .mono { font-size: 11.5px; opacity: 0.8; margin-left: 4px; }
+.pos .dato-grande { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding: 12px 14px; border-radius: 14px; border: 1px solid var(--linea); }
+.pos .dato-grande b { font-size: 14px; font-weight: 700; }
+.pos .dato-grande span { font-family: var(--mono); font-size: 22px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.pos .pista { margin: 0; font-size: 12px; color: var(--tenue); line-height: 1.45; }
+.pos .cerrada { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 18px 0 6px; text-align: center; }
+.pos .cerrada .sello { width: 52px; height: 52px; border-radius: 26px; background: var(--verde); color: #fff; display: flex; align-items: center; justify-content: center; }
+.pos .cerrada h3 { margin: 4px 0 0; font-size: 22px; font-weight: 800; letter-spacing: -0.4px; }
+.pos .cerrada .pista { margin-top: 6px; }
+.pos .cerrada .folio { font-family: var(--mono); font-size: 13px; color: var(--suave); }
+.pos .cambio-grande { align-self: stretch; display: flex; flex-direction: column; align-items: center; gap: 2px; margin-top: 10px; padding: 14px; border-radius: 16px; background: var(--chip); }
+.pos .cambio-grande span { font-size: 12px; color: var(--suave); }
+.pos .cambio-grande b { font-family: var(--mono); font-size: 34px; font-weight: 600; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+.pos .pago-hecho { display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-radius: 12px; border: 1px solid var(--linea); font-size: 12.5px; }
+.pos .pago-hecho .t { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.pos .pago-hecho .t span { font-size: 11px; color: var(--tenue); }
+.pos .pago-hecho .m { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+.pos .persona-propina { display: flex; align-items: center; gap: 12px; min-height: 60px; padding: 8px 8px 8px 14px; border-radius: 14px; border: 1px solid var(--linea); }
+.pos .persona-propina .t { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.pos .persona-propina b { font-size: 14px; font-weight: 700; }
+.pos .persona-propina span { font-size: 11.5px; color: var(--tenue); }
+.pos .tabla-corte { display: flex; flex-direction: column; border: 1px solid var(--linea); border-radius: 16px; overflow: hidden; background: var(--solido); }
+.pos .tabla-corte .f { display: grid; grid-template-columns: minmax(0, 1.1fr) repeat(2, minmax(0, 1fr)); gap: 8px; padding: 10px 12px; border-top: 1px solid var(--linea); font-size: 12.5px; align-items: baseline; }
+.pos .tabla-corte .f:first-child { border-top: 0; }
+.pos .tabla-corte .f.cab { font-family: var(--mono); font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--tenue); }
+.pos .tabla-corte .f .n { font-family: var(--mono); font-variant-numeric: tabular-nums; text-align: right; }
+.pos .tabla-corte .dif { grid-column: 1 / -1; font-size: 12px; font-weight: 700; }
+.pos .tabla-corte .dif.falta { color: var(--rojo); }
+.pos .tabla-corte .dif.cuadra { color: var(--verde); }
+.pos .lista-simple { display: flex; flex-direction: column; border: 1px solid var(--linea); border-radius: 16px; background: var(--solido); }
+.pos .lista-simple .f { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding: 10px 12px; border-top: 1px solid var(--linea); font-size: 12.5px; }
+.pos .lista-simple .f:first-child { border-top: 0; }
+.pos .lista-simple .f span:first-child { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.pos .lista-simple .f small { font-size: 11px; color: var(--tenue); }
+.pos .lista-simple .f .n { font-family: var(--mono); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.pos .abrir-caja { margin-top: 14px; padding: 16px; border-radius: 20px; border: 1px solid var(--linea); background: var(--solido); display: flex; flex-direction: column; gap: 12px; flex: none; }
+.pos .abrir-caja h3 { margin: 0; font-size: 18px; font-weight: 800; letter-spacing: -0.3px; }

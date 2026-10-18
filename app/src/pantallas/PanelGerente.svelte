@@ -56,7 +56,7 @@
   let datos = $state(iniciales);
   // svelte-ignore state_referenced_locally
   let actualId = $state(sucursalInicial(iniciales.sucursales).id);
-  let vista = $state<'inicio' | 'menu' | 'mesas' | 'equipo' | 'ajustes' | 'pos' | 'cocina'>('inicio');
+  let vista = $state<'inicio' | 'menu' | 'mesas' | 'equipo' | 'ajustes' | 'pos' | 'caja' | 'cocina'>('inicio');
   let perfilAbierto = $state(false);
 
   // Si la que estaba ya no sale en su lista, se elige otra con la misma regla de al abrir.
@@ -126,7 +126,7 @@
         { valor: 'ajustes', texto: 'Ajustes', icono: 'ajustes' },
         { valor: 'salir', texto: 'Cerrar sesión', icono: 'salir' },
       ]}
-      activa={vista === 'pos' || vista === 'cocina' ? 'inicio' : vista}
+      activa={vista === 'pos' || vista === 'caja' || vista === 'cocina' ? 'inicio' : vista}
       alElegir={alPulsar}
       pie={{
         inicial: nombre.charAt(0).toUpperCase(),
@@ -146,7 +146,7 @@
       {#key actual.id}
         <Mesas sucursal={actual} />
       {/key}
-    {:else if vista === 'pos' || vista === 'cocina'}
+    {:else if vista === 'pos' || vista === 'caja' || vista === 'cocina'}
       <!-- Otra sucursal es otro punto de venta: se vuelve a abrir desde cero. -->
       {#key actual.id}
         <AccesoAbierto que={vista} sucursal={actual} {usuarioId} alVolver={() => (vista = 'inicio')} />

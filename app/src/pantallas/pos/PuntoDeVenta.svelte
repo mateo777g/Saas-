@@ -8,7 +8,9 @@
   clave del envío: con la misma clave Postgres no guarda nada dos veces. Si el internet se cae a
   medio envío, el borrador recuerda lo que se fue, y antes del siguiente envío pregunta si llegó.
   Las cuentas abiertas llegan solas con el tiempo real de Supabase; cuando una comanda que mandó
-  esta persona pasa a «Lista», suena, vibra y sale el aviso.
+  esta persona pasa a «Lista», suena, vibra y sale el aviso. Con la parte 4b, una cuenta sin nada
+  por mandar se cobra desde aquí con la hoja de cobro (la misma de la caja), y quien es mesero ve
+  el efectivo que trae para la caja.
 -->
 <script lang="ts">
   import type { SupabaseClient } from '@supabase/supabase-js';
@@ -45,10 +47,12 @@
     type ProductoPos,
     type Venta,
   } from '../../lib/pos';
+  import { faltaDe, leerTurno, miEfectivo } from '../../lib/caja';
   import { avisarLista, prepararSonido } from '../../lib/sonido';
   import Agregar from './Agregar.svelte';
   import Cuenta, { type BloqueVista, type EnviadoVista, type LineaVista } from './Cuenta.svelte';
   import Hoja from './Hoja.svelte';
+  import HojaCobrar from './HojaCobrar.svelte';
   import HojaLlevar from './HojaLlevar.svelte';
   import HojaOpciones from './HojaOpciones.svelte';
   import Lugar from './Lugar.svelte';
@@ -62,6 +66,7 @@
     miembroId,
     linea,
     donde,
+    conEfectivo = false,
     pestanas,
   }: {
     cliente: SupabaseClient;
@@ -70,6 +75,7 @@
     miembroId: number;
     linea: string; // quién está: «Pepe Martínez · Mesero»
     donde: 'celular' | 'aparato' | 'navegador'; // dónde vive lo anotado, para los textos
+    conEfectivo?: boolean; // quien es mesero ve el efectivo que trae para la caja
     pestanas?: Snippet;
   } = $props();
 
@@ -77,7 +83,8 @@
     | { tipo: 'opciones'; producto: ProductoPos }
     | { tipo: 'menu' }
     | { tipo: 'juntar'; destino: Venta }
-    | { tipo: 'llevar' };
+    | { tipo: 'llevar' }
+    | { tipo: 'cobrar'; venta: Venta };
 
   // ─── Lo que llega de Postgres ───
   let carga = $state<{ estado: 'leyendo' } | { estado: 'listo' } | { estado: 'error'; mensaje: string }>({
@@ -88,6 +95,8 @@
   let abiertas = $state<Abiertas>({ ventas: [], renglones: [], comandas: [] });
   let nombres = $state(new Map<number, string>());
   let zona = $state('America/Mexico_City');
+  let turnoAbierto = $state(false);
+  let efectivo = $state<number | null>(null);
 
   // ─── Lo que vive en este aparato ───
   // svelte-ignore state_referenced_locally
@@ -150,8 +159,15 @@
     leyendo = (async () => {
       do {
         otraVez = false;
-        const [nuevas, n] = await Promise.all([leerAbiertas(cliente, restauranteId), leerNombres(cliente, restauranteId)]);
+        const [nuevas, n, t, e] = await Promise.all([
+          leerAbiertas(cliente, restauranteId),
+          leerNombres(cliente, restauranteId),
+          leerTurno(cliente, restauranteId),
+          conEfectivo ? miEfectivo(cliente, restauranteId) : Promise.resolve(null),
+        ]);
         nombres = n;
+        turnoAbierto = t.abierto !== null;
+        efectivo = e;
         alLlegar(nuevas);
       } while (otraVez);
     })().finally(() => (leyendo = null));
@@ -604,7 +620,7 @@
   // ─── Al abrir ───
   onMount(() => {
     leerTodo();
-    const dejar = escuchar(cliente, restauranteId, ['ventas', 'venta_items', 'comandas'], () => {
+    const dejar = escuchar(cliente, restauranteId, ['ventas', 'venta_items', 'comandas', 'pagos', 'turnos'], () => {
       if (carga.estado === 'listo') recargarCuentas();
     });
     const alVolver = () => {
@@ -675,6 +691,7 @@
       {estadoDe}
       quien={(v) => quien(v.abierta_por)}
       hora={(v) => hora(v.created_at)}
+      {efectivo}
       {pestanas}
       aviso={avisoLista}
       alVista={(v) => (vista = v)}
@@ -692,6 +709,8 @@
       {bloques}
       {sinArea}
       total={ventaActual ? ventaActual.total : null}
+      pagado={ventaActual?.pagado ?? 0}
+      falta={ventaActual ? faltaDe(ventaActual) : null}
       {donde}
       {error}
       {sinRed}
@@ -701,6 +720,7 @@
       alMenu={() => (hoja = { tipo: 'menu' })}
       alAgregar={() => ((pantalla = 'agregar'), (sinRed = false), (error = null))}
       alMandar={mandar}
+      alCobrar={() => ventaActual && ((hoja = { tipo: 'cobrar', venta: ventaActual }), (error = null))}
       alCambiar={(i, n) =>
         cambiarBorrador((b) => {
           if (b.lineas[i] && b.lineas[i].cantidad + n >= 1) b.lineas[i].cantidad += n;
@@ -828,6 +848,29 @@
     </Hoja>
   {:else if hoja?.tipo === 'llevar'}
     <HojaLlevar alCerrar={() => (hoja = null)} alEmpezar={empezarLlevar} />
+  {:else if hoja?.tipo === 'cobrar'}
+    {@const v = hoja.venta}
+    <HojaCobrar
+      {cliente}
+      {restauranteId}
+      venta={{
+        id: v.id,
+        titulo: (v.tipo === 'mesa' ? v.mesa_nombre : v.cliente_nombre) ?? '—',
+        tipo: v.tipo,
+        abrio: v.abierta_por === null ? null : quien(v.abierta_por),
+      }}
+      pagado={abiertas.ventas.find((x) => x.id === v.id)?.pagado ?? null}
+      {turnoAbierto}
+      {nombres}
+      alCerrar={() => (hoja = null)}
+      alAviso={avisar}
+      alListo={() => {
+        // El id se lee antes de cerrar la hoja: sin hoja, `v` ya no existe.
+        const id = v.id;
+        hoja = null;
+        if (!abiertas.ventas.some((x) => x.id === id)) volver();
+      }}
+    />
   {/if}
 
   {#if globo}

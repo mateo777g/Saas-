@@ -1,21 +1,20 @@
 <!--
   Lo que ve quien entró con su PIN, según sus roles (parte 4a; maqueta Mesero y cocina): el mesero y
   la caja, las mesas del punto de venta; la cocina, su pantalla a todo lo ancho. Quien tiene más de
-  una cambia con pestañas arriba (Toño, mesero y caja: Mesas y Caja). La caja llega con la parte
-  4b; mientras tanto su pestaña lo dice. El aparato recuerda la última pestaña.
+  una cambia con pestañas arriba (Toño, mesero y caja: Mesas y Caja). La caja es la de la parte
+  4b (maqueta La caja). El aparato recuerda la última pestaña.
 
   Usa la sesión del aparato (lib/aparato.ts), nunca la del panel.
 -->
 <script lang="ts">
   import { onMount } from 'svelte';
   import CajaError from '../../diseno/CajaError.svelte';
-  import Icono from '../../diseno/Icono.svelte';
   import Selector from '../../diseno/Selector.svelte';
   import { supabaseAparato, type Lista, type PersonaAparato } from '../../lib/aparato';
   import { ALGO_SALIO_PANEL, esDeRed, SIN_CONEXION } from '../../lib/errores';
   import { NOMBRE_ROL } from '../../lib/roles';
+  import Caja from '../caja/Caja.svelte';
   import Cocina from '../cocina/Cocina.svelte';
-  import Lugar from '../pos/Lugar.svelte';
   import PuntoDeVenta from '../pos/PuntoDeVenta.svelte';
   import Arriba from './Arriba.svelte';
 
@@ -105,15 +104,7 @@
   </div>
 {:else if pestana === 'caja'}
   <div class="columna sin-margen">
-    <div class="pos">
-      <Lugar restaurante={lista.restaurante} {linea} />
-      {@render selector()}
-      <div class="vacio">
-        <span class="cuadro-icono"><Icono nombre="billete" tamano={18} /></span>
-        <b>La caja llega con la parte 4b</b>
-        <span>Aquí se abre el turno, se anota cómo se pagó y se hace el corte.</span>
-      </div>
-    </div>
+    <Caja cliente={supabaseAparato} restauranteId={restaurante.id} restaurante={lista.restaurante} {linea} pestanas={selector} />
   </div>
 {:else}
   <div class="columna sin-margen">
@@ -124,6 +115,7 @@
       miembroId={persona.id}
       {linea}
       donde={lista.compartido ? 'aparato' : 'celular'}
+      conEfectivo={persona.roles.includes('mesero')}
       pestanas={selector}
     />
   </div>
@@ -193,40 +185,5 @@
     color: var(--texto);
     font-size: 15px;
     font-weight: 700;
-  }
-
-  .vacio {
-    flex: 1;
-    justify-content: center;
-    padding: 36px 8px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 6px;
-    text-align: center;
-  }
-
-  .vacio b {
-    font-size: 14.5px;
-    font-weight: 700;
-  }
-
-  .vacio span {
-    font-size: 12.5px;
-    color: var(--suave);
-    line-height: 1.45;
-    max-width: 34ch;
-  }
-
-  .cuadro-icono {
-    width: 36px;
-    height: 36px;
-    flex: none;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 11px;
-    background: var(--chip);
-    margin-bottom: 4px;
   }
 </style>

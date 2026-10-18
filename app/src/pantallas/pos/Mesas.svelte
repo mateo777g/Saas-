@@ -3,11 +3,14 @@
   del restaurante, de quien sea, y los pedidos para llevar. Una mesa libre sale punteada; una
   ocupada, con su total y quién la abrió, y arriba «En cocina», «Lista» o «Pidió la cuenta». Un
   para llevar anotado aquí y todavía no mandado sale punteado en su lista, como una mesa libre.
+  Con la parte 4b, una cuenta con pagos dice cuánto falta, y quien es mesero ve arriba el efectivo
+  que trae para la caja (maqueta La caja).
 -->
 <script lang="ts">
   import type { Snippet } from 'svelte';
   import Icono from '../../diseno/Icono.svelte';
   import Selector from '../../diseno/Selector.svelte';
+  import { faltaDe } from '../../lib/caja';
   import { dinero } from '../../lib/formato';
   import type { Mesa, PedidoNuevo, Venta } from '../../lib/pos';
   import Lugar from './Lugar.svelte';
@@ -26,6 +29,7 @@
     estadoDe,
     quien,
     hora,
+    efectivo,
     pestanas,
     aviso,
     alVista,
@@ -42,6 +46,7 @@
     estadoDe: (v: Venta) => Estado;
     quien: (v: Venta) => string; // el nombre de pila de quien la abrió
     hora: (v: Venta) => string; // la hora en que se abrió, en la zona del restaurante
+    efectivo: number | null; // lo que trae cobrado en efectivo en este turno; null si no se enseña
     pestanas?: Snippet;
     aviso: Snippet;
     alVista: (v: 'mesas' | 'llevar') => void;
@@ -57,6 +62,9 @@
 <Lugar {restaurante} {linea} />
 {@render pestanas?.()}
 {@render aviso()}
+{#if efectivo}
+  <div class="efectivo-linea"><Icono nombre="billete" tamano={16} /><span>Traes <b>{dinero(efectivo)}</b> en efectivo para la caja</span></div>
+{/if}
 
 <div class="arriba-vista">
   <Selector
@@ -97,6 +105,7 @@
               </span>
               <span class="mesa-abajo">
                 <span class="mesa-total">{dinero(v.total)}</span>
+                {#if v.pagado > 0}<span class="mesa-falta">Falta {dinero(faltaDe(v))}</span>{/if}
                 <span class="mesa-quien">Abrió {quien(v)} · {hora(v)}</span>
               </span>
             </button>

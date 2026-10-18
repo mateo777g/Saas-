@@ -16,7 +16,7 @@
     sucursal,
     nombre,
     alAbrir,
-  }: { sucursal: Sucursal; nombre: string; alAbrir: (que: 'pos' | 'cocina') => void } = $props();
+  }: { sucursal: Sucursal; nombre: string; alAbrir: (que: 'pos' | 'caja' | 'cocina') => void } = $props();
 </script>
 
 <div class="inicio">

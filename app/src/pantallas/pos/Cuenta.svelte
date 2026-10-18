@@ -2,8 +2,9 @@
   Una cuenta (maqueta Mesero y cocina, estado «Mesa 4»). Arriba, lo anotado y todavía no mandado,
   punteado en «Por mandar»: vive solo en este aparato y se cambia o se quita sin permiso. Debajo,
   lo mandado, una comanda por bloque (la más nueva arriba) con su área y si ya está lista, y lo
-  que no va a ninguna pantalla en «Lo sirve el mesero». El total es el de Postgres. Abajo,
-  Agregar y «Mandar a cocina», que sin internet dice «Sin conexión».
+  que no va a ninguna pantalla en «Lo sirve el mesero». El total es el de Postgres, y si ya tiene
+  pagos, lo pagado y lo que falta (parte 4b). Abajo, Agregar y «Mandar a cocina», que sin internet
+  dice «Sin conexión»; sin nada por mandar, el botón es «Cobrar» (maqueta La caja).
 -->
 <script lang="ts" module>
   // Lo que la cuenta pinta, ya en palabras: el componente no cuenta nada.
@@ -37,6 +38,8 @@
     bloques,
     sinArea,
     total,
+    pagado,
+    falta,
     donde,
     error,
     sinRed,
@@ -46,6 +49,7 @@
     alMenu,
     alAgregar,
     alMandar,
+    alCobrar,
     alCambiar,
     alQuitar,
   }: {
@@ -58,6 +62,8 @@
     bloques: BloqueVista[];
     sinArea: EnviadoVista[];
     total: number | null;
+    pagado: number;
+    falta: number | null; // lo que falta por pagar, solo para verlo
     donde: string;
     error: string | null;
     sinRed: boolean;
@@ -67,6 +73,7 @@
     alMenu: () => void;
     alAgregar: () => void;
     alMandar: () => void;
+    alCobrar: () => void;
     alCambiar: (i: number, cuantos: number) => void;
     alQuitar: (i: number) => void;
   } = $props();
@@ -163,6 +170,12 @@
       <b>Total<small>Lo mandado a cocina</small></b>
       <span>{dinero(total)}</span>
     </div>
+    {#if pagado > 0 && falta !== null}
+      <div class="resumen">
+        <div class="resumen-fila"><span>Pagado</span><span>{dinero(pagado)}</span></div>
+        <div class="resumen-fila fuerte"><span>Falta</span><span>{dinero(falta)}</span></div>
+      </div>
+    {/if}
   {/if}
 
   {#if total === null && !lineas.length}
@@ -175,11 +188,15 @@
 
 <div class="cel-pie">
   <button type="button" class="cel-boton contorno" onclick={alAgregar}><Icono nombre="mas" tamano={18} />Agregar</button>
-  <button type="button" class="cel-boton" class:sin-red={sinRed} disabled={!porMandar || enviando} onclick={alMandar}>
-    {#if sinRed}
-      <Icono nombre="sinred" tamano={18} />Sin conexión
-    {:else}
-      Mandar a cocina{porMandar ? ` · ${porMandar}` : ''}
-    {/if}
-  </button>
+  {#if !porMandar && conCuenta && falta !== null && !sinRed}
+    <button type="button" class="cel-boton" onclick={alCobrar}>Cobrar · {dinero(falta)}</button>
+  {:else}
+    <button type="button" class="cel-boton" class:sin-red={sinRed} disabled={!porMandar || enviando} onclick={alMandar}>
+      {#if sinRed}
+        <Icono nombre="sinred" tamano={18} />Sin conexión
+      {:else}
+        Mandar a cocina{porMandar ? ` · ${porMandar}` : ''}
+      {/if}
+    </button>
+  {/if}
 </div>

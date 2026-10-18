@@ -2,8 +2,8 @@
   La pantalla de cocina (parte 4a; maqueta Mesero y cocina TYq97pKacRCYBqcvRp1bZ2; libreta 5, «La
   cocina»). Una tarjeta por comanda de su área, de la más vieja a la más nueva, con los minutos
   que lleva esperando: a los 10 se pone amarilla y a los 20, roja. Un toque la marca «Lista» y se
-  va. «Últimas listas» trae las 10 más recientes para regresarlas si se marcó por error. El área
-  se elige una vez y este aparato la recuerda. Las comandas llegan solas con el tiempo real.
+  va. «Últimas listas» trae las 10 más recientes de hoy (el día de negocio, parte 4b) para
+  regresarlas si se marcó por error. El área se elige una vez y este aparato la recuerda. Las comandas llegan solas con el tiempo real.
 
   La abre el aparato de cocina, que nunca vuelve a pedir el PIN, y el panel del gerente con su
   sesión. Los minutos y el reloj usan el reloj de este aparato, como la cuenta regresiva del
@@ -252,7 +252,7 @@
         <div class="k-lado-cabeza">
           <div class="t">
             <b>Últimas listas</b>
-            <span>Las 10 más recientes. Regresar la devuelve a la pantalla.</span>
+            <span>Las 10 más recientes de hoy. Regresar la devuelve a la pantalla.</span>
           </div>
           <button type="button" class="cuadro" aria-label="Cerrar" title="Cerrar" onclick={() => (pantalla = 'comandas')}>
             <Icono nombre="cerrar" tamano={16} />

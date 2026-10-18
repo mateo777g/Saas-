@@ -142,6 +142,7 @@ export type Venta = {
   cliente_telefono: string | null;
   cliente_direccion: string | null;
   total: number;
+  pagado: number; // la suma de sus pagos (parte 4b); la escribe un trigger
   abierta_por: number | null;
   cuenta_pedida_at: string | null;
   created_at: string;
@@ -175,12 +176,12 @@ export type Comanda = {
 export type Abiertas = { ventas: Venta[]; renglones: Renglon[]; comandas: Comanda[] };
 
 const COLUMNAS_VENTA =
-  'id, tipo, mesa_id, mesa_nombre, cliente_nombre, cliente_telefono, cliente_direccion, total, abierta_por, cuenta_pedida_at, created_at';
+  'id, tipo, mesa_id, mesa_nombre, cliente_nombre, cliente_telefono, cliente_direccion, total, pagado, abierta_por, cuenta_pedida_at, created_at';
 const COLUMNAS_RENGLON = 'id, venta_id, nombre, cantidad, importe, opciones, nota, comanda_id, agregado_por, clave_envio';
 const COLUMNAS_COMANDA = 'id, venta_id, area_preparacion_id, estado, enviada_por, lista_at, created_at';
 
 function venta(v: Venta): Venta {
-  return { ...v, total: Number(v.total) };
+  return { ...v, total: Number(v.total), pagado: Number(v.pagado) };
 }
 
 function renglon(r: Renglon): Renglon {
@@ -253,13 +254,20 @@ export type Tarjeta = Comanda & {
 export type EnCocina = { pendientes: Tarjeta[]; listas: Tarjeta[] };
 
 // Las pendientes de todas las áreas, de la más vieja a la más nueva (cada pantalla filtra la
-// suya y cuenta las de las demás al elegir), y las últimas 10 listas de esta área, de la más
-// reciente a la más vieja.
+// suya y cuenta las de las demás al elegir), y las últimas 10 listas de hoy de esta área, de la
+// más reciente a la más vieja. «Hoy» es el día de negocio del restaurante (inicio_del_dia).
+export async function inicioDelDia(cliente: SupabaseClient, restauranteId: string): Promise<string> {
+  const { data, error } = await cliente.rpc('inicio_del_dia', { p_restaurante_id: restauranteId });
+  if (error) throw error;
+  return data as string;
+}
+
 export async function leerCocina(
   cliente: SupabaseClient,
   restauranteId: string,
   areaId: number | null,
 ): Promise<EnCocina> {
+  const desde = areaId === null ? null : await inicioDelDia(cliente, restauranteId);
   const [pendientes, listas] = await Promise.all([
     cliente
       .from('comandas')
@@ -268,7 +276,7 @@ export async function leerCocina(
       .eq('estado', 'pendiente')
       .order('created_at')
       .order('id'),
-    areaId === null
+    areaId === null || desde === null
       ? Promise.resolve({ data: [] as Comanda[], error: null })
       : cliente
           .from('comandas')
@@ -276,6 +284,7 @@ export async function leerCocina(
           .eq('restaurante_id', restauranteId)
           .eq('area_preparacion_id', areaId)
           .eq('estado', 'lista')
+          .gte('lista_at', desde)
           .order('lista_at', { ascending: false })
           .order('id', { ascending: false })
           .limit(10),
@@ -392,7 +401,7 @@ export async function marcarComanda(cliente: SupabaseClient, comandaId: number, 
 export function escuchar(
   cliente: SupabaseClient,
   restauranteId: string,
-  tablas: ('ventas' | 'venta_items' | 'comandas')[],
+  tablas: ('ventas' | 'venta_items' | 'comandas' | 'pagos' | 'turnos')[],
   alCambiar: () => void,
 ): () => void {
   const canal = cliente.channel(`pos-${restauranteId}-${crypto.randomUUID()}`);

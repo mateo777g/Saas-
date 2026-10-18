@@ -8,11 +8,11 @@
   import Icono from '../../diseno/Icono.svelte';
   import Vidrio from '../../diseno/Vidrio.svelte';
 
-  let { alAbrir }: { alAbrir: (que: 'pos' | 'cocina') => void } = $props();
+  let { alAbrir }: { alAbrir: (que: 'pos' | 'caja' | 'cocina') => void } = $props();
 
-  const ACCESOS: { icono: string; titulo: string; texto: string; abre?: 'pos' | 'cocina'; pronto?: string }[] = [
+  const ACCESOS: { icono: string; titulo: string; texto: string; abre?: 'pos' | 'caja' | 'cocina'; pronto?: string }[] = [
     { icono: 'mesas', titulo: 'Punto de venta', texto: 'Toma pedidos de las mesas y para llevar, y mándalos a cocina.', abre: 'pos' },
-    { icono: 'billete', titulo: 'Caja', texto: 'Cobra las cuentas y hace el corte del día.', pronto: 'Llega con la caja' },
+    { icono: 'billete', titulo: 'Caja', texto: 'Cobra las cuentas y hace el corte del día.', abre: 'caja' },
     { icono: 'cocina', titulo: 'Cocina', texto: 'Las comandas llegan en orden a la pantalla.', abre: 'cocina' },
     { icono: 'celular', titulo: 'Menú digital', texto: 'Tu menú en línea para tus clientes.', pronto: 'Llega con el menú en línea' },
   ];

@@ -1,8 +1,8 @@
 <!--
-  El punto de venta o la cocina abiertos dentro del panel (maqueta Mesero y cocina, estados «Punto
-  de venta abierto» y «Cocina abierta»; libreta 4, decidido el 17 de octubre de 2026): con la
-  sesión del gerente, sin PIN ni aparato, y lo que agrega queda a su nombre. El punto de venta
-  conserva el ancho del celular, al centro; la cocina usa todo el ancho.
+  El punto de venta, la caja o la cocina abiertos dentro del panel (maquetas Mesero y cocina y La
+  caja; libreta 4, decidido el 17 de octubre de 2026): con la sesión del gerente, sin PIN ni
+  aparato, y lo que agrega o cobra queda a su nombre. El punto de venta y la caja conservan el
+  ancho del celular, al centro; la cocina usa todo el ancho.
 -->
 <script lang="ts">
   import { onMount } from 'svelte';
@@ -12,6 +12,7 @@
   import { ALGO_SALIO_PANEL, esDeRed, SIN_CONEXION } from '../../lib/errores';
   import type { Sucursal } from '../../lib/gerente';
   import { supabase } from '../../lib/supabase';
+  import Caja from '../caja/Caja.svelte';
   import Cocina from '../cocina/Cocina.svelte';
   import PuntoDeVenta from '../pos/PuntoDeVenta.svelte';
 
@@ -20,7 +21,7 @@
     sucursal,
     usuarioId,
     alVolver,
-  }: { que: 'pos' | 'cocina'; sucursal: Sucursal; usuarioId: string; alVolver: () => void } = $props();
+  }: { que: 'pos' | 'caja' | 'cocina'; sucursal: Sucursal; usuarioId: string; alVolver: () => void } = $props();
 
   // Su fila de miembros en esta sucursal: a su nombre queda lo que agrega. Arriba sale su nombre
   // de pila de Empleados, el mismo que ve su equipo en lo que agrega (no su apodo de Perfil, que
@@ -52,7 +53,7 @@
 
 <Vidrio como="header" class="arriba-acceso" radio={18} sombra={false}>
   <button type="button" class="volver" onclick={alVolver}><Icono nombre="anterior" tamano={16} />Inicio</button>
-  <h1 class="titulo">{que === 'pos' ? 'Punto de venta' : 'Cocina'}</h1>
+  <h1 class="titulo">{que === 'pos' ? 'Punto de venta' : que === 'caja' ? 'Caja' : 'Cocina'}</h1>
   <span class="chip"><span class="punto"></span>Con tu sesión de gerente</span>
 </Vidrio>
 
@@ -72,6 +73,10 @@
         linea="{yo.nombre} · Gerente"
         donde="navegador"
       />
+    </div>
+  {:else if yo.estado === 'listo' && que === 'caja'}
+    <div class="panel-cel">
+      <Caja cliente={supabase} restauranteId={sucursal.id} restaurante={sucursal.nombre} enPanel />
     </div>
   {:else if yo.estado === 'listo'}
     <Cocina cliente={supabase} restauranteId={sucursal.id} enPanel />

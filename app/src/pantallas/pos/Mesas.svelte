@@ -4,7 +4,8 @@
   ocupada, con su total y quién la abrió, y arriba «En cocina», «Lista» o «Pidió la cuenta». Un
   para llevar anotado aquí y todavía no mandado sale punteado en su lista, como una mesa libre.
   Con la parte 4b, una cuenta con pagos dice cuánto falta, y quien es mesero ve arriba el efectivo
-  que trae para la caja (maqueta La caja).
+  que trae para la caja (maqueta La caja). Una cuenta reabierta (parte 4c) ya no ocupa su mesa: sale
+  con los pedidos para llevar, con su folio y «Reabierta».
 -->
 <script lang="ts">
   import type { Snippet } from 'svelte';
@@ -16,7 +17,7 @@
   import Lugar from './Lugar.svelte';
   import MarcaEstado from './MarcaEstado.svelte';
 
-  type Estado = 'cocina' | 'lista' | 'cuenta' | 'ocupada';
+  type Estado = 'reabierta' | 'cocina' | 'lista' | 'cuenta' | 'ocupada';
 
   let {
     restaurante,
@@ -54,8 +55,9 @@
     alNuevoLlevar: () => void;
   } = $props();
 
-  const deMesa = $derived(new Map(ventas.filter((v) => v.tipo === 'mesa').map((v) => [v.mesa_id, v])));
-  const llevar = $derived(ventas.filter((v) => v.tipo !== 'mesa'));
+  const enSuMesa = (v: Venta) => v.tipo === 'mesa' && v.folio === null;
+  const deMesa = $derived(new Map(ventas.filter(enSuMesa).map((v) => [v.mesa_id, v])));
+  const llevar = $derived(ventas.filter((v) => !enSuMesa(v)));
   const ocupadas = $derived(mesas.filter((m) => deMesa.has(m.id)).length);
 </script>
 
@@ -130,10 +132,12 @@
     {/each}
     {#each llevar as v (v.id)}
       <button type="button" class="fila-llevar" onclick={() => alAbrir(`v${v.id}`)}>
-        <span class="cuadro-icono"><Icono nombre={v.tipo === 'domicilio' ? 'moto' : 'bolsa'} tamano={18} /></span>
+        <span class="cuadro-icono"><Icono nombre={v.tipo === 'domicilio' ? 'moto' : v.tipo === 'mesa' ? 'mesas' : 'bolsa'} tamano={18} /></span>
         <span class="t">
-          <b>{v.cliente_nombre}</b>
-          <span class="tipo">{v.tipo === 'domicilio' ? 'Domicilio' : 'Para llevar'} · abrió {quien(v)}, {hora(v)}</span>
+          <b>{v.tipo === 'mesa' ? v.mesa_nombre : v.cliente_nombre}</b>
+          <span class="tipo">
+            {v.folio !== null ? `Folio ${v.folio}` : v.tipo === 'domicilio' ? 'Domicilio' : 'Para llevar'} · abrió {quien(v)}, {hora(v)}
+          </span>
           <MarcaEstado estado={estadoDe(v)} />
         </span>
         <span class="mesa-total">{dinero(v.total)}</span>

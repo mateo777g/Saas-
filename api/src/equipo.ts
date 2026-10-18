@@ -179,7 +179,7 @@ async function entrar(env: Env, cuerpo: Record<string, unknown>): Promise<Respon
 
 // ─── Ayudantes ────────────────────────────────────────────────────────────────
 
-async function leerCuerpo(request: Request): Promise<Record<string, unknown>> {
+export async function leerCuerpo(request: Request): Promise<Record<string, unknown>> {
   try {
     const cuerpo: unknown = await request.json();
     if (cuerpo && typeof cuerpo === 'object' && !Array.isArray(cuerpo)) return cuerpo as Record<string, unknown>;
@@ -193,7 +193,7 @@ function texto(valor: unknown): string {
   return typeof valor === 'string' ? valor : '';
 }
 
-function entero(valor: unknown): number {
+export function entero(valor: unknown): number {
   if (typeof valor !== 'number' || !Number.isSafeInteger(valor) || valor <= 0) throw new Rechazo(400, 'Falta la persona.');
   return valor;
 }
@@ -204,13 +204,13 @@ function secreto(valor: unknown): string {
   return token;
 }
 
-function revisarPin(pin: string): void {
+export function revisarPin(pin: string): void {
   if (!/^\d{4}$/.test(pin)) throw new Rechazo(400, 'El PIN son 4 números.');
 }
 
 // El PIN mezclado con la llave de los PIN: HMAC-SHA256 en hexadecimal. Con solo una copia de la
 // base no se puede sacar ningún PIN.
-async function mezclar(env: Env, pin: string): Promise<string> {
+export async function mezclar(env: Env, pin: string): Promise<string> {
   if (!env.PIMIENTA_PIN) {
     console.error('[equipo] falta el secreto PIMIENTA_PIN en Cloudflare');
     throw new Rechazo(500, 'Algo salió mal. Intenta de nuevo.');

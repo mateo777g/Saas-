@@ -8,6 +8,11 @@
   total, la cuenta se cierra sola y la hoja enseña el folio y el cambio. Si resumen_cuenta falla,
   la hoja lo dice, no deja anotar con números viejos y vuelve a pedirlo al regresar el internet o
   con «Intentar de nuevo».
+
+  Con la parte 4c (maqueta Cancelaciones y descuentos, estado «Cobrar con descuento»): «Descuento a
+  la cuenta» y «Quitar descuento», y el resumen con el subtotal y el descuento con su motivo. Un pago
+  del turno abierto se cancela aquí con su motivo; el cancelado se queda en la lista, tachado. Si
+  quien cobra no es de la caja ni gerente, los dos piden el PIN de otra persona.
 -->
 <script lang="ts">
   import type { SupabaseClient } from '@supabase/supabase-js';
@@ -26,16 +31,21 @@
     type Resumen,
   } from '../../lib/caja';
   import { dinero } from '../../lib/formato';
-  import { FalloPos } from '../../lib/pos';
+  import { FalloPos, quitarDescuento, textoDescuento, type Autoriza, type Venta } from '../../lib/pos';
   import Hoja from './Hoja.svelte';
+  import HojaCancelarPago from './HojaCancelarPago.svelte';
+  import HojaDescuento from './HojaDescuento.svelte';
+  import PagoHecho from './PagoHecho.svelte';
 
   let {
     cliente,
     restauranteId,
     venta,
-    pagado,
-    turnoAbierto,
+    cuenta,
+    turnoId,
     nombres,
+    autorizan,
+    zona,
     alCerrar,
     alAviso,
     alListo,
@@ -43,9 +53,11 @@
     cliente: SupabaseClient;
     restauranteId: string;
     venta: { id: number; titulo: string; tipo: 'mesa' | 'para_llevar' | 'domicilio'; abrio: string | null };
-    pagado: number | null; // lo pagado según el tiempo real: si cambia, la hoja se vuelve a pedir
-    turnoAbierto: boolean;
+    cuenta: Venta | null; // la cuenta según el tiempo real: si cambia su total o lo pagado, la hoja se vuelve a pedir
+    turnoId: number | null; // el turno abierto; sin turno no se anotan pagos
     nombres: Map<number, string>;
+    autorizan: Autoriza[] | null; // quién pone su PIN para descontar o cancelar un pago; null: quien cobra es de la caja o gerente
+    zona: string;
     alCerrar: () => void;
     alAviso: (texto: string) => void;
     alListo: () => void;
@@ -70,7 +82,18 @@
   let errorResumen = $state<{ texto: string; sinRed: boolean } | null>(null);
   let reintento = $state(0);
   let ocupado = $state(false);
-  let cerrada = $state<{ folio: number | null; total: number; cambio: number } | null>(null);
+  let cerrada = $state<{ folio: number | null; total: number; cambio: number; reabierta: boolean } | null>(null);
+  // La hoja de encima: el descuento a la cuenta o cancelar un pago. Esta se queda como estaba.
+  let encima = $state<{ tipo: 'descuento' } | { tipo: 'pago'; pago: Pago } | null>(null);
+
+  const turnoAbierto = $derived(turnoId !== null);
+  const pagado = $derived(cuenta?.pagado ?? null);
+  const total = $derived(cuenta?.total ?? null);
+  const descuento = $derived(
+    cuenta?.descuento_tipo && cuenta.descuento_valor !== null
+      ? { texto: textoDescuento(cuenta.descuento_tipo, cuenta.descuento_valor), motivo: cuenta.descuento_motivo ?? '' }
+      : null,
+  );
 
   // Lo que se le pide a Postgres con lo escrito.
   const propinaPedida = $derived.by<Propina | 'mal'>(() => {
@@ -101,6 +124,7 @@
       recibido: recibidoPedido,
     };
     void pagado;
+    void total;
     void reintento;
     if (cerrada) return;
     const esta = ++pedidoNum;
@@ -161,6 +185,8 @@
     if (!listo || !resumen) return;
     ocupado = true;
     error = null;
+    // Antes de cobrar: al cerrarse, toda cuenta tiene folio. Una reabierta ya lo traía y no ocupa su mesa.
+    const reabierta = cuenta?.folio != null;
     try {
       const r = await cobrar(cliente, {
         ventaId: venta.id,
@@ -172,7 +198,7 @@
         referencia: referencia.trim(),
       });
       if (r.cerrada) {
-        cerrada = { folio: r.folio, total: resumen.total, cambio: r.cambio };
+        cerrada = { folio: r.folio, total: resumen.total, cambio: r.cambio, reabierta };
         return;
       }
       alAviso(r.cambio > 0 ? `Pago anotado · cambio ${dinero(r.cambio)}` : `Pago anotado · falta ${dinero(r.falta)}`);
@@ -198,6 +224,25 @@
     }
   }
 
+  async function quitar() {
+    if (ocupado) return;
+    ocupado = true;
+    error = null;
+    try {
+      await quitarDescuento(cliente, venta.id, null);
+      alAviso('Descuento quitado');
+      cambio();
+    } catch (falla) {
+      error = falla instanceof FalloPos ? falla.message : String(falla);
+      if (!(falla instanceof FalloPos)) console.error('[caja] no se pudo quitar el descuento:', falla);
+    } finally {
+      ocupado = false;
+    }
+  }
+
+  // Un pago se cancela mientras su turno sigue abierto; uno en línea, nunca desde aquí.
+  const seCancela = (p: Pago) => !p.cancelado_at && p.cobrado_por !== null && p.turno_id !== null && p.turno_id === turnoId;
+
   const PROPINAS: { valor: ElegidaPropina; texto: string }[] = [
     { valor: 'no', texto: 'Sin propina' },
     { valor: '10', texto: '10 %' },
@@ -208,7 +253,41 @@
 
 <svelte:window ononline={() => errorResumen && (reintento += 1)} />
 
-{#if cerrada}
+{#if encima?.tipo === 'descuento' && cuenta}
+  <HojaDescuento
+    {cliente}
+    venta={cuenta}
+    titulo={venta.titulo}
+    {autorizan}
+    {zona}
+    alCerrar={() => (encima = null)}
+    alListo={(globo) => {
+      encima = null;
+      alAviso(globo);
+      cambio();
+    }}
+  />
+{:else if encima?.tipo === 'pago'}
+  {@const p = encima.pago}
+  <HojaCancelarPago
+    {cliente}
+    pago={p}
+    titulo={venta.titulo}
+    folio={cuenta?.folio ?? null}
+    cerrada={false}
+    cobro={p.cobrado_por !== null ? (nombres.get(p.cobrado_por) ?? '—') : 'En línea'}
+    abrio={venta.abrio}
+    {autorizan}
+    {zona}
+    alCerrar={() => (encima = null)}
+    alListo={(globo) => {
+      encima = null;
+      alAviso(globo);
+      cambio();
+      leerSusPagos();
+    }}
+  />
+{:else if cerrada}
   <Hoja titulo="{venta.titulo} cerrada" cabeza={false} alCerrar={alListo}>
     <div class="cerrada">
       <span class="sello"><Icono nombre="check" tamano={24} /></span>
@@ -217,12 +296,22 @@
       {#if cerrada.cambio > 0}
         <div class="cambio-grande"><span>Cambio</span><b>{dinero(cerrada.cambio)}</b></div>
       {/if}
-      <p class="pista">{venta.tipo === 'mesa' ? 'La mesa quedó libre.' : 'El pedido ya no sale en Por cobrar.'}</p>
+      <p class="pista">
+        {cerrada.reabierta
+          ? 'Ya no sale en Por cobrar.'
+          : venta.tipo === 'mesa'
+            ? 'La mesa quedó libre.'
+            : 'El pedido ya no sale en Por cobrar.'}
+      </p>
     </div>
     <button type="button" class="cel-boton fijo" onclick={alListo}>Listo</button>
   </Hoja>
 {:else}
-  <Hoja titulo="Cobrar {venta.titulo}" sub={venta.abrio ? `Abrió ${venta.abrio} · la propina es suya` : ''} {alCerrar}>
+  <Hoja
+    titulo="Cobrar {venta.titulo}"
+    sub="{cuenta?.folio != null ? `Folio ${cuenta.folio} · reabierta · ` : ''}{venta.abrio ? `Abrió ${venta.abrio} · la propina es suya` : ''}"
+    {alCerrar}
+  >
     {#if !turnoAbierto}
       <CajaError mensaje="La caja no está abierta. Pídele a quien está en caja que la abra para anotar pagos." />
     {/if}
@@ -232,6 +321,12 @@
 
     {#if resumen}
       <div class="resumen">
+        {#if descuento && cuenta}
+          <div class="resumen-fila"><span>Subtotal</span><span>{dinero(cuenta.subtotal)}</span></div>
+          <div class="resumen-fila desc">
+            <span>Descuento {descuento.texto} <small>«{descuento.motivo}»</small></span><span>−{dinero(cuenta.descuento)}</span>
+          </div>
+        {/if}
         <div class="resumen-fila"><span>Total</span><span>{dinero(resumen.total)}</span></div>
         {#if resumen.pagado > 0}
           <div class="resumen-fila"><span>Pagado</span><span>{dinero(resumen.pagado)}</span></div>
@@ -248,17 +343,28 @@
       {/if}
     {/if}
 
+    {#if resumen && resumen.estado === 'abierta' && cuenta}
+      <div class="botones-fila">
+        <button type="button" class="boton-chico" disabled={ocupado} onclick={() => ((encima = { tipo: 'descuento' }), (error = null))}>
+          <Icono nombre="porcentaje" tamano={14} />{descuento ? 'Cambiar descuento' : 'Descuento a la cuenta'}
+        </button>
+        {#if descuento}
+          <button type="button" class="boton-chico" disabled={ocupado} onclick={quitar}>
+            <Icono nombre="regresar" tamano={14} />Quitar descuento
+          </button>
+        {/if}
+      </div>
+    {/if}
+
     {#if pagos.length}
       <div class="grupo-op">
         {#each pagos as p (p.id)}
-          <div class="pago-hecho">
-            <Icono nombre={p.metodo === 'efectivo' ? 'billete' : p.metodo === 'tarjeta' ? 'tarjeta' : 'banco'} tamano={16} />
-            <span class="t">
-              <b>{NOMBRE_METODO[p.metodo]}</b>
-              <span>{p.cobrado_por !== null ? (nombres.get(p.cobrado_por) ?? '—') : 'En línea'}{p.propina ? ` · propina ${dinero(p.propina)}` : ''}</span>
-            </span>
-            <span class="m">{dinero(p.monto)}</span>
-          </div>
+          <PagoHecho
+            pago={p}
+            {nombres}
+            {zona}
+            alCancelar={seCancela(p) ? () => ((encima = { tipo: 'pago', pago: p }), (error = null)) : undefined}
+          />
         {/each}
       </div>
     {/if}

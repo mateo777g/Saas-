@@ -11,6 +11,12 @@
   esta persona pasa a «Lista», suena, vibra y sale el aviso. Con la parte 4b, una cuenta sin nada
   por mandar se cobra desde aquí con la hoja de cobro (la misma de la caja), y quien es mesero ve
   el efectivo que trae para la caja.
+
+  Con la parte 4c (maqueta Cancelaciones y descuentos R5psXDQp1ovBFxBvmWbq46), lo mandado se cancela
+  o se descuenta desde la cuenta, y en «⋯» están el descuento a toda la cuenta y «Cancelar cuenta».
+  Si quien está es de la caja o gerente, queda a su nombre; si no, autoriza la caja o un gerente con
+  su PIN en este aparato. Una cuenta reabierta (se canceló un pago de una cuenta cerrada) ya no es
+  la de su mesa: sale en Para llevar con su folio, sin «Cambiar de mesa» ni «Juntar».
 -->
 <script lang="ts">
   import type { SupabaseClient } from '@supabase/supabase-js';
@@ -29,30 +35,37 @@
     leerAbiertas,
     leerGuardado,
     leerMenuPos,
+    leerEquipo,
     leerMesasPos,
-    leerNombres,
     leerZona,
     mandarACocina,
     mismaLinea,
     pedirCuenta,
+    quitarDescuento,
     restar,
+    textoDescuento,
     type Abiertas,
     type Borrador,
     type Comanda,
+    type Equipo,
     type Guardado,
     type LineaBorrador,
     type MenuPos,
     type Mesa,
     type PedidoNuevo,
     type ProductoPos,
+    type Renglon,
     type Venta,
   } from '../../lib/pos';
   import { faltaDe, leerTurno, miEfectivo } from '../../lib/caja';
   import { avisarLista, prepararSonido } from '../../lib/sonido';
   import Agregar from './Agregar.svelte';
-  import Cuenta, { type BloqueVista, type EnviadoVista, type LineaVista } from './Cuenta.svelte';
+  import Cuenta, { type BloqueVista, type DescuentoVista, type EnviadoVista, type LineaVista } from './Cuenta.svelte';
   import Hoja from './Hoja.svelte';
+  import HojaCancelar from './HojaCancelar.svelte';
+  import HojaCancelarCuenta from './HojaCancelarCuenta.svelte';
   import HojaCobrar from './HojaCobrar.svelte';
+  import HojaDescuento from './HojaDescuento.svelte';
   import HojaLlevar from './HojaLlevar.svelte';
   import HojaOpciones from './HojaOpciones.svelte';
   import Lugar from './Lugar.svelte';
@@ -84,7 +97,11 @@
     | { tipo: 'menu' }
     | { tipo: 'juntar'; destino: Venta }
     | { tipo: 'llevar' }
-    | { tipo: 'cobrar'; venta: Venta };
+    | { tipo: 'cobrar'; venta: Venta }
+    | { tipo: 'renglon'; renglon: number }
+    | { tipo: 'cancelar'; renglon: number }
+    | { tipo: 'descuento'; renglon: number | null } // sin renglón: a toda la cuenta
+    | { tipo: 'cancelarCuenta' };
 
   // ─── Lo que llega de Postgres ───
   let carga = $state<{ estado: 'leyendo' } | { estado: 'listo' } | { estado: 'error'; mensaje: string }>({
@@ -93,9 +110,12 @@
   let menu = $state<MenuPos>({ categorias: [], areas: [] });
   let mesas = $state<Mesa[]>([]);
   let abiertas = $state<Abiertas>({ ventas: [], renglones: [], comandas: [] });
-  let nombres = $state(new Map<number, string>());
+  let equipo = $state<Equipo>({ nombres: new Map(), yoAutorizo: false, autorizan: [] });
+  const nombres = $derived(equipo.nombres);
+  // Quién autoriza lo que pide PIN; null si quien está es de la caja o gerente.
+  const autorizan = $derived(equipo.yoAutorizo ? null : equipo.autorizan);
   let zona = $state('America/Mexico_City');
-  let turnoAbierto = $state(false);
+  let turnoId = $state<number | null>(null);
   let efectivo = $state<number | null>(null);
 
   // ─── Lo que vive en este aparato ───
@@ -159,14 +179,14 @@
     leyendo = (async () => {
       do {
         otraVez = false;
-        const [nuevas, n, t, e] = await Promise.all([
+        const [nuevas, q, t, e] = await Promise.all([
           leerAbiertas(cliente, restauranteId),
-          leerNombres(cliente, restauranteId),
+          leerEquipo(cliente, restauranteId, miembroId),
           leerTurno(cliente, restauranteId),
           conEfectivo ? miEfectivo(cliente, restauranteId) : Promise.resolve(null),
         ]);
-        nombres = n;
-        turnoAbierto = t.abierto !== null;
+        equipo = q;
+        turnoId = t.abierto?.id ?? null;
         efectivo = e;
         alLlegar(nuevas);
       } while (otraVez);
@@ -185,7 +205,9 @@
     if (!primera) {
       const antes = new Map(abiertas.comandas.map((c) => [c.id, c.estado]));
       for (const c of nuevas.comandas) {
-        if (c.estado === 'lista' && c.enviada_por === miembroId && antes.get(c.id) === 'pendiente') {
+        // Una comanda con todo cancelado se quita en la cocina, pero no es «Lista».
+        const algo = nuevas.renglones.some((r) => r.comanda_id === c.id && r.estado === 'activo');
+        if (c.estado === 'lista' && c.enviada_por === miembroId && antes.get(c.id) === 'pendiente' && algo) {
           avisoDeLista(c, nuevas);
         }
       }
@@ -216,7 +238,7 @@
     if (!v) return;
     aviso = {
       venta: v.id,
-      titulo: (v.tipo === 'mesa' ? v.mesa_nombre : v.cliente_nombre) ?? '',
+      titulo: nombreDe(v),
       area: menu.areas.find((a) => a.id === c.area_preparacion_id)?.nombre ?? '',
     };
     const enPantalla = pantalla !== 'mesas' && actual !== null && ventaDe(actual, nuevas)?.id === v.id;
@@ -228,27 +250,43 @@
   }
 
   // ─── Qué cuenta es cada llave ───
+  // La de una mesa es la abierta sin folio: una reabierta ya no ocupa su mesa y va por su id.
+  const deMesa = (v: Venta) => v.tipo === 'mesa' && v.folio === null;
+
   function ventaDe(llave: string, de: Abiertas = abiertas): Venta | null {
     const id = Number(llave.slice(1));
-    if (llave[0] === 'm') return de.ventas.find((v) => v.tipo === 'mesa' && v.mesa_id === id) ?? null;
+    if (llave[0] === 'm') return de.ventas.find((v) => deMesa(v) && v.mesa_id === id) ?? null;
     if (llave[0] === 'v') return de.ventas.find((v) => v.id === id) ?? null;
     return null;
   }
 
   function llaveDe(v: Venta): string {
-    return v.tipo === 'mesa' ? `m${v.mesa_id}` : `v${v.id}`;
+    return deMesa(v) ? `m${v.mesa_id}` : `v${v.id}`;
   }
+
+  const nombreDe = (v: Venta) => (v.tipo === 'mesa' ? v.mesa_nombre : v.cliente_nombre) ?? '';
 
   function tituloDe(llave: string): string {
     const v = ventaDe(llave);
     if (llave[0] === 'm') return v?.mesa_nombre ?? mesas.find((m) => m.id === Number(llave.slice(1)))?.nombre ?? '';
-    if (llave[0] === 'v') return v?.cliente_nombre ?? '';
+    if (llave[0] === 'v') return v ? nombreDe(v) : '';
     return guardado.borradores[llave]?.nuevo?.nombre ?? '';
   }
 
-  function estadoDe(v: Venta): 'cocina' | 'lista' | 'cuenta' | 'ocupada' {
+  // «En cocina» mientras alguna comanda espera con algo que no se canceló.
+  function enCocina(v: Venta): boolean {
+    return abiertas.comandas.some(
+      (c) =>
+        c.venta_id === v.id &&
+        c.estado === 'pendiente' &&
+        abiertas.renglones.some((r) => r.comanda_id === c.id && r.estado === 'activo'),
+    );
+  }
+
+  function estadoDe(v: Venta): 'reabierta' | 'cocina' | 'lista' | 'cuenta' | 'ocupada' {
+    if (v.folio !== null) return 'reabierta';
     if (v.cuenta_pedida_at) return 'cuenta';
-    if (abiertas.comandas.some((c) => c.venta_id === v.id && c.estado === 'pendiente')) return 'cocina';
+    if (enCocina(v)) return 'cocina';
     if (guardado.sinVer.includes(v.id)) return 'lista';
     return 'ocupada';
   }
@@ -284,16 +322,41 @@
     }),
   );
 
-  function enviado(r: Abiertas['renglones'][number]): EnviadoVista {
+  function enviado(r: Renglon): EnviadoVista {
+    const cancelado = r.estado === 'cancelado';
+    const conDescuento = !cancelado && r.descuento_tipo !== null && r.descuento_valor !== null;
     return {
       id: r.id,
       nombre: r.nombre,
       detalle: r.opciones.map((o) => o.opcion).join(' · '),
       nota: r.nota ?? '',
       cantidad: r.cantidad,
-      importe: r.importe,
+      importe: cancelado ? r.importe + r.descuento : r.importe,
+      antes: conDescuento ? r.importe + r.descuento : null,
+      descuento: conDescuento
+        ? `${textoDescuento(r.descuento_tipo!, r.descuento_valor!)} · «${r.descuento_motivo}» · −${dinero(r.descuento)}`
+        : null,
+      cancelado: cancelado ? `Cancelado · «${r.cancelado_motivo}» · autorizó ${quien(r.autorizado_por)}` : null,
       por: quien(r.agregado_por),
     };
+  }
+
+  const descuentoCuenta = $derived<DescuentoVista | null>(
+    ventaActual?.descuento_tipo && ventaActual.descuento_valor !== null
+      ? {
+          texto: textoDescuento(ventaActual.descuento_tipo, ventaActual.descuento_valor),
+          motivo: ventaActual.descuento_motivo ?? '',
+          monto: ventaActual.descuento,
+        }
+      : null,
+  );
+
+  // El renglón de una hoja, como está ahora (el tiempo real lo cambia).
+  const renglonDe = (id: number | null) => (id === null ? null : (abiertas.renglones.find((r) => r.id === id) ?? null));
+
+  function areaDe(r: Renglon): string | null {
+    const c = abiertas.comandas.find((k) => k.id === r.comanda_id);
+    return c ? (nombreArea.get(c.area_preparacion_id) ?? null) : null;
   }
 
   const bloques = $derived<BloqueVista[]>(
@@ -318,7 +381,14 @@
     if (!actual) return '';
     const v = ventaActual;
     const tipo = v?.tipo ?? borradorActual?.nuevo?.tipo ?? 'mesa';
-    const prefijo = tipo === 'domicilio' ? 'Domicilio' : tipo === 'para_llevar' ? 'Para llevar' : '';
+    const prefijo =
+      v && v.folio !== null
+        ? `Folio ${v.folio} · reabierta`
+        : tipo === 'domicilio'
+          ? 'Domicilio'
+          : tipo === 'para_llevar'
+            ? 'Para llevar'
+            : '';
     if (v) return `${prefijo ? `${prefijo} · ` : ''}Abrió ${quien(v.abierta_por)} · ${hora(v.created_at)}`;
     return `${prefijo || 'Libre'} · se abre al mandar a cocina`;
   });
@@ -591,6 +661,29 @@
     }
   }
 
+  // ─── Lo que pide PIN (parte 4c) ───
+  function hecho(texto: string) {
+    hoja = null;
+    avisar(texto);
+    recargarCuentas();
+  }
+
+  // Quitar un descuento no pide PIN.
+  async function quitar(renglon: number | null) {
+    const v = ventaActual;
+    if (!v || ocupado) return;
+    ocupado = true;
+    try {
+      await quitarDescuento(cliente, v.id, renglon);
+      hecho('Descuento quitado');
+    } catch (falla) {
+      hoja = null;
+      error = falla instanceof Fallo ? falla.message : ALGO_SALIO_PANEL;
+    } finally {
+      ocupado = false;
+    }
+  }
+
   // ─── Para llevar ───
   function empezarLlevar(pedido: PedidoNuevo) {
     const llave = `n${crypto.randomUUID()}`;
@@ -708,6 +801,8 @@
       {lineas}
       {bloques}
       {sinArea}
+      subtotal={ventaActual?.subtotal ?? 0}
+      descuento={descuentoCuenta}
       total={ventaActual ? ventaActual.total : null}
       pagado={ventaActual?.pagado ?? 0}
       falta={ventaActual ? faltaDe(ventaActual) : null}
@@ -726,6 +821,7 @@
           if (b.lineas[i] && b.lineas[i].cantidad + n >= 1) b.lineas[i].cantidad += n;
         })}
       alQuitar={(i) => cambiarBorrador((b) => b.lineas.splice(i, 1))}
+      alRenglon={(id) => ((hoja = { tipo: 'renglon', renglon: id }), (error = null))}
     />
   {:else if pantalla === 'agregar' && (actual[0] !== 'v' || ventaActual)}
     <Agregar
@@ -742,7 +838,7 @@
   {:else if pantalla === 'pedida' && ventaActual}
     <Lugar {restaurante} linea="La cuenta · {tituloDe(actual)}" />
     <div class="ticket">
-      {#each abiertas.renglones.filter((r) => r.venta_id === ventaActual.id) as r (r.id)}
+      {#each abiertas.renglones.filter((r) => r.venta_id === ventaActual.id && r.estado === 'activo') as r (r.id)}
         <div class="ticket-linea">
           <span class="cant">{r.cantidad}</span>
           <span class="que">
@@ -752,6 +848,13 @@
           <span class="imp">{dinero(r.importe)}</span>
         </div>
       {/each}
+      {#if descuentoCuenta}
+        <div class="ticket-linea">
+          <span class="cant"></span>
+          <span class="que">Descuento {descuentoCuenta.texto}</span>
+          <span class="imp">−{dinero(descuentoCuenta.monto)}</span>
+        </div>
+      {/if}
       <div class="ticket-total"><b>Total</b><span>{dinero(ventaActual.total)}</span></div>
       <div class="ticket-pie">Precios con IVA incluido</div>
     </div>
@@ -823,7 +926,7 @@
         <button type="button" onclick={pedir}>
           <Icono nombre="cuenta" tamano={18} />Pedir la cuenta<span class="sub">La enseñas en grande</span>
         </button>
-        {#if ventaActual.tipo === 'mesa'}
+        {#if deMesa(ventaActual)}
           <button type="button" onclick={() => elegir('cambiar')}>
             <Icono nombre="cambiar" tamano={18} />Cambiar de mesa<span class="sub">A una libre</span>
           </button>
@@ -831,8 +934,90 @@
             <Icono nombre="juntar" tamano={18} />Juntar con otra mesa<span class="sub">Esta queda libre</span>
           </button>
         {/if}
+        <button type="button" onclick={() => (hoja = { tipo: 'descuento', renglon: null })}>
+          <Icono nombre="porcentaje" tamano={18} />{descuentoCuenta ? 'Cambiar descuento' : 'Descuento a la cuenta'}
+          <span class="sub">{descuentoCuenta ? `${descuentoCuenta.texto} ahora` : 'Con motivo y PIN'}</span>
+        </button>
+        {#if descuentoCuenta}
+          <button type="button" disabled={ocupado} onclick={() => quitar(null)}>
+            <Icono nombre="regresar" tamano={18} />Quitar descuento<span class="sub">No pide PIN</span>
+          </button>
+        {/if}
+        <button type="button" onclick={() => (hoja = { tipo: 'cancelarCuenta' })}>
+          <Icono nombre="cerrar" tamano={18} />Cancelar cuenta<span class="sub">Con motivo y PIN</span>
+        </button>
       </div>
     </Hoja>
+  {:else if hoja?.tipo === 'renglon' && ventaActual}
+    {@const r = renglonDe(hoja.renglon)}
+    {#if r && r.estado === 'activo'}
+      {@const k = abiertas.comandas.find((c) => c.id === r.comanda_id)}
+      {@const det = r.opciones.map((o) => o.opcion).join(' · ')}
+      <Hoja
+        titulo="{r.cantidad} {r.nombre}"
+        sub="{det ? `${det} · ` : ''}{dinero(r.importe)}{k ? ` · mandado ${hora(k.created_at)}` : ' · lo sirve el mesero'}"
+        alCerrar={() => (hoja = null)}
+      >
+        <div class="menu-hoja">
+          <button type="button" onclick={() => (hoja = { tipo: 'cancelar', renglon: r.id })}>
+            <Icono nombre="cerrar" tamano={18} />Cancelar<span class="sub">Con motivo y PIN</span>
+          </button>
+          <button type="button" onclick={() => (hoja = { tipo: 'descuento', renglon: r.id })}>
+            <Icono nombre="porcentaje" tamano={18} />{r.descuento_tipo ? 'Cambiar descuento' : 'Descuento'}<span class="sub">En % o en pesos</span>
+          </button>
+          {#if r.descuento_tipo}
+            <button type="button" disabled={ocupado} onclick={() => quitar(r.id)}>
+              <Icono nombre="regresar" tamano={18} />Quitar descuento<span class="sub">No pide PIN</span>
+            </button>
+          {/if}
+        </div>
+      </Hoja>
+    {/if}
+  {:else if hoja?.tipo === 'cancelar' && ventaActual}
+    {@const r = renglonDe(hoja.renglon)}
+    {#if r}
+      <HojaCancelar
+        {cliente}
+        venta={ventaActual}
+        renglon={r}
+        area={areaDe(r)}
+        {autorizan}
+        {zona}
+        alCerrar={() => (hoja = null)}
+        alListo={hecho}
+      />
+    {/if}
+  {:else if hoja?.tipo === 'descuento' && ventaActual && actual}
+    {@const id = hoja.renglon}
+    {@const r = renglonDe(id)}
+    {#if id === null || r}
+      <HojaDescuento
+        {cliente}
+        venta={ventaActual}
+        titulo={tituloDe(actual)}
+        renglon={r}
+        {autorizan}
+        {zona}
+        alCerrar={() => (hoja = null)}
+        alListo={hecho}
+      />
+    {/if}
+  {:else if hoja?.tipo === 'cancelarCuenta' && ventaActual && actual}
+    {@const v = ventaActual}
+    <HojaCancelarCuenta
+      {cliente}
+      venta={v}
+      titulo={tituloDe(actual)}
+      sub={subCuenta}
+      renglones={abiertas.renglones.filter((r) => r.venta_id === v.id)}
+      {autorizan}
+      {zona}
+      alCerrar={() => (hoja = null)}
+      alListo={(globo) => {
+        hecho(globo);
+        volver();
+      }}
+    />
   {:else if hoja?.tipo === 'juntar' && ventaActual && actual}
     {@const de = tituloDe(actual)}
     {@const a = hoja.destino}
@@ -855,13 +1040,15 @@
       {restauranteId}
       venta={{
         id: v.id,
-        titulo: (v.tipo === 'mesa' ? v.mesa_nombre : v.cliente_nombre) ?? '—',
+        titulo: nombreDe(v) || '—',
         tipo: v.tipo,
         abrio: v.abierta_por === null ? null : quien(v.abierta_por),
       }}
-      pagado={abiertas.ventas.find((x) => x.id === v.id)?.pagado ?? null}
-      {turnoAbierto}
+      cuenta={abiertas.ventas.find((x) => x.id === v.id) ?? null}
+      {turnoId}
       {nombres}
+      {autorizan}
+      {zona}
       alCerrar={() => (hoja = null)}
       alAviso={avisar}
       alListo={() => {

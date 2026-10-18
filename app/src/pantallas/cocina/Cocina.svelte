@@ -5,6 +5,12 @@
   va. «Últimas listas» trae las 10 más recientes de hoy (el día de negocio, parte 4b) para
   regresarlas si se marcó por error. El área se elige una vez y este aparato la recuerda. Las comandas llegan solas con el tiempo real.
 
+  Con la parte 4c (maqueta Cancelaciones y descuentos): lo que se cancela sale aquí al momento,
+  tachado en rojo con «Cancelado» y su motivo, para que no se prepare. La tarjeta se marca «Cambió»
+  mientras siga pendiente, y suena un tono distinto al de «Lista», una vez por cada cancelación. Si
+  se cancela todo, dice «Todo cancelado» y se quita con el mismo toque. Lo cancelado de algo ya
+  «Lista» no regresa la tarjeta: sale tachado en «Últimas listas».
+
   La abre el aparato de cocina, que nunca vuelve a pedir el PIN, y el panel del gerente con su
   sesión. Los minutos y el reloj usan el reloj de este aparato, como la cuenta regresiva del
   código de Empleados: la hora de cada comanda es la de Postgres.
@@ -17,6 +23,7 @@
   import Integral from '../../diseno/Integral.svelte';
   import { ALGO_SALIO_PANEL, esDeRed, Fallo, SIN_CONEXION } from '../../lib/errores';
   import { enZona, plural } from '../../lib/formato';
+  import { avisarCambio, prepararSonido } from '../../lib/sonido';
   import {
     escuchar,
     leerCocina,
@@ -70,6 +77,7 @@
 
   function elegirArea(id: number) {
     areaId = id;
+    oidos = null;
     pantalla = 'comandas';
     try {
       localStorage.setItem(LLAVE_AREA, String(id));
@@ -122,6 +130,7 @@
         ]);
         datos = d;
         nombres = n;
+        oirCambios(d);
       } while (otraVez);
     })().finally(() => (leyendo = null));
     return leyendo;
@@ -129,6 +138,32 @@
 
   function recargar() {
     leer().catch((falla) => console.error('[cocina] no se pudieron volver a leer las comandas:', falla));
+  }
+
+  // Lo cancelado de las pendientes de esta área que ya sonó. La primera lectura solo lo anota.
+  let oidos: Set<number> | null = null;
+  function oirCambios(d: EnCocina) {
+    const cancelados = d.pendientes
+      .filter((c) => c.area_preparacion_id === areaId)
+      .flatMap((c) => c.renglones.filter((r) => r.estado === 'cancelado').map((r) => r.id));
+    if (oidos && cancelados.some((id) => !oidos!.has(id))) avisarCambio();
+    oidos = new Set([...(oidos ?? []), ...cancelados]);
+  }
+
+  const cambio = (t: Tarjeta): 'todo' | 'algo' | null => {
+    const cancelados = t.renglones.filter((r) => r.estado === 'cancelado').length;
+    if (cancelados === 0) return null;
+    return cancelados === t.renglones.length ? 'todo' : 'algo';
+  };
+
+  // «Últimas listas»: lo cancelado del mismo producto va junto («2 Taco de pastor»), aunque sean
+  // renglones distintos, cada uno con su motivo (decidido en la prueba de verdad de la 4c).
+  function textoCancelados(t: Tarjeta): string {
+    const cuantos = new Map<string, number>();
+    for (const r of t.renglones) {
+      if (r.estado === 'cancelado') cuantos.set(r.nombre, (cuantos.get(r.nombre) ?? 0) + r.cantidad);
+    }
+    return [...cuantos].map(([nombre, n]) => `${n} ${nombre}`).join(', ');
   }
 
   async function marcar(t: Tarjeta, lista: boolean) {
@@ -155,6 +190,7 @@
       if (carga === 'listo') recargar();
     });
     const reloj = setInterval(() => (ahora = Date.now()), 15000);
+    document.addEventListener('pointerdown', prepararSonido, true);
     const alVolver = () => {
       if (document.visibilityState === 'visible') {
         ahora = Date.now();
@@ -165,6 +201,7 @@
     return () => {
       dejar();
       clearInterval(reloj);
+      document.removeEventListener('pointerdown', prepararSonido, true);
       document.removeEventListener('visibilitychange', alVolver);
     };
   });
@@ -212,29 +249,35 @@
         {#if error}<div class="caja-k ancho"><CajaError mensaje={error} /></div>{/if}
         {#each pendientes as t (t.id)}
           {@const m = minutos(t)}
+          {@const k = cambio(t)}
           <button
             type="button"
             class="comanda"
-            class:amarilla={m >= 10 && m < 20}
-            class:roja={m >= 20}
-            aria-label="Marcar lista la comanda de {t.titulo}"
+            class:todo={k === 'todo'}
+            class:amarilla={k !== 'todo' && m >= 10 && m < 20}
+            class:roja={k !== 'todo' && m >= 20}
+            aria-label="{k === 'todo' ? 'Quitar' : 'Marcar lista'} la comanda de {t.titulo}"
             onclick={() => marcar(t, true)}
           >
             <span class="c-cabeza">
               <span class="t"><b>{t.titulo}</b><span>{tipoTexto(t)}{quien(t.enviada_por)} · {hora(t.created_at)}</span></span>
-              <span class="c-min">{m} min</span>
+              {#if k}
+                <span class="marca-cambio"><Icono nombre="alerta" tamano={13} />{k === 'todo' ? 'Todo cancelado' : 'Cambió'}</span>
+              {/if}
+              {#if k !== 'todo'}<span class="c-min">{m} min</span>{/if}
             </span>
             <span class="c-items">
               {#each t.renglones as r (r.id)}
-                <span class="c-item">
+                <span class="c-item" class:cancelado={r.estado === 'cancelado'}>
                   <span class="cant">{r.cantidad}</span>
                   <b>{r.nombre}</b>
                   {#if r.opciones.length}<span class="det">{r.opciones.map((o) => o.opcion).join(' · ')}</span>{/if}
-                  {#if r.nota}<span class="nota-c">{r.nota}</span>{/if}
+                  {#if r.nota && r.estado === 'activo'}<span class="nota-c">{r.nota}</span>{/if}
+                  {#if r.estado === 'cancelado'}<span class="cancel-c">Cancelado · «{r.cancelado_motivo}»</span>{/if}
                 </span>
               {/each}
             </span>
-            <span class="c-pie">Toca cuando salga todo</span>
+            <span class="c-pie">{k === 'todo' ? 'Toca para quitarla' : 'Toca cuando salga todo'}</span>
           </button>
         {/each}
       </div>
@@ -260,8 +303,15 @@
         </div>
         <div class="k-lista">
           {#each datos.listas as t (t.id)}
+            {@const cancelados = t.renglones.filter((r) => r.estado === 'cancelado')}
             <div class="k-fila">
-              <span class="t"><b>{t.titulo}</b><span>{quien(t.enviada_por)} · lista {hora(t.lista_at ?? t.created_at)}</span></span>
+              <span class="t">
+                <b class:tachada={cancelados.length > 0 && cancelados.length === t.renglones.length}>{t.titulo}</b>
+                <span>{quien(t.enviada_por)} · lista {hora(t.lista_at ?? t.created_at)}</span>
+                {#if cancelados.length}
+                  <span class="cancel-l">Cancelado: {textoCancelados(t)}</span>
+                {/if}
+              </span>
               <button type="button" class="boton-chico" onclick={() => marcar(t, false)}><Icono nombre="regresar" tamano={14} />Regresar</button>
             </div>
           {:else}
@@ -594,6 +644,57 @@
     border-top: 1px dashed var(--linea-fuerte);
     font-size: 12px;
     color: var(--tenue);
+  }
+
+  /* Lo cancelado (parte 4c), tal cual la maqueta Cancelaciones y descuentos. */
+  .c-item.cancelado .cant,
+  .c-item.cancelado b {
+    text-decoration: line-through;
+    color: var(--rojo);
+  }
+
+  .c-item .cancel-c {
+    grid-column: 2;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--rojo);
+    line-height: 1.4;
+  }
+
+  .marca-cambio {
+    flex: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    height: 24px;
+    padding: 0 9px;
+    border-radius: 8px;
+    background: var(--tinta);
+    color: var(--sobre-tinta);
+    font-size: 12px;
+    font-weight: 700;
+  }
+
+  .comanda.todo .c-cabeza {
+    background: var(--chip);
+    color: var(--texto);
+  }
+
+  .comanda.todo .c-pie {
+    color: var(--texto);
+    font-weight: 600;
+  }
+
+  .k-fila b.tachada {
+    text-decoration: line-through;
+    color: var(--tenue);
+  }
+
+  .k-fila span.cancel-l {
+    font-family: var(--jakarta);
+    font-size: 11.5px;
+    font-weight: 600;
+    color: var(--rojo);
   }
 
   .k-vacio {

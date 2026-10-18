@@ -4,7 +4,8 @@
 // aparato no la carga). Nada se escribe directo en las tablas: las cuentas, sus renglones y las
 // comandas solo cambian con las funciones de Postgres, que ponen los precios y el total.
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { esDeRed, Fallo, mensajeDeError, SIN_CONEXION } from './errores';
+import { ALGO_SALIO_PANEL, esDeRed, Fallo, mensajeDeError, SIN_CONEXION, sinCentavos } from './errores';
+import { dinero } from './formato';
 
 // ─── El menú, como lo ve quien toma pedidos ─────────────────────────────────────────────────
 
@@ -123,15 +124,43 @@ export async function leerMesasPos(cliente: SupabaseClient, restauranteId: strin
 
 // El nombre de pila de cada quien en el restaurante («Toño»), también de quien ya está de baja:
 // sus cuentas siguen diciendo que las abrió.
+export const pila = (nombre: string) => nombre.trim().split(/\s+/)[0];
+
 export async function leerNombres(cliente: SupabaseClient, restauranteId: string): Promise<Map<number, string>> {
   const { data, error } = await cliente.from('miembros').select('id, nombre').eq('restaurante_id', restauranteId);
   if (error) throw error;
-  return new Map(data.map((m) => [m.id, m.nombre.trim().split(/\s+/)[0]]));
+  return new Map(data.map((m) => [m.id, pila(m.nombre)]));
+}
+
+// Quién puede autorizar con su PIN lo que pide PIN (parte 4c; libreta 5): la caja y los gerentes
+// activos que tienen PIN, sin quien pide. Quien pide y es de la caja o gerente no necesita a nadie:
+// sus cancelaciones y descuentos quedan a su nombre. Lo decide privado.autoriza; aquí solo se
+// pinta la lista. `bloqueadoHasta`: 'infinity' es hasta que su gerente lo desbloquee.
+export type Autoriza = { id: number; nombre: string; roles: string[]; bloqueadoHasta: string | null };
+export type Equipo = { nombres: Map<number, string>; yoAutorizo: boolean; autorizan: Autoriza[] };
+
+export async function leerEquipo(cliente: SupabaseClient, restauranteId: string, miembroId: number): Promise<Equipo> {
+  const { data, error } = await cliente
+    .from('miembros')
+    .select('id, nombre, roles, activo, tiene_pin, bloqueado_hasta')
+    .eq('restaurante_id', restauranteId)
+    .order('nombre');
+  if (error) throw error;
+  const deCaja = (roles: string[]) => roles.includes('caja') || roles.includes('gerente');
+  const yo = data.find((m) => m.id === miembroId);
+  return {
+    nombres: new Map(data.map((m) => [m.id, pila(m.nombre)])),
+    yoAutorizo: !!yo && deCaja(yo.roles),
+    autorizan: data
+      .filter((m) => m.id !== miembroId && m.activo && m.tiene_pin && deCaja(m.roles))
+      .map((m) => ({ id: m.id, nombre: m.nombre, roles: m.roles, bloqueadoHasta: m.bloqueado_hasta })),
+  };
 }
 
 // ─── Las cuentas abiertas ───────────────────────────────────────────────────────────────────
 
 export type TipoCuenta = 'mesa' | 'para_llevar' | 'domicilio';
+export type TipoDescuento = 'porcentaje' | 'pesos';
 
 export type Venta = {
   id: number;
@@ -141,8 +170,14 @@ export type Venta = {
   cliente_nombre: string | null;
   cliente_telefono: string | null;
   cliente_direccion: string | null;
-  total: number;
+  subtotal: number; // la suma de los renglones activos, ya con su descuento (parte 4c)
+  descuento: number; // el de toda la cuenta, en pesos; lo cuenta Postgres
+  descuento_tipo: TipoDescuento | null;
+  descuento_valor: number | null;
+  descuento_motivo: string | null;
+  total: number; // subtotal − descuento
   pagado: number; // la suma de sus pagos (parte 4b); la escribe un trigger
+  folio: number | null; // abierta con folio: reabierta, porque se canceló un pago (parte 4c)
   abierta_por: number | null;
   cuenta_pedida_at: string | null;
   created_at: string;
@@ -155,12 +190,21 @@ export type Renglon = {
   venta_id: number;
   nombre: string;
   cantidad: number;
-  importe: number;
+  precio_unitario: number;
+  descuento: number; // en pesos; lo cuenta Postgres
+  descuento_tipo: TipoDescuento | null;
+  descuento_valor: number | null;
+  descuento_motivo: string | null;
+  importe: number; // cantidad × precio, menos el descuento
   opciones: OpcionElegida[];
   nota: string | null;
   comanda_id: number | null;
   agregado_por: number | null;
   clave_envio: string;
+  // Lo cancelado se queda en la cuenta, tachado, y no suma (parte 4c).
+  estado: 'activo' | 'cancelado';
+  autorizado_por: number | null;
+  cancelado_motivo: string | null;
 };
 
 export type Comanda = {
@@ -175,18 +219,32 @@ export type Comanda = {
 
 export type Abiertas = { ventas: Venta[]; renglones: Renglon[]; comandas: Comanda[] };
 
+// Un solo texto cada una: así supabase-js sabe qué columnas trae.
 const COLUMNAS_VENTA =
-  'id, tipo, mesa_id, mesa_nombre, cliente_nombre, cliente_telefono, cliente_direccion, total, pagado, abierta_por, cuenta_pedida_at, created_at';
-const COLUMNAS_RENGLON = 'id, venta_id, nombre, cantidad, importe, opciones, nota, comanda_id, agregado_por, clave_envio';
+  'id, tipo, mesa_id, mesa_nombre, cliente_nombre, cliente_telefono, cliente_direccion, subtotal, descuento, descuento_tipo, descuento_valor, descuento_motivo, total, pagado, folio, abierta_por, cuenta_pedida_at, created_at';
+const COLUMNAS_RENGLON =
+  'id, venta_id, nombre, cantidad, precio_unitario, descuento, descuento_tipo, descuento_valor, descuento_motivo, importe, opciones, nota, comanda_id, agregado_por, clave_envio, estado, autorizado_por, cancelado_motivo';
+
+const numeroONulo = (x: unknown) => (x === null || x === undefined ? null : Number(x));
 const COLUMNAS_COMANDA = 'id, venta_id, area_preparacion_id, estado, enviada_por, lista_at, created_at';
 
 function venta(v: Venta): Venta {
-  return { ...v, total: Number(v.total), pagado: Number(v.pagado) };
+  return {
+    ...v,
+    subtotal: Number(v.subtotal),
+    descuento: Number(v.descuento),
+    descuento_valor: numeroONulo(v.descuento_valor),
+    total: Number(v.total),
+    pagado: Number(v.pagado),
+  };
 }
 
 function renglon(r: Renglon): Renglon {
   return {
     ...r,
+    precio_unitario: Number(r.precio_unitario),
+    descuento: Number(r.descuento),
+    descuento_valor: numeroONulo(r.descuento_valor),
     importe: Number(r.importe),
     opciones: (r.opciones ?? []).map((o) => ({ ...o, precio_extra: Number(o.precio_extra) })),
   };
@@ -391,6 +449,119 @@ export async function juntarMesas(cliente: SupabaseClient, ventaId: number, dest
 export async function marcarComanda(cliente: SupabaseClient, comandaId: number, lista: boolean): Promise<void> {
   const { error } = await cliente.rpc('marcar_comanda', { p_comanda_id: comandaId, p_lista: lista });
   if (error) throw fallo('marcar_comanda no se pudo', error);
+}
+
+// ─── Lo que pide PIN (parte 4c) ─────────────────────────────────────────────────────────────
+
+// Cancelar un renglón (o parte), una cuenta o un pago, y los descuentos. Todo lleva motivo.
+export type Pedido =
+  | { funcion: 'cancelar_renglon'; datos: { p_renglon_id: number; p_cantidad: number; p_motivo: string } }
+  | { funcion: 'cancelar_cuenta'; datos: { p_venta_id: number; p_motivo: string } }
+  | { funcion: 'cancelar_pago'; datos: { p_pago_id: number; p_motivo: string } }
+  | {
+      funcion: 'descontar';
+      datos: { p_venta_id: number; p_renglon_id: number | null; p_tipo: TipoDescuento; p_valor: number; p_motivo: string };
+    };
+
+// Un PIN equivocado no es un error: Postgres lo contesta así para que el intento quede contado.
+export type Autorizacion =
+  | { ok: true; autoriza: number; reabierta: boolean }
+  | { ok: false; motivo: 'pin'; quedan: number }
+  | { ok: false; motivo: 'bloqueado'; hasta: string | null };
+
+function autorizacion(r: Record<string, unknown>): Autorizacion {
+  if (r.ok) return { ok: true, autoriza: Number(r.autoriza), reabierta: r.reabierta === true };
+  if (r.motivo === 'bloqueado') return { ok: false, motivo: 'bloqueado', hasta: (r.hasta as string | null) ?? null };
+  return { ok: false, motivo: 'pin', quedan: Number(r.quedan) };
+}
+
+// Quien pide es de la caja o gerente: Postgres directo, sin PIN; queda a su nombre.
+export async function pedirDirecto(cliente: SupabaseClient, pedido: Pedido): Promise<Autorizacion> {
+  const { data, error } = await cliente.rpc(pedido.funcion, pedido.datos);
+  if (error) throw fallo(`${pedido.funcion} no se pudo`, error);
+  return autorizacion(data as Record<string, unknown>);
+}
+
+// Pepe pide y Lupita pone su PIN en el celular de Pepe: va al Worker (POST /pos/autorizar) con la
+// sesión de Pepe. El Worker mezcla el PIN con su llave y llama a la misma función de Postgres,
+// que revisa el PIN y aplica el cambio en el mismo paso.
+export async function pedirConPin(cliente: SupabaseClient, pedido: Pedido, autoriza: number, pin: string): Promise<Autorizacion> {
+  const { data, error } = await cliente.auth.getSession();
+  if (error || !data.session) {
+    console.error('[pos] no hay sesión para pedir la autorización:', error);
+    throw new FalloPos('Tu sesión venció. Vuelve a entrar.');
+  }
+  let respuesta: Response;
+  try {
+    respuesta = await fetch(`${import.meta.env.VITE_API_URL}/pos/autorizar`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${data.session.access_token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ funcion: pedido.funcion, datos: pedido.datos, autoriza, pin }),
+    });
+  } catch (falla) {
+    console.error(`[pos] ${pedido.funcion}: no se pudo hablar con el Worker:`, falla);
+    throw new FalloPos(SIN_CONEXION, true);
+  }
+  const cuerpo = await respuesta.json().catch(() => null);
+  if (!respuesta.ok) {
+    console.error(`[pos] ${pedido.funcion}: el Worker dijo ${respuesta.status}:`, cuerpo);
+    throw new FalloPos(typeof cuerpo?.error === 'string' ? sinCentavos(cuerpo.error) : ALGO_SALIO_PANEL);
+  }
+  return autorizacion(cuerpo as Record<string, unknown>);
+}
+
+// Quitar un descuento no pide PIN: la cuenta sube. Sin renglón, el de toda la cuenta.
+export async function quitarDescuento(cliente: SupabaseClient, ventaId: number, renglonId: number | null): Promise<void> {
+  const { error } = await cliente.rpc('quitar_descuento', { p_venta_id: ventaId, p_renglon_id: renglonId });
+  if (error) throw fallo('quitar_descuento no se pudo', error);
+}
+
+// «10 %», «Regalo» (100 %) o «$50».
+export function textoDescuento(tipo: TipoDescuento, valor: number): string {
+  if (tipo === 'pesos') return dinero(valor);
+  return valor === 100 ? 'Regalo' : `${valor} %`;
+}
+
+// En cuánto quedaría la cuenta, solo para verlo en la hoja y no dejar pedir lo que no cabe: es la
+// cuenta de privado.descuento y de cancelar_renglon y descontar, en centavos. Al aplicar, quien
+// decide es Postgres.
+const centavos = (n: number) => Math.round(n * 100);
+
+function descuentoEn(base: number, tipo: TipoDescuento | null, valor: number | null): number {
+  if (tipo === null || valor === null) return 0;
+  if (tipo === 'porcentaje') return Math.round((base * centavos(valor)) / 10000);
+  return Math.min(centavos(valor), base);
+}
+
+function totalCon(v: Venta, subtotal: number): number {
+  return subtotal - descuentoEn(subtotal, v.descuento_tipo, v.descuento_valor);
+}
+
+// Cancelar `cuantos` de un renglón: lo que se quita del renglón y en cuánto queda la cuenta.
+export function siSeCancela(v: Venta, r: Renglon, cuantos: number): { menos: number; queda: number } {
+  const resta = (r.cantidad - cuantos) * centavos(r.precio_unitario);
+  const queda = resta - descuentoEn(resta, r.descuento_tipo, r.descuento_valor);
+  const subtotal = centavos(v.subtotal) - centavos(r.importe) + queda;
+  return { menos: (centavos(r.importe) - queda) / 100, queda: totalCon(v, subtotal) / 100 };
+}
+
+// Un descuento a un renglón (o a toda la cuenta, sin renglón): de cuánto es, sobre qué y en
+// cuánto queda la cuenta.
+export function siSeDescuenta(
+  v: Venta,
+  r: Renglon | null,
+  tipo: TipoDescuento,
+  valor: number,
+): { descuento: number; base: number; queda: number } {
+  if (r) {
+    const base = r.cantidad * centavos(r.precio_unitario);
+    const d = descuentoEn(base, tipo, valor);
+    const subtotal = centavos(v.subtotal) - centavos(r.importe) + base - d;
+    return { descuento: d / 100, base: base / 100, queda: totalCon(v, subtotal) / 100 };
+  }
+  const base = centavos(v.subtotal);
+  const d = descuentoEn(base, tipo, valor);
+  return { descuento: d / 100, base: base / 100, queda: (base - d) / 100 };
 }
 
 // ─── El tiempo real ─────────────────────────────────────────────────────────────────────────

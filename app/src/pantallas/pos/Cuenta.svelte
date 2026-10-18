@@ -5,6 +5,11 @@
   que no va a ninguna pantalla en «Lo sirve el mesero». El total es el de Postgres, y si ya tiene
   pagos, lo pagado y lo que falta (parte 4b). Abajo, Agregar y «Mandar a cocina», que sin internet
   dice «Sin conexión»; sin nada por mandar, el botón es «Cobrar» (maqueta La caja).
+
+  Con la parte 4c (maqueta Cancelaciones y descuentos), lo mandado se toca y abre la hoja de
+  Cancelar y Descuento; lo cancelado se queda tachado, con su motivo y quién autorizó, y no suma; un
+  renglón con descuento enseña el precio de antes tachado y el descuento en verde. Con descuento a
+  la cuenta, el resumen trae el subtotal y el descuento con su motivo.
 -->
 <script lang="ts" module>
   // Lo que la cuenta pinta, ya en palabras: el componente no cuenta nada.
@@ -15,9 +20,13 @@
     detalle: string;
     nota: string;
     cantidad: number;
-    importe: number;
+    importe: number; // lo que suma, ya con su descuento; en uno cancelado, lo que costaba
+    antes: number | null; // con descuento: el precio de antes, tachado
+    descuento: string | null; // «Regalo · «Cliente de siempre» · −$30»
+    cancelado: string | null; // «Cancelado · «Eran de suadero» · autorizó Lupita»
     por: string;
   };
+  export type DescuentoVista = { texto: string; motivo: string; monto: number };
   export type BloqueVista = { id: number; etiqueta: string; estado: 'pendiente' | 'lista'; renglones: EnviadoVista[] };
 </script>
 
@@ -37,6 +46,8 @@
     lineas,
     bloques,
     sinArea,
+    subtotal,
+    descuento,
     total,
     pagado,
     falta,
@@ -52,6 +63,7 @@
     alCobrar,
     alCambiar,
     alQuitar,
+    alRenglon,
   }: {
     titulo: string;
     sub: string;
@@ -61,6 +73,8 @@
     lineas: LineaVista[];
     bloques: BloqueVista[];
     sinArea: EnviadoVista[];
+    subtotal: number;
+    descuento: DescuentoVista | null; // el de toda la cuenta
     total: number | null;
     pagado: number;
     falta: number | null; // lo que falta por pagar, solo para verlo
@@ -76,22 +90,36 @@
     alCobrar: () => void;
     alCambiar: (i: number, cuantos: number) => void;
     alQuitar: (i: number) => void;
+    alRenglon: (id: number) => void; // tocar algo mandado
   } = $props();
 
   const porMandar = $derived(lineas.reduce((s, l) => s + l.cantidad, 0));
 </script>
 
+{#snippet adentro(r: EnviadoVista)}
+  <span class="cant">{r.cantidad}</span>
+  <span class="que">
+    <b>{r.nombre}</b>
+    {#if r.detalle}<span class="det">{r.detalle}</span>{/if}
+    {#if r.nota}<span class="nota-r">{r.nota}</span>{/if}
+    {#if r.cancelado}
+      <span class="cancel-r">{r.cancelado}</span>
+    {:else if r.descuento}
+      <span class="desc-r">{r.descuento}</span>
+    {/if}
+    <span class="por">{r.por}</span>
+  </span>
+  <span class="imp">
+    {#if r.antes !== null}<span class="antes">{dinero(r.antes)}</span>{/if}{dinero(r.importe)}
+  </span>
+{/snippet}
+
 {#snippet enviado(r: EnviadoVista)}
-  <div class="renglon">
-    <span class="cant">{r.cantidad}</span>
-    <span class="que">
-      <b>{r.nombre}</b>
-      {#if r.detalle}<span class="det">{r.detalle}</span>{/if}
-      {#if r.nota}<span class="nota-r">{r.nota}</span>{/if}
-      <span class="por">{r.por}</span>
-    </span>
-    <span class="imp">{dinero(r.importe)}</span>
-  </div>
+  {#if r.cancelado || !conCuenta}
+    <div class="renglon" class:cancelado={!!r.cancelado}>{@render adentro(r)}</div>
+  {:else}
+    <button type="button" class="renglon" onclick={() => alRenglon(r.id)}>{@render adentro(r)}</button>
+  {/if}
 {/snippet}
 
 <div class="cel-arriba">
@@ -166,16 +194,21 @@
     </div>
   {/if}
   {#if total !== null}
-    <div class="m-total">
-      <b>Total<small>Lo mandado a cocina</small></b>
-      <span>{dinero(total)}</span>
-    </div>
-    {#if pagado > 0 && falta !== null}
-      <div class="resumen">
+    <div class="resumen">
+      {#if descuento}
+        <div class="resumen-fila"><span>Subtotal</span><span>{dinero(subtotal)}</span></div>
+        <div class="resumen-fila desc">
+          <span>Descuento {descuento.texto} <small>«{descuento.motivo}»</small></span><span>−{dinero(descuento.monto)}</span>
+        </div>
+      {/if}
+      <div class="resumen-fila" class:fuerte={!descuento && pagado === 0}><span>Total</span><span>{dinero(total)}</span></div>
+      {#if pagado > 0}
         <div class="resumen-fila"><span>Pagado</span><span>{dinero(pagado)}</span></div>
+      {/if}
+      {#if (descuento || pagado > 0) && falta !== null}
         <div class="resumen-fila fuerte"><span>Falta</span><span>{dinero(falta)}</span></div>
-      </div>
-    {/if}
+      {/if}
+    </div>
   {/if}
 
   {#if total === null && !lineas.length}

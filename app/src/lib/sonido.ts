@@ -1,5 +1,6 @@
 // «Pepe lo oye» (libreta 5, decidido el 17 de octubre de 2026): cuando la cocina marca «Lista»
-// una comanda suya, el aparato suena y vibra una vez. El sonido es un tono hecho aquí, sin
+// una comanda suya, el aparato suena y vibra una vez. La cocina oye otro tono cuando se cancela
+// algo de lo que tiene pendiente. El sonido es un tono hecho aquí, sin
 // archivo. Los navegadores no dejan sonar hasta que la persona toca la pantalla: el primer toque
 // lo prepara. En iPhone solo suena, porque Safari no deja vibrar.
 
@@ -14,8 +15,25 @@ export function prepararSonido(): void {
   }
 }
 
-// Dos notas cortas, como un timbre.
+// Dos notas cortas que suben, como un timbre.
 export function avisarLista(): void {
+  sonar('sine', [
+    { nota: 880, desde: 0 },
+    { nota: 1175, desde: 0.16 },
+  ]);
+}
+
+// «Cambió» en la pantalla de cocina (parte 4c, decidido el 18 de octubre de 2026): se canceló
+// algo de una comanda pendiente. Un tono distinto al de «Lista»: tres notas que bajan, más ásperas.
+export function avisarCambio(): void {
+  sonar('triangle', [
+    { nota: 988, desde: 0 },
+    { nota: 784, desde: 0.14 },
+    { nota: 587, desde: 0.28 },
+  ]);
+}
+
+function sonar(forma: OscillatorType, notas: { nota: number; desde: number }[]): void {
   try {
     navigator.vibrate?.(200);
   } catch (error) {
@@ -26,13 +44,10 @@ export function avisarLista(): void {
     return;
   }
   const ahora = audio.currentTime;
-  [
-    { nota: 880, desde: 0 },
-    { nota: 1175, desde: 0.16 },
-  ].forEach(({ nota, desde }) => {
+  notas.forEach(({ nota, desde }) => {
     const tono = audio!.createOscillator();
     const volumen = audio!.createGain();
-    tono.type = 'sine';
+    tono.type = forma;
     tono.frequency.value = nota;
     volumen.gain.setValueAtTime(0.0001, ahora + desde);
     volumen.gain.exponentialRampToValueAtTime(0.35, ahora + desde + 0.02);

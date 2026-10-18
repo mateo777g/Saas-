@@ -81,7 +81,13 @@ export function mensajeDeError(error: unknown): string {
   // empieza con mayúscula o con comillas («Taco de pastor» está agotado…), o uno de los que
   // empiezan con un nombre (que pudo escribirse en minúscula): es de nuestras funciones.
   if (/^[0-9A-Z]{5}$/.test(e.code ?? '') && (/^[A-ZÁÉÍÓÚÑ«¿]/.test(mensaje) || CON_NOMBRE.some((r) => r.test(mensaje)))) {
-    return mensaje;
+    return sinCentavos(mensaje);
   }
   return ALGO_SALIO_PANEL;
+}
+
+// Postgres escribe el dinero con centavos («Ya se pagaron $200.00», privado.pesos de la migración
+// cancelaciones); la app lo enseña como dinero() de formato.ts: «$200», y «$148.50» se queda.
+export function sinCentavos(texto: string): string {
+  return texto.replace(/\$(\d[\d,]*)\.00\b/g, '$$$1');
 }

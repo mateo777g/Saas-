@@ -157,15 +157,20 @@ export type Pago = {
   monto: number;
   propina: number;
   cobrado_por: number | null;
+  turno_id: number | null;
   created_at: string;
+  // Un pago cancelado se queda en la lista, tachado, y ya no cuenta (parte 4c).
+  cancelado_at: string | null;
+  cancelado_por: number | null;
+  cancelado_motivo: string | null;
 };
 
-// Los pagos ya anotados de unas cuentas.
+// Los pagos ya anotados de unas cuentas, también los cancelados.
 export async function leerPagos(cliente: SupabaseClient, restauranteId: string, ventas: number[]): Promise<Pago[]> {
   if (ventas.length === 0) return [];
   const { data, error } = await cliente
     .from('pagos')
-    .select('id, venta_id, metodo, monto, propina, cobrado_por, created_at')
+    .select('id, venta_id, metodo, monto, propina, cobrado_por, turno_id, created_at, cancelado_at, cancelado_por, cancelado_motivo')
     .eq('restaurante_id', restauranteId)
     .in('venta_id', ventas)
     .order('id');
@@ -181,15 +186,16 @@ export type Cobrada = {
   titulo: string;
   tipo: 'mesa' | 'para_llevar' | 'domicilio';
   total: number;
+  abierta_por: number | null;
   cerrada_at: string;
-  metodos: Metodo[];
+  metodos: Metodo[]; // sin los pagos cancelados
 };
 
 // Las cuentas que se cerraron en este turno, la más reciente arriba, con cómo se pagaron.
 export async function leerCobradas(cliente: SupabaseClient, restauranteId: string, turnoId: number): Promise<Cobrada[]> {
   const { data, error } = await cliente
     .from('ventas')
-    .select('id, folio, tipo, mesa_nombre, cliente_nombre, total, cerrada_at')
+    .select('id, folio, tipo, mesa_nombre, cliente_nombre, total, abierta_por, cerrada_at')
     .eq('restaurante_id', restauranteId)
     .eq('estado', 'cerrada')
     .eq('turno_id', turnoId)
@@ -203,13 +209,14 @@ export async function leerCobradas(cliente: SupabaseClient, restauranteId: strin
   );
   return data.map((v) => {
     const metodos: Metodo[] = [];
-    for (const p of pagos) if (p.venta_id === v.id && !metodos.includes(p.metodo)) metodos.push(p.metodo);
+    for (const p of pagos) if (p.venta_id === v.id && !p.cancelado_at && !metodos.includes(p.metodo)) metodos.push(p.metodo);
     return {
       id: v.id,
       folio: v.folio,
       titulo: (v.tipo === 'mesa' ? v.mesa_nombre : v.cliente_nombre) ?? '—',
       tipo: v.tipo,
       total: Number(v.total),
+      abierta_por: v.abierta_por,
       cerrada_at: v.cerrada_at,
       metodos,
     };

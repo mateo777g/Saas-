@@ -11,6 +11,11 @@
   eso recibe la conexión y nunca importa la del panel. En el panel no lleva el restaurante arriba:
   ya lo dice la barra del panel. Las cuentas, los pagos y el turno llegan
   solos con el tiempo real.
+
+  Con la parte 4c (maqueta Cancelaciones y descuentos): en Cobradas, tocar una cuenta enseña sus
+  pagos, y cada pago del turno abierto se cancela con su motivo. Si la cuenta estaba cerrada, se
+  reabre con el mismo folio y sale primero en Por cobrar como «Reabierta», sin ocupar su mesa. Quien
+  usa la caja es de la caja o gerente: lo que cancela o descuenta queda a su nombre, sin otro PIN.
 -->
 <script lang="ts">
   import type { SupabaseClient } from '@supabase/supabase-js';
@@ -24,23 +29,36 @@
     faltaDe,
     leerCobradas,
     leerMonto,
+    leerPagos,
     leerTurno,
     movimientoCaja,
     NOMBRE_METODO,
     resumenTurno,
     type Cobrada,
     type Metodo,
+    type Pago,
     type PropinaDe,
     type ResumenTurno,
     type Turno,
   } from '../../lib/caja';
   import { ALGO_SALIO_PANEL, esDeRed, SIN_CONEXION } from '../../lib/errores';
   import { dinero, enZona } from '../../lib/formato';
-  import { escuchar, FalloPos, leerAbiertas, leerNombres, leerZona, type Comanda, type Venta } from '../../lib/pos';
+  import {
+    escuchar,
+    FalloPos,
+    leerAbiertas,
+    leerNombres,
+    leerZona,
+    type Comanda,
+    type Renglon,
+    type Venta,
+  } from '../../lib/pos';
   import Hoja from '../pos/Hoja.svelte';
+  import HojaCancelarPago from '../pos/HojaCancelarPago.svelte';
   import HojaCobrar from '../pos/HojaCobrar.svelte';
   import Lugar from '../pos/Lugar.svelte';
   import MarcaEstado from '../pos/MarcaEstado.svelte';
+  import PagoHecho from '../pos/PagoHecho.svelte';
   import '../pos/pos.css';
 
   let {
@@ -62,7 +80,9 @@
   type Hojas =
     | { tipo: 'cobrar'; venta: Venta }
     | { tipo: 'mov'; clave: string; sale: boolean; monto: string; motivo: string }
-    | { tipo: 'propinas'; clave: string; propinas: PropinaDe[] | null; elegida: PropinaDe | null; monto: string };
+    | { tipo: 'propinas'; clave: string; propinas: PropinaDe[] | null; elegida: PropinaDe | null; monto: string }
+    | { tipo: 'folio'; cobrada: Cobrada; pagos: Pago[] | null }
+    | { tipo: 'cancelarPago'; cobrada: Cobrada; pago: Pago };
 
   // ─── Lo que llega de Postgres ───
   let carga = $state<{ estado: 'leyendo' } | { estado: 'listo' } | { estado: 'error'; mensaje: string }>({ estado: 'leyendo' });
@@ -70,6 +90,7 @@
   let ultimoFondo = $state<number | null>(null);
   let ventas = $state<Venta[]>([]);
   let comandas = $state<Comanda[]>([]);
+  let renglones = $state<Renglon[]>([]);
   let cobradas = $state<Cobrada[]>([]);
   let nombres = $state(new Map<number, string>());
   let zona = $state('America/Mexico_City');
@@ -126,6 +147,7 @@
         ultimoFondo = t.ultimoFondo;
         ventas = abiertas.ventas;
         comandas = abiertas.comandas;
+        renglones = abiertas.renglones;
         nombres = n;
         zona = z;
         cobradas = t.abierto ? await leerCobradas(cliente, restauranteId, t.abierto.id) : [];
@@ -149,12 +171,28 @@
     leer().catch((falla) => console.error('[caja] no se pudo volver a leer la caja:', falla));
   }
 
-  // Primero las que pidieron la cuenta; después, en el orden en que se abrieron.
-  const porCobrar = $derived(
-    [...ventas].sort((a, b) => Number(!a.cuenta_pedida_at) - Number(!b.cuenta_pedida_at)),
-  );
-  const estadoDe = (v: Venta): 'cuenta' | 'cocina' | 'ocupada' =>
-    v.cuenta_pedida_at ? 'cuenta' : comandas.some((k) => k.venta_id === v.id && k.estado === 'pendiente') ? 'cocina' : 'ocupada';
+  // Primero las reabiertas, luego las que pidieron la cuenta; después, en el orden en que se abrieron.
+  const prioridad = (v: Venta) => (v.folio !== null ? 0 : v.cuenta_pedida_at ? 1 : 2);
+  const porCobrar = $derived([...ventas].sort((a, b) => prioridad(a) - prioridad(b)));
+  // «En cocina» mientras alguna comanda espera con algo que no se canceló.
+  const enCocina = (v: Venta) =>
+    comandas.some(
+      (k) => k.venta_id === v.id && k.estado === 'pendiente' && renglones.some((r) => r.comanda_id === k.id && r.estado === 'activo'),
+    );
+  const estadoDe = (v: Venta): 'reabierta' | 'cuenta' | 'cocina' | 'ocupada' =>
+    v.folio !== null ? 'reabierta' : v.cuenta_pedida_at ? 'cuenta' : enCocina(v) ? 'cocina' : 'ocupada';
+
+  // ─── Los pagos de una cuenta cobrada ───
+  async function abrirFolio(c: Cobrada) {
+    hoja = { tipo: 'folio', cobrada: c, pagos: null };
+    errorHoja = null;
+    try {
+      const pagos = await leerPagos(cliente, restauranteId, [c.id]);
+      if (hoja?.tipo === 'folio' && hoja.cobrada.id === c.id) hoja.pagos = pagos;
+    } catch (falla) {
+      errorHoja = mensaje(falla, 'no se pudieron leer los pagos de la cuenta');
+    }
+  }
 
   // ─── Abrir la caja ───
   async function abrir() {
@@ -480,6 +518,7 @@
           <button type="button" class="fila-cobro" onclick={() => (hoja = { tipo: 'cobrar', venta: v })}>
             <span class="cuadro-icono"><Icono nombre={v.tipo === 'domicilio' ? 'moto' : v.tipo === 'para_llevar' ? 'bolsa' : 'mesas'} tamano={18} /></span>
             <span class="t">
+              {#if v.folio !== null}<span class="etq">Folio {v.folio}</span>{/if}
               <b>{titulo(v)}</b>
               <span class="tipo">
                 {v.tipo === 'domicilio' ? 'Domicilio · ' : v.tipo === 'para_llevar' ? 'Para llevar · ' : ''}Abrió {quien(v.abierta_por)} · {hora(v.created_at)}
@@ -488,7 +527,7 @@
             </span>
             <span class="der">
               <span class="mesa-total">{dinero(v.total)}</span>
-              {#if v.pagado > 0}<span class="falta-chica">Falta {dinero(faltaDe(v))}</span>{/if}
+              {#if v.pagado > 0 || v.folio !== null}<span class="falta-chica">Falta {dinero(faltaDe(v))}</span>{/if}
             </span>
           </button>
         {:else}
@@ -496,7 +535,7 @@
         {/each}
       {:else}
         {#each cobradas as c (c.id)}
-          <div class="fila-cobro cobrada">
+          <button type="button" class="fila-cobro cobrada" onclick={() => abrirFolio(c)}>
             <span class="cuadro-icono"><Icono nombre={c.tipo === 'mesa' ? 'mesas' : c.tipo === 'domicilio' ? 'moto' : 'bolsa'} tamano={18} /></span>
             <span class="t">
               <span class="etq">Folio {c.folio}</span>
@@ -504,7 +543,7 @@
               <span class="tipo">{c.metodos.map((m) => NOMBRE_METODO[m]).join(' + ')} · {hora(c.cerrada_at)}</span>
             </span>
             <span class="der"><span class="mesa-total">{dinero(c.total)}</span></span>
-          </div>
+          </button>
         {:else}
           <div class="vacio"><b>Nada cobrado todavía</b><span>Las cuentas que se cierren en este turno salen aquí, con su folio.</span></div>
         {/each}
@@ -518,12 +557,58 @@
       {cliente}
       {restauranteId}
       venta={{ id: v.id, titulo: titulo(v), tipo: v.tipo, abrio: v.abierta_por === null ? null : quien(v.abierta_por) }}
-      pagado={ventas.find((x) => x.id === v.id)?.pagado ?? null}
-      turnoAbierto={!!turno}
+      cuenta={ventas.find((x) => x.id === v.id) ?? null}
+      turnoId={turno?.id ?? null}
       {nombres}
+      autorizan={null}
+      {zona}
       alCerrar={() => (hoja = null)}
       alAviso={avisar}
       alListo={() => (hoja = null)}
+    />
+  {:else if hoja?.tipo === 'folio'}
+    {@const h = hoja}
+    {@const c = hoja.cobrada}
+    <Hoja titulo={c.titulo} sub="Folio {c.folio} · cerrada a las {hora(c.cerrada_at)} · {dinero(c.total)}" alCerrar={() => (hoja = null)}>
+      {#if h.pagos === null && !errorHoja}
+        <span class="pista">Leyendo los pagos…</span>
+      {:else if h.pagos}
+        <div class="grupo-op">
+          {#each h.pagos as p (p.id)}
+            <PagoHecho
+              pago={p}
+              {nombres}
+              {zona}
+              alCancelar={!p.cancelado_at && p.cobrado_por !== null && p.turno_id === turno?.id
+                ? () => (hoja = { tipo: 'cancelarPago', cobrada: c, pago: p })
+                : undefined}
+            />
+          {/each}
+        </div>
+        <p class="pista">Si cancelas un pago, la cuenta se reabre con el folio {c.folio} y sale en Por cobrar para anotar el correcto.</p>
+      {/if}
+      {#if errorHoja}<CajaError mensaje={errorHoja} />{/if}
+    </Hoja>
+  {:else if hoja?.tipo === 'cancelarPago'}
+    {@const c = hoja.cobrada}
+    {@const p = hoja.pago}
+    <HojaCancelarPago
+      {cliente}
+      pago={p}
+      titulo={c.titulo}
+      folio={c.folio}
+      cerrada
+      cobro={p.cobrado_por !== null ? quien(p.cobrado_por) : 'En línea'}
+      abrio={c.abierta_por === null ? null : quien(c.abierta_por)}
+      autorizan={null}
+      {zona}
+      alCerrar={() => (hoja = null)}
+      alListo={(globo, reabierta) => {
+        hoja = null;
+        if (reabierta) vista = 'porcobrar';
+        avisar(globo);
+        recargar();
+      }}
     />
   {:else if hoja?.tipo === 'mov'}
     {@const h = hoja}

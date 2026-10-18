@@ -1,8 +1,10 @@
-// El Worker de Fragmentless (libreta 3, Seguridad). Hoy hace dos cosas: subir y borrar las fotos
-// del menú en R2 (fotos.ts) y las cuentas, los PIN y los aparatos del equipo (equipo.ts). Nunca
-// decide solo: antes de cada trabajo le pregunta a Postgres si se puede.
+// El Worker de Fragmentless (libreta 3, Seguridad). Hoy hace tres cosas: subir y borrar las fotos
+// del menú en R2 (fotos.ts), las cuentas, los PIN y los aparatos del equipo (equipo.ts), y lo que
+// pide el PIN de otra persona en el punto de venta (pos.ts). Nunca decide solo: antes de cada
+// trabajo le pregunta a Postgres si se puede.
 import { equipo } from './equipo';
 import { fotoDelMenu } from './fotos';
+import { pos } from './pos';
 import { conCors, error, origenPermitido, preflight, Rechazo } from './respuestas';
 
 // Lo que le da wrangler.jsonc: el bucket por binding (sin llave) y tres valores que no son
@@ -31,6 +33,7 @@ export default {
     try {
       if (url.pathname === '/menu/foto') respuesta = await fotoDelMenu(request, env, url);
       else if (url.pathname.startsWith('/equipo/')) respuesta = await equipo(request, env, url);
+      else if (url.pathname.startsWith('/pos/')) respuesta = await pos(request, env, url);
       else respuesta = error(404, 'Ese trabajo no existe.');
     } catch (e) {
       if (e instanceof Rechazo) {

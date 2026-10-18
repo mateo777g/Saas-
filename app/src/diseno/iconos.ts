@@ -95,4 +95,5 @@ export const ICONOS: Record<string, string> = {
   'banco': '<path d="M3 21h18"></path><path d="M5 21V11"></path><path d="M19 21V11"></path><path d="M9.5 21V11"></path><path d="M14.5 21V11"></path><path d="M12 3l9 5H3z"></path>',
   'corte': '<rect x="4" y="3" width="16" height="18" rx="2"></rect><path d="M8 7h8"></path><path d="M8 11h8"></path><path d="M8 15h5"></path>',
   'propina': '<circle cx="12" cy="12" r="9"></circle><path d="M15 9.5a3 2.5 0 0 0-3-1.5c-1.7 0-3 .9-3 2s1.3 1.8 3 2 3 .9 3 2-1.3 2-3 2a3 2.5 0 0 1-3-1.5"></path><path d="M12 6v2"></path><path d="M12 16v2"></path>',
+  'porcentaje': '<path d="M19 5L5 19"></path><circle cx="6.5" cy="6.5" r="2.5"></circle><circle cx="17.5" cy="17.5" r="2.5"></circle>',
 };

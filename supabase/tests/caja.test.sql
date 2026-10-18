@@ -270,7 +270,8 @@ begin
 
   -- C quedó con su caja abierta, un pago y una salida de antes de pausarse.
   insert into public.turnos (id, restaurante_id, abierto_por, fondo_inicial) overriding system value values (9301, c, 121, 100);
-  insert into public.ventas (id, restaurante_id, tipo, cliente_nombre, abierta_por) overriding system value values (8301, c, 'para_llevar', 'Cliente C', 121);
+  -- Una cuenta de $10 (desde la 4c, lo pagado nunca pasa del total).
+  insert into public.ventas (id, restaurante_id, tipo, cliente_nombre, abierta_por, subtotal, total) overriding system value values (8301, c, 'para_llevar', 'Cliente C', 121, 10, 10);
   insert into public.pagos (restaurante_id, venta_id, turno_id, metodo, monto, recibido, cobrado_por, clave)
   values (c, 8301, 9301, 'efectivo', 10, 10, 121, 'c0c0c0c0-0000-4000-8000-000000000001');
   insert into public.movimientos_caja (restaurante_id, turno_id, tipo, monto, motivo, registrado_por, clave)

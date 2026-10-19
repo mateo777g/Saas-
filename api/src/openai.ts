@@ -147,7 +147,8 @@ export async function saludoDeLaIa(env: Env, instrucciones: string): Promise<{ t
       { role: 'system', content: instrucciones },
       { role: 'user', content: 'Escribe el renglón.' },
     ],
-    max_completion_tokens: 40,
+    // El modelo piensa antes de escribir: con 40 se gastaba todo pensando y regresaba vacío.
+    max_completion_tokens: 400,
     store: false,
   });
   const uso = (r.usage ?? {}) as Record<string, unknown>;

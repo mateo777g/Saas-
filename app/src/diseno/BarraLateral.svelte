@@ -12,7 +12,8 @@
   import Integral from './Integral.svelte';
   import Vidrio from './Vidrio.svelte';
 
-  type Opcion = { valor: string; texto: string; icono: string };
+  // `insignia` es la etiqueta del acento al final de la opción («IA» del Agente IA, como en Flet).
+  type Opcion = { valor: string; texto: string; icono: string; insignia?: string };
   type Grupo = { grupo: string };
 
   let {
@@ -42,6 +43,7 @@
   >
     <Icono nombre={o.icono} tamano={18} />
     {o.texto}
+    {#if o.insignia}<span class="insignia">{o.insignia}</span>{/if}
   </button>
 {/snippet}
 
@@ -179,6 +181,17 @@
     background: var(--tinta);
     color: var(--sobre-tinta);
     font-weight: 600;
+  }
+
+  .insignia {
+    margin-left: auto;
+    padding: 3px 7px;
+    border-radius: 6px;
+    background: var(--acento);
+    color: var(--sobre-acento);
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.04em;
   }
 
   .crece {

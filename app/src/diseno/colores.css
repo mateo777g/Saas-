@@ -11,6 +11,7 @@
   --vidrio: rgba(255, 255, 255, 0.8);  /* blanco al 80 % + desenfoque 18 */
   --vidrio-linea: rgba(0, 0, 0, 0.078);
   --sombra: rgba(0, 0, 0, 0.18);       /* blur 60, caída 24 */
+  --sombra-caja: rgba(0, 0, 0, 0.1);   /* la caja de la pregunta del agente: blur 30, caída 10 */
   --solido: #ffffff;                   /* tablas, ventanas, la tarjeta del login */
   --texto: #0b0b0b;
   --suave: #5f5f5a;                    /* descripciones, iconos de los campos */
@@ -33,6 +34,7 @@
   --vidrio: rgba(14, 14, 14, 0.78);
   --vidrio-linea: rgba(255, 255, 255, 0.09);
   --sombra: rgba(0, 0, 0, 0.55);
+  --sombra-caja: rgba(0, 0, 0, 0.35);
   --solido: #1b1b1b;
   --texto: #f5f5f2;
   --suave: #a6a6a0;

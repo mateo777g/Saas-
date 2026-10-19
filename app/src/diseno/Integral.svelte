@@ -1,7 +1,11 @@
 <!--
   El logo de Fragmentless: la doble integral ∫∫ acostada (la misma de web/index.html, #integral).
   Toma el color del texto que la rodea (currentColor). Va en la barra lateral, junto a la fecha
-  de Inicio y en la etiqueta de las manchas.
+  de Inicio, en la etiqueta de las manchas y en cada respuesta del Agente IA.
+
+  Con `pensando`, las dos ∫ se mecen por turnos, con CSS («Pensando…» del agente; maqueta Agente
+  IA KznKZdgQbLTZGs1EwVMvga). Quieta es la ∫∫ entera, así que no brinca cuando llega la
+  respuesta. Con «reducir movimiento» solo parpadea.
 -->
 <script lang="ts" module>
   const TRAZO =
@@ -9,13 +13,13 @@
 </script>
 
 <script lang="ts">
-  let { ancho, alto }: { ancho: number; alto: number } = $props();
+  let { ancho, alto, pensando = false }: { ancho: number; alto: number; pensando?: boolean } = $props();
 </script>
 
-<svg width={ancho} height={alto} viewBox="104 25 322 350" aria-hidden="true">
+<svg width={ancho} height={alto} viewBox="104 25 322 350" aria-hidden="true" class:pensando>
   <g fill="currentColor" transform="rotate(90 265 200)">
-    <path d={TRAZO} />
-    <path transform="translate(130 0)" d={TRAZO} />
+    <g class="pieza"><path d={TRAZO} /></g>
+    <g class="pieza b"><path transform="translate(130 0)" d={TRAZO} /></g>
   </g>
 </svg>
 
@@ -23,5 +27,46 @@
   svg {
     display: block;
     flex: none;
+    overflow: visible;
+  }
+
+  .pensando .pieza {
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: mecer 1.5s ease-in-out infinite;
+  }
+
+  .pensando .pieza.b {
+    animation-delay: 0.2s;
+  }
+
+  @keyframes mecer {
+    0%,
+    70%,
+    100% {
+      transform: translateX(0);
+    }
+    25% {
+      transform: translateX(-64px);
+    }
+    45% {
+      transform: translateX(14px);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .pensando .pieza {
+      animation: latir 1.6s ease-in-out infinite;
+    }
+
+    @keyframes latir {
+      0%,
+      100% {
+        opacity: 1;
+      }
+      50% {
+        opacity: 0.35;
+      }
+    }
   }
 </style>

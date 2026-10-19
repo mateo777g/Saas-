@@ -19,7 +19,7 @@
     children,
     ...resto
   }: {
-    como?: 'div' | 'section' | 'nav' | 'header';
+    como?: 'div' | 'section' | 'nav' | 'header' | 'main';
     radio?: number;
     sombra?: boolean;
     class?: string;

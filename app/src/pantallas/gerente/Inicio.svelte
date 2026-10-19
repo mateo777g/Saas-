@@ -2,12 +2,13 @@
   Inicio del gerente (maqueta de Inicio 5SVLK2avzLCq5TaW6mrqq6; pieza 5, maqueta Cortes y reportes
   7J6LvYWiktRnGxNugbuaoe). Arriba, la tarjeta de vidrio con la fecha y el saludo, lo no negociable
   de Inicio: la fecha y la hora son las del restaurante y las da Postgres (mis_sucursales), nunca el
-  reloj del aparato (libreta 4, decidido el 11 de octubre de 2026). Abajo de ella quedan libres los
-  lugares de las cuatro cifras, que llegan con el agente (decidido el 18 de octubre de 2026). A su
+  reloj del aparato (libreta 4, decidido el 11 de octubre de 2026). Abajo del saludo, las cuatro
+  cifras (maqueta Agente IA KznKZdgQbLTZGs1EwVMvga), que hacen crecer la fila de 372 a 390 px. A su
   lado, Mesas ahora; abajo, Tus meseros y los accesos para el equipo.
 
-  Mesas ahora y Tus meseros salen de mesas_ahora y tus_meseros (migración reportes): la app no suma
-  nada. Se leen al abrir, con «Actualizar», al regresar a la pestaña y cada vez que cambia una cuenta
+  Las cifras, Mesas ahora y Tus meseros salen de cifras_de_inicio (migración agente), mesas_ahora y
+  tus_meseros (migración reportes): la app no suma nada. Se leen al abrir, con «Actualizar», al
+  regresar a la pestaña y cada vez que cambia una cuenta
   (el tiempo real de ventas: abrir, cobrar, cancelar). «Actualizado 18:05» es la hora del restaurante
   que dio Postgres en la última lectura. Cada tarjeta lee y falla por su cuenta.
 -->
@@ -21,10 +22,18 @@
   import { fechaLarga, saludoPorHora } from '../../lib/formato';
   import type { Sucursal } from '../../lib/gerente';
   import { escuchar } from '../../lib/pos';
-  import { leerMesasAhora, leerTusMeseros, type MesasAhora as DatosMesas, type TusMeseros as DatosMeseros } from '../../lib/reportes';
+  import {
+    leerCifrasDeInicio,
+    leerMesasAhora,
+    leerTusMeseros,
+    type CifrasDeInicio,
+    type MesasAhora as DatosMesas,
+    type TusMeseros as DatosMeseros,
+  } from '../../lib/reportes';
   import { supabase } from '../../lib/supabase';
   import Accesos from './Accesos.svelte';
   import CajaSucursales from './CajaSucursales.svelte';
+  import Cifras from './inicio/Cifras.svelte';
   import MesasAhora from './inicio/MesasAhora.svelte';
   import TusMeseros from './inicio/TusMeseros.svelte';
 
@@ -46,13 +55,14 @@
 
   type Lectura<T> = { estado: 'leyendo' } | { estado: 'listo'; datos: T } | { estado: 'error'; deRed: boolean };
 
+  let cifras = $state<Lectura<CifrasDeInicio>>({ estado: 'leyendo' });
   let mesas = $state<Lectura<DatosMesas>>({ estado: 'leyendo' });
   let meseros = $state<Lectura<DatosMeseros>>({ estado: 'leyendo' });
   let hora = $state<string | null>(null);
   let leyendo = $state(false);
 
   const chip = $derived.by(() => {
-    const fallas = [mesas, meseros].filter((l) => l.estado === 'error');
+    const fallas = [cifras, mesas, meseros].filter((l) => l.estado === 'error');
     if (!fallas.length) return { texto: 'Ventas y mesas en vivo', vivo: true };
     return fallas.some((l) => l.estado === 'error' && l.deRed)
       ? { texto: 'Sin conexión', vivo: false }
@@ -65,9 +75,20 @@
   async function leer() {
     const esta = ++vuelta;
     leyendo = true;
-    const [m, p] = await Promise.allSettled([leerMesasAhora(sucursal.id), leerTusMeseros(sucursal.id)]);
+    const [c, m, p] = await Promise.allSettled([
+      leerCifrasDeInicio(sucursal.id),
+      leerMesasAhora(sucursal.id),
+      leerTusMeseros(sucursal.id),
+    ]);
     if (esta !== vuelta) return;
     leyendo = false;
+    if (c.status === 'fulfilled') {
+      cifras = { estado: 'listo', datos: c.value };
+      hora = c.value.hora;
+    } else {
+      console.error('[inicio] no se pudo leer cifras_de_inicio:', c.reason);
+      cifras = { estado: 'error', deRed: esDeRed(c.reason) };
+    }
     if (m.status === 'fulfilled') {
       mesas = { estado: 'listo', datos: m.value };
       hora = m.value.hora;
@@ -117,13 +138,16 @@
 <main class="cuerpo">
   <div class="fila-arriba">
     <Vidrio como="section" class="saludo" radio={30} aria-label="Saludo">
-      <div class="fecha">
-        <span class="logo"><Integral ancho={20} alto={22} /></span>
-        <span class="etiqueta">{fechaLarga(sucursal.hoy)}</span>
+      <div>
+        <div class="fecha">
+          <span class="logo"><Integral ancho={20} alto={22} /></span>
+          <span class="etiqueta">{fechaLarga(sucursal.hoy)}</span>
+        </div>
+        <p class="texto">
+          {saludoPorHora(sucursal.hora)}, {nombre}.<span>Así va tu negocio hoy.</span>
+        </p>
       </div>
-      <p class="texto">
-        {saludoPorHora(sucursal.hora)}, {nombre}.<span>Así va tu negocio hoy.</span>
-      </p>
+      <Cifras lectura={cifras} />
     </Vidrio>
     <MesasAhora lectura={mesas} alAdministrar={() => alIr('mesas')} />
   </div>
@@ -155,7 +179,7 @@
 
   .fila-arriba {
     flex: none;
-    height: 372px;
+    height: 390px;
     display: flex;
     gap: 16px;
   }
@@ -171,6 +195,9 @@
     flex: 1;
     min-width: 0;
     padding: 34px 36px 28px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
   }
 
   .fecha {

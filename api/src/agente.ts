@@ -3,7 +3,7 @@
 //  - POST /agente/pregunta {restaurante, pregunta, conversacion, periodo}: Don Chuy pregunta, el
 //    modelo pide herramientas y el Worker se las pasa a Postgres (agente_herramienta) con la sesión
 //    de Don Chuy, hasta que el modelo contesta con texto. Regresa la respuesta en Markdown, lo que
-//    leyó para responder y si todavía queda tope.
+//    leyó para responder, si todavía queda tope y la fecha y la hora del restaurante.
 //  - POST /agente/saludo {restaurante}: el segundo renglón de la bienvenida. Si falla o no hay
 //    tope, regresa null y la app pone el suyo, sin aviso.
 // El Worker no decide nada: estado_ia dice si se puede, las herramientas hacen las cuentas y
@@ -54,8 +54,12 @@ async function pregunta(env: Env, sesion: string, restaurante: string, cuerpo: R
   const estado = await llamar<Estado>(env, { sesion }, 'estado_ia', { p_restaurante_id: restaurante });
   if (!estado.puede) return json(estado);
 
-  const contexto = await llamar(env, { sesion }, 'contexto_agente', { p_restaurante_id: restaurante });
+  const contexto = await llamar<{ ahora?: { fecha?: string; hora?: string } } | null>(
+    env, { sesion }, 'contexto_agente', { p_restaurante_id: restaurante },
+  );
   const instrucciones = `${REGLAS_AGENTE}\n\n${contextoParaElPrompt(contexto)}`;
+  // La fecha y la hora del restaurante, para el Historial de la app (nunca el reloj del aparato).
+  const ahora = contexto?.ahora?.fecha && contexto.ahora.hora ? { fecha: contexto.ahora.fecha, hora: contexto.ahora.hora } : null;
   const entrada: Item[] = [...conversacion, { role: 'user', content: conPeriodo(texto, periodo) }];
   const leido: Leido[] = [];
   let gastado = SIN_TOKENS;
@@ -80,7 +84,7 @@ async function pregunta(env: Env, sesion: string, restaurante: string, cuerpo: R
           throw new Rechazo(502, NO_CONTESTO);
         }
         const puede = await anotar(env, restaurante, 'pregunta', modeloAgente(env), gastado);
-        return json({ respuesta: r.texto, leido, puede: puede !== false });
+        return json({ respuesta: r.texto, leido, puede: puede !== false, ahora });
       }
 
       // Lo que salió de esta ronda vuelve tal cual, y después lo que regresó cada herramienta.

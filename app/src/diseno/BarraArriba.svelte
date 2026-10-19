@@ -53,8 +53,13 @@
     gap: 14px;
   }
 
+  /* Un título largo (la primera pregunta de una conversación del agente) se corta con «…». */
   .titulo {
+    max-width: 300px;
     margin: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
     font-size: 15px;
     font-weight: 700;
   }

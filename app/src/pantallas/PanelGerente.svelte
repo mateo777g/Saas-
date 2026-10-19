@@ -7,7 +7,9 @@
   Flet, vienen de sus maquetas (CC2rrjbgxC2yykNa33a3sA y 4TKmJzMwyWMCAVU2MwEDwc), y Empleados de
   la suya (36iXMMqXCfVv4NuVR7vNSc); las tres traen su propia barra de arriba. Cortes y reportes,
   Mesas ahora y Tus meseros en Inicio, y la hora de corte en Ajustes vienen de la pieza 5 (maqueta
-  7J6LvYWiktRnGxNugbuaoe); Inicio y Cortes también traen su barra. «Abrir» en los
+  7J6LvYWiktRnGxNugbuaoe); Inicio y Cortes también traen su barra. «Agente IA», al final de
+  GENERAL con su insignia IA como en Flet, viene de su maqueta (KznKZdgQbLTZGs1EwVMvga); al entrar
+  al panel se prepara su saludo, para que salga al instante. «Abrir» en los
   accesos de Inicio abre ahí mismo el punto de venta o la cocina, con su sesión (maqueta Mesero y
   cocina TYq97pKacRCYBqcvRp1bZ2). Si la
   sucursal en la que está no funciona hoy (vencida o pausada, lo dice Postgres), en lugar de todo
@@ -22,6 +24,8 @@
   import { onMount } from 'svelte';
   import BarraArriba from '../diseno/BarraArriba.svelte';
   import BarraLateral from '../diseno/BarraLateral.svelte';
+  import { haySaludo, prepararSaludo } from '../lib/agente';
+  import { saludoPorHora } from '../lib/formato';
   import { WHATSAPP_FRAGMENTLESS } from '../lib/fragmentless';
   import {
     leerGerente,
@@ -31,6 +35,8 @@
     type Sucursal,
   } from '../lib/gerente';
   import { SIN_PANEL } from '../lib/sesion';
+  import CajaError from '../diseno/CajaError.svelte';
+  import { esDeRed, SIN_CONEXION } from '../lib/errores';
   import AccesoAbierto from './gerente/AccesoAbierto.svelte';
   import Ajustes from './gerente/Ajustes.svelte';
   import Cortes from './gerente/Cortes.svelte';
@@ -58,7 +64,9 @@
   let datos = $state(iniciales);
   // svelte-ignore state_referenced_locally
   let actualId = $state(sucursalInicial(iniciales.sucursales).id);
-  let vista = $state<'inicio' | 'menu' | 'mesas' | 'equipo' | 'cortes' | 'ajustes' | 'pos' | 'caja' | 'cocina'>('inicio');
+  let vista = $state<'inicio' | 'menu' | 'mesas' | 'equipo' | 'cortes' | 'agente' | 'ajustes' | 'pos' | 'caja' | 'cocina'>(
+    'inicio',
+  );
   let perfilAbierto = $state(false);
 
   // Si la que estaba ya no sale en su lista, se elige otra con la misma regla de al abrir.
@@ -88,6 +96,17 @@
     datos = nuevos;
   }
 
+  // La vista del agente (con markdown-it) se baja la primera vez que se abre, no al entrar.
+  let vistaAgente: Promise<typeof import('./gerente/Agente.svelte')> | null = null;
+  function cargarAgente() {
+    vistaAgente ??= import('./gerente/Agente.svelte').catch((error) => {
+      console.error('[gerente] no se pudo bajar la vista del agente:', error);
+      vistaAgente = null;
+      throw error;
+    });
+    return vistaAgente;
+  }
+
   function elegir(sucursal: Sucursal) {
     actualId = sucursal.id;
     recordarSucursal(sucursal.id);
@@ -97,13 +116,24 @@
     if (valor === 'salir') alSalir();
     else if (valor === 'ayuda') window.open(WHATSAPP_FRAGMENTLESS, '_blank', 'noopener');
     else if (
-      valor === 'inicio' || valor === 'menu' || valor === 'mesas' || valor === 'equipo' || valor === 'cortes' || valor === 'ajustes'
+      valor === 'inicio' ||
+      valor === 'menu' ||
+      valor === 'mesas' ||
+      valor === 'equipo' ||
+      valor === 'cortes' ||
+      valor === 'agente' ||
+      valor === 'ajustes'
     ) {
       vista = valor;
     }
   }
 
   onMount(() => {
+    // El saludo del agente para esta sucursal, si no hay uno que sirva (sin tope, el Worker regresa
+    // nada sin llamar a OpenAI).
+    if (actual.estado === 'funciona' && !haySaludo(actual.id, actual.hoy, saludoPorHora(actual.hora))) {
+      prepararSaludo(actual.id, actual.hoy, saludoPorHora(actual.hora));
+    }
     const alVolver = () => {
       if (document.visibilityState === 'visible') leer();
     };
@@ -125,6 +155,7 @@
         { valor: 'mesas', texto: 'Mesas', icono: 'mesas' },
         { valor: 'equipo', texto: 'Empleados', icono: 'usuarios' },
         { valor: 'cortes', texto: 'Cortes y reportes', icono: 'corte' },
+        { valor: 'agente', texto: 'Agente IA', icono: 'ia', insignia: 'IA' },
       ]}
       acciones={[
         { valor: 'ayuda', texto: 'Ayuda', icono: 'ayuda' },
@@ -176,6 +207,18 @@
     {:else if vista === 'cortes'}
       {#key actual.id}
         <Cortes sucursal={actual} sucursales={datos.sucursales} alElegir={elegir} />
+      {/key}
+    {:else if vista === 'agente'}
+      <!-- El Historial y las ventas son de cada sucursal: cambiar de sucursal abre su bienvenida. -->
+      {#key actual.id}
+        {#await cargarAgente() then { default: Agente }}
+          <Agente sucursal={actual} sucursales={datos.sucursales} {nombre} alElegir={elegir} />
+        {:catch error}
+          <BarraArriba titulo="Agente IA" estado={{ texto: 'No se pudo abrir', vivo: false }} />
+          <main class="cuerpo">
+            <CajaError mensaje={esDeRed(error) ? SIN_CONEXION : 'No se pudo abrir el Agente IA. Vuelve a intentarlo.'} />
+          </main>
+        {/await}
       {/key}
     {:else}
       <!-- La hora de corte es de la sucursal; el chip dice de cuál. -->

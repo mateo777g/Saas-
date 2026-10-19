@@ -1,6 +1,7 @@
 // Lo que lee el panel del gerente en la pieza 5 (migración reportes; libreta 5; maqueta Cortes y
 // reportes 7J6LvYWiktRnGxNugbuaoe): Mesas ahora y Tus meseros en Inicio, las columnas de Mesas, el
-// reporte de un día en Cortes y reportes, y la hora de corte en Ajustes. Todo lo cuenta Postgres
+// reporte de un día en Cortes y reportes, y la hora de corte en Ajustes; con el agente, las
+// cuatro cifras de Inicio (maqueta Agente IA KznKZdgQbLTZGs1EwVMvga). Todo lo cuenta Postgres
 // (lo que falta por cobrar, lo vendido, los descuentos, lo cancelado); aquí solo se pide y se
 // convierte a números. Solo el gerente lo usa.
 import type { ResumenTurno } from './caja';
@@ -54,6 +55,44 @@ export async function leerTusMeseros(restauranteId: string): Promise<TusMeseros>
   if (error) throw error;
   const r = data as TusMeseros;
   return { ...r, personas: r.personas.map((p) => ({ ...p, vendido: n(p.vendido) })) };
+}
+
+// ─── Las cuatro cifras de Inicio ────────────────────────────────────────────────────────────
+
+// cifras_de_inicio (migración agente; libreta 1): lo vendido hoy contra lo que ayer ya estaba
+// cerrado a esta misma hora, con su % ya redondeado (vacío si ayer a esta hora no había ventas);
+// la semana de lunes a domingo (los días que faltan, vacíos); los 3 productos con más piezas de
+// la semana; y el mes día por día con su acumulado y «Va para» (vacío en la primera semana de
+// ventas). Salen de las mismas funciones que el agente.
+export type CifrasDeInicio = {
+  hoy: string;
+  hora: string;
+  vendido_hoy: { hoy: number; ayer_a_esta_hora: number; porcentaje: number | null };
+  semana: { vendido: number; dias: { dia: string; importe: number | null }[] };
+  lo_mas_vendido: { nombre: string; unidades: number; importe: number }[];
+  mes: { vendido: number; dias: { dia: string; importe: number; acumulado: number }[]; va_para: number | null };
+};
+
+export async function leerCifrasDeInicio(restauranteId: string): Promise<CifrasDeInicio> {
+  const { data, error } = await supabase.rpc('cifras_de_inicio', { p_restaurante_id: restauranteId });
+  if (error) throw error;
+  const r = data as CifrasDeInicio;
+  const o = (x: number | null) => (x === null ? null : n(x));
+  return {
+    ...r,
+    vendido_hoy: {
+      hoy: n(r.vendido_hoy.hoy),
+      ayer_a_esta_hora: n(r.vendido_hoy.ayer_a_esta_hora),
+      porcentaje: o(r.vendido_hoy.porcentaje),
+    },
+    semana: { vendido: n(r.semana.vendido), dias: r.semana.dias.map((d) => ({ dia: d.dia, importe: o(d.importe) })) },
+    lo_mas_vendido: r.lo_mas_vendido.map((p) => ({ nombre: p.nombre, unidades: n(p.unidades), importe: n(p.importe) })),
+    mes: {
+      vendido: n(r.mes.vendido),
+      dias: r.mes.dias.map((d) => ({ dia: d.dia, importe: n(d.importe), acumulado: n(d.acumulado) })),
+      va_para: o(r.mes.va_para),
+    },
+  };
 }
 
 // ─── Cortes y reportes ──────────────────────────────────────────────────────────────────────

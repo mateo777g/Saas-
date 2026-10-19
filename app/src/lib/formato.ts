@@ -54,6 +54,19 @@ export function diaAnterior(iso: string): string {
   return new Date(Date.UTC(anio, mes - 1, dia - 1)).toISOString().slice(0, 10);
 }
 
+// El día siguiente: '2026-09-30' → '2026-10-01'.
+export function diaSiguiente(iso: string): string {
+  const { anio, mes, dia } = partes(iso);
+  return new Date(Date.UTC(anio, mes - 1, dia + 1)).toISOString().slice(0, 10);
+}
+
+// El día de Cortes y reportes: '2026-10-17' → 'Sábado 17 de octubre'.
+export function diaConNombre(iso: string): string {
+  const { anio, mes, dia } = partes(iso);
+  const semana = DIAS[new Date(Date.UTC(anio, mes - 1, dia)).getUTCDay()];
+  return `${semana.charAt(0)}${semana.slice(1).toLowerCase()} ${dia} de ${MESES_LARGOS[mes - 1]}`;
+}
+
 // Un momento que dio Postgres ('2026-10-15T19:20:00+00:00') visto en la zona del restaurante: su
 // fecha ('2026-10-15') y su hora ('14:20'). Usa la zona que se le pasa, nunca la del aparato.
 export function enZona(momento: string, zona: string): { dia: string; hora: string } {
@@ -104,4 +117,9 @@ export function entero(texto: string): number | null {
 export function dinero(n: number): string {
   const entero = Math.round(n * 100) % 100 === 0;
   return `$${n.toLocaleString('en-US', { minimumFractionDigits: entero ? 0 : 2, maximumFractionDigits: 2 })}`;
+}
+
+// Pesos con centavos siempre, como en el corte: $2,400.00.
+export function pesos(n: number): string {
+  return `$${n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }

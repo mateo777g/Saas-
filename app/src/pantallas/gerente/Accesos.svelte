@@ -1,6 +1,7 @@
 <!--
   «Accesos para tu equipo» en Inicio (maqueta Mesero y cocina, estado «Inicio»; libreta 4, decidido
-  el 17 de octubre de 2026). Punto de venta y Cocina llevan «Abrir», que las abre dentro del panel
+  el 17 de octubre de 2026). Desde la pieza 5 van en 2 × 2 junto a Tus meseros, como en la maqueta de
+  Inicio (maqueta Cortes y reportes 7J6LvYWiktRnGxNugbuaoe). Punto de venta y Cocina llevan «Abrir», que las abre dentro del panel
   con la sesión del gerente; Caja y Menú digital dicen «Llega pronto» hasta que existan. El equipo
   entra desde sus aparatos, que se ligan en Empleados.
 -->
@@ -18,7 +19,7 @@
   ];
 </script>
 
-<Vidrio como="section" class="tarjeta-accesos" radio={26} aria-label="Accesos para tu equipo">
+<Vidrio como="section" class="tarjeta-accesos" aria-label="Accesos para tu equipo">
   <div>
     <span class="titulo-tarjeta">Accesos para tu equipo</span>
     <p class="nota-chica">Ábrelos aquí. Tu equipo entra desde sus aparatos, que ligas en Empleados.</p>
@@ -48,7 +49,9 @@
 
 <style>
   :global(.tarjeta-accesos) {
-    margin-top: 16px;
+    flex: 1;
+    min-width: 0;
+    min-height: 0;
     padding: 20px;
     display: flex;
     flex-direction: column;
@@ -56,27 +59,29 @@
   }
 
   .titulo-tarjeta {
-    font-size: 15px;
+    font-size: 14.5px;
     font-weight: 700;
   }
 
   .nota-chica {
-    margin: 0;
-    font-size: 12.5px;
+    margin: 4px 0 0;
+    font-size: 12px;
     font-weight: 500;
-    color: var(--suave);
+    color: var(--tenue);
     line-height: 1.45;
   }
 
   .rejilla-accesos {
+    flex: 1;
+    min-height: 0;
     display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: 1fr 1fr;
     gap: 12px;
   }
 
   .acceso {
     min-width: 0;
-    min-height: 168px;
     padding: 16px;
     border-radius: 18px;
     background: var(--solido);
@@ -133,13 +138,13 @@
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    height: 30px;
-    padding: 0 10px;
-    border-radius: 10px;
+    height: 32px;
+    padding: 0 11px;
+    border-radius: 11px;
     border: 1px solid var(--linea);
     background: transparent;
     color: var(--texto);
-    font-size: 12px;
+    font-size: 12.5px;
     font-weight: 600;
     white-space: nowrap;
     transition: opacity 150ms;

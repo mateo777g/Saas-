@@ -3,7 +3,8 @@
   sombra, 60 de alto, radio 18, de la barra lateral hasta 16 del borde derecho. Lleva el título
   de la vista, el chip de estado (punto verde mientras todo se lee bien) y, a la derecha, los
   botones que le pase la vista. `junto` va pegado al título, antes del chip (el selector
-  Productos | Categorías de Mi menú).
+  Productos | Categorías de Mi menú, el día de Cortes y reportes), y `despues`, justo después del
+  chip («Actualizado 18:05» de Inicio).
 -->
 <script lang="ts">
   import type { Snippet } from 'svelte';
@@ -13,11 +14,13 @@
     titulo,
     estado = null,
     junto,
+    despues,
     children,
   }: {
     titulo: string;
     estado?: { texto: string; vivo: boolean } | null;
     junto?: Snippet;
+    despues?: Snippet;
     children?: Snippet;
   } = $props();
 </script>
@@ -31,6 +34,7 @@
       <span>{estado.texto}</span>
     </span>
   {/if}
+  {@render despues?.()}
   <span class="crece"></span>
   {@render children?.()}
 </Vidrio>

@@ -1,11 +1,15 @@
 <!--
   Mesas, portada de la maqueta aprobada el 13 de octubre de 2026 (4TKmJzMwyWMCAVU2MwEDwc), que
-  es «Mesas» de Flet (mesas_view.py) con flechas y sin las columnas Estado, Abierta y Cuenta:
-  salen de las cuentas abiertas, que llegan con el punto de venta. Arriba: el título, el chip
-  con cuántas mesas hay y Nueva mesa. Abajo, la tarjeta de vidrio con la tabla: cada mesa con su
-  lugar, su nombre, las flechas, el lápiz y el bote. Encima, las ventanas.
+  es «Mesas» de Flet (mesas_view.py) con flechas. Las columnas Estado, Abierta y Cuenta volvieron con
+  la pieza 5 (maqueta Cortes y reportes 7J6LvYWiktRnGxNugbuaoe): salen de mesas_ahora, igual que
+  Mesas ahora en Inicio, con cuántas están ocupadas y lo que falta por cobrar (lo suma Postgres).
+  Si las cuentas no se pudieron leer, van guiones: nunca un «Disponible» inventado. Arriba: el
+  título, el chip con cuántas mesas hay y Nueva mesa. Abajo, la tarjeta de vidrio con la tabla:
+  cada mesa con su lugar, su nombre, su estado, desde cuándo está abierta, su cuenta, las flechas,
+  el lápiz y el bote. Encima, las ventanas.
 
-  Lee las mesas de la sucursal al abrir y después de cada cambio. Las flechas cambian la tabla
+  Lee las mesas de la sucursal al abrir y después de cada cambio, y las cuentas también cada vez
+  que cambia una (tiempo real) y al regresar a la pestaña. Las flechas cambian la tabla
   en cuanto se pulsan y se guardan al instante; si Postgres no pudo, sale el aviso de abajo
   (aviso() de Flet) y se vuelve a leer lo que de verdad quedó.
 -->
@@ -21,9 +25,12 @@
   import Tabla from '../../diseno/Tabla.svelte';
   import Vidrio from '../../diseno/Vidrio.svelte';
   import { ALGO_SALIO_PANEL, esDeRed, Fallo, SIN_CONEXION } from '../../lib/errores';
-  import { plural } from '../../lib/formato';
+  import { dinero, plural } from '../../lib/formato';
   import type { Sucursal } from '../../lib/gerente';
   import { eliminarMesa, leerMesas, moverMesa, type Mesa } from '../../lib/mesas';
+  import { escuchar } from '../../lib/pos';
+  import { leerMesasAhora, type MesaAhora, type MesasAhora } from '../../lib/reportes';
+  import { supabase } from '../../lib/supabase';
   import VentanaMesa from './mesas/VentanaMesa.svelte';
 
   let { sucursal }: { sucursal: Sucursal } = $props();
@@ -44,6 +51,7 @@
   });
 
   async function leer() {
+    leerCuentas();
     try {
       lectura = { estado: 'listo', mesas: await leerMesas(sucursal.id) };
     } catch (error) {
@@ -52,7 +60,62 @@
     }
   }
 
-  onMount(leer);
+  // ─── Las cuentas abiertas: Estado, Abierta y Cuenta ───
+  let cuentas = $state<{ estado: 'leyendo' } | { estado: 'listo'; datos: MesasAhora } | { estado: 'error' }>({ estado: 'leyendo' });
+  let vuelta = 0;
+
+  async function leerCuentas() {
+    const esta = ++vuelta;
+    try {
+      const datos = await leerMesasAhora(sucursal.id);
+      if (esta === vuelta) cuentas = { estado: 'listo', datos };
+    } catch (error) {
+      console.error('[mesas] no se pudieron leer las cuentas abiertas:', error);
+      if (esta === vuelta) cuentas = { estado: 'error' };
+    }
+  }
+
+  const porMesa = $derived(
+    cuentas.estado === 'listo' ? new Map<number, MesaAhora>(cuentas.datos.mesas.map((m) => [m.id, m])) : null,
+  );
+
+  const conteo = $derived.by(() => {
+    if (cuentas.estado === 'error') return 'NO SE PUDIERON LEER LAS CUENTAS';
+    if (cuentas.estado !== 'listo') return mesas ? plural(mesas.length, 'MESA', 'MESAS') : '';
+    const { mesas: todas, ocupadas, por_cobrar } = cuentas.datos;
+    return `${ocupadas} DE ${todas.length} OCUPADA${ocupadas === 1 ? '' : 'S'}` + (ocupadas ? ` · ${dinero(por_cobrar)} POR COBRAR` : '');
+  });
+
+  // «hace 12 min», como _hace() de Flet; el reloj avanza solo cada medio minuto.
+  let ahora = $state(Date.now());
+  function hace(desde: string): string {
+    const minutos = Math.max(0, Math.floor((ahora - Date.parse(desde)) / 60000));
+    if (minutos < 1) return 'hace un momento';
+    if (minutos < 60) return `hace ${minutos} min`;
+    const horas = Math.floor(minutos / 60);
+    const resto = minutos % 60;
+    return resto ? `hace ${horas} h ${resto} min` : `hace ${horas} h`;
+  }
+
+  let espera: ReturnType<typeof setTimeout> | undefined;
+  onMount(() => {
+    leer();
+    const dejar = escuchar(supabase, sucursal.id, ['ventas'], () => {
+      clearTimeout(espera);
+      espera = setTimeout(leerCuentas, 400);
+    });
+    const reloj = setInterval(() => (ahora = Date.now()), 30000);
+    const alVolver = () => {
+      if (document.visibilityState === 'visible') leerCuentas();
+    };
+    document.addEventListener('visibilitychange', alVolver);
+    return () => {
+      clearTimeout(espera);
+      clearInterval(reloj);
+      dejar();
+      document.removeEventListener('visibilitychange', alVolver);
+    };
+  });
 
   // Las flechas: la tabla cambia en cuanto se pulsa y se guarda al instante; si Postgres no
   // pudo, sale el aviso y se vuelve a leer lo que de verdad quedó.
@@ -102,14 +165,14 @@
     <div class="herramientas">
       <p class="nota">Las mesas que tu equipo elige al tomar un pedido, en este orden. Muévelas con las flechas.</p>
       <span class="crece"></span>
-      {#if mesas}<span class="etiqueta">{plural(mesas.length, 'MESA', 'MESAS')}</span>{/if}
+      {#if mesas}<span class="etiqueta">{conteo}</span>{/if}
     </div>
 
     <Tabla
-      columnas="minmax(0, 1fr) 168px"
+      columnas="minmax(0, 1fr) 150px 150px 120px 168px"
       relleno="0 16px"
       altoFila={64}
-      encabezados={[{ texto: 'MESA' }, { texto: '' }]}
+      encabezados={[{ texto: 'MESA' }, { texto: 'ESTADO' }, { texto: 'ABIERTA' }, { texto: 'CUENTA' }, { texto: '' }]}
     >
       {#if lectura.estado === 'leyendo'}
         <NotaTabla relleno={48} angosta titulo="Cargando tus mesas…" />
@@ -131,6 +194,20 @@
               <span class="cuadro-icono"><Icono nombre="mesas" tamano={18} /></span>
               <span class="nombre">{m.nombre}</span>
             </span>
+            {#if !porMesa}
+              <span class="estado libre">—</span>
+              <span class="desde libre">—</span>
+              <span class="cuenta libre">—</span>
+            {:else if porMesa.get(m.id)?.venta_id}
+              {@const c = porMesa.get(m.id)}
+              <span class="estado"><span class="marca"></span>Ocupada</span>
+              <span class="desde">{c?.abierta_at ? hace(c.abierta_at) : '—'}</span>
+              <span class="cuenta">{c?.total === null || c?.total === undefined ? '—' : dinero(c.total)}</span>
+            {:else}
+              <span class="estado libre"><span class="marca libre"></span>Disponible</span>
+              <span class="desde libre">—</span>
+              <span class="cuenta libre">—</span>
+            {/if}
             <span class="acciones">
               <BotonCuadro
                 icono="arriba"
@@ -274,5 +351,47 @@
     display: flex;
     justify-content: flex-end;
     gap: 8px;
+  }
+
+  .estado {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12.5px;
+    font-weight: 600;
+  }
+
+  .estado.libre {
+    font-weight: 500;
+  }
+
+  .marca {
+    width: 8px;
+    height: 8px;
+    flex: none;
+    border-radius: 4px;
+    background: var(--tinta);
+  }
+
+  .marca.libre {
+    background: transparent;
+    border: 1.5px solid var(--tenue);
+  }
+
+  .desde {
+    font-size: 12.5px;
+    color: var(--suave);
+  }
+
+  .cuenta {
+    font-family: var(--mono);
+    font-size: 13px;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .estado.libre,
+  .desde.libre,
+  .cuenta.libre {
+    color: var(--tenue);
   }
 </style>

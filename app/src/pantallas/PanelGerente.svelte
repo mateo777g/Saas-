@@ -5,7 +5,9 @@
   sucursales y la tarjeta del saludo. Ajustes y la ventana Perfil (el pie de la barra) vienen de
   Flet (libreta 4, decidido el 11 de octubre de 2026). Mi menú y Mesas, bajo GENERAL como en
   Flet, vienen de sus maquetas (CC2rrjbgxC2yykNa33a3sA y 4TKmJzMwyWMCAVU2MwEDwc), y Empleados de
-  la suya (36iXMMqXCfVv4NuVR7vNSc); las tres traen su propia barra de arriba. «Abrir» en los
+  la suya (36iXMMqXCfVv4NuVR7vNSc); las tres traen su propia barra de arriba. Cortes y reportes,
+  Mesas ahora y Tus meseros en Inicio, y la hora de corte en Ajustes vienen de la pieza 5 (maqueta
+  7J6LvYWiktRnGxNugbuaoe); Inicio y Cortes también traen su barra. «Abrir» en los
   accesos de Inicio abre ahí mismo el punto de venta o la cocina, con su sesión (maqueta Mesero y
   cocina TYq97pKacRCYBqcvRp1bZ2). Si la
   sucursal en la que está no funciona hoy (vencida o pausada, lo dice Postgres), en lugar de todo
@@ -31,7 +33,7 @@
   import { SIN_PANEL } from '../lib/sesion';
   import AccesoAbierto from './gerente/AccesoAbierto.svelte';
   import Ajustes from './gerente/Ajustes.svelte';
-  import CajaSucursales from './gerente/CajaSucursales.svelte';
+  import Cortes from './gerente/Cortes.svelte';
   import Empleados from './gerente/Empleados.svelte';
   import Inicio from './gerente/Inicio.svelte';
   import Menu from './gerente/Menu.svelte';
@@ -56,7 +58,7 @@
   let datos = $state(iniciales);
   // svelte-ignore state_referenced_locally
   let actualId = $state(sucursalInicial(iniciales.sucursales).id);
-  let vista = $state<'inicio' | 'menu' | 'mesas' | 'equipo' | 'ajustes' | 'pos' | 'caja' | 'cocina'>('inicio');
+  let vista = $state<'inicio' | 'menu' | 'mesas' | 'equipo' | 'cortes' | 'ajustes' | 'pos' | 'caja' | 'cocina'>('inicio');
   let perfilAbierto = $state(false);
 
   // Si la que estaba ya no sale en su lista, se elige otra con la misma regla de al abrir.
@@ -94,7 +96,9 @@
   function alPulsar(valor: string) {
     if (valor === 'salir') alSalir();
     else if (valor === 'ayuda') window.open(WHATSAPP_FRAGMENTLESS, '_blank', 'noopener');
-    else if (valor === 'inicio' || valor === 'menu' || valor === 'mesas' || valor === 'equipo' || valor === 'ajustes') {
+    else if (
+      valor === 'inicio' || valor === 'menu' || valor === 'mesas' || valor === 'equipo' || valor === 'cortes' || valor === 'ajustes'
+    ) {
       vista = valor;
     }
   }
@@ -120,6 +124,7 @@
         { valor: 'menu', texto: 'Mi menú', icono: 'menu' },
         { valor: 'mesas', texto: 'Mesas', icono: 'mesas' },
         { valor: 'equipo', texto: 'Empleados', icono: 'usuarios' },
+        { valor: 'cortes', texto: 'Cortes y reportes', icono: 'corte' },
       ]}
       acciones={[
         { valor: 'ayuda', texto: 'Ayuda', icono: 'ayuda' },
@@ -156,21 +161,29 @@
       {#key actual.id}
         <Empleados sucursal={actual} {usuarioId} />
       {/key}
+    {:else if vista === 'inicio'}
+      <!-- Otra sucursal son otras mesas y otro equipo: se vuelve a abrir desde cero. -->
+      {#key actual.id}
+        <Inicio
+          sucursal={actual}
+          sucursales={datos.sucursales}
+          {nombre}
+          alElegir={elegir}
+          alAbrir={(que) => (vista = que)}
+          alIr={(a) => (vista = a)}
+        />
+      {/key}
+    {:else if vista === 'cortes'}
+      {#key actual.id}
+        <Cortes sucursal={actual} sucursales={datos.sucursales} alElegir={elegir} />
+      {/key}
     {:else}
-      {#if vista === 'inicio'}
-        <BarraArriba titulo="Inicio">
-          <CajaSucursales sucursales={datos.sucursales} {actual} alElegir={elegir} />
-        </BarraArriba>
-      {:else}
-        <BarraArriba titulo="Ajustes" estado={{ texto: 'Se guardan en este navegador', vivo: true }} />
-      {/if}
-
+      <!-- La hora de corte es de la sucursal; el chip dice de cuál. -->
+      <BarraArriba titulo="Ajustes" estado={{ texto: actual.nombre, vivo: true }} />
       <main class="cuerpo">
-        {#if vista === 'inicio'}
-          <Inicio sucursal={actual} {nombre} alAbrir={(que) => (vista = que)} />
-        {:else}
-          <Ajustes />
-        {/if}
+        {#key actual.id}
+          <Ajustes sucursal={actual} />
+        {/key}
       </main>
     {/if}
   </div>

@@ -1,8 +1,9 @@
 <!--
   Clientes, portada de la maqueta aprobada el 10 de octubre de 2026 (Tbt7H3G1QRXykzNKe1GXHh):
   la lista de panel_clientes, ordenada por fecha de fin (lo que vence primero, arriba), con su
-  licencia, sus fechas, su vigencia y su distribuidor. Cada fila abre una de las 3 ventanas:
-  Ligar gerente, Sumar meses y Pausar o corregir fechas.
+  licencia, sus fechas, su vigencia y su distribuidor. Cada fila abre una de las 4 ventanas:
+  Ligar gerente, Sumar meses, Pausar o corregir fechas y Tope de IA (el de la chispa, maqueta
+  KznKZdgQbLTZGs1EwVMvga: la última columna pasa de 124 a 168 px).
 -->
 <script lang="ts">
   import BotonCuadro from '../../diseno/BotonCuadro.svelte';
@@ -19,11 +20,13 @@
     alLigar,
     alSumar,
     alFijar,
+    alTope,
   }: {
     clientes: Lectura<Cliente[]> | null;
     alLigar: (cliente: Cliente) => void;
     alSumar: (cliente: Cliente) => void;
     alFijar: (cliente: Cliente) => void;
+    alTope: (cliente: Cliente) => void;
   } = $props();
 </script>
 
@@ -37,7 +40,7 @@
       </p>
     </div>
     <Tabla
-      columnas="24fr 10fr 10fr 10fr 14fr 12fr 124px"
+      columnas="24fr 10fr 10fr 10fr 14fr 12fr 168px"
       encabezados={[
         { texto: 'RESTAURANTE' },
         { texto: 'LICENCIA' },
@@ -89,6 +92,12 @@
                 ayuda="Pausar o corregir fechas"
                 etiqueta="Pausar o corregir fechas de {c.nombre}"
                 onclick={() => alFijar(c)}
+              />
+              <BotonCuadro
+                icono="ia"
+                ayuda="Tope de IA"
+                etiqueta="Tope de IA de {c.nombre}"
+                onclick={() => alTope(c)}
               />
             </div>
           </div>

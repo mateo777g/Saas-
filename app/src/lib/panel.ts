@@ -176,6 +176,37 @@ export function fijarDistribuidorActivo(distribuidorId: number, activo: boolean)
   return escribir<null>('fijar_distribuidor_activo', { p_distribuidor_id: distribuidorId, p_activo: activo });
 }
 
+// ─── El tope de IA (migración agente) ─────────────────────────────────────────
+// Mientras el panel del distribuidor no tenga los cobros, Fragmentless pone el tope de cada
+// cliente, de 0 a 10 dólares al mes (libreta 3, «El gasto de IA»).
+
+// Lo de la ventana «Tope de IA» (uso_ia_cliente): el mes (su día 1), lo gastado (todos los
+// sobres y el del agente, en dólares), el tope y quién paga.
+export type UsoIa = {
+  mes: string;
+  tope: number;
+  gastado: number;
+  gastado_agente: number;
+  consultas_agente: number;
+  saludos: number;
+  distribuidor_id: number | null;
+  distribuidor: string | null;
+};
+
+export async function leerUsoIa(restauranteId: string): Promise<Lectura<UsoIa>> {
+  const { data, error } = await supabase.rpc('uso_ia_cliente', { p_restaurante_id: restauranteId });
+  if (error) {
+    console.error('[panel] no se pudo leer uso_ia_cliente:', error);
+    return { ok: false, mensaje: mensajeDeError(error), deRed: esDeRed(error) };
+  }
+  return { ok: true, datos: data as UsoIa };
+}
+
+// Sin número (campo vacío o con letras) va null y Postgres dice de cuánto a cuánto va.
+export function fijarTopeIa(restauranteId: string, tope: number | null) {
+  return escribir<null>('fijar_tope_ia', { p_restaurante_id: restauranteId, p_tope: tope });
+}
+
 // En negritas, lo que ya venció o vence hoy (Clientes, Vencen pronto y los clientes de cada
 // distribuidor, también en el panel del distribuidor).
 export function urgente(c: Pick<Cliente, 'estado' | 'dias_restantes'>): boolean {

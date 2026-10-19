@@ -60,6 +60,23 @@ export function diaSiguiente(iso: string): string {
   return new Date(Date.UTC(anio, mes - 1, dia + 1)).toISOString().slice(0, 10);
 }
 
+// El día 1 del mes que sigue: '2026-10-01' → '2026-11-01'; diciembre pasa al año que sigue.
+export function mesSiguiente(iso: string): string {
+  const { anio, mes } = partes(iso);
+  return new Date(Date.UTC(anio, mes, 1)).toISOString().slice(0, 10);
+}
+
+// '2026-11-01' → '1 de noviembre'.
+export function diaYMes(iso: string): string {
+  const { mes, dia } = partes(iso);
+  return `${dia} de ${MESES_LARGOS[mes - 1]}`;
+}
+
+// '2026-10-01' → 'octubre'.
+export function nombreDelMes(iso: string): string {
+  return MESES_LARGOS[partes(iso).mes - 1];
+}
+
 // El día de Cortes y reportes: '2026-10-17' → 'Sábado 17 de octubre'.
 export function diaConNombre(iso: string): string {
   const { anio, mes, dia } = partes(iso);
@@ -112,6 +129,13 @@ export function entero(texto: string): number | null {
   return /^\d+$/.test(limpio) ? Number(limpio) : null;
 }
 
+// Lo que se escribió en un campo de dinero ('2', '2.5', '1.25'); si no es un número, nada
+// (Postgres dice de cuánto a cuánto va y cuántos decimales lleva).
+export function decimal(texto: string): number | null {
+  const limpio = texto.trim();
+  return /^\d+(\.\d+)?$/.test(limpio) ? Number(limpio) : null;
+}
+
 // Un precio como lo dio Postgres: sin centavos si es entero ($1,500), con ellos si los tiene
 // ($22.50). Como _formatear_precio() de Flet.
 export function dinero(n: number): string {
@@ -123,3 +147,7 @@ export function dinero(n: number): string {
 export function pesos(n: number): string {
   return `$${n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
+
+// Los dólares de la IA, con centavos siempre ($3.42, $10.00). uso_ia guarda 4 decimales: aquí
+// solo se muestran 2.
+export const dolares = pesos;

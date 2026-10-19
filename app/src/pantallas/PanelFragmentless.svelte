@@ -28,12 +28,13 @@
   import LigarGerente from './fragmentless/LigarGerente.svelte';
   import PausarCorregir from './fragmentless/PausarCorregir.svelte';
   import SumarMeses from './fragmentless/SumarMeses.svelte';
+  import TopeIa from './fragmentless/TopeIa.svelte';
   import Ajustes from './gerente/Ajustes.svelte';
 
   type Vista = 'inicio' | 'clientes' | 'distribuidores' | 'ajustes';
   type VentanaAbierta =
     | { tipo: 'alta' | 'alta-distribuidor' }
-    | { tipo: 'ligar' | 'sumar' | 'fijar'; cliente: Cliente }
+    | { tipo: 'ligar' | 'sumar' | 'fijar' | 'tope'; cliente: Cliente }
     | { tipo: 'distribuidor'; accion: AccionDistribuidor; distribuidor: Distribuidor };
 
   let { correo, alSalir }: { correo: string; alSalir: () => void } = $props();
@@ -134,6 +135,7 @@
         alLigar={(cliente) => (ventana = { tipo: 'ligar', cliente })}
         alSumar={(cliente) => (ventana = { tipo: 'sumar', cliente })}
         alFijar={(cliente) => (ventana = { tipo: 'fijar', cliente })}
+        alTope={(cliente) => (ventana = { tipo: 'tope', cliente })}
       />
     {:else if vista === 'distribuidores'}
       <Distribuidores
@@ -153,6 +155,8 @@
     <SumarMeses cliente={ventana.cliente} alCerrar={cerrarVentana} alGuardar={leer} />
   {:else if ventana?.tipo === 'fijar'}
     <PausarCorregir cliente={ventana.cliente} alCerrar={cerrarVentana} alGuardar={leer} />
+  {:else if ventana?.tipo === 'tope'}
+    <TopeIa cliente={ventana.cliente} alCerrar={cerrarVentana} alGuardar={leer} />
   {:else if ventana?.tipo === 'alta-distribuidor'}
     <AltaDistribuidor alCerrar={cerrarVentana} alGuardar={leer} />
   {:else if ventana?.tipo === 'distribuidor'}

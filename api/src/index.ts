@@ -1,15 +1,18 @@
-// El Worker de Fragmentless (libreta 3, Seguridad). Hoy hace tres cosas: subir y borrar las fotos
-// del menú en R2 (fotos.ts), las cuentas, los PIN y los aparatos del equipo (equipo.ts), y lo que
-// pide el PIN de otra persona en el punto de venta (pos.ts). Nunca decide solo: antes de cada
-// trabajo le pregunta a Postgres si se puede.
+// El Worker de Fragmentless (libreta 3, Seguridad). Hoy hace cuatro cosas: subir y borrar las
+// fotos del menú en R2 (fotos.ts), las cuentas, los PIN y los aparatos del equipo (equipo.ts), lo
+// que pide el PIN de otra persona en el punto de venta (pos.ts) y el agente IA con su saludo
+// (agente.ts). Nunca decide solo: antes de cada trabajo le pregunta a Postgres si se puede.
+import { agente } from './agente';
 import { equipo } from './equipo';
 import { fotoDelMenu } from './fotos';
 import { pos } from './pos';
 import { conCors, error, origenPermitido, preflight, Rechazo } from './respuestas';
 
 // Lo que le da wrangler.jsonc: el bucket por binding (sin llave) y tres valores que no son
-// secretos (la URL de Supabase, su llave publicable y las páginas que pueden llamar). Los dos
+// secretos (la URL de Supabase, su llave publicable y las páginas que pueden llamar). Los tres
 // secretos los pega Fragmentless en el dashboard de Cloudflare (Settings → Variables and Secrets).
+// OPENAI_MODEL y OPENAI_MODEL_SALUDO no existen hoy: solo sirven para cambiar de modelo sin
+// publicar código.
 export interface Env {
   BUCKET: R2Bucket;
   SUPABASE_URL: string;
@@ -17,6 +20,9 @@ export interface Env {
   ORIGENES: string;
   SUPABASE_LLAVE_SECRETA?: string;
   PIMIENTA_PIN?: string;
+  OPENAI_LLAVE?: string;
+  OPENAI_MODEL?: string;
+  OPENAI_MODEL_SALUDO?: string;
 }
 
 export default {
@@ -34,6 +40,7 @@ export default {
       if (url.pathname === '/menu/foto') respuesta = await fotoDelMenu(request, env, url);
       else if (url.pathname.startsWith('/equipo/')) respuesta = await equipo(request, env, url);
       else if (url.pathname.startsWith('/pos/')) respuesta = await pos(request, env, url);
+      else if (url.pathname.startsWith('/agente/')) respuesta = await agente(request, env, url);
       else respuesta = error(404, 'Ese trabajo no existe.');
     } catch (e) {
       if (e instanceof Rechazo) {

@@ -338,10 +338,10 @@ select ok(
 select is_empty(
   $$ select f from unnest(array[
        'public.eliminar_area(bigint)',
-       'public.guardar_grupo(uuid, bigint, text, integer, integer, jsonb, bigint[])',
+       'public.guardar_grupo(uuid, bigint, text, integer, integer, jsonb, bigint[], text)',
        'public.mover_grupo(bigint, text)',
        'public.eliminar_grupo(bigint)',
-       'public.guardar_producto(uuid, bigint, bigint, text, text, numeric, text, bigint[])'
+       'public.guardar_producto(uuid, bigint, bigint, text, text, numeric, text, bigint[], text, text)'
      ]) as f
      where not has_function_privilege('authenticated', f, 'EXECUTE')
         or has_function_privilege('anon', f, 'EXECUTE') $$,

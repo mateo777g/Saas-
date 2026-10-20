@@ -270,12 +270,13 @@ select is_empty(
   '1 · Nadie con sesión escribe directo en restaurantes, plataforma_admins ni distribuidores'
 );
 
--- Cuando llegue menu_publico, será la única excepción.
+-- menu_publico es la única excepción: la página del menú en línea no tiene sesión.
 select is_empty(
   $$ select p.oid::regprocedure::text
      from pg_proc p join pg_namespace n on n.oid = p.pronamespace
-     where n.nspname in ('public', 'privado') and has_function_privilege('anon', p.oid, 'EXECUTE') $$,
-  '1 · Ninguna función de public ni de privado se puede ejecutar como anon'
+     where n.nspname in ('public', 'privado') and has_function_privilege('anon', p.oid, 'EXECUTE')
+       and p.oid <> 'public.menu_publico(text)'::regprocedure $$,
+  '1 · Ninguna función de public ni de privado se puede ejecutar como anon, salvo menu_publico'
 );
 
 select is_empty(

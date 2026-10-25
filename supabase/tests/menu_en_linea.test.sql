@@ -391,13 +391,13 @@ select ok(
 select is_empty(
   $$ select f from unnest(array[
        'public.guardar_restaurante(uuid, text, text, text, text, jsonb)',
-       'public.guardar_menu_en_linea(uuid, text, text, numeric)',
+       'public.guardar_menu_en_linea(uuid, text, text, numeric, boolean)',
        'public.estado_menu_en_linea(uuid)',
        'public.agregar_cartel(uuid, text)',
        'public.cambiar_cartel(bigint, text)',
        'public.mover_cartel(bigint, text)',
        'public.quitar_cartel(bigint)',
-       'public.guardar_producto(uuid, bigint, bigint, text, text, numeric, text, bigint[], text, text)',
+       'public.guardar_producto(uuid, bigint, bigint, text, text, numeric, text, bigint[], text, text, boolean)',
        'public.guardar_grupo(uuid, bigint, text, integer, integer, jsonb, bigint[], text)'
      ]) as f
      where not has_function_privilege('authenticated', f, 'EXECUTE')
@@ -592,8 +592,8 @@ select is(
   jsonb_build_object(
     'nombre', 'Restaurante A', 'telefono', '2221234567', 'direccion', 'Av. Juárez 123, Centro',
     'logo_ruta', tests.ruta('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 'logo', 1),
-    'tema', 'claro', 'color', '#B3261E', 'tipo_cambio_usd', 18.50),
-  'Del restaurante sale su nombre, teléfono, dirección, logo, tema, color y tipo de cambio; nada de su licencia'
+    'tema', 'claro', 'color', '#B3261E', 'tipo_cambio_usd', 18.50, 'hace_envios', false),
+  'Del restaurante sale su nombre, teléfono, dirección, logo, tema, color, tipo de cambio y si hace envíos (6b); nada de su licencia'
 );
 
 select is(
@@ -651,13 +651,13 @@ select is(
 
 select is(
   tests.producto('restaurante-a', 501) -> 'grupos',
-  '[{"nombre": "Extras", "nombre_en": "Extras", "minimo": 0, "maximo": 3, "opciones": [
-      {"nombre": "Queso", "nombre_en": "Cheese", "precio_extra": 10, "precio_extra_usd": 0.54},
-      {"nombre": "Aguacate", "nombre_en": null, "precio_extra": 12, "precio_extra_usd": 0.65}]},
-    {"nombre": "Salsa", "nombre_en": "Sauce", "minimo": 1, "maximo": 1, "opciones": [
-      {"nombre": "Roja", "nombre_en": null, "precio_extra": 0, "precio_extra_usd": 0},
-      {"nombre": "Verde", "nombre_en": "Green", "precio_extra": 0, "precio_extra_usd": 0}]}]'::jsonb,
-  'Sus grupos van en el orden de Opciones, con sus opciones a la vista en su orden: el habanero agotado no sale'
+  '[{"id": 902, "nombre": "Extras", "nombre_en": "Extras", "minimo": 0, "maximo": 3, "opciones": [
+      {"id": 9021, "nombre": "Queso", "nombre_en": "Cheese", "precio_extra": 10, "precio_extra_usd": 0.54},
+      {"id": 9022, "nombre": "Aguacate", "nombre_en": null, "precio_extra": 12, "precio_extra_usd": 0.65}]},
+    {"id": 901, "nombre": "Salsa", "nombre_en": "Sauce", "minimo": 1, "maximo": 1, "opciones": [
+      {"id": 9012, "nombre": "Roja", "nombre_en": null, "precio_extra": 0, "precio_extra_usd": 0},
+      {"id": 9011, "nombre": "Verde", "nombre_en": "Green", "precio_extra": 0, "precio_extra_usd": 0}]}]'::jsonb,
+  'Sus grupos van en el orden de Opciones, con sus opciones a la vista en su orden (con sus ids desde la 6b): el habanero agotado no sale'
 );
 
 select results_eq(

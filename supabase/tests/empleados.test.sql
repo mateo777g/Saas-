@@ -915,7 +915,7 @@ select throws_ok(
 -- ─── ¿Quién eres? ─────────────────────────────────────────────────────────────
 
 select is(
-  public.nombres_del_aparato(repeat('A', 43)) - 'personas',
+  public.nombres_del_aparato(repeat('A', 43)) - 'personas' - 'pedidos_por_confirmar',
   '{"restaurante": "Restaurante A", "aparato": "Tableta caja", "compartido": true}'::jsonb,
   'La tableta compartida sabe de qué restaurante es'
 );

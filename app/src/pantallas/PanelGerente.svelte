@@ -11,7 +11,9 @@
   GENERAL con su insignia IA como en Flet, viene de su maqueta (KznKZdgQbLTZGs1EwVMvga); al entrar
   al panel se prepara su saludo, para que salga al instante. «Abrir» en los
   accesos de Inicio abre ahí mismo el punto de venta o la cocina, con su sesión (maqueta Mesero y
-  cocina TYq97pKacRCYBqcvRp1bZ2). Si la
+  cocina TYq97pKacRCYBqcvRp1bZ2). «Tu restaurante», primero en GENERAL, y «Tu menú en línea», que abre
+  el «Abrir» de Menú digital con su flecha para volver, vienen de la maqueta de la 6a
+  (Qx4C5CbKJYpeAsJCfw4ghn). Si la
   sucursal en la que está no funciona hoy (vencida o pausada, lo dice Postgres), en lugar de todo
   eso sale la suscripción terminada.
 
@@ -43,9 +45,11 @@
   import Empleados from './gerente/Empleados.svelte';
   import Inicio from './gerente/Inicio.svelte';
   import Menu from './gerente/Menu.svelte';
+  import MenuEnLinea from './gerente/MenuEnLinea.svelte';
   import Mesas from './gerente/Mesas.svelte';
   import Perfil from './gerente/Perfil.svelte';
   import Suscripcion from './gerente/Suscripcion.svelte';
+  import TuRestaurante from './gerente/TuRestaurante.svelte';
 
   let {
     usuarioId,
@@ -64,9 +68,20 @@
   let datos = $state(iniciales);
   // svelte-ignore state_referenced_locally
   let actualId = $state(sucursalInicial(iniciales.sucursales).id);
-  let vista = $state<'inicio' | 'menu' | 'mesas' | 'equipo' | 'cortes' | 'agente' | 'ajustes' | 'pos' | 'caja' | 'cocina'>(
-    'inicio',
-  );
+  let vista = $state<
+    | 'inicio'
+    | 'restaurante'
+    | 'menu'
+    | 'mesas'
+    | 'equipo'
+    | 'cortes'
+    | 'agente'
+    | 'ajustes'
+    | 'pos'
+    | 'caja'
+    | 'cocina'
+    | 'menu-en-linea'
+  >('inicio');
   let perfilAbierto = $state(false);
 
   // Si la que estaba ya no sale en su lista, se elige otra con la misma regla de al abrir.
@@ -117,6 +132,7 @@
     else if (valor === 'ayuda') window.open(WHATSAPP_FRAGMENTLESS, '_blank', 'noopener');
     else if (
       valor === 'inicio' ||
+      valor === 'restaurante' ||
       valor === 'menu' ||
       valor === 'mesas' ||
       valor === 'equipo' ||
@@ -151,6 +167,7 @@
       opciones={[
         { valor: 'inicio', texto: 'Inicio', icono: 'inicio' },
         { grupo: 'GENERAL' },
+        { valor: 'restaurante', texto: 'Tu restaurante', icono: 'tienda' },
         { valor: 'menu', texto: 'Mi menú', icono: 'menu' },
         { valor: 'mesas', texto: 'Mesas', icono: 'mesas' },
         { valor: 'equipo', texto: 'Empleados', icono: 'usuarios' },
@@ -162,7 +179,7 @@
         { valor: 'ajustes', texto: 'Ajustes', icono: 'ajustes' },
         { valor: 'salir', texto: 'Cerrar sesión', icono: 'salir' },
       ]}
-      activa={vista === 'pos' || vista === 'caja' || vista === 'cocina' ? 'inicio' : vista}
+      activa={vista === 'pos' || vista === 'caja' || vista === 'cocina' || vista === 'menu-en-linea' ? 'inicio' : vista}
       alElegir={alPulsar}
       pie={{
         inicial: nombre.charAt(0).toUpperCase(),
@@ -172,7 +189,17 @@
       }}
     />
 
-    {#if vista === 'menu'}
+    {#if vista === 'restaurante'}
+      <!-- Cada sucursal tiene sus datos y su horario: se vuelve a abrir desde cero. -->
+      {#key actual.id}
+        <TuRestaurante sucursal={actual} sucursales={datos.sucursales} alElegir={elegir} />
+      {/key}
+    {:else if vista === 'menu-en-linea'}
+      <!-- Cada sucursal tiene su menú en línea: se vuelve a abrir desde cero. -->
+      {#key actual.id}
+        <MenuEnLinea sucursal={actual} sucursales={datos.sucursales} alElegir={elegir} alVolver={() => (vista = 'inicio')} />
+      {/key}
+    {:else if vista === 'menu'}
       <!-- Otra sucursal es otro menú: se vuelve a abrir desde cero. -->
       {#key actual.id}
         <Menu sucursal={actual} />

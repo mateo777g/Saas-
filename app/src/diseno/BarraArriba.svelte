@@ -13,19 +13,23 @@
   let {
     titulo,
     estado = null,
+    antes,
     junto,
     despues,
     children,
   }: {
     titulo: string;
     estado?: { texto: string; vivo: boolean } | null;
+    // Antes del título: la flecha de volver (Tu menú en línea).
+    antes?: Snippet;
     junto?: Snippet;
     despues?: Snippet;
     children?: Snippet;
   } = $props();
 </script>
 
-<Vidrio como="header" class="barra-arriba" radio={18} sombra={false}>
+<Vidrio como="header" class="barra-arriba{antes ? ' con-volver' : ''}" radio={18} sombra={false}>
+  {@render antes?.()}
   <h1 class="titulo">{titulo}</h1>
   {@render junto?.()}
   {#if estado}
@@ -51,6 +55,10 @@
     display: flex;
     align-items: center;
     gap: 14px;
+  }
+
+  :global(.barra-arriba.con-volver) {
+    padding-left: 12px;
   }
 
   /* Un título largo (la primera pregunta de una conversación del agente) se corta con «…». */

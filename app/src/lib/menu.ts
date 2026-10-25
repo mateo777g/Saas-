@@ -7,14 +7,23 @@
 import { esDeRed, Fallo, mensajeDeError, SIN_CONEXION } from './errores';
 import { supabase } from './supabase';
 
-// area_preparacion_id vacía = «Lo sirve el mesero».
-export type Categoria = { id: number; nombre: string; icono: string; area_preparacion_id: number | null };
+// area_preparacion_id vacía = «Lo sirve el mesero». Los _en son el inglés del menú en línea
+// (opcional: vacío = sale el de español; migración menu_en_linea).
+export type Categoria = {
+  id: number;
+  nombre: string;
+  nombre_en: string | null;
+  icono: string;
+  area_preparacion_id: number | null;
+};
 
 export type Producto = {
   id: number;
   categoria_id: number;
   nombre: string;
   descripcion: string | null;
+  nombre_en: string | null;
+  descripcion_en: string | null;
   precio: number;
   imagen_ruta: string | null;
   visible: boolean;
@@ -22,12 +31,13 @@ export type Producto = {
   grupos: number[];
 };
 
-export type Opcion = { id: number; nombre: string; precio_extra: number; visible: boolean };
+export type Opcion = { id: number; nombre: string; nombre_en: string | null; precio_extra: number; visible: boolean };
 
 // Un grupo con sus opciones en su orden y los productos que lo llevan.
 export type Grupo = {
   id: number;
   nombre: string;
+  nombre_en: string | null;
   minimo: number;
   maximo: number;
   opciones: Opcion[];
@@ -45,27 +55,27 @@ export async function leerMenu(restauranteId: string): Promise<Menu> {
   const [categorias, productos, grupos, opciones, ligas, areas] = await Promise.all([
     supabase
       .from('categorias')
-      .select('id, nombre, icono, area_preparacion_id')
+      .select('id, nombre, nombre_en, icono, area_preparacion_id')
       .eq('restaurante_id', restauranteId)
       .is('archivado_at', null)
       .order('orden')
       .order('id'),
     supabase
       .from('productos')
-      .select('id, categoria_id, nombre, descripcion, precio, imagen_ruta, visible')
+      .select('id, categoria_id, nombre, descripcion, nombre_en, descripcion_en, precio, imagen_ruta, visible')
       .eq('restaurante_id', restauranteId)
       .is('archivado_at', null)
       .order('orden')
       .order('id'),
     supabase
       .from('grupos_opciones')
-      .select('id, nombre, minimo, maximo')
+      .select('id, nombre, nombre_en, minimo, maximo')
       .eq('restaurante_id', restauranteId)
       .order('orden')
       .order('id'),
     supabase
       .from('opciones')
-      .select('id, grupo_id, nombre, precio_extra, visible')
+      .select('id, grupo_id, nombre, nombre_en, precio_extra, visible')
       .eq('restaurante_id', restauranteId)
       .order('orden')
       .order('id'),
@@ -84,7 +94,13 @@ export async function leerMenu(restauranteId: string): Promise<Menu> {
     ...g,
     opciones: opciones.data!
       .filter((o) => o.grupo_id === g.id)
-      .map(({ id, nombre, precio_extra, visible }) => ({ id, nombre, precio_extra: Number(precio_extra), visible })),
+      .map(({ id, nombre, nombre_en, precio_extra, visible }) => ({
+        id,
+        nombre,
+        nombre_en,
+        precio_extra: Number(precio_extra),
+        visible,
+      })),
     productos: ligas.data!.filter((l) => l.grupo_id === g.id && vivos.has(l.producto_id)).map((l) => l.producto_id),
   }));
   const lista = productos.data!.map((p) => ({
@@ -132,6 +148,8 @@ export type DatosProducto = {
   categoria_id: number;
   nombre: string;
   descripcion: string;
+  nombre_en: string;
+  descripcion_en: string;
   precio: number;
   imagen_ruta?: string;
   grupos: number[];
@@ -149,6 +167,8 @@ export async function guardarProducto(restauranteId: string, id: number | null, 
     p_precio: datos.precio,
     p_imagen_ruta: datos.imagen_ruta ?? null,
     p_grupos: datos.grupos,
+    p_nombre_en: datos.nombre_en,
+    p_descripcion_en: datos.descripcion_en,
   });
   if (error) throw fallo('guardar_producto no se pudo', error);
 }
@@ -173,8 +193,9 @@ export async function eliminarProducto(id: number): Promise<{ resultado: 'borrad
 
 // ─── Categorías ─────────────────────────────────────────────────────────────
 
-// Lo que se escribe en la ventana de la categoría. area vacía = «Lo sirve el mesero».
-export type DatosCategoria = { nombre: string; icono: string; area_preparacion_id: number | null };
+// Lo que se escribe en la ventana de la categoría. area vacía = «Lo sirve el mesero»; el inglés en
+// blanco queda vacío (lo limpia la base).
+export type DatosCategoria = { nombre: string; nombre_en: string; icono: string; area_preparacion_id: number | null };
 
 export async function crearCategoria(restauranteId: string, datos: DatosCategoria): Promise<void> {
   const { data, error } = await supabase
@@ -209,9 +230,10 @@ export async function eliminarCategoria(id: number): Promise<void> {
 // productos que lo llevan.
 export type DatosGrupo = {
   nombre: string;
+  nombre_en: string;
   minimo: number;
   maximo: number;
-  opciones: { id: number | null; nombre: string; precio_extra: number; visible: boolean }[];
+  opciones: { id: number | null; nombre: string; nombre_en: string; precio_extra: number; visible: boolean }[];
   productos: number[];
 };
 
@@ -226,6 +248,7 @@ export async function guardarGrupo(restauranteId: string, id: number | null, dat
     p_maximo: datos.maximo,
     p_opciones: datos.opciones,
     p_productos: datos.productos,
+    p_nombre_en: datos.nombre_en,
   });
   if (error) throw fallo('guardar_grupo no se pudo', error);
 }

@@ -21,6 +21,9 @@
     prefijo,
     multilinea = false,
     modoTeclado,
+    largoMaximo,
+    mal = false,
+    mono = false,
   }: {
     id: string;
     etiqueta: string;
@@ -35,6 +38,10 @@
     prefijo?: string;
     multilinea?: boolean;
     modoTeclado?: 'decimal' | 'numeric' | 'tel' | 'email';
+    largoMaximo?: number;
+    // El borde rojo del dato que no se pudo guardar (el teléfono de Tu restaurante).
+    mal?: boolean;
+    mono?: boolean;
   } = $props();
 </script>
 
@@ -62,6 +69,10 @@
         inputmode={modoTeclado}
         {min}
         {step}
+        maxlength={largoMaximo}
+        class:mal
+        class:mono
+        aria-invalid={mal || undefined}
       />
     </div>
   {/if}
@@ -130,6 +141,14 @@
   input:focus,
   textarea:focus {
     border-color: var(--suave);
+  }
+
+  input.mal {
+    border-color: var(--rojo);
+  }
+
+  input.mono {
+    font-family: var(--mono);
   }
 
   input::placeholder,

@@ -14,14 +14,18 @@
   let {
     etiqueta,
     titulo,
+    nota,
     texto,
     ancho = 460,
     tamanoTexto = 13,
     alCerrar,
     children,
   }: {
-    etiqueta: string;
+    // Sin etiqueta, el título va solo (el color del menú en línea).
+    etiqueta?: string;
     titulo: string;
+    // Una nota chica debajo del título, junto a la X (la ventana del color del menú en línea).
+    nota?: string;
     texto?: string;
     ancho?: number;
     tamanoTexto?: number;
@@ -61,8 +65,9 @@
   <div class="ventana" style:width="{ancho}px">
     <div class="cabeza">
       <div class="titulos">
-        <span class="etiqueta">{etiqueta}</span>
+        {#if etiqueta}<span class="etiqueta">{etiqueta}</span>{/if}
         <h2 class="titulo" id={idTitulo}>{titulo}</h2>
+        {#if nota}<p class="nota">{nota}</p>{/if}
       </div>
       <BotonCuadro icono="cerrar" ayuda="Cerrar" onclick={alCerrar} />
     </div>
@@ -130,6 +135,14 @@
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+  }
+
+  .nota {
+    margin: 0;
+    font-size: 12.5px;
+    font-weight: 500;
+    line-height: 1.45;
+    color: var(--suave);
   }
 
   .texto {

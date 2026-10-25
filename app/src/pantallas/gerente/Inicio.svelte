@@ -49,7 +49,7 @@
     sucursales: Sucursal[];
     nombre: string;
     alElegir: (sucursal: Sucursal) => void;
-    alAbrir: (que: 'pos' | 'caja' | 'cocina') => void;
+    alAbrir: (que: 'pos' | 'caja' | 'cocina' | 'menu-en-linea') => void;
     alIr: (vista: 'mesas' | 'equipo') => void;
   } = $props();
 

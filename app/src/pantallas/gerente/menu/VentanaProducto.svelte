@@ -2,7 +2,8 @@
   Nuevo producto y Editar producto: dialogo_platillo.py de Flet con «producto» y la categoría de
   una lista (maqueta del Menú CC2rrjbgxC2yykNa33a3sA). La foto, el nombre, la descripción, la
   categoría y el precio, y debajo sus grupos de opciones (maqueta de Opciones y áreas
-  GhrEVWPmevfBZtWzi4exKi), que se guardan junto con el producto (guardar_producto); al editar, abajo
+  GhrEVWPmevfBZtWzi4exKi), que se guardan junto con el producto (guardar_producto), y al final su
+  inglés para el menú en línea (maqueta de la 6a Qx4C5CbKJYpeAsJCfw4ghn); al editar, abajo
   a la izquierda, Eliminar producto. Mientras guarda, la etiqueta de arriba dice en qué paso va
   (SUBIENDO FOTO…, GUARDANDO…), como en Flet.
 
@@ -28,6 +29,7 @@
     type Grupo,
     type Producto,
   } from '../../../lib/menu';
+  import EnIngles from './EnIngles.svelte';
   import Foto from './Foto.svelte';
   import GruposProducto from './GruposProducto.svelte';
 
@@ -61,6 +63,8 @@
   const categoriaDeEntrada = categoriaInicial;
   let nombre = $state(inicial?.nombre ?? '');
   let descripcion = $state(inicial?.descripcion ?? '');
+  let nombreEn = $state(inicial?.nombre_en ?? '');
+  let descripcionEn = $state(inicial?.descripcion_en ?? '');
   let categoria = $state(String(inicial?.categoria_id ?? categoriaDeEntrada ?? ''));
   let precio = $state(inicial ? textoPrecio(inicial.precio) : '');
   let elegidos = $state<number[]>(inicial?.grupos ?? []);
@@ -113,6 +117,8 @@
       categoria_id: Number(categoria),
       nombre: limpio,
       descripcion: descripcion.trim(),
+      nombre_en: nombreEn.trim(),
+      descripcion_en: descripcionEn.trim(),
       precio: Math.round(numero * 100) / 100,
       grupos: [...elegidos],
     };
@@ -224,6 +230,22 @@
       </div>
 
       <GruposProducto {grupos} bind:elegidos apagado={paso !== null} />
+
+      <EnIngles>
+        <Campo
+          id="producto-nombre-en"
+          etiqueta="NOMBRE EN INGLÉS"
+          bind:valor={nombreEn}
+          placeholder={nombre.trim() || 'Ej. Pastor taco'}
+        />
+        <Campo
+          id="producto-descripcion-en"
+          etiqueta="DESCRIPCIÓN EN INGLÉS"
+          bind:valor={descripcionEn}
+          placeholder={descripcion.trim()}
+          multilinea
+        />
+      </EnIngles>
 
       {#snippet izquierda()}
         {#if inicial}

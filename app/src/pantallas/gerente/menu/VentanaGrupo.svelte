@@ -22,6 +22,7 @@
   import { plural } from '../../../lib/formato';
   import { eliminarGrupo, guardarGrupo, type Grupo, type Menu } from '../../../lib/menu';
   import { frase } from '../../../lib/opciones';
+  import EnIngles from './EnIngles.svelte';
 
   let {
     restauranteId,
@@ -38,7 +39,7 @@
   } = $props();
 
   // Cada fila de opción lleva su clave para que Svelte no revuelva los campos al reacomodarlas.
-  type Fila = { clave: number; id: number | null; nombre: string; precio: string; visible: boolean };
+  type Fila = { clave: number; id: number | null; nombre: string; ingles: string; precio: string; visible: boolean };
 
   // El precio en el campo, como en el del producto: sin decimales de sobra; $0 es el campo vacío.
   function textoPrecio(n: number) {
@@ -51,13 +52,21 @@
   const inicial = grupo;
   let siguienteClave = 0;
   let nombre = $state(inicial?.nombre ?? '');
+  let nombreEn = $state(inicial?.nombre_en ?? '');
   // Un grupo nuevo empieza como el más común: obligatorio, se elige una, con una opción vacía.
   let minimo = $state(inicial?.minimo ?? 1);
   let maximo = $state(inicial?.maximo ?? 1);
   let opciones = $state<Fila[]>(
     inicial
-      ? inicial.opciones.map((o) => ({ clave: siguienteClave++, id: o.id, nombre: o.nombre, precio: textoPrecio(o.precio_extra), visible: o.visible }))
-      : [{ clave: siguienteClave++, id: null, nombre: '', precio: '', visible: true }],
+      ? inicial.opciones.map((o) => ({
+          clave: siguienteClave++,
+          id: o.id,
+          nombre: o.nombre,
+          ingles: o.nombre_en ?? '',
+          precio: textoPrecio(o.precio_extra),
+          visible: o.visible,
+        }))
+      : [{ clave: siguienteClave++, id: null, nombre: '', ingles: '', precio: '', visible: true }],
   );
   const productos = new SvelteSet<number>(inicial?.productos ?? []);
   let error = $state<string | null>(null);
@@ -89,7 +98,7 @@
   }
 
   async function agregarOpcion() {
-    opciones.push({ clave: siguienteClave++, id: null, nombre: '', precio: '', visible: true });
+    opciones.push({ clave: siguienteClave++, id: null, nombre: '', ingles: '', precio: '', visible: true });
     await tick();
     const campos = listaOpciones?.querySelectorAll<HTMLInputElement>('.op-nombre');
     campos?.[campos.length - 1]?.focus();
@@ -138,9 +147,15 @@
       if (texto && !/^-?(\d+\.?\d*|\.\d+)$/.test(texto)) return `El precio extra de «${n}» debe ser un número (ej. 10 o 12.50).`;
       const precio = texto ? Number(texto) : 0;
       if (precio < 0) return 'El precio extra no puede ser negativo: una opción solo suma.';
-      lista.push({ id: o.id, nombre: n, precio_extra: Math.round(precio * 100) / 100, visible: o.visible });
+      lista.push({
+        id: o.id,
+        nombre: n,
+        nombre_en: o.ingles.trim(),
+        precio_extra: Math.round(precio * 100) / 100,
+        visible: o.visible,
+      });
     }
-    return { nombre: limpio, minimo, maximo, opciones: lista, productos: [...productos] };
+    return { nombre: limpio, nombre_en: nombreEn.trim(), minimo, maximo, opciones: lista, productos: [...productos] };
   }
 
   async function guardar(): Promise<{ listo: string } | { error: string }> {
@@ -276,6 +291,31 @@
             <div><Boton etiqueta="Agregar opción" icono="mas" tamano="chico" apagado={paso !== null} onclick={agregarOpcion} /></div>
             <p class="pista">El precio extra se suma al del producto; vacío es $0. El ojito marca una opción agotada.</p>
           </div>
+
+          <EnIngles>
+            <div class="en-op">
+              <span>{nombre.trim() || 'Grupo'}</span>
+              <input
+                bind:value={nombreEn}
+                placeholder={nombre.trim()}
+                aria-label="{nombre.trim() || 'El grupo'} en inglés"
+                autocomplete="off"
+                disabled={paso !== null}
+              />
+            </div>
+            {#each opciones as o, i (o.clave)}
+              <div class="en-op">
+                <span>{o.nombre.trim() || `Opción ${i + 1}`}</span>
+                <input
+                  bind:value={o.ingles}
+                  placeholder={o.nombre.trim()}
+                  aria-label="{o.nombre.trim() || `Opción ${i + 1}`} en inglés"
+                  autocomplete="off"
+                  disabled={paso !== null}
+                />
+              </div>
+            {/each}
+          </EnIngles>
         </div>
 
         <div class="columna">
@@ -611,6 +651,42 @@
 
   .oculto {
     font-weight: 500;
+    color: var(--tenue);
+  }
+
+  /* El inglés: el nombre en español a la izquierda y su campo a la derecha, uno por renglón. */
+  .en-op {
+    display: grid;
+    grid-template-columns: 110px 1fr;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .en-op span {
+    font-size: 13px;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .en-op input {
+    height: 40px;
+    width: 100%;
+    padding: 0 12px;
+    border: 1px solid var(--linea);
+    border-radius: 10px;
+    font-size: 13px;
+    font-weight: 400;
+    color: var(--texto);
+    outline: none;
+  }
+
+  .en-op input:focus {
+    border-color: var(--suave);
+  }
+
+  .en-op input::placeholder {
     color: var(--tenue);
   }
 

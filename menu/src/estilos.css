@@ -1,0 +1,101 @@
+/* El menú en línea (maqueta de la 6a Qx4C5CbKJYpeAsJCfw4ghn, sección 1): sus letras (servidas por
+   el propio menú, licencia OFL), sus dos temas y el color de Don Chuy. El tema es el que él elige
+   para sus clientes; no cambia con el del celular. */
+
+@import '@fontsource/plus-jakarta-sans/400.css';
+@import '@fontsource/plus-jakarta-sans/500.css';
+@import '@fontsource/plus-jakarta-sans/600.css';
+@import '@fontsource/plus-jakarta-sans/700.css';
+@import '@fontsource/plus-jakarta-sans/800.css';
+@import '@fontsource/jetbrains-mono/400.css';
+@import '@fontsource/jetbrains-mono/500.css';
+@import '@fontsource/jetbrains-mono/600.css';
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+:root {
+  --jakarta: 'Plus Jakarta Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --mono: 'JetBrains Mono', ui-monospace, 'Cascadia Mono', Consolas, monospace;
+  /* Lo que tapa la barra de estado del celular cuando el menú llega hasta arriba (iPhone). */
+  --arriba-seguro: env(safe-area-inset-top, 0px);
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+html,
+body {
+  margin: 0;
+}
+
+body {
+  font-family: var(--jakarta);
+  font-size: 14px;
+  -webkit-tap-highlight-color: transparent;
+}
+
+button,
+input {
+  font: inherit;
+  color: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+/* Los neutros del menú; el color de Don Chuy los cambia con estiloColor() de app/src/lib/color.ts. */
+.menu {
+  --m-fondo: #ffffff;
+  --m-texto: #121212;
+  --m-suave: #64645f;
+  --m-tenue: #95958f;
+  --m-linea: rgba(0, 0, 0, 0.08);
+  --m-chip: #f3f3f1;
+  --m-velo: rgba(0, 0, 0, 0.38);
+  --m-hoja: #ffffff;
+  --m-verde: #2f8a4c;
+  --m-sombra: rgba(0, 0, 0, 0.16);
+  --m-acento: #121212;
+  --m-sobre-acento: #ffffff;
+  --m-barra: #121212;
+  --m-sobre-barra: #ffffff;
+  --m-barra-chip: rgba(255, 255, 255, 0.16);
+  --m-barra-suave: rgba(255, 255, 255, 0.72);
+  background: var(--m-fondo);
+  color: var(--m-texto);
+  font-family: var(--jakarta);
+}
+
+.menu[data-tema='oscuro'] {
+  --m-fondo: #0f0f0f;
+  --m-texto: #f3f3f0;
+  --m-suave: #a8a8a2;
+  --m-tenue: #74746e;
+  --m-linea: rgba(255, 255, 255, 0.09);
+  --m-chip: #1c1c1c;
+  --m-velo: rgba(0, 0, 0, 0.6);
+  --m-hoja: #161616;
+  --m-verde: #4fb36e;
+  --m-sombra: rgba(0, 0, 0, 0.5);
+  --m-acento: #f3f3f0;
+  --m-sobre-acento: #121212;
+  --m-barra: #1f1f1f;
+  --m-sobre-barra: #f3f3f0;
+  --m-barra-chip: rgba(255, 255, 255, 0.1);
+  --m-barra-suave: rgba(243, 243, 240, 0.7);
+  color-scheme: dark;
+}
+
+/* Las fotos llegan de R2; mientras cargan se ve el gris del chip. */
+.menu img {
+  display: block;
+}
+
+:focus-visible {
+  outline: 2px solid var(--m-suave);
+  outline-offset: 2px;
+}

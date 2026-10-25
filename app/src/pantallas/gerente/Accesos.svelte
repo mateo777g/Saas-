@@ -1,21 +1,28 @@
 <!--
   «Accesos para tu equipo» en Inicio (maqueta Mesero y cocina, estado «Inicio»; libreta 4, decidido
   el 17 de octubre de 2026). Desde la pieza 5 van en 2 × 2 junto a Tus meseros, como en la maqueta de
-  Inicio (maqueta Cortes y reportes 7J6LvYWiktRnGxNugbuaoe). Punto de venta y Cocina llevan «Abrir», que las abre dentro del panel
-  con la sesión del gerente; Caja y Menú digital dicen «Llega pronto» hasta que existan. El equipo
-  entra desde sus aparatos, que se ligan en Empleados.
+  Inicio (maqueta Cortes y reportes 7J6LvYWiktRnGxNugbuaoe). Punto de venta, Caja y Cocina llevan «Abrir», que las abre dentro del panel
+  con la sesión del gerente; el de Menú digital abre «Tu menú en línea» (maqueta de la 6a
+  Qx4C5CbKJYpeAsJCfw4ghn). El equipo entra desde sus aparatos, que se ligan en Empleados.
 -->
 <script lang="ts">
   import Icono from '../../diseno/Icono.svelte';
   import Vidrio from '../../diseno/Vidrio.svelte';
 
-  let { alAbrir }: { alAbrir: (que: 'pos' | 'caja' | 'cocina') => void } = $props();
+  type Abre = 'pos' | 'caja' | 'cocina' | 'menu-en-linea';
 
-  const ACCESOS: { icono: string; titulo: string; texto: string; abre?: 'pos' | 'caja' | 'cocina'; pronto?: string }[] = [
+  let { alAbrir }: { alAbrir: (que: Abre) => void } = $props();
+
+  const ACCESOS: { icono: string; titulo: string; texto: string; abre: Abre }[] = [
     { icono: 'mesas', titulo: 'Punto de venta', texto: 'Toma pedidos de las mesas y para llevar, y mándalos a cocina.', abre: 'pos' },
     { icono: 'billete', titulo: 'Caja', texto: 'Cobra las cuentas y hace el corte del día.', abre: 'caja' },
     { icono: 'cocina', titulo: 'Cocina', texto: 'Las comandas llegan en orden a la pantalla.', abre: 'cocina' },
-    { icono: 'celular', titulo: 'Menú digital', texto: 'Tu menú en línea para tus clientes.', pronto: 'Llega con el menú en línea' },
+    {
+      icono: 'celular',
+      titulo: 'Menú digital',
+      texto: 'Tu link, tu QR, tus carteles y cómo ven tu menú tus clientes.',
+      abre: 'menu-en-linea',
+    },
   ];
 </script>
 
@@ -35,12 +42,7 @@
           </div>
         </div>
         <div>
-          {#if a.abre}
-            {@const abre = a.abre}
-            <button type="button" class="boton-chico" onclick={() => alAbrir(abre)}><Icono nombre="afuera" tamano={14} />Abrir</button>
-          {:else}
-            <span class="acceso-pronto">{a.pronto}</span>
-          {/if}
+          <button type="button" class="boton-chico" onclick={() => alAbrir(a.abre)}><Icono nombre="afuera" tamano={14} />Abrir</button>
         </div>
       </div>
     {/each}
@@ -116,11 +118,6 @@
     font-weight: 500;
     line-height: 1.45;
     color: var(--suave);
-  }
-
-  .acceso-pronto {
-    font-size: 12px;
-    color: var(--tenue);
   }
 
   .cuadro-icono {

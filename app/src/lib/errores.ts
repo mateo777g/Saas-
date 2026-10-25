@@ -19,13 +19,24 @@ export function esDeRed(error: unknown): boolean {
 }
 
 // Lo que Postgres dice en inglés cuando una fila no cumple una regla de su tabla, traducido por
-// el nombre de la regla (migraciones plataforma y mesas). Los textos son los de la maqueta del
-// panel de Fragmentless (Tbt7H3G1QRXykzNKe1GXHh) y los de Flet para las mesas.
+// el nombre de la regla (migraciones plataforma, mesas y menu_en_linea). Los textos son los de la
+// maqueta del panel de Fragmentless (Tbt7H3G1QRXykzNKe1GXHh), los de Flet para las mesas y, para
+// el menú en línea, los mismos de sus funciones (guardar_restaurante, guardar_menu_en_linea), por
+// si un día una fila llega sin pasar por ellas.
 const REGLAS: Record<string, string> = {
   restaurantes_nombre_check: 'Escribe el nombre del restaurante.',
   restaurantes_slug_formato:
     'El slug solo lleva minúsculas, números y guiones, sin guion al inicio ni al final ni dos seguidos.',
   restaurantes_licencia_con_fin: 'No se puede prender una licencia sin fecha de fin.',
+  restaurantes_nombre_largo: 'El nombre puede tener hasta 60 letras.',
+  restaurantes_telefono_formato: 'El teléfono lleva 10 dígitos, como 222 123 4567.',
+  restaurantes_direccion_formato: 'La dirección puede tener hasta 200 letras.',
+  restaurantes_logo_ruta_formato: 'No se pudo guardar el logo. Vuelve a subirlo.',
+  restaurantes_menu_tema_lista: 'El menú se ve claro u oscuro.',
+  restaurantes_menu_color_formato: 'Ese color no se entiende; escríbelo como #B3261E.',
+  restaurantes_tipo_cambio_positivo: 'Escribe a cuánto tomas el dólar, como 18.50.',
+  horarios_abre_distinto_de_cierra: 'Un día de tu horario abre y cierra a la misma hora.',
+  carteles_imagen_ruta_formato: 'No se pudo guardar el cartel. Vuelve a subirlo.',
   miembros_nombre_check: 'Escribe su nombre completo.',
   mesas_nombre_check: 'Escribe un nombre para la mesa.',
   areas_preparacion_nombre_check: 'Escribe un nombre para el área.',

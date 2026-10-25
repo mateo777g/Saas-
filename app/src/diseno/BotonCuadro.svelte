@@ -13,6 +13,8 @@
     ayuda,
     etiqueta,
     apagado = false,
+    grande = false,
+    tamanoIcono = 16,
     onclick,
     ...resto
   }: {
@@ -20,6 +22,9 @@
     ayuda: string;
     etiqueta?: string;
     apagado?: boolean;
+    // 40 × 40, a la altura de un Boton (Quitar logo, Volver a Inicio).
+    grande?: boolean;
+    tamanoIcono?: number;
     onclick?: (e: MouseEvent) => void;
     [dato: `data-${string}`]: string | number;
   } = $props();
@@ -28,13 +33,14 @@
 <button
   type="button"
   class="cuadro"
+  class:grande
   title={ayuda}
   aria-label={etiqueta ?? ayuda}
   disabled={apagado}
   {onclick}
   {...resto}
 >
-  <Icono nombre={icono} tamano={16} />
+  <Icono nombre={icono} tamano={tamanoIcono} />
 </button>
 
 <style>
@@ -51,6 +57,12 @@
     background: transparent;
     color: var(--texto);
     transition: background-color 150ms;
+  }
+
+  .cuadro.grande {
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
   }
 
   .cuadro:hover:not(:disabled) {

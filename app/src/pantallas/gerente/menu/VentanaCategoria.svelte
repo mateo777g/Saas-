@@ -1,7 +1,8 @@
 <!--
   Nueva categoría y Editar categoría (maqueta del Menú CC2rrjbgxC2yykNa33a3sA): el nombre, uno de
   los 28 íconos, debajo cómo sale en el menú y su área (maqueta de Opciones y áreas
-  GhrEVWPmevfBZtWzi4exKi): una nueva sale con la primera. Al editar, abajo a la izquierda, Eliminar
+  GhrEVWPmevfBZtWzi4exKi): una nueva sale con la primera; al final, su nombre en inglés para el menú
+  en línea (maqueta de la 6a Qx4C5CbKJYpeAsJCfw4ghn). Al editar, abajo a la izquierda, Eliminar
   categoría: con productos no se puede (lo dice la caja de error, sin abrir nada); sin productos,
   pide confirmar en su propia ventana, y Cancelar regresa aquí.
 -->
@@ -16,6 +17,7 @@
   import Ventana from '../../../diseno/Ventana.svelte';
   import { ALGO_SALIO_PANEL, Fallo } from '../../../lib/errores';
   import { plural } from '../../../lib/formato';
+  import EnIngles from './EnIngles.svelte';
   import {
     crearCategoria,
     editarCategoria,
@@ -42,6 +44,7 @@
   // svelte-ignore state_referenced_locally
   const inicial = categoria;
   let nombre = $state(inicial?.nombre ?? '');
+  let nombreEn = $state(inicial?.nombre_en ?? '');
   let icono = $state(inicial?.icono ?? '');
   // En la lista, «mesero» es «Lo sirve el mesero» (la columna vacía). Una nueva sale con la primera.
   // svelte-ignore state_referenced_locally
@@ -74,7 +77,12 @@
     if (!icono) return { error: 'Elige un ícono para la categoría.' };
     if (!area) return { error: 'Elige a qué área van sus productos.' };
 
-    const datos = { nombre: limpio, icono, area_preparacion_id: area === 'mesero' ? null : Number(area) };
+    const datos = {
+      nombre: limpio,
+      nombre_en: nombreEn.trim(),
+      icono,
+      area_preparacion_id: area === 'mesero' ? null : Number(area),
+    };
     paso = 'guardando';
     try {
       if (inicial) await editarCategoria(inicial.id, datos);
@@ -185,6 +193,15 @@
         ]}
         pista="Ahí llegan sus productos al mandar a cocina. Lo que sirve el mesero no llega a ninguna pantalla."
       />
+
+      <EnIngles>
+        <Campo
+          id="categoria-nombre-en"
+          etiqueta="NOMBRE EN INGLÉS"
+          bind:valor={nombreEn}
+          placeholder={nombre.trim() || 'Ej. Combos'}
+        />
+      </EnIngles>
 
       {#snippet izquierda()}
         {#if inicial}

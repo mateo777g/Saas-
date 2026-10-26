@@ -2,7 +2,7 @@
   «Tu menú en línea», que abre el cuadro «Menú digital» de Inicio (maqueta de la 6a
   Qx4C5CbKJYpeAsJCfw4ghn, sección 3; libreta 6, decidido el 20 de octubre de 2026): el link para su
   Instagram y su WhatsApp con «Copiar» y «Ver», el QR de las mesas, los carteles, cómo se ve (el
-  tema, el color y a cuánto toma el dólar) y, a la derecha, su menú de verdad como lo ven sus
+  tema, el color, a cuánto toma el dólar y, con la 6b, «Hago envíos») y, a la derecha, su menú de verdad como lo ven sus
   clientes, con lo que todavía no guarda. Los productos salen de Mi menú, y el logo y el horario de
   Tu restaurante. El chip de arriba dice si está abierto y cuántos productos están a la vista,
   contados por Postgres igual que el menú.
@@ -14,11 +14,13 @@
   import BotonCuadro from '../../diseno/BotonCuadro.svelte';
   import CajaError from '../../diseno/CajaError.svelte';
   import Icono from '../../diseno/Icono.svelte';
+  import Interruptor from '../../diseno/Interruptor.svelte';
   import Selector from '../../diseno/Selector.svelte';
   import Vidrio from '../../diseno/Vidrio.svelte';
   import { casiNoSeVe, type TemaMenu } from '../../lib/color';
   import { ALGO_SALIO_PANEL, esDeRed, Fallo, SIN_CONEXION } from '../../lib/errores';
   import type { Sucursal } from '../../lib/gerente';
+  import { leerEnvios, type Envio } from '../../lib/pedidos.svelte';
   import {
     guardarMenuEnLinea,
     leerCarteles,
@@ -28,6 +30,7 @@
     type EstadoMenu,
     type Restaurante,
   } from '../../lib/restaurante';
+  import { supabase } from '../../lib/supabase';
   import { HOST_MENU, linkDelMenu } from '../../lib/vistaMenu';
   import CajaSucursales from './CajaSucursales.svelte';
   import Carteles from './menuEnLinea/Carteles.svelte';
@@ -55,6 +58,8 @@
   let tema = $state<TemaMenu>('claro');
   let color = $state<string | null>(null);
   let cambio = $state('');
+  let envios = $state(false);
+  let productosEnvio = $state<Envio[] | null>(null);
   let eligiendoColor = $state(false);
   let copiado = $state(false);
   let paso = $state<null | 'guardando' | 'listo'>(null);
@@ -80,23 +85,29 @@
   const cambioLeido = $derived(leerCambio(cambio));
   const sinGuardar = $derived(
     !!guardado &&
-      (tema !== guardado.menu_tema || color !== guardado.menu_color || cambioLeido !== guardado.tipo_cambio_usd),
+      (tema !== guardado.menu_tema ||
+        color !== guardado.menu_color ||
+        cambioLeido !== guardado.tipo_cambio_usd ||
+        envios !== guardado.hace_envios),
   );
   const casi = $derived(casiNoSeVe(color, tema));
 
   async function leer() {
     try {
-      const [r, c, e] = await Promise.all([
+      const [r, c, e, pe] = await Promise.all([
         leerRestaurante(sucursal.id),
         leerCarteles(sucursal.id),
         leerEstadoMenu(sucursal.id),
+        leerEnvios(supabase, sucursal.id),
       ]);
       guardado = r;
       carteles = c;
       estado = e;
+      productosEnvio = pe;
       tema = r.menu_tema;
       color = r.menu_color;
       cambio = textoCambio(r.tipo_cambio_usd);
+      envios = r.hace_envios;
       errorLectura = null;
     } catch (falla) {
       console.error('[menu en linea] no se pudo leer:', falla);
@@ -146,18 +157,24 @@
     error = null;
     paso = 'guardando';
     try {
-      await guardarMenuEnLinea(sucursal.id, tema, color, cambioLeido);
+      await guardarMenuEnLinea(sucursal.id, tema, color, cambioLeido, envios);
     } catch (falla) {
       if (!(falla instanceof Fallo)) console.error('[menu en linea] no se pudo guardar:', falla);
       error = falla instanceof Fallo ? falla.message : ALGO_SALIO_PANEL;
       paso = null;
       return;
     }
-    guardado = { ...guardado, menu_tema: tema, menu_color: color, tipo_cambio_usd: cambioLeido };
+    guardado = { ...guardado, menu_tema: tema, menu_color: color, tipo_cambio_usd: cambioLeido, hace_envios: envios };
     cambio = textoCambio(cambioLeido);
     paso = 'listo';
     setTimeout(() => (paso = null), 1600);
   }
+
+  // Los envíos de Mi menú como los elige quien confirma: «Envío $30 o Envío lejos $50».
+  const precioCorto = (n: number) => `$${Number.isInteger(n) ? n : n.toFixed(2)}`;
+  const listaEnvios = $derived(
+    (productosEnvio ?? []).map((e) => `${e.nombre} ${precioCorto(e.precio)}`),
+  );
 
   // «Abierto · 13 de 14 productos a la vista».
   const chip = $derived.by(() => {
@@ -252,7 +269,7 @@
               >
             </p>
           {/if}
-          <p class="pista arriba">Pinta la barra de arriba, la raya de la categoría y, cuando lleguen los pedidos, los botones.</p>
+          <p class="pista arriba">Pinta la barra de arriba, la raya de la categoría, el «+» y los botones del pedido.</p>
           <div class="raya"></div>
           <label class="etiqueta" for="tipo-cambio">DÓLARES</label>
           <div class="dolar-fila">
@@ -261,6 +278,22 @@
               <input id="tipo-cambio" bind:value={cambio} inputmode="decimal" placeholder="Ej. 18.50" autocomplete="off" />
             </div>
             <span class="pista crece">A cuánto tomas el dólar. Así tus clientes ven «US$1.19 aprox.»; vacío, tu menú solo enseña pesos.</span>
+          </div>
+          <div class="raya"></div>
+          <span class="etiqueta">PEDIDOS</span>
+          <div class="envios-fila">
+            <Interruptor prendido={envios} texto="Hago envíos" alCambiar={(v) => (envios = v)} />
+            <span class="pista crece">
+              {#if !envios}
+                Tus clientes solo piden para llevar.
+              {:else if !listaEnvios.length}
+                Tus clientes también piden a domicilio. Para cobrar el envío, crea un producto en Mi menú y prende «Es un costo de
+                envío».
+              {:else}
+                Tus clientes también piden a domicilio. Al confirmar, eliges el envío:
+                {#each listaEnvios as e, i (i)}{i === 0 ? '' : i === listaEnvios.length - 1 ? ' o ' : ', '}<b>{e}</b>{/each}, de Mi menú.
+              {/if}
+            </span>
           </div>
           <span class="crece"></span>
           {#if error}<div class="error"><CajaError mensaje={error} /></div>{/if}
@@ -567,6 +600,22 @@
 
   .pista.arriba {
     margin-top: 8px;
+  }
+
+  .envios-fila {
+    margin-top: 10px;
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+  }
+
+  .envios-fila :global(.interruptor) {
+    margin-top: 1px;
+  }
+
+  .envios-fila b {
+    color: var(--texto);
+    font-weight: 600;
   }
 
   .dolar-fila {

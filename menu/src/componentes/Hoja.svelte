@@ -1,12 +1,18 @@
 <!--
   La hoja que sube desde abajo (maqueta de la 6a: el producto, Ordenar por y la información), sobre
   el velo. Se cierra con su X, con un toque en el velo, con Escape o con «atrás» del celular (esos
-  dos los lleva Menu.svelte, con el historial).
+  dos los lleva Menu.svelte, con el historial). Con la 6b puede llevar un pie fijo abajo («Agregar al
+  pedido», «Hacer pedido»), y «Falta un paso» no se cierra con el velo.
 -->
 <script lang="ts">
   import { onMount, type Snippet } from 'svelte';
 
-  let { etiqueta, alCerrar, children }: { etiqueta: string; alCerrar: () => void; children: Snippet } = $props();
+  let {
+    etiqueta,
+    alCerrar,
+    children,
+    pie,
+  }: { etiqueta: string; alCerrar: (() => void) | null; children: Snippet; pie?: Snippet } = $props();
 
   let hoja: HTMLDivElement;
 
@@ -17,12 +23,15 @@
 
 <!-- El velo es un atajo del dedo; con el teclado se cierra con Escape. -->
 <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
-<div class="velo" onclick={alCerrar}></div>
+<div class="velo" onclick={() => alCerrar?.()}></div>
 <div class="hoja" role="dialog" aria-modal="true" aria-label={etiqueta} tabindex="-1" bind:this={hoja}>
   <div class="agarre"></div>
-  <div class="cuerpo">
+  <div class="cuerpo" class:con-pie={!!pie}>
     {@render children()}
   </div>
+  {#if pie}
+    <div class="pie">{@render pie()}</div>
+  {/if}
 </div>
 
 <style>
@@ -65,6 +74,20 @@
     overscroll-behavior: contain;
     padding: 14px 18px calc(28px + env(safe-area-inset-bottom, 0px));
     scrollbar-width: none;
+  }
+
+  /* Con pie, la orilla segura del celular la deja el pie. */
+  .cuerpo.con-pie {
+    padding-bottom: 28px;
+  }
+
+  /* La maqueta de la 6b: abajo, fijo, con su raya arriba. */
+  .pie {
+    flex: none;
+    display: flex;
+    gap: 10px;
+    padding: 12px 18px calc(28px + env(safe-area-inset-bottom, 0px));
+    border-top: 1px solid var(--m-linea);
   }
 
   .cuerpo::-webkit-scrollbar {

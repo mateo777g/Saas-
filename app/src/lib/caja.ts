@@ -5,7 +5,7 @@
 // esperado del corte) los calcula Postgres; aquí solo se piden y se pintan.
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { esDeRed, mensajeDeError, SIN_CONEXION } from './errores';
-import { FalloPos } from './pos';
+import { FalloPos, nombreDeCuenta } from './pos';
 
 export type Metodo = 'efectivo' | 'tarjeta' | 'transferencia';
 export const NOMBRE_METODO: Record<Metodo, string> = { efectivo: 'Efectivo', tarjeta: 'Tarjeta', transferencia: 'Transferencia' };
@@ -185,6 +185,7 @@ export type Cobrada = {
   folio: number;
   titulo: string;
   tipo: 'mesa' | 'para_llevar' | 'domicilio';
+  whatsapp: boolean; // nació de un pedido del menú en línea (parte 6b)
   total: number;
   abierta_por: number | null;
   cerrada_at: string;
@@ -195,7 +196,7 @@ export type Cobrada = {
 export async function leerCobradas(cliente: SupabaseClient, restauranteId: string, turnoId: number): Promise<Cobrada[]> {
   const { data, error } = await cliente
     .from('ventas')
-    .select('id, folio, tipo, mesa_nombre, cliente_nombre, total, abierta_por, cerrada_at')
+    .select('id, folio, tipo, mesa_nombre, cliente_nombre, pedido_numero, total, abierta_por, cerrada_at')
     .eq('restaurante_id', restauranteId)
     .eq('estado', 'cerrada')
     .eq('turno_id', turnoId)
@@ -213,8 +214,9 @@ export async function leerCobradas(cliente: SupabaseClient, restauranteId: strin
     return {
       id: v.id,
       folio: v.folio,
-      titulo: (v.tipo === 'mesa' ? v.mesa_nombre : v.cliente_nombre) ?? '—',
+      titulo: nombreDeCuenta(v),
       tipo: v.tipo,
+      whatsapp: v.pedido_numero !== null,
       total: Number(v.total),
       abierta_por: v.abierta_por,
       cerrada_at: v.cerrada_at,

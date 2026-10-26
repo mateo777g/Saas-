@@ -7,25 +7,49 @@
 
   Con ?muestra=menu|barra es la vista previa de «Tu menú en línea» en el panel (lib/muestra.ts):
   siempre en español y en pesos, sin poder tocarse, y pinta lo que el panel le mande sin guardar.
+
+  Con la 6b (maqueta G2nxGb3xBgiPEYrDb6CgcW) se pide: el «+» de cada producto, «Ver tu pedido» abajo,
+  «Tu pedido», «Hacer pedido» (Worker /menu/pedido) y luego «Falta un paso» y «Pedido enviado».
 -->
 <script lang="ts">
   import { onMount, tick } from 'svelte';
   import { estiloColor } from '@app/lib/color';
+  import { dinero } from '@app/lib/formato';
   import Aviso from './componentes/Aviso.svelte';
   import Barra from './componentes/Barra.svelte';
+  import BarraPedido from './componentes/BarraPedido.svelte';
   import Buscador from './componentes/Buscador.svelte';
   import Carteles from './componentes/Carteles.svelte';
   import Fila from './componentes/Fila.svelte';
+  import HojaHecho from './componentes/HojaHecho.svelte';
   import HojaInfo from './componentes/HojaInfo.svelte';
   import HojaOrdenar from './componentes/HojaOrdenar.svelte';
+  import HojaPedido from './componentes/HojaPedido.svelte';
   import HojaProducto from './componentes/HojaProducto.svelte';
   import Icono from './componentes/Icono.svelte';
   import Pestanas from './componentes/Pestanas.svelte';
   import Visor from './componentes/Visor.svelte';
   import { leerMenu, urlImagen, type MenuPublico, type Producto } from './lib/datos';
   import { avisarAlPanel, escucharPanel, modoMuestra, type Pintura } from './lib/muestra';
+  import {
+    guardarCarrito,
+    guardarCliente,
+    guardarHecho,
+    hacerPedido,
+    leerCarrito,
+    leerCliente,
+    leerHecho,
+    mismoRenglon,
+    NoSeMando,
+    precioUnitario,
+    type EnCarrito,
+    type Hecho,
+    type Renglon,
+    type Tipo,
+  } from './lib/pedido';
   import { guardarPreferencias, leerPreferencias, lenguaDelCelular, type Moneda } from './lib/preferencias';
-  import { enSuLengua, TEXTOS, textoEstado, type Lengua } from './lib/textos';
+  import { enSuLengua, enSuLenguaElNo, esLimite, TEXTOS, textoEstado, type Lengua } from './lib/textos';
+  import { pedirToken } from './lib/turnstile';
 
   const CADA = 5 * 60 * 1000;
   // El slug es lo primero del camino: pidemenu.mx/fonda-don-chuy.
@@ -67,8 +91,17 @@
     }
     try {
       const datos = await leerMenu(slug);
+      const primera = !menu;
       menu = datos;
       paso = datos ? 'listo' : 'apagado';
+      if (datos && primera && !muestra) {
+        carrito = leerCarrito(slug);
+        const h = leerHecho(slug, datos.ahora.fecha);
+        if (h) {
+          hecho = h;
+          abrir({ tipo: 'hecho' });
+        }
+      }
       if (muestra) {
         await tick();
         avisarAlPanel({ fragmentless: 'menu-listo' });
@@ -111,19 +144,25 @@
   );
 
   // ─── Lo que se abre encima ───
-  type Encima = { tipo: 'producto'; producto: Producto; foto: boolean } | { tipo: 'ordenar' } | { tipo: 'info' } | null;
-  let encima = $state<Encima>(null);
+  // Una pila: desde «Tu pedido» se abre la hoja de un renglón y, al cerrarla, se vuelve al pedido.
+  type Encima =
+    | { tipo: 'producto'; producto: Producto; foto: boolean; editando: number | null }
+    | { tipo: 'ordenar' }
+    | { tipo: 'info' }
+    | { tipo: 'pedido' }
+    | { tipo: 'hecho' };
+  let pila = $state<Encima[]>([]);
+  const encima = $derived(pila.at(-1) ?? null);
 
   // Cada hoja deja su paso en el historial, para que «atrás» del celular la cierre y no se salga.
-  function abrir(e: NonNullable<Encima>) {
+  function abrir(e: Encima) {
     history.pushState({ menuEncima: true }, '');
-    encima = e;
+    pila.push(e);
   }
 
   function verFoto() {
     if (encima?.tipo !== 'producto') return;
-    history.pushState({ menuEncima: true }, '');
-    encima = { ...encima, foto: true };
+    abrir({ ...encima, foto: true });
   }
 
   // Mientras llega el «atrás» que la cierra, un segundo toque en la X o en el velo no hace nada: si
@@ -138,9 +177,195 @@
 
   function alAtras() {
     cerrando = false;
-    if (encima?.tipo === 'producto' && encima.foto) encima = { ...encima, foto: false };
-    else encima = null;
+    pila.pop();
   }
+
+  // ─── El pedido (parte 6b) ───
+  // Pide solo quien está en el menú de verdad (no la vista previa del panel) mientras Postgres dice
+  // que recibe: con teléfono, dentro del horario y sin pausa.
+  const recibe = $derived(!muestra && !!menu?.recibe_pedidos);
+  const productos = $derived(new Map((menu?.categorias ?? []).flatMap((c) => c.productos).map((p) => [p.id, p])));
+
+  let carrito = $state<EnCarrito[]>([]);
+  // Un producto que ya no viene en el menú (se agotó, o lo quitaron) sale tachado.
+  const vistaCarrito = $derived(
+    carrito.map((r) =>
+      productos.has(r.producto_id) || !menu
+        ? r
+        : { ...r, aviso: { fuera: true, texto: t.yaNoHay(enSuLengua(r.nombre, r.nombre_en, lengua)) } },
+    ),
+  );
+  const cuantos = $derived(carrito.reduce((s, r) => s + r.cantidad, 0));
+  const pesos = (n: number) => `${moneda === 'usd' ? 'MX' : ''}${dinero(n)}`;
+  const totalCarrito = $derived(
+    Math.round(
+      vistaCarrito
+        .filter((r) => !r.aviso?.fuera)
+        .reduce((s, r) => s + precioUnitario(productos.get(r.producto_id)!, r.opciones) * r.cantidad, 0) * 100,
+    ) / 100,
+  );
+  const lleva = (id: number) => carrito.reduce((s, r) => s + (r.producto_id === id ? r.cantidad : 0), 0);
+
+  // La clave del pedido cambia con cada cambio, como el borrador de Pepe: tocar dos veces «Hacer
+  // pedido» con lo mismo no lo guarda dos veces.
+  let clave = crypto.randomUUID();
+  function cambiarCarrito(nuevo: EnCarrito[]) {
+    carrito = nuevo;
+    clave = crypto.randomUUID();
+    guardarCarrito(slug, carrito);
+  }
+
+  // Lo mismo con las mismas opciones y nota se suma en un renglón (hasta 99).
+  function sumar(lista: EnCarrito[], r: Renglon, p: Producto): EnCarrito[] {
+    const igual = lista.findIndex((x) => mismoRenglon(x, r));
+    if (igual === -1) return [...lista, { ...r, nombre: p.nombre, nombre_en: p.nombre_en, precio: precioUnitario(p, r.opciones) }];
+    return lista.map((x, i) => (i === igual ? { ...x, cantidad: Math.min(99, x.cantidad + r.cantidad) } : x));
+  }
+
+  let globo = $state<string | null>(null);
+  let reloj: ReturnType<typeof setTimeout> | undefined;
+
+  // El «+»: sin opciones agrega 1 al momento y lo dice abajo; con opciones abre su hoja.
+  function alMas(p: Producto) {
+    if (p.grupos.length) return abrir({ tipo: 'producto', producto: p, foto: false, editando: null });
+    cambiarCarrito(sumar(carrito, { producto_id: p.id, cantidad: 1, opciones: [], nota: '' }, p));
+    globo = enSuLengua(p.nombre, p.nombre_en, lengua) + t.enTuPedido;
+    clearTimeout(reloj);
+    reloj = setTimeout(() => (globo = null), 2000);
+  }
+
+  function alAgregar(p: Producto, r: Renglon, editando: number | null) {
+    const resto = editando === null ? carrito : carrito.filter((_, i) => i !== editando);
+    const lista = sumar(resto, r, p);
+    // Al cambiar un renglón, se queda en su lugar.
+    if (editando !== null && lista.length > resto.length) lista.splice(editando, 0, lista.pop()!);
+    cambiarCarrito(lista);
+    cerrar();
+  }
+
+  function alCantidad(i: number, cambio: number) {
+    const r = carrito[i];
+    const cantidad = r.cantidad + cambio;
+    cambiarCarrito(cantidad < 1 ? carrito.filter((_, j) => j !== i) : carrito.map((x, j) => (j === i ? { ...x, cantidad: Math.min(99, cantidad) } : x)));
+    if (!carrito.length) cerrar();
+  }
+
+  function abrirRenglon(i: number) {
+    const p = productos.get(carrito[i].producto_id);
+    if (p) abrir({ tipo: 'producto', producto: p, foto: false, editando: i });
+  }
+
+  // «Tu pedido»: lo que escribe, recordado en este celular para la próxima vez.
+  const recordadoCliente = leerCliente();
+  let cliente = $state({ ...recordadoCliente, pagaCon: '' });
+  let tipo = $state<Tipo>('para_llevar');
+  let avisoPedido = $state<{ titulo?: string; texto: string } | null>(null);
+  let limite = $state(false);
+  let ocupado = $state(false);
+  let hueco = $state<HTMLDivElement>();
+  let hecho = $state<Hecho | null>(null);
+
+  $effect(() => {
+    if (menu && !menu.restaurante.hace_envios && tipo === 'domicilio') tipo = 'para_llevar';
+  });
+
+  async function hacer() {
+    if (!menu || ocupado || !hueco) return;
+    // Lo tachado se quita al volver a pedir; los demás avisos también.
+    const limpio = vistaCarrito.filter((r) => !r.aviso?.fuera).map(({ aviso: _aviso, ...r }) => r);
+    if (limpio.length !== carrito.length || carrito.some((r) => r.aviso)) cambiarCarrito(limpio);
+    avisoPedido = null;
+    limite = false;
+    ocupado = true;
+    const dom = tipo === 'domicilio';
+    try {
+      let token: string;
+      try {
+        token = await pedirToken(hueco, lengua);
+      } catch (error) {
+        console.error('[menu] la revisión de Cloudflare no contestó:', error);
+        throw new NoSeMando(t.noSeMando);
+      }
+      const respuesta = await hacerPedido(
+        {
+          slug,
+          clave,
+          tipo,
+          cliente_nombre: cliente.nombre.trim(),
+          cliente_telefono: dom ? cliente.telefono : null,
+          cliente_direccion: dom ? cliente.direccion : null,
+          cliente_referencias: dom ? cliente.referencias : null,
+          paga_con: dom && cliente.pagaCon.trim() ? Number(cliente.pagaCon.trim()) : null,
+          renglones: carrito.map((r) => ({
+            producto_id: r.producto_id,
+            cantidad: r.cantidad,
+            opciones: r.opciones,
+            nota: r.nota,
+            precio: precioUnitario(productos.get(r.producto_id)!, r.opciones),
+          })),
+          turnstile: token,
+        },
+        t.noSeMando,
+      );
+      guardarCliente({ nombre: cliente.nombre.trim(), telefono: cliente.telefono, direccion: cliente.direccion, referencias: cliente.referencias });
+      if (respuesta.ok) {
+        const ids = carrito.map((r) => ({ producto_id: r.producto_id, opciones: r.opciones }));
+        hecho = { pedido: respuesta, ids, fecha: menu.ahora.fecha, enviado: false };
+        guardarHecho(slug, hecho);
+        cambiarCarrito([]);
+        cliente.pagaCon = '';
+        pila[pila.length - 1] = { tipo: 'hecho' };
+      } else if (respuesta.motivo === 'no_recibe') {
+        avisoPedido = { texto: t.noRecibimos };
+        await cargar(true);
+      } else {
+        // Nada se guardó: cada renglón dice qué cambió y el menú se vuelve a leer con los precios nuevos.
+        cambiarCarrito(
+          carrito.map((r, i) => {
+            const c = respuesta.cambios.find((x) => x.renglon === i + 1);
+            if (!c) return r;
+            const nombre = enSuLengua(r.nombre, r.nombre_en, lengua);
+            if (c.cambio === 'precio') return { ...r, aviso: { fuera: false, texto: t.ahoraCuesta(nombre, pesos(c.precio ?? 0)) } };
+            if (c.cambio === 'opciones') return { ...r, aviso: { fuera: true, texto: t.cambiaronOpciones(nombre) } };
+            return { ...r, aviso: { fuera: true, texto: t.yaNoHay(c.opcion ?? nombre) } };
+          }),
+        );
+        avisoPedido = { titulo: t.cambio, texto: t.cambioTexto };
+        await cargar(true);
+      }
+    } catch (error) {
+      if (!(error instanceof NoSeMando)) console.error('[menu] el pedido falló:', error);
+      const mensaje = error instanceof NoSeMando ? error.message : t.noSeMando;
+      avisoPedido = { texto: enSuLenguaElNo(mensaje, lengua) };
+      limite = esLimite(mensaje);
+    } finally {
+      ocupado = false;
+    }
+  }
+
+  function alEnviar() {
+    if (!hecho) return;
+    hecho = { ...hecho, enviado: true };
+    guardarHecho(slug, hecho);
+  }
+
+  function alVolver() {
+    hecho = null;
+    guardarHecho(slug, null);
+    cerrar();
+  }
+
+  // Abajo: «Ver tu pedido», o por qué no se reciben pedidos.
+  const avisoAbajo = $derived.by((): { icono: 'reloj' | 'apagado'; texto: string } | null => {
+    if (!menu || recibe) return null;
+    const e = menu.estado;
+    if (!menu.pedidos_pausados && menu.restaurante.telefono && e && !e.abierto) {
+      const dia = menu.horario.find((h) => h.dia === e.abre.dia);
+      if (dia) return { icono: 'reloj', texto: t.recibimos(dia.abre, dia.cierra) };
+    }
+    return { icono: 'apagado', texto: t.noRecibimos };
+  });
+  const conAbajo = $derived(!muestra && !!menu && (avisoAbajo !== null || carrito.length > 0));
 
   // ─── Las categorías al bajar ───
   let activa = $state<number | null>(null);
@@ -196,7 +421,7 @@
 
   // Con algo abierto encima, lo de atrás no se mueve.
   $effect(() => {
-    document.documentElement.style.overflow = encima ? 'hidden' : '';
+    document.documentElement.style.overflow = pila.length ? 'hidden' : '';
   });
 
   // La tira de la ventana del color le dice al panel cuánto mide.
@@ -234,7 +459,7 @@
   onpopstate={alAtras}
   onscroll={alBajar}
   onkeydown={(e) => {
-    if (e.key === 'Escape' && encima) cerrar();
+    if (e.key === 'Escape' && encima && !(encima.tipo === 'hecho' && !hecho?.enviado)) cerrar();
   }}
 />
 
@@ -245,7 +470,7 @@
     <Aviso titulo={t.sinRed} texto={t.sinRedTexto} boton={t.reintentar} alBoton={() => cargar()} />
   {:else if menu}
     {@const r = menu.restaurante}
-    <div class="columna">
+    <div class="columna" class:con-abajo={conAbajo}>
       <Barra
         nombre={r.nombre}
         logo={r.logo_ruta}
@@ -278,7 +503,9 @@
                   {lengua}
                   {moneda}
                   {t}
-                  alAbrir={() => abrir({ tipo: 'producto', producto: h.p, foto: false })}
+                  lleva={lleva(h.p.id)}
+                  alAbrir={() => abrir({ tipo: 'producto', producto: h.p, foto: false, editando: null })}
+                  alMas={recibe ? () => alMas(h.p) : null}
                 />
               {/each}
             {:else}
@@ -296,7 +523,15 @@
               <section class="seccion" data-seccion={c.id}>
                 <h2 class="seccion-titulo"><Icono categoria={c.icono} tamano={20} />{enSuLengua(c.nombre, c.nombre_en, lengua)}</h2>
                 {#each c.productos as p (p.id)}
-                  <Fila producto={p} {lengua} {moneda} {t} alAbrir={() => abrir({ tipo: 'producto', producto: p, foto: false })} />
+                  <Fila
+                    producto={p}
+                    {lengua}
+                    {moneda}
+                    {t}
+                    lleva={lleva(p.id)}
+                    alAbrir={() => abrir({ tipo: 'producto', producto: p, foto: false, editando: null })}
+                    alMas={recibe ? () => alMas(p) : null}
+                  />
                 {/each}
               </section>
             {/each}
@@ -305,8 +540,29 @@
       {/if}
     </div>
 
+    {#if conAbajo}
+      <BarraPedido {cuantos} total={pesos(totalCarrito)} aviso={avisoAbajo} {t} alAbrir={() => abrir({ tipo: 'pedido' })} />
+    {/if}
+    {#if globo}
+      <div class="globo" role="status"><Icono nombre="check" tamano={14} />{globo}</div>
+    {/if}
+
     {#if encima?.tipo === 'producto'}
-      <HojaProducto producto={encima.producto} {lengua} {moneda} {t} alVerFoto={verFoto} alCerrar={cerrar} />
+      {@const editando = encima.editando}
+      {@const producto = encima.producto}
+      {#key encima}
+        <HojaProducto
+          {producto}
+          {lengua}
+          {moneda}
+          {t}
+          {recibe}
+          inicial={editando === null ? null : (carrito[editando] ?? null)}
+          alVerFoto={verFoto}
+          alAgregar={(r) => alAgregar(producto, r, editando)}
+          alCerrar={cerrar}
+        />
+      {/key}
       {#if encima.foto && encima.producto.imagen_ruta}
         <Visor
           ruta={encima.producto.imagen_ruta}
@@ -328,6 +584,40 @@
       />
     {:else if encima?.tipo === 'info'}
       <HojaInfo {menu} {t} alCerrar={cerrar} />
+    {:else if encima?.tipo === 'pedido'}
+      <HojaPedido
+        renglones={vistaCarrito}
+        {productos}
+        {lengua}
+        {moneda}
+        {t}
+        haceEnvios={menu.restaurante.hace_envios}
+        tipoCambio={menu.restaurante.tipo_cambio_usd}
+        bind:tipo
+        bind:cliente
+        aviso={avisoPedido}
+        {limite}
+        telefono={menu.restaurante.telefono ?? ''}
+        {ocupado}
+        bind:hueco
+        {alCantidad}
+        alAbrirRenglon={abrirRenglon}
+        alHacer={hacer}
+        alCerrar={cerrar}
+      />
+    {:else if encima?.tipo === 'hecho' && hecho}
+      <HojaHecho
+        pedido={hecho.pedido}
+        ids={hecho.ids ?? []}
+        {productos}
+        enviado={hecho.enviado}
+        telefono={menu.restaurante.telefono ?? ''}
+        {lengua}
+        {moneda}
+        {t}
+        {alEnviar}
+        {alVolver}
+      />
     {/if}
   {/if}
 </div>
@@ -337,6 +627,35 @@
   .columna {
     max-width: 520px;
     margin: 0 auto;
+  }
+
+  /* Lugar para «Ver tu pedido» abajo. */
+  .columna.con-abajo .contenido {
+    padding-bottom: 112px;
+  }
+
+  .globo {
+    position: fixed;
+    left: 50%;
+    bottom: 112px;
+    transform: translateX(-50%);
+    z-index: 6;
+    height: 40px;
+    padding: 0 16px;
+    border-radius: 20px;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: #232323;
+    color: #ffffff;
+    font-size: 13px;
+    font-weight: 700;
+    white-space: nowrap;
+    box-shadow: 0 12px 30px var(--m-sombra);
+  }
+
+  .globo :global(svg) {
+    color: #4cc26f;
   }
 
   .raya {

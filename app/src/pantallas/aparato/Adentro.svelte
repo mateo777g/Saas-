@@ -2,7 +2,9 @@
   Lo que ve quien entró con su PIN, según sus roles (parte 4a; maqueta Mesero y cocina): el mesero y
   la caja, las mesas del punto de venta; la cocina, su pantalla a todo lo ancho. Quien tiene más de
   una cambia con pestañas arriba (Toño, mesero y caja: Mesas y Caja). La caja es la de la parte
-  4b (maqueta La caja). El aparato recuerda la última pestaña.
+  4b (maqueta La caja). El aparato recuerda la última pestaña. Quien es de caja también tiene
+  Pedidos (parte 6b; maqueta Pedidos por WhatsApp): su vigía vive aquí, encima de las pestañas, para
+  que el tono suene en cualquiera.
 
   Usa la sesión del aparato (lib/aparato.ts), nunca la del panel.
 -->
@@ -12,13 +14,15 @@
   import Selector from '../../diseno/Selector.svelte';
   import { supabaseAparato, type Lista, type PersonaAparato } from '../../lib/aparato';
   import { ALGO_SALIO_PANEL, esDeRed, SIN_CONEXION } from '../../lib/errores';
+  import { VigiaPedidos } from '../../lib/pedidos.svelte';
   import { NOMBRE_ROL } from '../../lib/roles';
   import Caja from '../caja/Caja.svelte';
+  import Pedidos from '../caja/Pedidos.svelte';
   import Cocina from '../cocina/Cocina.svelte';
   import PuntoDeVenta from '../pos/PuntoDeVenta.svelte';
   import Arriba from './Arriba.svelte';
 
-  type Pestana = 'mesas' | 'caja' | 'cocina';
+  type Pestana = 'mesas' | 'caja' | 'pedidos' | 'cocina';
 
   let {
     lista,
@@ -28,10 +32,15 @@
 
   const LLAVE_PESTANA = 'fragmentless-aparato-pestana';
 
+  // La vigía de los pedidos, solo para quien es de caja; nace cuando se sabe el restaurante.
+  let vigia = $state<VigiaPedidos | null>(null);
+
   const pestanas = $derived(
     [
       { valor: 'mesas' as const, texto: 'Mesas', si: persona.roles.includes('mesero') || persona.roles.includes('caja') },
       { valor: 'caja' as const, texto: 'Caja', si: persona.roles.includes('caja') },
+      // «Pedidos · 2», como «Por cobrar · 5»; en pausa, «Pedidos · Pausado».
+      { valor: 'pedidos' as const, texto: vigia?.insignia ? `Pedidos · ${vigia.insignia}` : 'Pedidos', si: persona.roles.includes('caja') },
       { valor: 'cocina' as const, texto: 'Cocina', si: persona.roles.includes('cocina') },
     ].filter((p) => p.si),
   );
@@ -62,6 +71,22 @@
   }
 
   $effect(() => alPestana(pestana));
+
+  // «Lista» le suena a quien confirmó un pedido; en Mesas ya lo hace el punto de venta.
+  $effect(() => {
+    if (vigia) vigia.oirListas = pestana !== 'mesas';
+  });
+
+  $effect(() => {
+    if (restaurante.estado !== 'listo' || !persona.roles.includes('caja')) return;
+    const v = new VigiaPedidos(supabaseAparato, restaurante.id, persona.id);
+    vigia = v;
+    const dejar = v.iniciar();
+    return () => {
+      dejar();
+      vigia = null;
+    };
+  });
 
   // El restaurante de quien entró: lo dice su fila de miembros, que su sesión puede leer.
   async function leerRestaurante() {
@@ -101,6 +126,12 @@
 {:else if pestana === 'cocina'}
   <div class="cocina-aparato">
     <Cocina cliente={supabaseAparato} restauranteId={restaurante.id} aparato={lista.aparato} pestanas={pestanas.length > 1 ? selector : undefined} />
+  </div>
+{:else if pestana === 'pedidos'}
+  <div class="columna sin-margen">
+    {#if vigia}
+      <Pedidos cliente={supabaseAparato} restauranteId={restaurante.id} restaurante={lista.restaurante} {vigia} {linea} pestanas={selector} />
+    {/if}
   </div>
 {:else if pestana === 'caja'}
   <div class="columna sin-margen">

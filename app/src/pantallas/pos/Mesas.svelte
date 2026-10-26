@@ -13,7 +13,7 @@
   import Selector from '../../diseno/Selector.svelte';
   import { faltaDe } from '../../lib/caja';
   import { dinero } from '../../lib/formato';
-  import type { Mesa, PedidoNuevo, Venta } from '../../lib/pos';
+  import { nombreDeCuenta, type Mesa, type PedidoNuevo, type Venta } from '../../lib/pos';
   import Lugar from './Lugar.svelte';
   import MarcaEstado from './MarcaEstado.svelte';
 
@@ -134,11 +134,11 @@
       <button type="button" class="fila-llevar" onclick={() => alAbrir(`v${v.id}`)}>
         <span class="cuadro-icono"><Icono nombre={v.tipo === 'domicilio' ? 'moto' : v.tipo === 'mesa' ? 'mesas' : 'bolsa'} tamano={18} /></span>
         <span class="t">
-          <b>{v.tipo === 'mesa' ? v.mesa_nombre : v.cliente_nombre}</b>
+          <b>{nombreDeCuenta(v)}</b>
           <span class="tipo">
             {v.folio !== null ? `Folio ${v.folio}` : v.tipo === 'domicilio' ? 'Domicilio' : 'Para llevar'} · abrió {quien(v)}, {hora(v)}
           </span>
-          <MarcaEstado estado={estadoDe(v)} />
+          <MarcaEstado estado={estadoDe(v)} whatsapp={v.pedido_numero !== null} />
         </span>
         <span class="mesa-total">{dinero(v.total)}</span>
       </button>

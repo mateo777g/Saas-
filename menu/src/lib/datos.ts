@@ -5,6 +5,7 @@
 import type { TemaMenu } from '@app/lib/color';
 
 export type Opcion = {
+  id: number;
   nombre: string;
   nombre_en: string | null;
   precio_extra: number;
@@ -12,6 +13,7 @@ export type Opcion = {
 };
 
 export type Grupo = {
+  id: number;
   nombre: string;
   nombre_en: string | null;
   minimo: number;
@@ -60,11 +62,15 @@ export type MenuPublico = {
     tema: TemaMenu;
     color: string | null;
     tipo_cambio_usd: number | null;
+    hace_envios: boolean;
   };
   // La fecha y la hora del restaurante, nunca las del celular.
   ahora: { fecha: string; dia: number; hora: string };
   horario: Dia[];
   estado: Estado;
+  // privado.recibe_pedidos: teléfono, dentro del horario y sin pausa (parte 6b).
+  recibe_pedidos: boolean;
+  pedidos_pausados: boolean;
   carteles: string[];
   categorias: Categoria[];
 };

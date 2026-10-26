@@ -180,8 +180,23 @@ export type Venta = {
   folio: number | null; // abierta con folio: reabierta, porque se canceló un pago (parte 4c)
   abierta_por: number | null;
   cuenta_pedida_at: string | null;
+  pedido_numero: number | null; // la que nació de un pedido del menú en línea: su #27 (parte 6b)
   created_at: string;
 };
+
+// Cómo se llama una cuenta en todos lados: la de una mesa, por su mesa; la de un pedido del menú en
+// línea, «#27 · Rosa Ramírez» (parte 6b, decidido el 25 de octubre de 2026); las demás, por el
+// nombre del cliente.
+export function nombreDeCuenta(v: {
+  tipo: TipoCuenta;
+  mesa_nombre: string | null;
+  cliente_nombre: string | null;
+  pedido_numero: number | null;
+}): string {
+  if (v.tipo === 'mesa') return v.mesa_nombre ?? '—';
+  if (v.pedido_numero !== null) return `#${v.pedido_numero} · ${v.cliente_nombre ?? '—'}`;
+  return v.cliente_nombre ?? '—';
+}
 
 export type OpcionElegida = { grupo: string; opcion: string; precio_extra: number };
 
@@ -221,7 +236,7 @@ export type Abiertas = { ventas: Venta[]; renglones: Renglon[]; comandas: Comand
 
 // Un solo texto cada una: así supabase-js sabe qué columnas trae.
 const COLUMNAS_VENTA =
-  'id, tipo, mesa_id, mesa_nombre, cliente_nombre, cliente_telefono, cliente_direccion, subtotal, descuento, descuento_tipo, descuento_valor, descuento_motivo, total, pagado, folio, abierta_por, cuenta_pedida_at, created_at';
+  'id, tipo, mesa_id, mesa_nombre, cliente_nombre, cliente_telefono, cliente_direccion, subtotal, descuento, descuento_tipo, descuento_valor, descuento_motivo, total, pagado, folio, abierta_por, cuenta_pedida_at, pedido_numero, created_at';
 const COLUMNAS_RENGLON =
   'id, venta_id, nombre, cantidad, precio_unitario, descuento, descuento_tipo, descuento_valor, descuento_motivo, importe, opciones, nota, comanda_id, agregado_por, clave_envio, estado, autorizado_por, cancelado_motivo';
 
@@ -304,8 +319,9 @@ export async function cuentaDelEnvio(cliente: SupabaseClient, restauranteId: str
 
 // Lo que lleva cada tarjeta: la comanda, a qué cuenta va y sus renglones.
 export type Tarjeta = Comanda & {
-  titulo: string; // la mesa o el nombre del cliente
+  titulo: string; // la mesa, el nombre del cliente o «#27 · Rosa Ramírez»
   tipo: TipoCuenta;
+  whatsapp: boolean; // nació de un pedido del menú en línea (parte 6b)
   renglones: Renglon[];
 };
 
@@ -355,7 +371,7 @@ export async function leerCocina(
   const [ventas, renglones] = await Promise.all([
     cliente
       .from('ventas')
-      .select('id, tipo, mesa_nombre, cliente_nombre')
+      .select('id, tipo, mesa_nombre, cliente_nombre, pedido_numero')
       .eq('restaurante_id', restauranteId)
       .in('id', [...new Set(todas.map((c) => c.venta_id))]),
     cliente
@@ -372,8 +388,9 @@ export async function leerCocina(
     const v = porVenta.get(c.venta_id);
     return {
       ...c,
-      titulo: (v?.tipo === 'mesa' ? v.mesa_nombre : v?.cliente_nombre) ?? '—',
+      titulo: v ? nombreDeCuenta(v) : '—',
       tipo: (v?.tipo ?? 'mesa') as TipoCuenta,
+      whatsapp: v?.pedido_numero != null,
       renglones: (renglones.data as Renglon[]).filter((r) => r.comanda_id === c.id).map(renglon),
     };
   };
@@ -572,7 +589,7 @@ export function siSeDescuenta(
 export function escuchar(
   cliente: SupabaseClient,
   restauranteId: string,
-  tablas: ('ventas' | 'venta_items' | 'comandas' | 'pagos' | 'turnos')[],
+  tablas: ('ventas' | 'venta_items' | 'comandas' | 'pagos' | 'turnos' | 'pedidos_en_linea')[],
   alCambiar: () => void,
 ): () => void {
   const canal = cliente.channel(`pos-${restauranteId}-${crypto.randomUUID()}`);

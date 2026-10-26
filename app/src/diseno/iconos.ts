@@ -99,4 +99,7 @@ export const ICONOS: Record<string, string> = {
   // Las dos flechas de «Vendido hoy» contra ayer (maqueta Agente IA KznKZdgQbLTZGs1EwVMvga).
   'flecha-sube': '<path d="M12 19V5"></path><path d="M6 11l6-6 6 6"></path>',
   'flecha-baja': '<path d="M12 5v14"></path><path d="M6 13l6 6 6-6"></path>',
+  // La dirección de un pedido a domicilio (maqueta Pedidos por WhatsApp G2nxGb3xBgiPEYrDb6CgcW),
+  // la misma del menú en línea.
+  'ubicacion': '<path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"></path><circle cx="12" cy="9.5" r="2.5"></circle>',
 };

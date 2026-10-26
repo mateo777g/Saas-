@@ -75,10 +75,11 @@
   let listaOpciones = $state<HTMLElement>();
 
   const cuantas = $derived(opciones.length);
-  // Por categoría, en el orden del menú; las que no tienen productos no salen.
+  // Por categoría, en el orden del menú; las que no tienen productos no salen. Un envío no lleva
+  // opciones (parte 6b).
   const porCategoria = $derived(
     menu.categorias
-      .map((c) => ({ categoria: c, productos: menu.productos.filter((p) => p.categoria_id === c.id) }))
+      .map((c) => ({ categoria: c, productos: menu.productos.filter((p) => p.categoria_id === c.id && !p.es_envio) }))
       .filter((x) => x.productos.length),
   );
 

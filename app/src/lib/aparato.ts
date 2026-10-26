@@ -26,8 +26,10 @@ export const supabaseAparato = createClient(URL_PROYECTO, LLAVE_PUBLICABLE, {
 });
 
 // Lo que el aparato recuerda: su secreto (43 caracteres que solo él guarda; la base tiene su
-// huella), cómo se llama, si es compartido y quién está adentro.
-export type Ligado = { token: string; aparato: string; compartido: boolean; adentro: number | null };
+// huella), cómo se llama, si es compartido y quién está adentro. `ultimoDeCaja`: la última persona
+// que entró era de caja; así la tableta de la caja suena con los pedidos también en «¿Quién eres?»,
+// y la de la cocina no (parte 6b).
+export type Ligado = { token: string; aparato: string; compartido: boolean; adentro: number | null; ultimoDeCaja?: boolean };
 
 const LLAVE_LIGADO = 'fragmentless-aparato';
 
@@ -41,7 +43,7 @@ export function leerLigado(): Ligado | null {
       olvidarLigado();
       return null;
     }
-    return { token: l.token, aparato: l.aparato, compartido: l.compartido, adentro: l.adentro ?? null };
+    return { token: l.token, aparato: l.aparato, compartido: l.compartido, adentro: l.adentro ?? null, ultimoDeCaja: l.ultimoDeCaja === true };
   } catch (error) {
     console.error('[aparato] no se pudo leer lo guardado:', error);
     return null;
@@ -122,16 +124,23 @@ export type PersonaAparato = {
   bloqueadoHasta: string | null; // el momento en que termina; null: hasta que su gerente la desbloquee
 };
 
-export type Lista = { restaurante: string; aparato: string; compartido: boolean; personas: PersonaAparato[] };
+export type Lista = {
+  restaurante: string;
+  aparato: string;
+  compartido: boolean;
+  personas: PersonaAparato[];
+  pedidosPorConfirmar: number | null; // null donde no entra nadie de caja (parte 6b)
+};
 
 // «¿Quién eres?»: el restaurante, el aparato y quiénes pueden entrar ahí (en uno de una
-// persona, solo ella). Si un bloqueo sigue lo decide Postgres.
+// persona, solo ella), y cuántos pedidos del menú esperan. Si un bloqueo sigue lo decide Postgres.
 export async function nombres(token: string): Promise<Lista> {
   const r = await pedir<{
     restaurante: string;
     aparato: string;
     compartido: boolean;
     personas: { id: number; nombre: string; roles: string[]; bloqueado: boolean; bloqueado_hasta: string | null }[];
+    pedidos_por_confirmar: number | null;
   }>('/equipo/nombres', { token });
   return {
     restaurante: r.restaurante,
@@ -144,6 +153,7 @@ export async function nombres(token: string): Promise<Lista> {
       bloqueado: p.bloqueado,
       bloqueadoHasta: p.bloqueado_hasta,
     })),
+    pedidosPorConfirmar: r.pedidos_por_confirmar ?? null,
   };
 }
 
@@ -153,12 +163,12 @@ export type Entrada =
   | { ok: false; motivo: 'bloqueado'; hasta: string | null };
 
 // Pepe pone su PIN. Si Postgres dice que sí, el Worker le da su sesión y aquí se guarda.
-export async function entrar(ligado: Ligado, miembro: number, pin: string): Promise<Entrada> {
+export async function entrar(ligado: Ligado, miembro: PersonaAparato, pin: string): Promise<Entrada> {
   const r = await pedir<
     | { ok: true; sesion: { access_token: string; refresh_token: string } }
     | { ok: false; motivo: 'pin'; quedan: number }
     | { ok: false; motivo: 'bloqueado'; hasta: string | null }
-  >('/equipo/entrar', { token: ligado.token, miembro, pin });
+  >('/equipo/entrar', { token: ligado.token, miembro: miembro.id, pin });
   if (!r.ok) return r;
 
   const { error } = await supabaseAparato.auth.setSession(r.sesion);
@@ -166,7 +176,7 @@ export async function entrar(ligado: Ligado, miembro: number, pin: string): Prom
     console.error('[aparato] no se pudo guardar la sesión que dio el Worker:', error);
     throw new FalloAparato(ALGO_SALIO_PANEL);
   }
-  guardarLigado({ ...ligado, adentro: miembro });
+  guardarLigado({ ...ligado, adentro: miembro.id, ultimoDeCaja: miembro.roles.includes('caja') });
   return { ok: true };
 }
 

@@ -4,7 +4,9 @@
   categoría y el precio, y debajo sus grupos de opciones (maqueta de Opciones y áreas
   GhrEVWPmevfBZtWzi4exKi), que se guardan junto con el producto (guardar_producto), y al final su
   inglés para el menú en línea (maqueta de la 6a Qx4C5CbKJYpeAsJCfw4ghn); al editar, abajo
-  a la izquierda, Eliminar producto. Mientras guarda, la etiqueta de arriba dice en qué paso va
+  a la izquierda, Eliminar producto. Con la 6b (maqueta Pedidos por WhatsApp G2nxGb3xBgiPEYrDb6CgcW),
+  «Es un costo de envío»: un envío no lleva foto, opciones ni inglés, porque sus clientes no lo ven,
+  así que esas partes se esconden; si tenía foto, se borra de R2 después de guardar. Mientras guarda, la etiqueta de arriba dice en qué paso va
   (SUBIENDO FOTO…, GUARDANDO…), como en Flet.
 
   Las fotos siguen el orden de siempre: subir antes de guardar; si el guardado falla, se borra la
@@ -18,6 +20,7 @@
   import CampoLista from '../../../diseno/CampoLista.svelte';
   import Confirmar from '../../../diseno/Confirmar.svelte';
   import Formulario from '../../../diseno/Formulario.svelte';
+  import Interruptor from '../../../diseno/Interruptor.svelte';
   import Ventana from '../../../diseno/Ventana.svelte';
   import { borrarFoto, convertirAWebp, revisarFoto, subirFoto, urlFoto } from '../../../lib/fotos';
   import { ALGO_SALIO_PANEL, Fallo } from '../../../lib/errores';
@@ -68,6 +71,7 @@
   let categoria = $state(String(inicial?.categoria_id ?? categoriaDeEntrada ?? ''));
   let precio = $state(inicial ? textoPrecio(inicial.precio) : '');
   let elegidos = $state<number[]>(inicial?.grupos ?? []);
+  let envio = $state(inicial?.es_envio ?? false);
   let archivo = $state<File | null>(null);
   let vistaPrevia = $state<string | null>(null);
   let error = $state<string | null>(null);
@@ -117,10 +121,11 @@
       categoria_id: Number(categoria),
       nombre: limpio,
       descripcion: descripcion.trim(),
-      nombre_en: nombreEn.trim(),
-      descripcion_en: descripcionEn.trim(),
+      nombre_en: envio ? '' : nombreEn.trim(),
+      descripcion_en: envio ? '' : descripcionEn.trim(),
       precio: Math.round(numero * 100) / 100,
-      grupos: [...elegidos],
+      grupos: envio ? [] : [...elegidos],
+      es_envio: envio,
     };
   }
 
@@ -130,7 +135,7 @@
 
     let rutaNueva: string | null = null;
     try {
-      if (archivo) {
+      if (archivo && !envio) {
         paso = 'foto';
         rutaNueva = await subirFoto(restauranteId, await convertirAWebp(archivo));
         datos.imagen_ruta = rutaNueva;
@@ -145,8 +150,8 @@
       return { error: falla instanceof Fallo ? falla.message : ALGO_SALIO_PANEL };
     }
 
-    // Ya guardado: la foto vieja ya no la usa nadie.
-    if (rutaNueva && inicial?.imagen_ruta) await borrarFoto(inicial.imagen_ruta);
+    // Ya guardado: la foto vieja ya no la usa nadie (al volverse envío, Postgres ya se la quitó).
+    if ((rutaNueva || envio) && inicial?.imagen_ruta) await borrarFoto(inicial.imagen_ruta);
     paso = 'listo';
     alCambiar();
     return { listo: inicial ? 'Guardado' : 'Agregado' };
@@ -187,7 +192,7 @@
       espacio={16}
       antesDelBoton={28}
     >
-      <div class="fila-foto">
+      {#if !envio}<div class="fila-foto">
         <Foto src={foto} tamano={72} radio={14} />
         <div class="foto-texto">
           <Boton
@@ -199,7 +204,7 @@
           <span class="pista">JPG o PNG · se optimiza automáticamente</span>
         </div>
         <input bind:this={elegirArchivo} type="file" accept="image/*" hidden onchange={alElegirFoto} />
-      </div>
+      </div>{/if}
 
       <Campo id="producto-nombre" etiqueta="NOMBRE" bind:valor={nombre} placeholder="Ej. Tacos al pastor" />
       <Campo
@@ -229,6 +234,21 @@
         </div>
       </div>
 
+      <div class="fila-switch">
+        <Interruptor prendido={envio} ayuda="Es un costo de envío" apagado={paso !== null} alCambiar={(v) => (envio = v)} />
+        <span class="t">
+          <b>Es un costo de envío</b>
+          <span class="pista">
+            {envio
+              ? 'No sale en tu menú en línea ni llega a la cocina. Sale como botón al confirmar un pedido a domicilio, y en el punto de venta como cualquier producto.'
+              : 'Prende esto solo para lo que cobras por llevar un pedido a domicilio.'}
+          </span>
+        </span>
+      </div>
+
+      {#if envio}
+        <p class="pista">Un envío no lleva opciones ni foto, ni su parte en inglés, porque tus clientes no lo ven.</p>
+      {:else}
       <GruposProducto {grupos} bind:elegidos apagado={paso !== null} />
 
       <EnIngles>
@@ -246,6 +266,7 @@
           multilinea
         />
       </EnIngles>
+      {/if}
 
       {#snippet izquierda()}
         {#if inicial}
@@ -285,6 +306,32 @@
     font-weight: 500;
     line-height: 1.45;
     color: var(--tenue);
+  }
+
+  .fila-switch {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    padding: 14px 16px;
+    border-radius: 16px;
+    background: var(--chip);
+  }
+
+  .fila-switch :global(.interruptor) {
+    margin-top: 1px;
+  }
+
+  .fila-switch .t {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .fila-switch b {
+    font-size: 13.5px;
+    font-weight: 700;
   }
 
   .dos {

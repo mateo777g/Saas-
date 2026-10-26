@@ -215,9 +215,14 @@ export async function mezclar(env: Env, pin: string): Promise<string> {
     console.error('[equipo] falta el secreto PIMIENTA_PIN en Cloudflare');
     throw new Rechazo(500, 'Algo salió mal. Intenta de nuevo.');
   }
+  return hmacHex(env.PIMIENTA_PIN, pin);
+}
+
+// HMAC-SHA256 en hexadecimal (64 caracteres): el PIN mezclado y las marcas de los pedidos.
+export async function hmacHex(llaveTexto: string, texto: string): Promise<string> {
   const codificar = new TextEncoder();
-  const llave = await crypto.subtle.importKey('raw', codificar.encode(env.PIMIENTA_PIN), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
-  const firma = new Uint8Array(await crypto.subtle.sign('HMAC', llave, codificar.encode(pin)));
+  const llave = await crypto.subtle.importKey('raw', codificar.encode(llaveTexto), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
+  const firma = new Uint8Array(await crypto.subtle.sign('HMAC', llave, codificar.encode(texto)));
   return Array.from(firma, (b) => b.toString(16).padStart(2, '0')).join('');
 }
 

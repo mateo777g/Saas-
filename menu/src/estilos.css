@@ -65,6 +65,9 @@ button {
   --m-sobre-barra: #ffffff;
   --m-barra-chip: rgba(255, 255, 255, 0.16);
   --m-barra-suave: rgba(255, 255, 255, 0.72);
+  /* La 6b: el verde de WhatsApp no cambia con el color de Don Chuy; el segmento elegido, sobre el gris. */
+  --m-wa: #178a4a;
+  --m-seg: #ffffff;
   background: var(--m-fondo);
   color: var(--m-texto);
   font-family: var(--jakarta);
@@ -87,6 +90,8 @@ button {
   --m-sobre-barra: #f3f3f0;
   --m-barra-chip: rgba(255, 255, 255, 0.1);
   --m-barra-suave: rgba(243, 243, 240, 0.7);
+  --m-wa: #1f9d55;
+  --m-seg: #2c2c2c;
   color-scheme: dark;
 }
 
@@ -98,4 +103,152 @@ button {
 :focus-visible {
   outline: 2px solid var(--m-suave);
   outline-offset: 2px;
+}
+
+/* ─── Lo que comparten las hojas del pedido (maqueta de la 6b) ─── */
+.m-boton {
+  flex: 1;
+  min-width: 0;
+  height: 52px;
+  border: 0;
+  border-radius: 16px;
+  padding: 0 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  background: var(--m-acento);
+  color: var(--m-sobre-acento);
+  font-size: 15px;
+  font-weight: 800;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.m-boton:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.m-boton.wa {
+  background: var(--m-wa);
+  color: #ffffff;
+}
+
+.m-boton.contorno {
+  flex: none;
+  background: transparent;
+  color: var(--m-texto);
+  border: 1px solid var(--m-linea);
+}
+
+.m-paso {
+  display: inline-flex;
+  align-items: center;
+  flex: none;
+  height: 52px;
+  border: 1px solid var(--m-linea);
+  border-radius: 16px;
+}
+
+.m-paso button {
+  width: 44px;
+  height: 50px;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: var(--m-texto);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.m-paso button:disabled {
+  color: var(--m-tenue);
+  cursor: default;
+}
+
+.m-paso span {
+  min-width: 22px;
+  text-align: center;
+  font-size: 16px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.m-paso.chico {
+  height: 36px;
+  border-radius: 12px;
+}
+
+.m-paso.chico button {
+  width: 36px;
+  height: 34px;
+}
+
+.m-paso.chico span {
+  font-size: 14px;
+}
+
+.m-campo {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 18px;
+}
+
+.m-campo label {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--m-suave);
+  font-weight: 600;
+}
+
+/* 16 px: Safari no acerca la página al tocarlo. */
+.m-campo input {
+  height: 48px;
+  width: 100%;
+  padding: 0 14px;
+  border: 1px solid var(--m-linea);
+  border-radius: 14px;
+  background: transparent;
+  color: var(--m-texto);
+  font: inherit;
+  font-size: 16px;
+  font-weight: 500;
+  outline: none;
+}
+
+.m-campo input:focus {
+  border-color: var(--m-suave);
+}
+
+.m-campo input::placeholder {
+  color: var(--m-tenue);
+}
+
+.m-aviso {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-top: 14px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: var(--m-chip);
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--m-texto);
+}
+
+.m-aviso > svg {
+  margin-top: 1px;
+  color: var(--m-suave);
+}
+
+.m-aviso > span {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
 }

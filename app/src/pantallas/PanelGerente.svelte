@@ -36,7 +36,9 @@
     type DatosGerente,
     type Sucursal,
   } from '../lib/gerente';
+  import { VigiaPedidos } from '../lib/pedidos.svelte';
   import { SIN_PANEL } from '../lib/sesion';
+  import { supabase } from '../lib/supabase';
   import CajaError from '../diseno/CajaError.svelte';
   import { esDeRed, SIN_CONEXION } from '../lib/errores';
   import AccesoAbierto from './gerente/AccesoAbierto.svelte';
@@ -47,6 +49,7 @@
   import Menu from './gerente/Menu.svelte';
   import MenuEnLinea from './gerente/MenuEnLinea.svelte';
   import Mesas from './gerente/Mesas.svelte';
+  import Pedidos from './gerente/Pedidos.svelte';
   import Perfil from './gerente/Perfil.svelte';
   import Suscripcion from './gerente/Suscripcion.svelte';
   import TuRestaurante from './gerente/TuRestaurante.svelte';
@@ -70,6 +73,7 @@
   let actualId = $state(sucursalInicial(iniciales.sucursales).id);
   let vista = $state<
     | 'inicio'
+    | 'pedidos'
     | 'restaurante'
     | 'menu'
     | 'mesas'
@@ -95,6 +99,40 @@
   const otrasQueFuncionan = $derived(
     datos.sucursales.filter((s) => s.estado === 'funciona' && s.id !== actual.id),
   );
+
+  // Los pedidos del menú en línea de la sucursal (parte 6b): su vigía vive aquí, encima de las
+  // vistas, para que el tono suene en cualquiera. Con su fila de miembros, también le suena «Lista»
+  // a lo que confirmó, menos en el punto de venta, que ya suena solo.
+  let vigia = $state<VigiaPedidos | null>(null);
+  // Solo el id: releer las sucursales al volver a la pestaña no la vuelve a crear.
+  const vigilada = $derived(actual.estado === 'funciona' ? actual.id : null);
+  $effect(() => {
+    if (vigilada === null) return;
+    const restauranteId = vigilada;
+    let dejar: (() => void) | null = null;
+    let fuera = false;
+    supabase
+      .from('miembros')
+      .select('id')
+      .eq('restaurante_id', restauranteId)
+      .eq('usuario_id', usuarioId)
+      .maybeSingle()
+      .then(({ data, error }) => {
+        if (error) console.error('[gerente] no se pudo leer su fila de miembros; «Lista» no le sonará:', error);
+        if (fuera) return;
+        const v = new VigiaPedidos(supabase, restauranteId, data?.id ?? null);
+        vigia = v;
+        dejar = v.iniciar();
+      });
+    return () => {
+      fuera = true;
+      dejar?.();
+      vigia = null;
+    };
+  });
+  $effect(() => {
+    if (vigia) vigia.oirListas = vista !== 'pos';
+  });
 
   async function leer() {
     let nuevos: DatosGerente;
@@ -132,6 +170,7 @@
     else if (valor === 'ayuda') window.open(WHATSAPP_FRAGMENTLESS, '_blank', 'noopener');
     else if (
       valor === 'inicio' ||
+      valor === 'pedidos' ||
       valor === 'restaurante' ||
       valor === 'menu' ||
       valor === 'mesas' ||
@@ -166,6 +205,7 @@
       subtitulo={plan ? `Plan ${plan}` : ''}
       opciones={[
         { valor: 'inicio', texto: 'Inicio', icono: 'inicio' },
+        { valor: 'pedidos', texto: 'Pedidos', icono: 'bolsa', insignia: vigia?.insignia || undefined },
         { grupo: 'GENERAL' },
         { valor: 'restaurante', texto: 'Tu restaurante', icono: 'tienda' },
         { valor: 'menu', texto: 'Mi menú', icono: 'menu' },
@@ -189,7 +229,13 @@
       }}
     />
 
-    {#if vista === 'restaurante'}
+    {#if vista === 'pedidos'}
+      {#if vigia}
+        <Pedidos sucursal={actual} sucursales={datos.sucursales} {vigia} alElegir={elegir} />
+      {:else}
+        <BarraArriba titulo="Pedidos" estado={{ texto: 'Leyendo…', vivo: false }} />
+      {/if}
+    {:else if vista === 'restaurante'}
       <!-- Cada sucursal tiene sus datos y su horario: se vuelve a abrir desde cero. -->
       {#key actual.id}
         <TuRestaurante sucursal={actual} sucursales={datos.sucursales} alElegir={elegir} />

@@ -75,7 +75,7 @@
   async function probar() {
     enviando = true;
     try {
-      const r = await entrar(ligado, persona.id, pin);
+      const r = await entrar(ligado, persona, pin);
       if (r.ok) {
         alEntrar();
         return;

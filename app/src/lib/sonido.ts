@@ -33,6 +33,17 @@ export function avisarCambio(): void {
   ]);
 }
 
+// Un pedido del menú en línea espera «Por confirmar» (parte 6b, decidido el 25 de octubre de 2026):
+// suena al llegar y cada minuto mientras alguno espera. Tres notas que suben, para no confundirlo
+// con «Lista».
+export function avisarPedido(): void {
+  sonar('sine', [
+    { nota: 784, desde: 0 },
+    { nota: 988, desde: 0.14 },
+    { nota: 1319, desde: 0.28 },
+  ]);
+}
+
 function sonar(forma: OscillatorType, notas: { nota: number; desde: number }[]): void {
   try {
     navigator.vibrate?.(200);

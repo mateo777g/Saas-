@@ -1,7 +1,8 @@
 <!--
   La barra de arriba de cada vista ("ESTRUCTURA DE UNA VISTA" en plan panel.txt): vidrio sin
   sombra, 60 de alto, radio 18, de la barra lateral hasta 16 del borde derecho. Lleva el título
-  de la vista, el chip de estado (punto verde mientras todo se lee bien) y, a la derecha, los
+  de la vista, el chip de estado (punto verde mientras todo se lee bien; amarillo con `pausa`, los
+  pedidos en pausa de la parte 6b) y, a la derecha, los
   botones que le pase la vista. `junto` va pegado al título, antes del chip (el selector
   Productos | Categorías de Mi menú, el día de Cortes y reportes), y `despues`, justo después del
   chip («Actualizado 18:05» de Inicio).
@@ -19,7 +20,7 @@
     children,
   }: {
     titulo: string;
-    estado?: { texto: string; vivo: boolean } | null;
+    estado?: { texto: string; vivo: boolean; pausa?: boolean } | null;
     // Antes del título: la flecha de volver (Tu menú en línea).
     antes?: Snippet;
     junto?: Snippet;
@@ -34,7 +35,7 @@
   {@render junto?.()}
   {#if estado}
     <span class="chip">
-      {#if estado.vivo}<span class="punto"></span>{/if}
+      {#if estado.vivo || estado.pausa}<span class="punto" class:pausa={estado.pausa}></span>{/if}
       <span>{estado.texto}</span>
     </span>
   {/if}
@@ -92,6 +93,10 @@
     flex: none;
     border-radius: 4px;
     background: var(--verde);
+  }
+
+  .punto.pausa {
+    background: var(--amarillo);
   }
 
   .crece {

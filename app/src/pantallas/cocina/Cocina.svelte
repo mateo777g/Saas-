@@ -182,7 +182,9 @@
   const minutos = (t: Tarjeta) => Math.max(0, Math.floor((ahora - Date.parse(t.created_at)) / 60000));
   const hora = (momento: string) => enZona(momento, zona).hora;
   const quien = (id: number | null) => (id === null ? '—' : (nombres.get(id) ?? '—'));
-  const tipoTexto = (t: Tarjeta) => (t.tipo === 'domicilio' ? 'Domicilio · ' : t.tipo === 'para_llevar' ? 'Para llevar · ' : '');
+  // «Para llevar · WhatsApp · Lupita»: la de un pedido del menú en línea lo dice (parte 6b).
+  const tipoTexto = (t: Tarjeta) =>
+    (t.tipo === 'domicilio' ? 'Domicilio · ' : t.tipo === 'para_llevar' ? 'Para llevar · ' : '') + (t.whatsapp ? 'WhatsApp · ' : '');
 
   onMount(() => {
     leerTodo();

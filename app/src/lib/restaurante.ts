@@ -18,6 +18,7 @@ export type Restaurante = {
   menu_tema: TemaMenu;
   menu_color: string | null;
   tipo_cambio_usd: number | null;
+  hace_envios: boolean; // «Hago envíos» (parte 6b): sus clientes también piden a domicilio
   horario: Horario[];
 };
 
@@ -33,7 +34,7 @@ export async function leerRestaurante(restauranteId: string): Promise<Restaurant
   const [fila, dias] = await Promise.all([
     supabase
       .from('restaurantes')
-      .select('nombre, slug, telefono, direccion, logo_ruta, menu_tema, menu_color, tipo_cambio_usd')
+      .select('nombre, slug, telefono, direccion, logo_ruta, menu_tema, menu_color, tipo_cambio_usd, hace_envios')
       .eq('id', restauranteId)
       .single(),
     supabase.from('horarios').select('dia, abre, cierra').eq('restaurante_id', restauranteId).order('dia'),
@@ -81,19 +82,21 @@ export async function guardarRestaurante(restauranteId: string, datos: DatosRest
 
 // ─── Tu menú en línea ───────────────────────────────────────────────────────
 
-// «Guardar» de Cómo se ve: el tema, el color (vacío = el neutro) y el tipo de cambio (vacío = solo
-// pesos).
+// «Guardar» de Cómo se ve: el tema, el color (vacío = el neutro), el tipo de cambio (vacío = solo
+// pesos) y «Hago envíos».
 export async function guardarMenuEnLinea(
   restauranteId: string,
   tema: TemaMenu,
   color: string | null,
   tipoCambio: number | null,
+  haceEnvios: boolean,
 ): Promise<void> {
   const { error } = await supabase.rpc('guardar_menu_en_linea', {
     p_restaurante_id: restauranteId,
     p_tema: tema,
     p_color: color,
     p_tipo_cambio_usd: tipoCambio,
+    p_hace_envios: haceEnvios,
   });
   if (error) throw fallo('guardar_menu_en_linea no se pudo', error);
 }

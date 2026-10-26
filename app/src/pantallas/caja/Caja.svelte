@@ -49,6 +49,7 @@
     leerAbiertas,
     leerNombres,
     leerZona,
+    nombreDeCuenta,
     type Comanda,
     type Renglon,
     type Venta,
@@ -111,7 +112,6 @@
   const quien = (id: number | null) => (id === null ? '—' : (nombres.get(id) ?? '—'));
   const hora = (momento: string) => enZona(momento, zona).hora;
   const pila = (nombre: string | null) => (nombre ?? '—').trim().split(/\s+/)[0];
-  const titulo = (v: Venta) => (v.tipo === 'mesa' ? v.mesa_nombre : v.cliente_nombre) ?? '—';
 
   function avisar(texto: string) {
     globo = texto;
@@ -519,11 +519,11 @@
             <span class="cuadro-icono"><Icono nombre={v.tipo === 'domicilio' ? 'moto' : v.tipo === 'para_llevar' ? 'bolsa' : 'mesas'} tamano={18} /></span>
             <span class="t">
               {#if v.folio !== null}<span class="etq">Folio {v.folio}</span>{/if}
-              <b>{titulo(v)}</b>
+              <b>{nombreDeCuenta(v)}</b>
               <span class="tipo">
                 {v.tipo === 'domicilio' ? 'Domicilio · ' : v.tipo === 'para_llevar' ? 'Para llevar · ' : ''}Abrió {quien(v.abierta_por)} · {hora(v.created_at)}
               </span>
-              <MarcaEstado estado={estadoDe(v)} />
+              <MarcaEstado estado={estadoDe(v)} whatsapp={v.pedido_numero !== null} />
             </span>
             <span class="der">
               <span class="mesa-total">{dinero(v.total)}</span>
@@ -541,6 +541,7 @@
               <span class="etq">Folio {c.folio}</span>
               <b>{c.titulo}</b>
               <span class="tipo">{c.metodos.map((m) => NOMBRE_METODO[m]).join(' + ')} · {hora(c.cerrada_at)}</span>
+              {#if c.whatsapp}<MarcaEstado estado="ocupada" whatsapp />{/if}
             </span>
             <span class="der"><span class="mesa-total">{dinero(c.total)}</span></span>
           </button>
@@ -556,7 +557,7 @@
     <HojaCobrar
       {cliente}
       {restauranteId}
-      venta={{ id: v.id, titulo: titulo(v), tipo: v.tipo, abrio: v.abierta_por === null ? null : quien(v.abierta_por) }}
+      venta={{ id: v.id, titulo: nombreDeCuenta(v), tipo: v.tipo, abrio: v.abierta_por === null ? null : quien(v.abierta_por) }}
       cuenta={ventas.find((x) => x.id === v.id) ?? null}
       turnoId={turno?.id ?? null}
       {nombres}

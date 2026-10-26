@@ -40,6 +40,7 @@
     leerZona,
     mandarACocina,
     mismaLinea,
+    nombreDeCuenta,
     pedirCuenta,
     quitarDescuento,
     restar,
@@ -264,7 +265,7 @@
     return deMesa(v) ? `m${v.mesa_id}` : `v${v.id}`;
   }
 
-  const nombreDe = (v: Venta) => (v.tipo === 'mesa' ? v.mesa_nombre : v.cliente_nombre) ?? '';
+  const nombreDe = (v: Venta) => nombreDeCuenta(v);
 
   function tituloDe(llave: string): string {
     const v = ventaDe(llave);

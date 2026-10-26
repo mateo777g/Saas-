@@ -66,7 +66,8 @@
   });
 
   // Los que se pueden elegir ahora: los que se ven en la tabla y no están ocultos ya.
-  const elegibles = $derived(mostrados.filter((p) => p.visible));
+  // Un envío no sale en el menú en línea: no se oculta (parte 6b).
+  const elegibles = $derived(mostrados.filter((p) => p.visible && !p.es_envio));
   const todos = $derived(elegibles.length > 0 && elegibles.every((p) => elegidos.has(p.id)));
 
   function alternar(id: number) {
@@ -97,9 +98,14 @@
   </span>
   <span class="precio">{dinero(p.precio)}</span>
   <span>
-    <span class="visibilidad" class:no={!p.visible}>
-      <span class="punto"></span>{p.visible ? 'Visible' : eligiendo ? 'Ya oculto' : 'Oculto'}
-    </span>
+    {#if p.es_envio}
+      <!-- Donde los demás dicen si se ven: un envío nunca sale en el menú en línea. -->
+      <span class="marca-envio"><Icono nombre="moto" tamano={13} />Envío</span>
+    {:else}
+      <span class="visibilidad" class:no={!p.visible}>
+        <span class="punto"></span>{p.visible ? 'Visible' : eligiendo ? 'Ya oculto' : 'Oculto'}
+      </span>
+    {/if}
   </span>
 {/snippet}
 
@@ -156,10 +162,10 @@
         type="button"
         class="fila eleccion"
         aria-pressed={elegidos.has(p.id)}
-        disabled={!p.visible}
+        disabled={!p.visible || p.es_envio}
         onclick={() => alternar(p.id)}
       >
-        <span class="cajita" class:si={elegidos.has(p.id)} class:muerta={!p.visible}>
+        <span class="cajita" class:si={elegidos.has(p.id)} class:muerta={!p.visible || p.es_envio}>
           {#if elegidos.has(p.id)}<Icono nombre="check" tamano={13} />{/if}
         </span>
         {@render celdas(p)}
@@ -170,11 +176,13 @@
       <div class="fila">
         {@render celdas(p)}
         <span class="acciones">
-          <BotonCuadro
-            icono={p.visible ? 'oculto' : 'ojo'}
-            ayuda={p.visible ? 'Ocultar del menú público' : 'Mostrar en el menú público'}
-            onclick={() => alOjo(p)}
-          />
+          {#if !p.es_envio}
+            <BotonCuadro
+              icono={p.visible ? 'oculto' : 'ojo'}
+              ayuda={p.visible ? 'Ocultar del menú público' : 'Mostrar en el menú público'}
+              onclick={() => alOjo(p)}
+            />
+          {/if}
           <BotonCuadro icono="crear" ayuda="Editar producto" onclick={() => alEditar(p)} />
         </span>
       </div>
@@ -331,6 +339,18 @@
   .visibilidad.no .punto {
     background: transparent;
     border: 1.5px solid var(--tenue);
+  }
+
+  .marca-envio {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: 22px;
+    padding: 0 8px;
+    border-radius: 7px;
+    background: var(--chip);
+    font-size: 12px;
+    font-weight: 600;
   }
 
   .acciones {

@@ -27,6 +27,9 @@ export type Producto = {
   precio: number;
   imagen_ruta: string | null;
   visible: boolean;
+  // «Es un costo de envío» (parte 6b): no sale en el menú en línea ni llega a la cocina, y no lleva
+  // foto, inglés ni opciones.
+  es_envio: boolean;
   // Los grupos que lleva, en el orden de Opciones.
   grupos: number[];
 };
@@ -62,7 +65,7 @@ export async function leerMenu(restauranteId: string): Promise<Menu> {
       .order('id'),
     supabase
       .from('productos')
-      .select('id, categoria_id, nombre, descripcion, nombre_en, descripcion_en, precio, imagen_ruta, visible')
+      .select('id, categoria_id, nombre, descripcion, nombre_en, descripcion_en, precio, imagen_ruta, visible, es_envio')
       .eq('restaurante_id', restauranteId)
       .is('archivado_at', null)
       .order('orden')
@@ -153,6 +156,7 @@ export type DatosProducto = {
   precio: number;
   imagen_ruta?: string;
   grupos: number[];
+  es_envio: boolean;
 };
 
 // «Agregar producto» y «Guardar cambios»: Postgres guarda el producto y sus grupos juntos
@@ -167,8 +171,10 @@ export async function guardarProducto(restauranteId: string, id: number | null, 
     p_precio: datos.precio,
     p_imagen_ruta: datos.imagen_ruta ?? null,
     p_grupos: datos.grupos,
-    p_nombre_en: datos.nombre_en,
-    p_descripcion_en: datos.descripcion_en,
+    // Un envío no lleva inglés: vacío no basta, Postgres pide que no vaya.
+    p_nombre_en: datos.es_envio ? null : datos.nombre_en,
+    p_descripcion_en: datos.es_envio ? null : datos.descripcion_en,
+    p_es_envio: datos.es_envio,
   });
   if (error) throw fallo('guardar_producto no se pudo', error);
 }

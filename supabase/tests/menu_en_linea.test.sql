@@ -1228,7 +1228,7 @@ select is(
 select tests.authenticate_as('gerente_a');
 
 select is(
-  public.estado_menu_en_linea('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'),
+  public.estado_menu_en_linea('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa') - 'asistente',
   jsonb_build_object('estado', null, 'a_la_vista', 6, 'productos', 9),
   'Gerente A ve cuántos productos están a la vista de los que tiene; sin horario, sin estado'
 );

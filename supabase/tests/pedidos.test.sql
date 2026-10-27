@@ -442,7 +442,7 @@ select is(
 select tests.authenticate_as('gerente_a');
 
 select is(
-  public.estado_menu_en_linea('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa') - 'estado',
+  public.estado_menu_en_linea('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa') - 'estado' - 'asistente',
   '{"a_la_vista": 4, "productos": 6}'::jsonb,
   '«4 de 6 productos a la vista» no cuenta los envíos en ninguno de los dos números'
 );

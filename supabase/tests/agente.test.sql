@@ -4,8 +4,8 @@
 -- que se abrieron; lo cancelado no suma; una reabierta no cuenta hasta que se vuelve a cerrar).
 -- La hora y el día de la semana van en promedio; la proyección, con los mismos días de la semana;
 -- la sexta herramienta, con las mismas partes que reporte_del_dia. Inicio sale de las mismas
--- piezas. El gasto lo anota solo el Worker, Postgres saca el costo, y el agente gasta el tope
--- completo mientras no existan los flyers ni el mini agente del menú. Solo el gerente pregunta.
+-- piezas. El gasto lo anota solo el Worker, Postgres saca el costo, y el agente tiene el tope
+-- menos la parte del menú (migración asistente_menu). Solo el gerente pregunta.
 --
 -- Todo corre en una transacción que se deshace al final.
 
@@ -1191,7 +1191,7 @@ select throws_ok(
 );
 select throws_ok(
   $$ select public.anotar_uso_ia('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 'flyer', 'gpt-6.1-sol', 100, 0, 0, 10) $$,
-  '22023', 'El uso de IA es pregunta o saludo',
+  '22023', 'El uso de IA es pregunta, saludo, menu o menu_sin_respuesta',
   'Los flyers todavía no existen'
 );
 reset role;
@@ -1217,8 +1217,9 @@ reset role;
 select tests.authenticate_as('fragmentless');
 select is(
   public.uso_ia_cliente('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa') - 'mes',
-  '{"tope": 0.02, "gastado": 0.0200, "gastado_agente": 0.0200, "consultas_agente": 1, "saludos": 1,
-    "distribuidor_id": null, "distribuidor": null}'::jsonb,
+  '{"tope": 0.02, "gastado": 0.0200, "sobre_agente": 0.02, "gastado_agente": 0.0200, "consultas_agente": 1,
+    "saludos": 1, "agente_en_limite": true, "sobre_menu": 0.00, "gastado_menu": 0.0000, "consultas_menu": 0,
+    "menu_en_limite": false, "distribuidor_id": null, "distribuidor": null}'::jsonb,
   'La ventana «Tope de IA» trae lo gastado este mes, el tope y quién paga'
 );
 select is(
@@ -1235,7 +1236,7 @@ select tests.authenticate_as('gerente_a');
 select is(
   public.estado_ia('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'),
   '{"puede": true}'::jsonb,
-  '… reactiva la IA en ese momento: el agente gasta el tope completo mientras no haya flyers ni menú'
+  '… reactiva la IA en ese momento: el agente tiene sus 8 de los 10'
 );
 reset role;
 

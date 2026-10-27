@@ -1,8 +1,9 @@
 // El pedido del menú en línea por WhatsApp (libreta 6, parte 6b). Un solo trabajo:
 //  - POST /menu/pedido, desde pidemenu.mx, sin sesión: la señora Ramírez toca «Hacer pedido».
 // Primero la revisión de Cloudflare (Turnstile): si no pasa, no se toca la base. Después las dos
-// marcas que cuentan el límite (3 pedidos por hora por celular, 10 por conexión), hechas aquí con
-// la llave de las marcas: la conexión nunca se guarda, solo su marca, que no se puede revertir.
+// marcas que cuentan el límite (3 pedidos por hora por celular, 10 por conexión; en IPv6, por su
+// bloque /64), hechas aquí con la llave de las marcas: la conexión nunca se guarda, solo su marca,
+// que no se puede revertir.
 // Al final hacer_pedido como el Worker (la llave secreta). Postgres decide todo lo demás (horario,
 // pausa, precios, agotados, el límite) y lo que contesta pasa tal cual, también sus «no».
 import type { Env } from './index';
@@ -37,7 +38,7 @@ export async function pedidoDelMenu(request: Request, env: Env, url: URL): Promi
 
   const llave = pimientaMarcas(env);
   argumentos.p_marca_celular = await hmacHex(llave, `celular:${marca}`);
-  argumentos.p_marca_conexion = await hmacHex(llave, `conexion:${ip}`);
+  argumentos.p_marca_conexion = await hmacHex(llave, `conexion:${conexionDelLimite(ip)}`);
 
   const respuesta = await llamar<{ ok?: boolean; numero?: number }>(env, 'worker', 'hacer_pedido', argumentos);
   if (respuesta?.ok) console.log('[pedido] guardado', argumentos.p_slug, respuesta.numero);
@@ -128,6 +129,25 @@ async function revisarTurnstile(env: Env, token: string, ip: string): Promise<vo
   if (codigos.length && codigos.every((c) => TOKEN_MALO.includes(c))) throw new Rechazo(403, NO_ERES_TU);
   console.error('[pedido] Turnstile falló', codigos);
   throw new Rechazo(503, NO_SE_MANDO);
+}
+
+// La conexión que cuenta el límite. En IPv6, cada celular o casa trae su bloque /64 y puede brincar
+// de una dirección a otra dentro de él: cuenta el bloque, no la dirección (decidido el 26 de
+// octubre de 2026). IPv4 cuenta tal cual. Lo que no se entiende como IPv6 cuenta tal cual.
+export function conexionDelLimite(ip: string): string {
+  const texto = ip.trim().toLowerCase();
+  if (!texto.includes(':')) return texto;
+  const v4 = /^::ffff:(\d{1,3}(?:\.\d{1,3}){3})$/.exec(texto);
+  if (v4) return v4[1];
+  const partes = texto.split('::');
+  if (partes.length > 2) return texto;
+  const izquierda = partes[0] ? partes[0].split(':') : [];
+  const derecha = partes.length === 2 && partes[1] ? partes[1].split(':') : [];
+  const faltan = 8 - izquierda.length - derecha.length;
+  if (partes.length === 1 ? faltan !== 0 : faltan < 1) return texto;
+  const grupos = [...izquierda, ...Array<string>(partes.length === 2 ? faltan : 0).fill('0'), ...derecha];
+  if (!grupos.every((g) => /^[0-9a-f]{1,4}$/.test(g))) return texto;
+  return `${grupos.slice(0, 4).map((g) => parseInt(g, 16).toString(16)).join(':')}::/64`;
 }
 
 function pimientaMarcas(env: Env): string {

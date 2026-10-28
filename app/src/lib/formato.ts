@@ -108,9 +108,9 @@ export function saludoPorHora(hora: number): string {
   return 'Buenas noches';
 }
 
-// 1 → '1 restaurante'; 12 → '12 restaurantes'.
+// 1 → '1 restaurante'; 12 → '12 restaurantes'; 1140 → '1,140 preguntas'.
 export function plural(n: number, uno: string, varios: string): string {
-  return `${n} ${n === 1 ? uno : varios}`;
+  return `${n.toLocaleString('en-US')} ${n === 1 ? uno : varios}`;
 }
 
 // Los días que le quedan a una licencia, como los dio Postgres (dias_restantes): 0 vence hoy,

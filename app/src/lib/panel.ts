@@ -181,14 +181,22 @@ export function fijarDistribuidorActivo(distribuidorId: number, activo: boolean)
 // cliente, de 0 a 10 dólares al mes (libreta 3, «El gasto de IA»).
 
 // Lo de la ventana «Tope de IA» (uso_ia_cliente): el mes (su día 1), lo gastado (todos los
-// sobres y el del agente, en dólares), el tope y quién paga.
+// sobres, en dólares), el tope, cada sobre con su parte ya calculada por Postgres (con la 6c, la
+// quinta parte es del asistente del menú y el resto del Agente IA), lo gastado, cuántas preguntas
+// y si llegó a lo suyo, y quién paga.
 export type UsoIa = {
   mes: string;
   tope: number;
   gastado: number;
+  sobre_agente: number;
   gastado_agente: number;
   consultas_agente: number;
   saludos: number;
+  agente_en_limite: boolean;
+  sobre_menu: number;
+  gastado_menu: number;
+  consultas_menu: number;
+  menu_en_limite: boolean;
   distribuidor_id: number | null;
   distribuidor: string | null;
 };

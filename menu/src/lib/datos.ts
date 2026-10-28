@@ -71,6 +71,8 @@ export type MenuPublico = {
   // privado.recibe_pedidos: teléfono, dentro del horario y sin pausa (parte 6b).
   recibe_pedidos: boolean;
   pedidos_pausados: boolean;
+  // Si el asistente contesta (parte 6c): su sobre tiene dinero. Sin números.
+  asistente_contesta: boolean;
   carteles: string[];
   categorias: Categoria[];
 };

@@ -14,7 +14,7 @@ import { llamar } from './supabase';
 const SITEVERIFY = 'https://challenges.cloudflare.com/turnstile/v0/siteverify';
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 // La marca del celular: 32 bytes al azar en base64url, guardados por el menú en pidemenu-marca.
-const MARCA_CELULAR = /^[A-Za-z0-9_-]{43}$/;
+export const MARCA_CELULAR = /^[A-Za-z0-9_-]{43}$/;
 const NO_ERES_TU = 'No pudimos revisar que eres tú. Intenta otra vez.';
 const NO_SE_MANDO = 'No pudimos mandar tu pedido. Intenta otra vez.';
 // Lo que dice Turnstile cuando el token no sirve (un robot, uno vencido o ya usado): es un «no»
@@ -99,12 +99,18 @@ function textoONulo(valor: unknown): string | null {
 
 // La revisión de Cloudflare. Si dice que no, es un «no» esperado y no se registra. Si no contesta,
 // falla o la llave está mal puesta, se registra y ningún pedido entra sin ella (decidido el 25 de
-// octubre de 2026).
-async function revisarTurnstile(env: Env, token: string, ip: string): Promise<void> {
+// octubre de 2026). El asistente del menú la usa igual, con su etiqueta y su texto.
+export async function revisarTurnstile(
+  env: Env,
+  token: string,
+  ip: string,
+  etiqueta = '[pedido]',
+  falla = NO_SE_MANDO,
+): Promise<void> {
   if (!token || token.length > 2048) throw new Rechazo(403, NO_ERES_TU);
   if (!env.TURNSTILE_SECRETO) {
-    console.error('[pedido] falta el secreto TURNSTILE_SECRETO en Cloudflare');
-    throw new Rechazo(503, NO_SE_MANDO);
+    console.error(`${etiqueta} falta el secreto TURNSTILE_SECRETO en Cloudflare`);
+    throw new Rechazo(503, falla);
   }
   let resultado: { success?: boolean; 'error-codes'?: string[] };
   try {
@@ -115,20 +121,20 @@ async function revisarTurnstile(env: Env, token: string, ip: string): Promise<vo
       signal: AbortSignal.timeout(10_000),
     });
     if (!respuesta.ok) {
-      console.error('[pedido] Turnstile contestó', respuesta.status, await respuesta.text());
-      throw new Rechazo(503, NO_SE_MANDO);
+      console.error(`${etiqueta} Turnstile contestó`, respuesta.status, await respuesta.text());
+      throw new Rechazo(503, falla);
     }
     resultado = (await respuesta.json()) as typeof resultado;
   } catch (e) {
     if (e instanceof Rechazo) throw e;
-    console.error('[pedido] Turnstile no contestó', e);
-    throw new Rechazo(503, NO_SE_MANDO);
+    console.error(`${etiqueta} Turnstile no contestó`, e);
+    throw new Rechazo(503, falla);
   }
   if (resultado.success === true) return;
   const codigos = resultado['error-codes'] ?? [];
   if (codigos.length && codigos.every((c) => TOKEN_MALO.includes(c))) throw new Rechazo(403, NO_ERES_TU);
-  console.error('[pedido] Turnstile falló', codigos);
-  throw new Rechazo(503, NO_SE_MANDO);
+  console.error(`${etiqueta} Turnstile falló`, codigos);
+  throw new Rechazo(503, falla);
 }
 
 // La conexión que cuenta el límite. En IPv6, cada celular o casa trae su bloque /64 y puede brincar
@@ -150,10 +156,10 @@ export function conexionDelLimite(ip: string): string {
   return `${grupos.slice(0, 4).map((g) => parseInt(g, 16).toString(16)).join(':')}::/64`;
 }
 
-function pimientaMarcas(env: Env): string {
+export function pimientaMarcas(env: Env, etiqueta = '[pedido]', falla = NO_SE_MANDO): string {
   if (!env.PIMIENTA_MARCAS) {
-    console.error('[pedido] falta el secreto PIMIENTA_MARCAS en Cloudflare');
-    throw new Rechazo(503, NO_SE_MANDO);
+    console.error(`${etiqueta} falta el secreto PIMIENTA_MARCAS en Cloudflare`);
+    throw new Rechazo(503, falla);
   }
   return env.PIMIENTA_MARCAS;
 }

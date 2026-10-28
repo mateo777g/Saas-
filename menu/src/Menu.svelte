@@ -10,6 +10,9 @@
 
   Con la 6b (maqueta G2nxGb3xBgiPEYrDb6CgcW) se pide: el «+» de cada producto, «Ver tu pedido» abajo,
   «Tu pedido», «Hacer pedido» (Worker /menu/pedido) y luego «Falta un paso» y «Pedido enviado».
+
+  Con la 6c (maqueta 2UPwZw31WrcYRZkH8jaT1Y) llega el asistente: la burbuja ∫∫ abajo a la derecha y
+  su plática (Worker /menu/pregunta); la hoja de un producto que nombró se abre encima de la plática.
 -->
 <script lang="ts">
   import { onMount, tick } from 'svelte';
@@ -18,9 +21,11 @@
   import Aviso from './componentes/Aviso.svelte';
   import Barra from './componentes/Barra.svelte';
   import BarraPedido from './componentes/BarraPedido.svelte';
+  import Burbuja from './componentes/Burbuja.svelte';
   import Buscador from './componentes/Buscador.svelte';
   import Carteles from './componentes/Carteles.svelte';
   import Fila from './componentes/Fila.svelte';
+  import HojaAsistente from './componentes/HojaAsistente.svelte';
   import HojaHecho from './componentes/HojaHecho.svelte';
   import HojaInfo from './componentes/HojaInfo.svelte';
   import HojaOrdenar from './componentes/HojaOrdenar.svelte';
@@ -29,6 +34,7 @@
   import Icono from './componentes/Icono.svelte';
   import Pestanas from './componentes/Pestanas.svelte';
   import Visor from './componentes/Visor.svelte';
+  import { Platica } from './lib/asistente.svelte';
   import { leerMenu, urlImagen, type MenuPublico, type Producto } from './lib/datos';
   import { avisarAlPanel, escucharPanel, modoMuestra, type Pintura } from './lib/muestra';
   import {
@@ -150,7 +156,8 @@
     | { tipo: 'ordenar' }
     | { tipo: 'info' }
     | { tipo: 'pedido' }
-    | { tipo: 'hecho' };
+    | { tipo: 'hecho' }
+    | { tipo: 'asistente' };
   let pila = $state<Encima[]>([]);
   const encima = $derived(pila.at(-1) ?? null);
 
@@ -367,6 +374,20 @@
   });
   const conAbajo = $derived(!muestra && !!menu && (avisoAbajo !== null || carrito.length > 0));
 
+  // ─── El asistente (parte 6c) ───
+  // La plática no vive en su hoja: si ella la cierra mientras piensa, la respuesta llega igual.
+  const platica = new Platica(slug);
+  const conPlatica = $derived(pila.some((e) => e.tipo === 'asistente'));
+
+  async function preguntarAlAsistente(pregunta: string, hueco: HTMLElement) {
+    const motivo = await platica.preguntar(pregunta, { lengua, moneda, revision: () => pedirToken(hueco, lengua) });
+    // Se acabó su sobre a media plática: la caja se apaga ya y el menú se vuelve a leer.
+    if (motivo === 'sin_ia' && menu) {
+      menu = { ...menu, asistente_contesta: false };
+      cargar(true);
+    }
+  }
+
   // ─── Las categorías al bajar ───
   let activa = $state<number | null>(null);
   let pausaHasta = 0;
@@ -470,7 +491,7 @@
     <Aviso titulo={t.sinRed} texto={t.sinRedTexto} boton={t.reintentar} alBoton={() => cargar()} />
   {:else if menu}
     {@const r = menu.restaurante}
-    <div class="columna" class:con-abajo={conAbajo}>
+    <div class="columna" class:con-abajo={conAbajo} class:con-burbuja={muestra !== 'barra'}>
       <Barra
         nombre={r.nombre}
         logo={r.logo_ruta}
@@ -543,35 +564,55 @@
     {#if conAbajo}
       <BarraPedido {cuantos} total={pesos(totalCarrito)} aviso={avisoAbajo} {t} alAbrir={() => abrir({ tipo: 'pedido' })} />
     {/if}
+    {#if muestra !== 'barra'}
+      <Burbuja conBarra={conAbajo} {t} alAbrir={() => abrir({ tipo: 'asistente' })} />
+    {/if}
     {#if globo}
       <div class="globo" role="status"><Icono nombre="check" tamano={14} />{globo}</div>
+    {/if}
+
+    {#if conPlatica}
+      <HojaAsistente
+        {platica}
+        {menu}
+        {productos}
+        {lengua}
+        {moneda}
+        {t}
+        alPreguntar={preguntarAlAsistente}
+        alAbrirProducto={(p) => abrir({ tipo: 'producto', producto: p, foto: false, editando: null })}
+        alCerrar={cerrar}
+      />
     {/if}
 
     {#if encima?.tipo === 'producto'}
       {@const editando = encima.editando}
       {@const producto = encima.producto}
-      {#key encima}
-        <HojaProducto
-          {producto}
-          {lengua}
-          {moneda}
-          {t}
-          {recibe}
-          inicial={editando === null ? null : (carrito[editando] ?? null)}
-          alVerFoto={verFoto}
-          alAgregar={(r) => alAgregar(producto, r, editando)}
-          alCerrar={cerrar}
-        />
-      {/key}
-      {#if encima.foto && encima.producto.imagen_ruta}
-        <Visor
-          ruta={encima.producto.imagen_ruta}
-          nombre={enSuLengua(encima.producto.nombre, encima.producto.nombre_en, lengua)}
-          descripcion={enSuLengua(encima.producto.descripcion, encima.producto.descripcion_en, lengua)}
-          {t}
-          alCerrar={cerrar}
-        />
-      {/if}
+      <!-- Abierta desde la plática, va encima de ella, con su velo. -->
+      <div class="encima" class:sobre-platica={conPlatica}>
+        {#key encima}
+          <HojaProducto
+            {producto}
+            {lengua}
+            {moneda}
+            {t}
+            {recibe}
+            inicial={editando === null ? null : (carrito[editando] ?? null)}
+            alVerFoto={verFoto}
+            alAgregar={(r) => alAgregar(producto, r, editando)}
+            alCerrar={cerrar}
+          />
+        {/key}
+        {#if encima.foto && encima.producto.imagen_ruta}
+          <Visor
+            ruta={encima.producto.imagen_ruta}
+            nombre={enSuLengua(encima.producto.nombre, encima.producto.nombre_en, lengua)}
+            descripcion={enSuLengua(encima.producto.descripcion, encima.producto.descripcion_en, lengua)}
+            {t}
+            alCerrar={cerrar}
+          />
+        {/if}
+      </div>
     {:else if encima?.tipo === 'ordenar'}
       <HojaOrdenar
         {orden}
@@ -632,6 +673,31 @@
   /* Lugar para «Ver tu pedido» abajo. */
   .columna.con-abajo .contenido {
     padding-bottom: 112px;
+  }
+
+  /* Y para la burbuja del asistente, sola o arriba de «Ver tu pedido». */
+  .columna.con-burbuja .contenido {
+    padding-bottom: calc(100px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .columna.con-abajo.con-burbuja .contenido {
+    padding-bottom: calc(176px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .encima {
+    display: contents;
+  }
+
+  .sobre-platica :global(.velo) {
+    z-index: 9;
+  }
+
+  .sobre-platica :global(.hoja) {
+    z-index: 10;
+  }
+
+  .sobre-platica :global(.visor) {
+    z-index: 11;
   }
 
   .globo {

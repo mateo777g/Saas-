@@ -191,8 +191,16 @@ async function saludo(env: Env, sesion: string, restaurante: string): Promise<Re
 }
 
 // El gasto, con la llave secreta: Postgres saca el costo y dice si todavía queda tope. Nunca
-// truena: si no se pudo anotar, queda en el registro con los tokens para anotarlo a mano.
-async function anotar(env: Env, restaurante: string, uso: 'pregunta' | 'saludo', modelo: string, t: Tokens): Promise<boolean | null> {
+// truena: si no se pudo anotar, queda en el registro con los tokens para anotarlo a mano. El
+// asistente del menú la usa igual, con sus dos usos.
+export async function anotar(
+  env: Env,
+  restaurante: string,
+  uso: 'pregunta' | 'saludo' | 'menu' | 'menu_sin_respuesta',
+  modelo: string,
+  t: Tokens,
+): Promise<boolean | null> {
+  const etiqueta = uso === 'menu' || uso === 'menu_sin_respuesta' ? '[asistente]' : '[agente]';
   try {
     const r = await llamar<{ costo: unknown; puede: boolean }>(env, 'worker', 'anotar_uso_ia', {
       p_restaurante_id: restaurante,
@@ -203,10 +211,10 @@ async function anotar(env: Env, restaurante: string, uso: 'pregunta' | 'saludo',
       p_escritura_cache: t.escritura_cache,
       p_salida: t.salida,
     });
-    console.log('[agente] gasto anotado', uso, modelo, JSON.stringify(t), 'costo', r.costo);
+    console.log(`${etiqueta} gasto anotado`, uso, modelo, JSON.stringify(t), 'costo', r.costo);
     return r.puede;
   } catch (e) {
-    console.error('[agente] no se pudo anotar el gasto', uso, modelo, restaurante, JSON.stringify(t), e);
+    console.error(`${etiqueta} no se pudo anotar el gasto`, uso, modelo, restaurante, JSON.stringify(t), e);
     return null;
   }
 }

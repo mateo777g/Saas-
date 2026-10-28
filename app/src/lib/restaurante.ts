@@ -102,11 +102,14 @@ export async function guardarMenuEnLinea(
 }
 
 // El chip de arriba: si está abierto (null = sin horario) y cuántos productos ven sus clientes de
-// los que tiene, contados por Postgres igual que el menú.
+// los que tiene, contados por Postgres igual que el menú. Con la 6c, si el asistente del menú
+// contesta y, si no, por qué (sin IA o en su límite), si tiene distribuidor y cuándo vuelve: Don
+// Chuy no ve números, solo el aviso.
 export type EstadoMenu = {
   estado: { abierto: true; cierra: string } | { abierto: false; abre: { dia: number; hora: string; en_dias: number } } | null;
   a_la_vista: number;
   productos: number;
+  asistente: { puede: true } | { puede: false; motivo: 'sin_ia' | 'limite'; con_distribuidor: boolean; vuelve: string };
 };
 
 export async function leerEstadoMenu(restauranteId: string): Promise<EstadoMenu> {

@@ -6,6 +6,10 @@
   clientes, con lo que todavía no guarda. Los productos salen de Mi menú, y el logo y el horario de
   Tu restaurante. El chip de arriba dice si está abierto y cuántos productos están a la vista,
   contados por Postgres igual que el menú.
+
+  Con la 6c (maqueta 2UPwZw31WrcYRZkH8jaT1Y, sección 3), si el asistente del menú no contesta, un
+  aviso abajo de la descripción dice por qué y a quién pedírselo (encuesta 18 de
+  planes/trabajo/6c/lista-6c.md).
 -->
 <script lang="ts">
   import { onMount } from 'svelte';
@@ -19,6 +23,7 @@
   import Vidrio from '../../diseno/Vidrio.svelte';
   import { casiNoSeVe, type TemaMenu } from '../../lib/color';
   import { ALGO_SALIO_PANEL, esDeRed, Fallo, SIN_CONEXION } from '../../lib/errores';
+  import { diaYMes } from '../../lib/formato';
   import type { Sucursal } from '../../lib/gerente';
   import { leerEnvios, type Envio } from '../../lib/pedidos.svelte';
   import {
@@ -183,6 +188,19 @@
     const vista = estado.productos ? `${estado.a_la_vista} de ${estado.productos} productos a la vista` : 'Todavía sin productos';
     return { texto: `${abierto} · ${vista}`, vivo: !!estado.estado?.abierto };
   });
+
+  const avisoAsistente = $derived.by(() => {
+    const a = estado?.asistente;
+    if (!a || a.puede) return null;
+    if (a.motivo === 'limite') {
+      return `El asistente de tu menú llegó a su límite de este mes. Vuelve el ${diaYMes(a.vuelve)} o ${
+        a.con_distribuidor ? 'pídele a tu distribuidor que lo suba' : 'escríbele a Fragmentless para que lo suba'
+      }.`;
+    }
+    return `El asistente de tu menú todavía no está activo. ${
+      a.con_distribuidor ? 'Pídele a tu distribuidor que lo active' : 'Escríbele a Fragmentless para que lo active'
+    }.`;
+  });
 </script>
 
 <BarraArriba titulo="Tu menú en línea" estado={chip}>
@@ -200,6 +218,9 @@
         Tu link para Instagram y WhatsApp, el QR de tus mesas, tus carteles y cómo se ve tu menú. Los productos salen
         de Mi menú, y tu logo y tu horario de Tu restaurante.
       </p>
+      {#if avisoAsistente}
+        <p class="aviso asistente"><Icono nombre="info" tamano={16} /><span>{avisoAsistente}</span></p>
+      {/if}
     </div>
 
     {#if errorLectura}
@@ -578,6 +599,10 @@
     font-size: 12.5px;
     line-height: 1.5;
     color: var(--suave);
+  }
+
+  .aviso.asistente {
+    margin-top: 4px;
   }
 
   .aviso :global(svg) {

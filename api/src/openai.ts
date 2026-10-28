@@ -16,6 +16,10 @@ export function modeloSaludo(env: Env): string {
   return env.OPENAI_MODEL_SALUDO || 'gpt-5.6-luna';
 }
 
+export function modeloAsistente(env: Env): string {
+  return env.OPENAI_MODEL_MENU || 'gpt-5.6-luna';
+}
+
 // OpenAI cobra al doble la entrada de una llamada que pasa de aquí, y precios_ia no lo sabe.
 const ENTRADA_PRECIO_NORMAL = 272_000;
 
@@ -64,19 +68,43 @@ function llave(env: Env): string {
   return env.OPENAI_LLAVE;
 }
 
-async function pedir(env: Env, ruta: string, cuerpo: unknown): Promise<Record<string, unknown>> {
-  const respuesta = await fetch(`https://api.openai.com/v1/${ruta}`, {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${llave(env)}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify(cuerpo),
-  });
+// Con `soloCodigo`, un error se registra solo con su código: lo del menú en línea nunca deja su
+// texto en el registro. Con `espera`, se deja de esperar a los tantos milisegundos.
+async function pedir(
+  env: Env,
+  ruta: string,
+  cuerpo: unknown,
+  opciones: { soloCodigo?: boolean; espera?: number } = {},
+): Promise<Record<string, unknown>> {
+  let respuesta: Response;
+  try {
+    respuesta = await fetch(`https://api.openai.com/v1/${ruta}`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${llave(env)}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify(cuerpo),
+      signal: opciones.espera ? AbortSignal.timeout(opciones.espera) : undefined,
+    });
+  } catch (e) {
+    if (!(e instanceof DOMException && e.name === 'TimeoutError')) throw e;
+    console.error(`[openai] ${ruta} no contestó en ${opciones.espera} ms; si cobró algo, no quedó anotado`);
+    throw new Rechazo(502, 'El agente no pudo contestar. Intenta de nuevo.');
+  }
   const texto = await respuesta.text();
   if (!respuesta.ok) {
     // El cuerpo de error de OpenAI no trae la llave: dice qué pasó (cuota, modelo, argumentos).
-    console.error(`[openai] ${ruta} falló con ${respuesta.status}`, texto.slice(0, 2000));
+    console.error(`[openai] ${ruta} falló con ${respuesta.status}`, opciones.soloCodigo ? codigoDeError(texto) : texto.slice(0, 2000));
     throw new Rechazo(502, 'El agente no pudo contestar. Intenta de nuevo.');
   }
   return JSON.parse(texto) as Record<string, unknown>;
+}
+
+function codigoDeError(texto: string): string {
+  try {
+    const { error } = JSON.parse(texto) as { error?: { type?: unknown; code?: unknown; param?: unknown } };
+    return JSON.stringify({ type: error?.type ?? null, code: error?.code ?? null, param: error?.param ?? null });
+  } catch {
+    return 'sin JSON';
+  }
 }
 
 // ─── El agente: Responses API ─────────────────────────────────────────────────
@@ -158,4 +186,80 @@ export async function saludoDeLaIa(env: Env, instrucciones: string): Promise<{ t
   const texto = typeof eleccion?.message?.content === 'string' ? eleccion.message.content : null;
   if (!texto) console.warn('[saludo] OpenAI no escribió nada', eleccion?.finish_reason, JSON.stringify(r.usage ?? null));
   return { texto, tokens: t };
+}
+
+// ─── El asistente del menú: Responses API con salida estructurada ─────────────
+
+// Lo que regresa el modelo: su texto y los números de los productos que nombró, en ese orden.
+const SALIDA_ASISTENTE = {
+  type: 'json_schema',
+  name: 'respuesta_del_asistente',
+  strict: true,
+  schema: {
+    type: 'object',
+    additionalProperties: false,
+    required: ['respuesta', 'productos'],
+    properties: {
+      respuesta: { type: 'string' },
+      productos: { type: 'array', items: { type: 'integer' } },
+    },
+  },
+} as const;
+
+// Una sola llamada por pregunta, con su razonamiento de siempre, como el saludo. Hasta 4,000
+// tokens de salida: lo peor que cuesta una pregunta es medio centavo de dólar. Si OpenAI no la
+// terminó, se negó o no trajo el JSON pedido, regresa null con lo que cobró, para anotarlo como
+// menu_sin_respuesta. Nada de lo que escribió la clienta ni el modelo pasa al registro.
+export async function respuestaDelAsistente(
+  env: Env,
+  peticion: { instrucciones: string; entrada: Item[]; cache: string },
+): Promise<{ salida: { respuesta: string; productos: unknown[] } | null; tokens: Tokens }> {
+  const modelo = modeloAsistente(env);
+  const r = await pedir(
+    env,
+    'responses',
+    {
+      model: modelo,
+      instructions: peticion.instrucciones,
+      input: peticion.entrada,
+      text: { format: SALIDA_ASISTENTE },
+      store: false,
+      max_output_tokens: 4_000,
+      prompt_cache_key: peticion.cache,
+    },
+    { soloCodigo: true, espera: 45_000 },
+  );
+
+  const uso = (r.usage ?? {}) as Record<string, Record<string, unknown> | unknown>;
+  const detalle = (uso.input_tokens_details ?? {}) as Record<string, unknown>;
+  const t = tokens(modelo, uso.input_tokens, detalle.cached_tokens, detalle.cache_write_tokens, uso.output_tokens, r.usage);
+
+  if (r.status !== 'completed') {
+    const incompleta = (r.incomplete_details ?? {}) as { reason?: unknown };
+    const error = (r.error ?? {}) as { code?: unknown };
+    console.error('[asistente] OpenAI no terminó la respuesta', r.status, incompleta.reason ?? null, error.code ?? null);
+    return { salida: null, tokens: t };
+  }
+
+  let texto = '';
+  for (const item of Array.isArray(r.output) ? (r.output as Item[]) : []) {
+    if (item.type !== 'message' || !Array.isArray(item.content)) continue;
+    for (const parte of item.content as Record<string, unknown>[]) {
+      if (parte.type === 'refusal') {
+        console.warn('[asistente] OpenAI se negó a contestar');
+        return { salida: null, tokens: t };
+      }
+      if (parte.type === 'output_text' && typeof parte.text === 'string') texto += parte.text;
+    }
+  }
+  try {
+    const salida = JSON.parse(texto) as { respuesta?: unknown; productos?: unknown };
+    if (typeof salida.respuesta === 'string' && salida.respuesta.trim() && Array.isArray(salida.productos)) {
+      return { salida: { respuesta: salida.respuesta.trim(), productos: salida.productos }, tokens: t };
+    }
+  } catch {
+    // Abajo se registra igual que un JSON sin respuesta.
+  }
+  console.error('[asistente] OpenAI no regresó el JSON pedido', texto ? `(${texto.length} letras)` : '(vacío)');
+  return { salida: null, tokens: t };
 }

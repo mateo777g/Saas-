@@ -4,6 +4,10 @@
   campo para cambiarlo con fijar_tope_ia. Postgres revisa que vaya de 0 a 10 dólares y con
   centavos. Al llegar al tope no dice el día (decidido el 19 de octubre de 2026: uso_ia_cliente
   no lo trae). La ventana sale cuando ya llegó lo gastado, para que el campo traiga el tope de hoy.
+
+  Con la 6c (maqueta 2UPwZw31WrcYRZkH8jaT1Y, sección 2) cada sobre va en su renglón, con lo gastado
+  «de» su parte, y cada uno avisa cuando llega a lo suyo, también sin día (encuesta 19 de
+  planes/trabajo/6c/lista-6c.md). Las partes las calcula Postgres: la app nunca divide el tope.
 -->
 <script lang="ts">
   import { onMount } from 'svelte';
@@ -56,22 +60,34 @@
         <span class="riel"><span class="lleno" style:width="{u.tope > 0 ? Math.min(100, (u.gastado / u.tope) * 100) : 0}%"></span></span>
         <div class="fila">
           <span>
-            Agente IA · {u.consultas_agente || u.saludos
+            Agente IA · {u.consultas_agente || u.saludos || u.gastado_agente > 0
               ? `${plural(u.consultas_agente, 'pregunta', 'preguntas')} y ${plural(u.saludos, 'saludo', 'saludos')}`
               : 'Sin uso este mes'}
           </span>
-          <span class="mono">{dolares(u.gastado_agente)}</span>
+          <span class="mono">{dolares(u.gastado_agente)} <span class="de">de {dolares(u.sobre_agente)}</span></span>
+        </div>
+        <div class="fila">
+          <span>
+            Asistente del menú · {u.consultas_menu || u.gastado_menu > 0
+              ? plural(u.consultas_menu, 'pregunta', 'preguntas')
+              : 'Sin uso este mes'}
+          </span>
+          <span class="mono">{dolares(u.gastado_menu)} <span class="de">de {dolares(u.sobre_menu)}</span></span>
         </div>
       </div>
-      {#if u.tope > 0 && u.gastado_agente >= u.tope}
-        <Aviso>Llegó a su tope. Su IA vuelve el {vuelve}, o antes si le subes el tope.</Aviso>
-      {:else if u.tope === 0}
+      {#if u.tope === 0}
         <Aviso>Nació con el tope en 0, así que todavía no tiene IA. Ponle uno para prenderla.</Aviso>
+      {/if}
+      {#if u.agente_en_limite}
+        <Aviso>El Agente IA llegó a sus {dolares(u.sobre_agente)}. Vuelve el {vuelve}, o antes si le subes el tope.</Aviso>
+      {/if}
+      {#if u.menu_en_limite}
+        <Aviso>El asistente del menú llegó a sus {dolares(u.sobre_menu)}. Vuelve el {vuelve}, o antes si le subes el tope.</Aviso>
       {/if}
       <Campo id="tope-ia" etiqueta="TOPE AL MES (USD)" tipo="number" bind:valor min={0} step={0.01} modoTeclado="decimal" />
       <p class="pista">
-        De 0 a 10 dólares. En 0 no tiene IA. Si lo bajas a menos de lo que ya gastó, su IA se pausa hasta
-        el {vuelve}.
+        De 0 a 10 dólares. En 0 no tiene IA. La quinta parte es para el asistente del menú y el resto para el
+        Agente IA. Cada uno se pausa hasta el {vuelve} al gastar lo suyo.
       </p>
       <p class="pista">
         {u.distribuidor
@@ -140,5 +156,10 @@
   .fila .mono {
     font-family: var(--mono);
     color: var(--texto);
+    white-space: nowrap;
+  }
+
+  .fila .de {
+    color: var(--tenue);
   }
 </style>

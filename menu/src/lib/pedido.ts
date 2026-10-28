@@ -6,7 +6,7 @@
 import { dinero } from '@app/lib/formato';
 import type { Producto } from './datos';
 
-const API = import.meta.env.VITE_API_URL;
+export const API = import.meta.env.VITE_API_URL;
 if (!API) throw new Error('Falta VITE_API_URL en menu/.env');
 
 // ─── Lo que lleva ───
@@ -40,14 +40,15 @@ export function centavos(n: number): number {
 
 // ─── En el celular ───
 // Cada restaurante su carrito; el nombre, el teléfono y la dirección sirven para cualquiera. Si el
-// navegador no deja guardar, todo funciona igual y se olvida al cerrar la pestaña.
+// navegador no deja guardar, todo funciona igual y se olvida al cerrar la pestaña. La plática del
+// asistente (lib/asistente.svelte.ts) se guarda igual.
 const DOCE_HORAS = 12 * 60 * 60 * 1000;
 const llaveCarrito = (slug: string) => `pidemenu-pedido-${slug}`;
 const llaveHecho = (slug: string) => `pidemenu-hecho-${slug}`;
 const LLAVE_CLIENTE = 'pidemenu-cliente';
 const LLAVE_MARCA = 'pidemenu-marca';
 
-function leer<T>(llave: string): T | null {
+export function leer<T>(llave: string): T | null {
   try {
     const texto = localStorage.getItem(llave);
     return texto ? (JSON.parse(texto) as T) : null;
@@ -57,7 +58,7 @@ function leer<T>(llave: string): T | null {
   }
 }
 
-function escribir(llave: string, valor: unknown) {
+export function escribir(llave: string, valor: unknown) {
   try {
     if (valor === null) localStorage.removeItem(llave);
     else localStorage.setItem(llave, JSON.stringify(valor));

@@ -11,8 +11,9 @@ import type { Env } from './index';
 import { json, Rechazo, SIN_PERMISO } from './respuestas';
 import { leerSesion, preguntar } from './supabase';
 
-// El navegador ya la manda en WebP de 1600 px (unos 200 KB); 2 MB deja de sobra.
-const MAXIMO_BYTES = 2 * 1024 * 1024;
+// El navegador ya la manda en WebP de 1600 px (unos 200 KB); 2 MB deja de sobra. Las muestras de
+// los estilos (estilos.ts) usan el mismo tope, la misma revisión de WebP y el mismo nombre al azar.
+export const MAXIMO_BYTES = 2 * 1024 * 1024;
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 const CARPETAS = ['menu', 'logo', 'carteles'];
@@ -71,7 +72,7 @@ async function borrar(request: Request, env: Env, url: URL): Promise<Response> {
 }
 
 // Un archivo WebP empieza con «RIFF», su tamaño menos 8 (4 bytes, al revés) y «WEBP».
-function esWebp(bytes: Uint8Array): boolean {
+export function esWebp(bytes: Uint8Array): boolean {
   if (bytes.byteLength < 16) return false;
   const texto = (desde: number) => String.fromCharCode(...bytes.subarray(desde, desde + 4));
   const tamano = new DataView(bytes.buffer, bytes.byteOffset).getUint32(4, true);
@@ -79,7 +80,7 @@ function esWebp(bytes: Uint8Array): boolean {
 }
 
 // 32 caracteres hexadecimales al azar: imposible de adivinar, así nadie pisa la foto de otro.
-function nombreAlAzar(): string {
+export function nombreAlAzar(): string {
   const azar = crypto.getRandomValues(new Uint8Array(16));
   return Array.from(azar, (b) => b.toString(16).padStart(2, '0')).join('');
 }

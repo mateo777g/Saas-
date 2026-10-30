@@ -4,7 +4,8 @@
   alto, letra 13.5. Sin relleno propio: toma el sólido de la ventana en la que va.
   `valor` siempre es texto, también en las fechas ('aaaa-mm-dd') y los números: quien guarda lo
   convierte. Como en Flet, puede llevar un `prefijo` adentro, a la izquierda ("$" en el precio), o
-  ser `multilinea` (la descripción de un producto: 72 de alto).
+  ser `multilinea` (la descripción de un producto: 72 de alto). Con `contador`, a la derecha de la etiqueta
+  va cuántas letras lleva de `largoMaximo` («23 / 80», lo que dice el cuadro de un estilo).
 -->
 <script lang="ts">
   let {
@@ -24,6 +25,7 @@
     largoMaximo,
     mal = false,
     mono = false,
+    contador = false,
   }: {
     id: string;
     etiqueta: string;
@@ -42,11 +44,19 @@
     // El borde rojo del dato que no se pudo guardar (el teléfono de Tu restaurante).
     mal?: boolean;
     mono?: boolean;
+    contador?: boolean;
   } = $props();
 </script>
 
 <div class="campo">
-  <label class="etiqueta" for={id}>{etiqueta}</label>
+  {#if contador && largoMaximo}
+    <div class="etiqueta-fila">
+      <label class="etiqueta" for={id}>{etiqueta}</label>
+      <span class="letras">{valor.length} / {largoMaximo}</span>
+    </div>
+  {:else}
+    <label class="etiqueta" for={id}>{etiqueta}</label>
+  {/if}
   {#if multilinea}
     <textarea
       {id}
@@ -87,6 +97,20 @@
     display: flex;
     flex-direction: column;
     gap: 8px;
+  }
+
+  .etiqueta-fila {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .letras {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--tenue);
+    font-variant-numeric: tabular-nums;
   }
 
   input,

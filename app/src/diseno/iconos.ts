@@ -102,4 +102,6 @@ export const ICONOS: Record<string, string> = {
   // La dirección de un pedido a domicilio (maqueta Pedidos por WhatsApp G2nxGb3xBgiPEYrDb6CgcW),
   // la misma del menú en línea.
   'ubicacion': '<path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"></path><circle cx="12" cy="9.5" r="2.5"></circle>',
+  // El cartel de 16:9, junto al post y la historia de Flet (maqueta Estilos 7a H2yFVjosPvSV56DJD1Un71).
+  'cartel': '<rect x="2" y="6" width="20" height="12" rx="2"></rect>',
 };

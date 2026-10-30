@@ -1,5 +1,6 @@
 // Las llamadas del panel al Worker (api-pruebas), con la sesión de quien está adentro: las fotos
-// del menú (fotos.ts) y el alta y los PIN del equipo (equipo.ts). El Worker le pregunta a
+// del menú (fotos.ts), el alta y los PIN del equipo (equipo.ts) y las muestras de los estilos y
+// la lista de sus prompts (estilos.ts, el único GET). El Worker le pregunta a
 // Postgres con esa sesión antes de hacer nada (libreta 3) y contesta sus errores en español,
 // listos para la caja de error.
 import { ALGO_SALIO_PANEL, Fallo, SIN_CONEXION } from './errores';
@@ -12,7 +13,7 @@ if (!API) throw new Error('Falta VITE_API_URL en app/.env');
 // foto en WebP tal cual o un objeto que se manda como JSON.
 export async function llamarWorker(
   contexto: string,
-  metodo: 'POST' | 'DELETE',
+  metodo: 'GET' | 'POST' | 'DELETE',
   camino: string,
   cuerpo?: Blob | Record<string, unknown>,
 ): Promise<Record<string, unknown> | null> {

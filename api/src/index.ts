@@ -1,11 +1,13 @@
-// El Worker de Fragmentless (libreta 3, Seguridad). Hoy hace seis cosas: subir y borrar las
+// El Worker de Fragmentless (libreta 3, Seguridad). Hoy hace siete cosas: subir y borrar las
 // fotos del menú en R2 (fotos.ts), las cuentas, los PIN y los aparatos del equipo (equipo.ts), lo
 // que pide el PIN de otra persona en el punto de venta (pos.ts), el agente IA con su saludo
-// (agente.ts), el pedido del menú en línea por WhatsApp (pedidos.ts) y el asistente del menú
-// (asistente.ts). Nunca decide solo: antes de cada trabajo le pregunta a Postgres si se puede.
+// (agente.ts), el pedido del menú en línea por WhatsApp (pedidos.ts), el asistente del menú
+// (asistente.ts) y las muestras de los estilos de los anuncios (estilos.ts). Nunca decide solo:
+// antes de cada trabajo le pregunta a Postgres si se puede.
 import { agente } from './agente';
 import { preguntaDelMenu } from './asistente';
 import { equipo } from './equipo';
+import { listaDeEstilos, muestraDeEstilo } from './estilos';
 import { fotoDelMenu } from './fotos';
 import { pedidoDelMenu } from './pedidos';
 import { pos } from './pos';
@@ -46,6 +48,8 @@ export default {
       if (url.pathname === '/menu/foto') respuesta = await fotoDelMenu(request, env, url);
       else if (url.pathname === '/menu/pedido') respuesta = await pedidoDelMenu(request, env, url);
       else if (url.pathname === '/menu/pregunta') respuesta = await preguntaDelMenu(request, env, url);
+      else if (url.pathname === '/estilos/muestra') respuesta = await muestraDeEstilo(request, env, url);
+      else if (url.pathname === '/estilos') respuesta = await listaDeEstilos(request, env);
       else if (url.pathname.startsWith('/equipo/')) respuesta = await equipo(request, env, url);
       else if (url.pathname.startsWith('/pos/')) respuesta = await pos(request, env, url);
       else if (url.pathname.startsWith('/agente/')) respuesta = await agente(request, env, url);

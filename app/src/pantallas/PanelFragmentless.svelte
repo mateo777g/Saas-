@@ -4,7 +4,8 @@
   Distribuidores, Ajustes y Cerrar sesión, la barra de arriba con el chip de cuántos restaurantes
   (o distribuidores) hay, Actualizar y Dar de alta (Nuevo distribuidor en Distribuidores), y
   debajo la vista elegida. Ajustes es el mismo del gerente, solo con el tema, y arriba solo lleva
-  su chip (decidido el 12 de octubre de 2026).
+  su chip (decidido el 12 de octubre de 2026). Estilos (parte 7a, maqueta H2yFVjosPvSV56DJD1Un71)
+  va después de Distribuidores y trae su propia barra de arriba, sus lecturas y sus ventanas.
 
   Lee todo de una vez al abrir, con Actualizar y después de cada cambio (lib/panel.ts). Las
   ventanas escriben en Saas-Restaurantes de verdad.
@@ -23,6 +24,7 @@
   import ClientesDistribuidor from './fragmentless/ClientesDistribuidor.svelte';
   import CorregirDistribuidor from './fragmentless/CorregirDistribuidor.svelte';
   import Distribuidores, { type AccionDistribuidor } from './fragmentless/Distribuidores.svelte';
+  import Estilos from './fragmentless/Estilos.svelte';
   import Inicio from './fragmentless/Inicio.svelte';
   import LigarCuenta from './fragmentless/LigarCuenta.svelte';
   import LigarGerente from './fragmentless/LigarGerente.svelte';
@@ -31,7 +33,7 @@
   import TopeIa from './fragmentless/TopeIa.svelte';
   import Ajustes from './gerente/Ajustes.svelte';
 
-  type Vista = 'inicio' | 'clientes' | 'distribuidores' | 'ajustes';
+  type Vista = 'inicio' | 'clientes' | 'distribuidores' | 'estilos' | 'ajustes';
   type VentanaAbierta =
     | { tipo: 'alta' | 'alta-distribuidor' }
     | { tipo: 'ligar' | 'sumar' | 'fijar' | 'tope'; cliente: Cliente }
@@ -39,7 +41,7 @@
 
   let { correo, alSalir }: { correo: string; alSalir: () => void } = $props();
 
-  const TITULOS: Record<Vista, string> = {
+  const TITULOS: Record<Exclude<Vista, 'estilos'>, string> = {
     inicio: 'Inicio',
     clientes: 'Clientes',
     distribuidores: 'Distribuidores',
@@ -100,6 +102,7 @@
       { valor: 'inicio', texto: 'Inicio', icono: 'inicio' },
       { valor: 'clientes', texto: 'Clientes', icono: 'tienda' },
       { valor: 'distribuidores', texto: 'Distribuidores', icono: 'usuarios' },
+      { valor: 'estilos', texto: 'Estilos', icono: 'biblio' },
     ]}
     acciones={[
       { valor: 'ajustes', texto: 'Ajustes', icono: 'ajustes' },
@@ -110,42 +113,46 @@
     pie={{ inicial: 'F', nombre: 'Fragmentless', linea: correo }}
   />
 
-  <BarraArriba titulo={TITULOS[vista]} {estado}>
-    {#if vista !== 'ajustes'}
-      <Boton etiqueta="Actualizar" icono="actualizar" apagado={leyendo} onclick={leer} />
-    {/if}
-    {#if vista === 'distribuidores'}
-      <Boton etiqueta="Nuevo distribuidor" icono="mas" tono="tinta" onclick={() => (ventana = { tipo: 'alta-distribuidor' })} />
-    {:else if vista !== 'ajustes'}
-      <Boton etiqueta="Dar de alta" icono="mas" tono="tinta" onclick={() => (ventana = { tipo: 'alta' })} />
-    {/if}
-  </BarraArriba>
+  {#if vista === 'estilos'}
+    <Estilos />
+  {:else}
+    <BarraArriba titulo={TITULOS[vista]} {estado}>
+      {#if vista !== 'ajustes'}
+        <Boton etiqueta="Actualizar" icono="actualizar" apagado={leyendo} onclick={leer} />
+      {/if}
+      {#if vista === 'distribuidores'}
+        <Boton etiqueta="Nuevo distribuidor" icono="mas" tono="tinta" onclick={() => (ventana = { tipo: 'alta-distribuidor' })} />
+      {:else if vista !== 'ajustes'}
+        <Boton etiqueta="Dar de alta" icono="mas" tono="tinta" onclick={() => (ventana = { tipo: 'alta' })} />
+      {/if}
+    </BarraArriba>
 
-  <main class="cuerpo">
-    {#if vista === 'inicio'}
-      <Inicio
-        {datos}
-        alSumar={(cliente) => (ventana = { tipo: 'sumar', cliente })}
-        alVerClientes={() => (vista = 'clientes')}
-        alVerDistribuidores={() => (vista = 'distribuidores')}
-      />
-    {:else if vista === 'clientes'}
-      <Clientes
-        clientes={datos?.clientes ?? null}
-        alLigar={(cliente) => (ventana = { tipo: 'ligar', cliente })}
-        alSumar={(cliente) => (ventana = { tipo: 'sumar', cliente })}
-        alFijar={(cliente) => (ventana = { tipo: 'fijar', cliente })}
-        alTope={(cliente) => (ventana = { tipo: 'tope', cliente })}
-      />
-    {:else if vista === 'distribuidores'}
-      <Distribuidores
-        distribuidores={datos?.distribuidores ?? null}
-        alElegir={(accion, distribuidor) => (ventana = { tipo: 'distribuidor', accion, distribuidor })}
-      />
-    {:else}
-      <Ajustes />
-    {/if}
-  </main>
+    <main class="cuerpo">
+      {#if vista === 'inicio'}
+        <Inicio
+          {datos}
+          alSumar={(cliente) => (ventana = { tipo: 'sumar', cliente })}
+          alVerClientes={() => (vista = 'clientes')}
+          alVerDistribuidores={() => (vista = 'distribuidores')}
+        />
+      {:else if vista === 'clientes'}
+        <Clientes
+          clientes={datos?.clientes ?? null}
+          alLigar={(cliente) => (ventana = { tipo: 'ligar', cliente })}
+          alSumar={(cliente) => (ventana = { tipo: 'sumar', cliente })}
+          alFijar={(cliente) => (ventana = { tipo: 'fijar', cliente })}
+          alTope={(cliente) => (ventana = { tipo: 'tope', cliente })}
+        />
+      {:else if vista === 'distribuidores'}
+        <Distribuidores
+          distribuidores={datos?.distribuidores ?? null}
+          alElegir={(accion, distribuidor) => (ventana = { tipo: 'distribuidor', accion, distribuidor })}
+        />
+      {:else}
+        <Ajustes />
+      {/if}
+    </main>
+  {/if}
 
   {#if ventana?.tipo === 'alta'}
     <AltaRestaurante alCerrar={cerrarVentana} alGuardar={leer} />

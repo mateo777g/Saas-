@@ -27,7 +27,7 @@
       "vars": {
         "SUPABASE_URL": "https://jntciroxrgxqyhtdtxhw.supabase.co",
         "SUPABASE_LLAVE_PUBLICABLE": "sb_publishable__z6hdwI-FsCuiVGtdySVOw_7BCCZFCG",
-        "ORIGENES": "http://localhost:8125,http://gerente.localhost:8125,http://aparato.localhost:8125,http://localhost:8126"
+        "ORIGENES": "http://localhost:8125,http://gerente.localhost:8125,http://aparato.localhost:8125,http://fragmentless.localhost:8125,http://localhost:8126"
       },
       "r2_buckets": [{ "binding": "BUCKET", "bucket_name": "fragmentless" }]
     }

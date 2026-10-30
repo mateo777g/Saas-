@@ -52,6 +52,30 @@ export async function preguntar(
   return valor;
 }
 
+// ¿Quien llama es Fragmentless? La misma pregunta que hace la app al entrar: por RLS, solo
+// Fragmentless ve las filas de plataforma_admins.
+export async function esFragmentless(env: Env, sesion: string): Promise<boolean> {
+  const respuesta = await fetch(`${env.SUPABASE_URL}/rest/v1/plataforma_admins?select=usuario_id&limit=1`, {
+    headers: { apikey: env.SUPABASE_LLAVE_PUBLICABLE, Authorization: `Bearer ${sesion}` },
+  });
+
+  if (respuesta.status === 401) {
+    console.warn('[supabase] plataforma_admins: sesión rechazada', await respuesta.text());
+    throw new Rechazo(401, 'Tu sesión venció. Vuelve a entrar.');
+  }
+  if (!respuesta.ok) {
+    console.error(`[supabase] plataforma_admins falló con ${respuesta.status}`, await respuesta.text());
+    throw new Rechazo(502, 'No pudimos revisar tu permiso. Intenta de nuevo.');
+  }
+
+  const filas: unknown = await respuesta.json();
+  if (!Array.isArray(filas)) {
+    console.error('[supabase] plataforma_admins no contestó una lista', filas);
+    throw new Rechazo(502, 'No pudimos revisar tu permiso. Intenta de nuevo.');
+  }
+  return filas.length > 0;
+}
+
 // Llama a una función de Postgres y regresa lo que contesta: con la sesión de quien llama, o
 // como el Worker (service_role, con la llave secreta) para las funciones del aparato. Los «no» de
 // Postgres llegan como Rechazo con su texto en español, listo para la caja de error de la app.

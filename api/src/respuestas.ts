@@ -32,13 +32,13 @@ export function origenPermitido(origen: string | null, origenes: string): origen
   return origenes.split(',').some((permitido) => permitido.trim() === origen);
 }
 
-// La respuesta del navegador antes de un POST o un DELETE con sesión: qué se permite mandar.
+// La respuesta del navegador antes de un GET, un POST o un DELETE con sesión: qué se permite mandar.
 export function preflight(origen: string): Response {
   return new Response(null, {
     status: 204,
     headers: {
       'Access-Control-Allow-Origin': origen,
-      'Access-Control-Allow-Methods': 'POST, DELETE',
+      'Access-Control-Allow-Methods': 'GET, POST, DELETE',
       'Access-Control-Allow-Headers': 'Authorization, Content-Type',
       'Access-Control-Max-Age': '86400',
       Vary: 'Origin',

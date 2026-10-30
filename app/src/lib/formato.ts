@@ -2,8 +2,9 @@
 // palabras lo que llegó ('2026-10-08' → '8 oct 2026'; -8 días → 'Venció hace 8 días'). Las
 // fechas se leen como texto, sin pasar por el reloj ni la zona del aparato.
 
-const MESES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
-const MESES_LARGOS = [
+// Exportados para las fechas de cada año de los estilos (estilos.ts), que no llevan año.
+export const MESES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+export const MESES_LARGOS = [
   'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
   'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre',
 ];

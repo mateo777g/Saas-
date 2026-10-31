@@ -76,6 +76,28 @@ export async function esFragmentless(env: Env, sesion: string): Promise<boolean>
   return filas.length > 0;
 }
 
+// Lee renglones de una tabla con la sesión de quien llama: RLS decide cuáles ve. Solo para
+// «Descargar» un anuncio (GET /anuncios/archivo); todo lo demás va por funciones.
+export async function leerFilas<T>(env: Env, sesion: string, consulta: string): Promise<T[]> {
+  const respuesta = await fetch(`${env.SUPABASE_URL}/rest/v1/${consulta}`, {
+    headers: { apikey: env.SUPABASE_LLAVE_PUBLICABLE, Authorization: `Bearer ${sesion}` },
+  });
+  if (respuesta.status === 401) {
+    console.warn('[supabase] lectura: sesión rechazada', await respuesta.text());
+    throw new Rechazo(401, 'Tu sesión venció. Vuelve a entrar.');
+  }
+  if (!respuesta.ok) {
+    console.error(`[supabase] lectura falló con ${respuesta.status}`, consulta.split('?')[0], await respuesta.text());
+    throw new Rechazo(502, 'Algo salió mal. Intenta de nuevo.');
+  }
+  const filas: unknown = await respuesta.json();
+  if (!Array.isArray(filas)) {
+    console.error('[supabase] la lectura no contestó una lista', consulta.split('?')[0]);
+    throw new Rechazo(502, 'Algo salió mal. Intenta de nuevo.');
+  }
+  return filas as T[];
+}
+
 // Llama a una función de Postgres y regresa lo que contesta: con la sesión de quien llama, o
 // como el Worker (service_role, con la llave secreta) para las funciones del aparato. Los «no» de
 // Postgres llegan como Rechazo con su texto en español, listo para la caja de error de la app.

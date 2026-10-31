@@ -34,15 +34,15 @@
     prepararSaludo,
     preguntar,
     SALUDO_LOCAL,
+    textoSinTope,
     tomarSaludo,
     type Conversacion,
     type EstadoIa,
     type Periodo,
-    type SinTope,
     type Turno,
   } from '../../lib/agente';
   import { SIN_CONEXION } from '../../lib/errores';
-  import { diaYMes, fechaLarga, saludoPorHora } from '../../lib/formato';
+  import { fechaLarga, saludoPorHora } from '../../lib/formato';
   import type { Sucursal } from '../../lib/gerente';
   import CajaSucursales from './CajaSucursales.svelte';
   import CajaPregunta from './agente/CajaPregunta.svelte';
@@ -91,19 +91,6 @@
   const ocupado = $derived(pendiente !== null);
   const enChat = $derived(actual !== null);
   const titulo = $derived(actual?.titulo ?? 'Agente IA');
-
-  // El aviso de la libreta de Seguridad, según por qué no puede y quién le vende.
-  function textoTope(e: SinTope): string {
-    if (e.motivo === 'sin_ia') {
-      return e.con_distribuidor
-        ? 'La IA todavía no está activa en tu restaurante. Pídele a tu distribuidor que la active.'
-        : 'La IA todavía no está activa en tu restaurante. Escríbele a Fragmentless para que la active.';
-    }
-    const vuelve = e.vuelve ? `Vuelve el ${diaYMes(e.vuelve)}` : 'Vuelve el próximo mes';
-    return e.con_distribuidor
-      ? `Llegaste al límite de IA de este mes. ${vuelve} o pídele a tu distribuidor que lo suba.`
-      : `Llegaste al límite de IA de este mes. ${vuelve} o escríbele a Fragmentless para que lo suba.`;
-  }
 
   // Lo que leyó para la última respuesta de la conversación abierta, si no hay otra esperando.
   const leido = $derived.by(() => {
@@ -260,7 +247,7 @@
           bind:periodo
           {placeholder}
           {ocupado}
-          aviso={sinTope ? textoTope(sinTope) : null}
+          aviso={sinTope ? textoSinTope(sinTope) : null}
           alEnviar={enviarLoEscrito}
         />
 
@@ -331,7 +318,7 @@
         bind:periodo
         placeholder={PH_CHAT}
         {ocupado}
-        aviso={sinTope ? textoTope(sinTope) : null}
+        aviso={sinTope ? textoSinTope(sinTope) : null}
         alEnviar={enviarLoEscrito}
       />
     </div>

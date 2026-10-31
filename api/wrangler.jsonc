@@ -18,6 +18,8 @@
     "ORIGENES": "https://app.fragmentless.com,https://pidemenu.mx"
   },
   "r2_buckets": [{ "binding": "BUCKET", "bucket_name": "fragmentless" }],
+  // El trabajo en segundo plano que hace cada anuncio (src/hacerAnuncio.ts).
+  "workflows": [{ "name": "hacer-anuncio", "binding": "HACER_ANUNCIO", "class_name": "HacerAnuncio" }],
   "env": {
     "pruebas": {
       "name": "api-pruebas",
@@ -29,7 +31,8 @@
         "SUPABASE_LLAVE_PUBLICABLE": "sb_publishable__z6hdwI-FsCuiVGtdySVOw_7BCCZFCG",
         "ORIGENES": "http://localhost:8125,http://gerente.localhost:8125,http://aparato.localhost:8125,http://fragmentless.localhost:8125,http://localhost:8126"
       },
-      "r2_buckets": [{ "binding": "BUCKET", "bucket_name": "fragmentless" }]
+      "r2_buckets": [{ "binding": "BUCKET", "bucket_name": "fragmentless" }],
+      "workflows": [{ "name": "hacer-anuncio-pruebas", "binding": "HACER_ANUNCIO", "class_name": "HacerAnuncio" }]
     }
   }
 }

@@ -1,25 +1,32 @@
-// El Worker de Fragmentless (libreta 3, Seguridad). Hoy hace siete cosas: subir y borrar las
+// El Worker de Fragmentless (libreta 3, Seguridad). Hoy hace ocho cosas: subir y borrar las
 // fotos del menú en R2 (fotos.ts), las cuentas, los PIN y los aparatos del equipo (equipo.ts), lo
 // que pide el PIN de otra persona en el punto de venta (pos.ts), el agente IA con su saludo
 // (agente.ts), el pedido del menú en línea por WhatsApp (pedidos.ts), el asistente del menú
-// (asistente.ts) y las muestras de los estilos de los anuncios (estilos.ts). Nunca decide solo:
+// (asistente.ts), las muestras de los estilos de los anuncios (estilos.ts) y Crear contenido
+// (crearContenido.ts, con su trabajo en segundo plano en hacerAnuncio.ts). Nunca decide solo:
 // antes de cada trabajo le pregunta a Postgres si se puede.
 import { agente } from './agente';
 import { preguntaDelMenu } from './asistente';
+import { crearContenido } from './crearContenido';
 import { equipo } from './equipo';
 import { listaDeEstilos, muestraDeEstilo } from './estilos';
 import { fotoDelMenu } from './fotos';
 import { pedidoDelMenu } from './pedidos';
 import { pos } from './pos';
 import { conCors, error, origenPermitido, preflight, Rechazo } from './respuestas';
+import type { Parametros } from './hacerAnuncio';
 
-// Lo que le da wrangler.jsonc: el bucket por binding (sin llave) y tres valores que no son
-// secretos (la URL de Supabase, su llave publicable y las páginas que pueden llamar). Los cinco
-// secretos los pega Fragmentless en el dashboard de Cloudflare (Settings → Variables and Secrets).
-// OPENAI_MODEL, OPENAI_MODEL_SALUDO y OPENAI_MODEL_MENU no existen hoy: solo sirven para cambiar
-// de modelo sin publicar código.
+// El trabajo en segundo plano de los anuncios: Cloudflare lo encuentra aquí por su nombre.
+export { HacerAnuncio } from './hacerAnuncio';
+
+// Lo que le da wrangler.jsonc: el bucket y el trabajo de los anuncios por binding (sin llave) y
+// tres valores que no son secretos (la URL de Supabase, su llave publicable y las páginas que pueden
+// llamar). Los cinco secretos los pega Fragmentless en el dashboard de Cloudflare (Settings →
+// Variables and Secrets). Los OPENAI_MODEL… no existen hoy: solo sirven para cambiar de modelo sin
+// publicar código.
 export interface Env {
   BUCKET: R2Bucket;
+  HACER_ANUNCIO: Workflow<Parametros>;
   SUPABASE_URL: string;
   SUPABASE_LLAVE_PUBLICABLE: string;
   ORIGENES: string;
@@ -31,6 +38,8 @@ export interface Env {
   OPENAI_MODEL?: string;
   OPENAI_MODEL_SALUDO?: string;
   OPENAI_MODEL_MENU?: string;
+  OPENAI_MODEL_IMAGEN?: string;
+  OPENAI_MODEL_PALABRAS?: string;
 }
 
 export default {
@@ -50,6 +59,7 @@ export default {
       else if (url.pathname === '/menu/pregunta') respuesta = await preguntaDelMenu(request, env, url);
       else if (url.pathname === '/estilos/muestra') respuesta = await muestraDeEstilo(request, env, url);
       else if (url.pathname === '/estilos') respuesta = await listaDeEstilos(request, env);
+      else if (url.pathname === '/anuncios' || url.pathname.startsWith('/anuncios/')) respuesta = await crearContenido(request, env, url);
       else if (url.pathname.startsWith('/equipo/')) respuesta = await equipo(request, env, url);
       else if (url.pathname.startsWith('/pos/')) respuesta = await pos(request, env, url);
       else if (url.pathname.startsWith('/agente/')) respuesta = await agente(request, env, url);

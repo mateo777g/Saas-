@@ -46,3 +46,33 @@ export async function llamarWorker(
   }
   return respuestaJson;
 }
+
+// Un archivo que manda el Worker (el JPG de un anuncio, para «Descargar»), con el nombre que trae
+// en Content-Disposition. Sus errores llegan como los de llamarWorker.
+export async function bajarDelWorker(contexto: string, camino: string): Promise<{ archivo: Blob; nombre: string | null }> {
+  const { data, error } = await supabase.auth.getSession();
+  if (error || !data.session) {
+    console.error(`[${contexto}] no hay sesión para hablar con el Worker:`, error);
+    throw new Fallo('Tu sesión venció. Vuelve a entrar.');
+  }
+
+  let respuesta: Response;
+  try {
+    respuesta = await fetch(`${API}${camino}`, { headers: { Authorization: `Bearer ${data.session.access_token}` } });
+  } catch (falla) {
+    console.error(`[${contexto}] GET ${camino}: no se pudo hablar con el Worker:`, falla);
+    throw new Fallo(SIN_CONEXION);
+  }
+  if (!respuesta.ok) {
+    const respuestaJson = await respuesta.json().catch(() => null);
+    console.error(`[${contexto}] GET ${camino}: el Worker dijo ${respuesta.status}:`, respuestaJson);
+    throw new Fallo(typeof respuestaJson?.error === 'string' ? respuestaJson.error : ALGO_SALIO_PANEL);
+  }
+  const nombre = /filename="([^"]+)"/.exec(respuesta.headers.get('Content-Disposition') ?? '')?.[1] ?? null;
+  try {
+    return { archivo: await respuesta.blob(), nombre };
+  } catch (falla) {
+    console.error(`[${contexto}] GET ${camino}: el archivo no llegó completo:`, falla);
+    throw new Fallo(SIN_CONEXION);
+  }
+}

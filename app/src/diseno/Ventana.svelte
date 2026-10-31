@@ -18,6 +18,7 @@
     nota,
     texto,
     ancho = 460,
+    alto,
     relleno = '28px',
     tamanoTexto = 13,
     alCerrar,
@@ -30,6 +31,8 @@
     nota?: string;
     texto?: string;
     ancho?: number;
+    // Un alto fijo, para la que lleva una lista que se recorre dentro (Elige un estilo).
+    alto?: number;
     relleno?: string;
     tamanoTexto?: number;
     alCerrar: () => void;
@@ -65,7 +68,7 @@
     if (e.target === dialogo) alCerrar();
   }}
 >
-  <div class="ventana" style:width="{ancho}px" style:padding={relleno}>
+  <div class="ventana" style:width="{ancho}px" style:height={alto ? `${alto}px` : undefined} style:padding={relleno}>
     <div class="cabeza">
       <div class="titulos">
         {#if etiqueta}<span class="etiqueta">{etiqueta}</span>{/if}

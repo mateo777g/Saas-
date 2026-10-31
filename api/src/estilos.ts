@@ -8,18 +8,19 @@
 //  - DELETE /estilos/muestra?ruta=<ruta>: si Postgres dice que puede borrarla (es de estilos/ y
 //    ningún estilo la usa), la borra.
 //  - GET /estilos: las claves de los estilos que ya tienen su prompt en este código, para que el
-//    panel diga «Falta su prompt». Solo para Fragmentless.
+//    panel diga «Su prompt ya está en el Worker» o «Falta su prompt». Solo para Fragmentless.
 // La app guarda la ruta con guardar_estilo; el nombre lo pone siempre el Worker.
+import { FORMATOS } from './anuncios/comun';
+import type { Formato } from './anuncios/comun';
+import { ESTILOS } from './anuncios/estilos';
 import { esWebp, MAXIMO_BYTES, nombreAlAzar } from './fotos';
 import type { Env } from './index';
 import { json, Rechazo, SIN_PERMISO } from './respuestas';
 import { esFragmentless, leerSesion, preguntar } from './supabase';
 
-// Las claves de los estilos cuyo prompt ya vive en el Worker. En la 7a todavía no hay ninguno; en
-// la 7b esta lista sale de los prompts.
-const CLAVES_CON_PROMPT: string[] = [];
+// Las claves de los estilos cuyo prompt ya vive en el Worker (anuncios/estilos.ts).
+const CLAVES_CON_PROMPT: string[] = [...ESTILOS.keys()];
 
-const FORMATOS = ['post', 'historia', 'cartel'];
 // Las mismas reglas que exige la base (estilos.clave, puedo_subir_muestra y puedo_borrar_muestra).
 // Se revisan aquí también porque la clave se vuelve el nombre de una carpeta.
 const CLAVE = /^[a-z0-9]+(-[a-z0-9]+)*$/;
@@ -47,7 +48,7 @@ async function subir(request: Request, env: Env, url: URL): Promise<Response> {
   const clave = url.searchParams.get('clave') ?? '';
   if (!CLAVE.test(clave) || clave.length > CLAVE_MAXIMO) throw new Rechazo(400, 'Esa clave no es válida.');
   const formato = url.searchParams.get('formato') ?? '';
-  if (!FORMATOS.includes(formato)) throw new Rechazo(400, 'Ese formato no existe.');
+  if (!FORMATOS.includes(formato as Formato)) throw new Rechazo(400, 'Ese formato no existe.');
 
   // Antes de leer la muestra: el tamaño que dice el navegador.
   const largo = Number(request.headers.get('Content-Length'));

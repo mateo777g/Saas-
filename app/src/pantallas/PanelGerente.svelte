@@ -9,7 +9,8 @@
   Mesas ahora y Tus meseros en Inicio, y la hora de corte en Ajustes vienen de la pieza 5 (maqueta
   7J6LvYWiktRnGxNugbuaoe); Inicio y Cortes también traen su barra. «Agente IA», al final de
   GENERAL con su insignia IA como en Flet, viene de su maqueta (KznKZdgQbLTZGs1EwVMvga); al entrar
-  al panel se prepara su saludo, para que salga al instante. «Abrir» en los
+  al panel se prepara su saludo, para que salga al instante. «Crear contenido», después del agente
+  con su insignia IA, viene de su maqueta (JQBw2yGFSiky1x9twUyYbe). «Abrir» en los
   accesos de Inicio abre ahí mismo el punto de venta o la cocina, con su sesión (maqueta Mesero y
   cocina TYq97pKacRCYBqcvRp1bZ2). «Tu restaurante», primero en GENERAL, y «Tu menú en línea», que abre
   el «Abrir» de Menú digital con su flecha para volver, vienen de la maqueta de la 6a
@@ -44,6 +45,7 @@
   import AccesoAbierto from './gerente/AccesoAbierto.svelte';
   import Ajustes from './gerente/Ajustes.svelte';
   import Cortes from './gerente/Cortes.svelte';
+  import CrearContenido from './gerente/CrearContenido.svelte';
   import Empleados from './gerente/Empleados.svelte';
   import Inicio from './gerente/Inicio.svelte';
   import Menu from './gerente/Menu.svelte';
@@ -80,6 +82,7 @@
     | 'equipo'
     | 'cortes'
     | 'agente'
+    | 'crear'
     | 'ajustes'
     | 'pos'
     | 'caja'
@@ -177,6 +180,7 @@
       valor === 'equipo' ||
       valor === 'cortes' ||
       valor === 'agente' ||
+      valor === 'crear' ||
       valor === 'ajustes'
     ) {
       vista = valor;
@@ -213,6 +217,7 @@
         { valor: 'equipo', texto: 'Empleados', icono: 'usuarios' },
         { valor: 'cortes', texto: 'Cortes y reportes', icono: 'corte' },
         { valor: 'agente', texto: 'Agente IA', icono: 'ia', insignia: 'IA' },
+        { valor: 'crear', texto: 'Crear contenido', icono: 'crear', insignia: 'IA' },
       ]}
       acciones={[
         { valor: 'ayuda', texto: 'Ayuda', icono: 'ayuda' },
@@ -292,6 +297,11 @@
             <CajaError mensaje={esDeRed(error) ? SIN_CONEXION : 'No se pudo abrir el Agente IA. Vuelve a intentarlo.'} />
           </main>
         {/await}
+      {/key}
+    {:else if vista === 'crear'}
+      <!-- Cada sucursal tiene sus propios 20 anuncios y su menú: se vuelve a abrir desde cero. -->
+      {#key actual.id}
+        <CrearContenido sucursal={actual} sucursales={datos.sucursales} alElegir={elegir} alIr={(a) => (vista = a)} />
       {/key}
     {:else}
       <!-- La hora de corte es de la sucursal; el chip dice de cuál. -->

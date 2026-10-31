@@ -24,6 +24,7 @@
   --sobre-tinta-suave: rgba(255, 255, 255, 0.64); /* el texto chico de la barra de Ocultar varios */
   --sobre-tinta-linea: rgba(255, 255, 255, 0.24); /* el borde de su botón Elegir todos */
   --velo: rgba(0, 0, 0, 0.35);         /* detrás de una ventana */
+  --sombra-anuncio: rgba(0, 0, 0, 0.22); /* el anuncio terminado en Crear contenido */
 }
 
 :root[data-tema='oscuro'] {
@@ -47,6 +48,7 @@
   --sobre-tinta-suave: rgba(0, 0, 0, 0.64);
   --sobre-tinta-linea: rgba(0, 0, 0, 0.24);
   --velo: rgba(0, 0, 0, 0.6);
+  --sombra-anuncio: rgba(0, 0, 0, 0.6);
 }
 
 /* Iguales en los dos temas. */

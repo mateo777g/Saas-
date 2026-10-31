@@ -196,11 +196,11 @@ async function saludo(env: Env, sesion: string, restaurante: string): Promise<Re
 export async function anotar(
   env: Env,
   restaurante: string,
-  uso: 'pregunta' | 'saludo' | 'menu' | 'menu_sin_respuesta',
+  uso: 'pregunta' | 'saludo' | 'menu' | 'menu_sin_respuesta' | 'palabras',
   modelo: string,
   t: Tokens,
 ): Promise<boolean | null> {
-  const etiqueta = uso === 'menu' || uso === 'menu_sin_respuesta' ? '[asistente]' : '[agente]';
+  const etiqueta = uso === 'menu' || uso === 'menu_sin_respuesta' ? '[asistente]' : uso === 'palabras' ? '[anuncios]' : '[agente]';
   try {
     const r = await llamar<{ costo: unknown; puede: boolean }>(env, 'worker', 'anotar_uso_ia', {
       p_restaurante_id: restaurante,

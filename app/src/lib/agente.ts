@@ -7,6 +7,7 @@
 //  - el saludo de reserva, uno por sucursal, para que la bienvenida salga al instante.
 // El Markdown de cada respuesta vive en markdown.ts. Ningún número sale de aquí: las cuentas las
 // hace Postgres y el modelo solo redacta.
+import { diaYMes } from './formato';
 import { supabase } from './supabase';
 import { llamarWorker } from './worker';
 
@@ -23,6 +24,20 @@ export type SinTope = {
   vuelve: string | null;
 };
 export type EstadoIa = { puede: true } | SinTope;
+
+// El aviso de la libreta de Seguridad, según por qué no puede y quién le vende. Lo dicen igual el
+// Agente IA y Crear contenido.
+export function textoSinTope(e: SinTope): string {
+  if (e.motivo === 'sin_ia') {
+    return e.con_distribuidor
+      ? 'La IA todavía no está activa en tu restaurante. Pídele a tu distribuidor que la active.'
+      : 'La IA todavía no está activa en tu restaurante. Escríbele a Fragmentless para que la active.';
+  }
+  const vuelve = e.vuelve ? `Vuelve el ${diaYMes(e.vuelve)}` : 'Vuelve el próximo mes';
+  return e.con_distribuidor
+    ? `Llegaste al límite de IA de este mes. ${vuelve} o pídele a tu distribuidor que lo suba.`
+    : `Llegaste al límite de IA de este mes. ${vuelve} o escríbele a Fragmentless para que lo suba.`;
+}
 
 // ─── Las ideas (las tres de Flet, con sus dos seguimientos cada una) ───────────────────────────
 

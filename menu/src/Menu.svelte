@@ -565,7 +565,7 @@
       <BarraPedido {cuantos} total={pesos(totalCarrito)} aviso={avisoAbajo} {t} alAbrir={() => abrir({ tipo: 'pedido' })} />
     {/if}
     {#if muestra !== 'barra'}
-      <Burbuja conBarra={conAbajo} {t} alAbrir={() => abrir({ tipo: 'asistente' })} />
+      <Burbuja {color} {tema} conBarra={conAbajo} {t} alAbrir={() => abrir({ tipo: 'asistente' })} />
     {/if}
     {#if globo}
       <div class="globo" role="status"><Icono nombre="check" tamano={14} />{globo}</div>
@@ -578,6 +578,7 @@
         {productos}
         {lengua}
         {moneda}
+        {tema}
         {t}
         alPreguntar={preguntarAlAsistente}
         alAbrirProducto={(p) => abrir({ tipo: 'producto', producto: p, foto: false, editando: null })}

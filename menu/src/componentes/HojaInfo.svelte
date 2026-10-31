@@ -85,15 +85,13 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    border-radius: 14px;
-    background: var(--m-barra);
-    overflow: hidden;
   }
 
+  /* Como en la barra: solo el logo, con sus esquinas suaves. */
   .logo img {
-    width: 40px;
-    height: 40px;
-    object-fit: contain;
+    max-width: 100%;
+    max-height: 100%;
+    border-radius: 14px;
   }
 
   .marca b {

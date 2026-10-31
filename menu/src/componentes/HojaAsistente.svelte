@@ -2,9 +2,12 @@
   La plática con el asistente (parte 6c; maqueta 2UPwZw31WrcYRZkH8jaT1Y, sección 1): sube desde abajo,
   casi a toda la pantalla, como las otras hojas del menú. Arriba «Asistente de La Fonda de Don Chuy»
   y su X; luego el saludo fijo (no gasta) con las 3 sugeridas antes de la primera pregunta, sus
-  preguntas en burbujas del color de Don Chuy y las respuestas con la ∫∫ a un lado, con las tarjetas
-  de los productos que nombró (su foto y su precio del menú; al tocarlas se abre su hoja, encima).
-  Abajo la caja y «∫∫ IA de Fragmentless · puede equivocarse».
+  preguntas en burbujas del color de Don Chuy y las respuestas con la estrella de Fragmentless a un
+  lado, con las tarjetas de los productos que nombró (su foto y su precio del menú; al tocarlas se
+  abre su hoja, encima). Abajo la caja y «IA de Fragmentless · puede equivocarse» con la estrella.
+  La estrella, en degradado, en su versión para el fondo de la hoja: la oficial en el tema claro, la
+  de fondo negro en el oscuro (decidido en la prueba de Banderitas, el 31 de octubre de 2026; antes,
+  la ∫∫ en la tinta del tema).
 
   Sin IA, el aviso va en lugar del saludo y la caja se apaga; con plática guardada, el aviso va al
   final (encuesta 1 de planes/trabajo/6c/menu-6c.md). En el límite, el aviso sale como respuesta y
@@ -12,12 +15,12 @@
 -->
 <script lang="ts">
   import { onMount, tick, type Snippet } from 'svelte';
-  import Integral from '@app/diseno/Integral.svelte';
   import type { Mensaje, Motivo, Platica } from '../lib/asistente.svelte';
   import { urlImagen, type MenuPublico, type Producto } from '../lib/datos';
   import type { Moneda } from '../lib/preferencias';
   import { enSuLengua, type Lengua, type Textos } from '../lib/textos';
   import { quitarRevision } from '../lib/turnstile';
+  import Estrella from './Estrella.svelte';
   import Icono from './Icono.svelte';
   import Precio from './Precio.svelte';
 
@@ -27,6 +30,7 @@
     productos,
     lengua,
     moneda,
+    tema,
     t,
     alPreguntar,
     alAbrirProducto,
@@ -37,6 +41,7 @@
     productos: Map<number, Producto>;
     lengua: Lengua;
     moneda: Moneda;
+    tema: string;
     t: Textos;
     alPreguntar: (pregunta: string, hueco: HTMLElement) => void;
     alAbrirProducto: (p: Producto) => void;
@@ -52,6 +57,7 @@
   let campo = $state<HTMLTextAreaElement>();
   let hueco = $state<HTMLDivElement>();
 
+  const fondo = $derived(tema === 'oscuro' ? 'negro' : 'blanco');
   const nombre = $derived(menu.restaurante.nombre);
   const telefono = $derived(menu.restaurante.telefono);
   const contesta = $derived(menu.asistente_contesta);
@@ -122,7 +128,7 @@
 
 {#snippet respuesta(cuerpo: Snippet)}
   <div class="resp">
-    <span class="logo"><Integral ancho={22} alto={24} /></span>
+    <span class="logo"><Estrella {fondo} tamano={24} /></span>
     <div class="cuerpo">{@render cuerpo()}</div>
   </div>
 {/snippet}
@@ -194,7 +200,7 @@
 
     {#if platica.pendiente !== null}
       <div class="ella">{platica.pendiente}</div>
-      <div class="pensando"><Integral ancho={26} alto={28} pensando /><span>{t.pensando}</span></div>
+      <div class="pensando"><Estrella {fondo} tamano={26} pensando /><span>{t.pensando}</span></div>
     {/if}
     <div class="hueco" bind:this={hueco}></div>
 
@@ -220,7 +226,7 @@
         <Icono nombre="flecha" tamano={18} />
       </button>
     </div>
-    <p class="marca"><Integral ancho={15} alto={16} /><span>{t.marcaIa}</span></p>
+    <p class="marca"><Estrella {fondo} tamano={16} /><span>{t.marcaIa}</span></p>
   </div>
 </div>
 

@@ -2,7 +2,8 @@
   La barra de arriba, del color de Don Chuy (libreta 6, decidido el 20 de octubre de 2026): su logo,
   su nombre, la «i», si está abierto (con la hora del restaurante), ES / EN y, si puso su tipo de
   cambio, MXN / USD. La letra encima se pone sola oscura o blanca (estiloColor). Sin logo, va solo
-  el nombre; sin horario, no dice si está abierto.
+  el nombre; sin horario, no dice si está abierto. El logo va solo, con sus esquinas suaves y sin
+  marco (decidido en la prueba de Banderitas, el 31 de octubre de 2026).
 -->
 <script lang="ts">
   import { urlImagen } from '../lib/datos';
@@ -88,15 +89,13 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    border-radius: 14px;
-    background: var(--m-barra-chip);
-    overflow: hidden;
   }
 
+  /* Cabe en los 48 px con su forma, y sus esquinas se redondean. */
   .logo img {
-    width: 40px;
-    height: 40px;
-    object-fit: contain;
+    max-width: 100%;
+    max-height: 100%;
+    border-radius: 14px;
   }
 
   .nombre {

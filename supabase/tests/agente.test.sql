@@ -1191,7 +1191,7 @@ select throws_ok(
 );
 select throws_ok(
   $$ select public.anotar_uso_ia('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 'flyer', 'gpt-6.1-sol', 100, 0, 0, 10) $$,
-  '22023', 'El uso de IA es pregunta, saludo, menu o menu_sin_respuesta',
+  '22023', 'El uso de IA es pregunta, saludo, menu, menu_sin_respuesta o palabras',
   'Los flyers todavía no existen'
 );
 reset role;
@@ -1218,7 +1218,7 @@ select tests.authenticate_as('fragmentless');
 select is(
   public.uso_ia_cliente('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa') - 'mes',
   '{"tope": 0.02, "gastado": 0.0200, "sobre_agente": 0.02, "gastado_agente": 0.0200, "consultas_agente": 1,
-    "saludos": 1, "agente_en_limite": true, "sobre_menu": 0.00, "gastado_menu": 0.0000, "consultas_menu": 0,
+    "saludos": 1, "agente_en_limite": true, "anuncios": 0, "gastado_anuncios": 0.0000, "sobre_menu": 0.00, "gastado_menu": 0.0000, "consultas_menu": 0,
     "menu_en_limite": false, "distribuidor_id": null, "distribuidor": null}'::jsonb,
   'La ventana «Tope de IA» trae lo gastado este mes, el tope y quién paga'
 );

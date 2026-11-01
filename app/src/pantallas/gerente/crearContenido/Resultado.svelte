@@ -1,8 +1,9 @@
 <!--
   «Resultado», la tarjeta de la derecha de Crear contenido (maqueta JQBw2yGFSiky1x9twUyYbe): vacía
   hasta que hay un anuncio; mientras se hace, la rejilla de puntitos con sus segundos; cuando sale,
-  el anuncio en su forma, de borroso a nítido, con «Otra vez» y «Descargar»; si no salió, por qué y
-  que no contó. Cada marco tiene la forma del formato.
+  el anuncio en su forma, de borroso a nítido, con «Otra vez» y «Descargar» y, si es un cartel,
+  «Ponerlo en mi menú» (de la 7b-2, maqueta SMeWoa5ypbcVQmvBGyyytt); si no salió, por qué y que no
+  contó. Cada marco tiene la forma del formato.
 -->
 <script module lang="ts">
   import type { Formato } from '../../../lib/crearContenido';
@@ -30,6 +31,7 @@
     otraVez,
     alOtraVez,
     alDescargar,
+    alPoner,
   }: {
     se: LoQueSeVe;
     // El formato que eligió: el del marco vacío.
@@ -38,6 +40,8 @@
     otraVez: boolean;
     alOtraVez: () => void;
     alDescargar: (id: number) => Promise<void>;
+    // «Ponerlo en mi menú»: lo sube como un cartel más; sus «no» llegan como error.
+    alPoner: (id: number) => Promise<void>;
   } = $props();
 
   const formato = $derived(se.fase === 'vacio' ? (formatoElegido ?? 'post') : se.formato);
@@ -59,6 +63,26 @@
       errorDescarga = error instanceof Fallo ? error.message : mensajeDeError(error);
     } finally {
       bajando = false;
+    }
+  }
+
+  // Los carteles que ya puso en su menú, mientras siga en la vista: el botón se queda en «En tu menú».
+  let puestos = $state<number[]>([]);
+  let poniendo = $state(false);
+  let errorPoner = $state<string | null>(null);
+
+  async function poner(id: number) {
+    if (poniendo || puestos.includes(id)) return;
+    poniendo = true;
+    errorPoner = null;
+    try {
+      await alPoner(id);
+      puestos = [...puestos, id];
+    } catch (error) {
+      if (!(error instanceof Fallo)) console.error('[crear contenido] no se pudo poner el cartel en el menú:', error);
+      errorPoner = error instanceof Fallo ? error.message : mensajeDeError(error);
+    } finally {
+      poniendo = false;
     }
   }
 
@@ -117,6 +141,7 @@
         <CajaError mensaje={errorDescarga} compacta />
       {:else}
         <div class="guardado"><Icono nombre="check-fino" tamano={16} />Guardado en Mi biblioteca</div>
+        {#if errorPoner}<CajaError mensaje={errorPoner} compacta />{/if}
       {/if}
       <div class="dos-botones">
         <Boton etiqueta="Otra vez" icono="actualizar" apagado={!otraVez} onclick={alOtraVez} />
@@ -129,6 +154,18 @@
           onclick={() => descargar(id)}
         />
       </div>
+      {#if se.formato === 'cartel'}
+        {@const puesto = puestos.includes(id)}
+        <div class="poner">
+          <Boton
+            etiqueta={puesto ? 'En tu menú' : poniendo ? 'Poniéndolo en tu menú…' : 'Ponerlo en mi menú'}
+            icono="cartel"
+            cargando={poniendo}
+            exito={puesto}
+            onclick={() => poner(id)}
+          />
+        </div>
+      {/if}
     </div>
   {/if}
 </Vidrio>
@@ -303,6 +340,14 @@
   }
 
   .dos-botones :global(.boton) {
+    flex: 1;
+  }
+
+  .poner {
+    display: flex;
+  }
+
+  .poner :global(.boton) {
     flex: 1;
   }
 

@@ -40,6 +40,7 @@
     type Pedido,
     type Resultado as ResultadoDeAnuncio,
   } from '../../lib/crearContenido';
+  import { ponerEnMiMenu } from '../../lib/biblioteca';
   import { esDeRed, Fallo, mensajeDeError, SIN_CONEXION } from '../../lib/errores';
   import { diaYMes, pesos } from '../../lib/formato';
   import { urlFoto } from '../../lib/fotos';
@@ -587,6 +588,7 @@
     otraVez={!aviso && !haciendo}
     alOtraVez={otraVez}
     alDescargar={descargarAnuncio}
+    alPoner={(id) => ponerEnMiMenu(sucursal.id, id)}
   />
 {/if}
 

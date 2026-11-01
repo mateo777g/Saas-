@@ -8,6 +8,8 @@
   se cierra. Se cierra también con Cancelar, Escape o un clic en el velo. Si el éxito debe hacer
   otra cosa que Cancelar (en Mi menú, Cancelar regresa a la ventana del producto y el éxito cierra
   las dos), va en `alTerminar`; `textoCargando` cambia el «Guardando…» («Eliminando…»).
+  `miniatura` pone la imagen en lugar del icono: 72 de ancho y su alto (Eliminar un anuncio de Mi
+  biblioteca).
 -->
 <script lang="ts">
   import { onDestroy, onMount } from 'svelte';
@@ -19,6 +21,7 @@
 
   let {
     icono,
+    miniatura,
     titulo,
     texto,
     boton,
@@ -27,7 +30,8 @@
     alTerminar,
     textoCargando = 'Guardando…',
   }: {
-    icono: string;
+    icono?: string;
+    miniatura?: { src: string; alto: number };
     titulo: string;
     texto: string;
     boton: { etiqueta: string; icono: string };
@@ -85,7 +89,11 @@
   }}
 >
   <div class="ventana">
-    <div class="icono"><Icono nombre={icono} tamano={20} /></div>
+    {#if miniatura}
+      <img class="mini" src={miniatura.src} alt="" style:height="{miniatura.alto}px" />
+    {:else if icono}
+      <div class="icono"><Icono nombre={icono} tamano={20} /></div>
+    {/if}
     <h2 class="titulo" id={idTitulo}>{titulo}</h2>
     <p class="texto">{texto}</p>
 
@@ -153,6 +161,13 @@
     justify-content: center;
     border-radius: 12px;
     background: var(--chip);
+  }
+
+  .mini {
+    display: block;
+    width: 72px;
+    border-radius: 10px;
+    object-fit: cover;
   }
 
   .titulo {

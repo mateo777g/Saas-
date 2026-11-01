@@ -8,8 +8,10 @@
 //    todo contra las reglas del estilo, aparta su lugar (apartar_anuncio), arranca el trabajo en
 //    segundo plano (hacerAnuncio.ts) y regresa {ok: true, anuncio_id}.
 //  - GET /anuncios/archivo?id=<id>: el JPG para «Descargar», con su nombre.
+// DELETE /anuncios?id=<id> (Eliminar, de Mi biblioteca) vive en biblioteca.ts.
 // El Worker no decide nada: Postgres dice si se puede, qué productos van y cuánto costó.
 import { anotar } from './agente';
+import { borrarAnuncio } from './biblioteca';
 import { lugaresDe } from './anuncios/comun';
 import type { Estilo, Formato, RestauranteDelAnuncio } from './anuncios/comun';
 import { FORMATOS } from './anuncios/comun';
@@ -50,6 +52,7 @@ export async function crearContenido(request: Request, env: Env, url: URL): Prom
   if (url.pathname === '/anuncios/archivo' && request.method === 'GET') return archivo(env, sesion, url);
   if (url.pathname === '/anuncios/palabras' && request.method === 'POST') return palabras(env, sesion, await leerCuerpo(request));
   if (url.pathname === '/anuncios' && request.method === 'POST') return hacer(env, sesion, await leerCuerpo(request));
+  if (url.pathname === '/anuncios' && request.method === 'DELETE') return borrarAnuncio(request, env, url);
   throw new Rechazo(404, 'Ese trabajo no existe.');
 }
 

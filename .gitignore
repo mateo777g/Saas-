@@ -21,8 +21,9 @@ EJEMPLOS_2/
 # %LOCALAPPDATA%\PanelLicencias\clientes.json; esto es por si queda una copia aquí.
 clientes.json
 
-# Los anuncios que genera el panel (panel/biblioteca/): imágenes, no código.
-biblioteca/
+# Los anuncios que genera el panel de Flet: imágenes, no código. Solo esa carpeta: la app tiene una
+# carpeta de código que se llama igual (app/src/pantallas/gerente/biblioteca/).
+/panel/biblioteca/
 
 # Video de prueba de la página (web/prueba/): el de verdad vivirá en R2, nunca en el repo.
 web/prueba/

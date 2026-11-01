@@ -9,8 +9,9 @@
 <script lang="ts">
   import { onMount } from 'svelte';
 
-  // Cuándo empezó, con el reloj de este navegador.
-  let { desde }: { desde: number } = $props();
+  // Cuándo empezó, con el reloj de este navegador. `orilla`: qué tan lejos de las esquinas van las
+  // pastillas (12 en el cuadrito de Mi biblioteca).
+  let { desde, orilla = 14 }: { desde: number; orilla?: number } = $props();
 
   let lienzo: HTMLCanvasElement;
   let ahora = $state(Date.now());
@@ -145,8 +146,10 @@
 </script>
 
 <canvas bind:this={lienzo} aria-hidden="true"></canvas>
-<span class="pastilla arriba-izq" role="status"><span class="latido"></span>Haciendo tu anuncio…</span>
-<span class="pastilla abajo-der">{segundos}</span>
+<span class="pastilla arriba-izq" role="status" style:top="{orilla}px" style:left="{orilla}px"
+  ><span class="latido"></span>Haciendo tu anuncio…</span
+>
+<span class="pastilla abajo-der" style:right="{orilla}px" style:bottom="{orilla}px">{segundos}</span>
 
 <style>
   canvas {
@@ -178,14 +181,7 @@
     white-space: nowrap;
   }
 
-  .arriba-izq {
-    top: 14px;
-    left: 14px;
-  }
-
   .abajo-der {
-    right: 14px;
-    bottom: 14px;
     min-width: 56px;
     font-size: 13px;
     font-variant-numeric: tabular-nums;

@@ -1,12 +1,14 @@
-// El Worker de Fragmentless (libreta 3, Seguridad). Hoy hace ocho cosas: subir y borrar las
+// El Worker de Fragmentless (libreta 3, Seguridad). Hoy hace nueve cosas: subir y borrar las
 // fotos del menú en R2 (fotos.ts), las cuentas, los PIN y los aparatos del equipo (equipo.ts), lo
 // que pide el PIN de otra persona en el punto de venta (pos.ts), el agente IA con su saludo
 // (agente.ts), el pedido del menú en línea por WhatsApp (pedidos.ts), el asistente del menú
-// (asistente.ts), las muestras de los estilos de los anuncios (estilos.ts) y Crear contenido
-// (crearContenido.ts, con su trabajo en segundo plano en hacerAnuncio.ts). Nunca decide solo:
-// antes de cada trabajo le pregunta a Postgres si se puede.
+// (asistente.ts), las muestras de los estilos de los anuncios (estilos.ts), Crear contenido
+// (crearContenido.ts, con su trabajo en segundo plano en hacerAnuncio.ts) y Mi biblioteca
+// (biblioteca.ts: Eliminar y, cada día a las 9:00 UTC, el borrado de los 30 días). Nunca decide
+// solo: antes de cada trabajo le pregunta a Postgres si se puede.
 import { agente } from './agente';
 import { preguntaDelMenu } from './asistente';
+import { borrarVencidos } from './biblioteca';
 import { crearContenido } from './crearContenido';
 import { equipo } from './equipo';
 import { listaDeEstilos, muestraDeEstilo } from './estilos';
@@ -73,5 +75,10 @@ export default {
       }
     }
     return conCors(respuesta, origen);
+  },
+
+  // El Cron Trigger diario (wrangler.jsonc): si falla, la corrida sale como fallida en Cloudflare.
+  async scheduled(_controlador, env): Promise<void> {
+    await borrarVencidos(env);
   },
 } satisfies ExportedHandler<Env>;

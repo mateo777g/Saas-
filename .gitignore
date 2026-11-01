@@ -25,8 +25,8 @@ clientes.json
 # 1 nov 2026. Solo esa carpeta.
 /panel/
 
-# Video de prueba de la página (web/prueba/): el de verdad vivirá en R2, nunca en el repo.
-web/prueba/
+# Lo que Windows deja en cada carpeta con imágenes.
+desktop.ini
 
 # Por si la sesión del panel llegara a escribirse aquí por error.
 sesion.json

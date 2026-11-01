@@ -1,0 +1,24 @@
+{
+  "name": "fragmentless-web",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "build": "npm run typecheck && esbuild src/wave-entry.tsx --bundle --minify --format=iife --define:process.env.NODE_ENV=\"\\\"production\\\"\" --outfile=assets/wave-background.js && tailwindcss -i styles/components.css -o assets/components.css --minify",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "clsx": "^2.1.1",
+    "ogl": "^1.0.11",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "tailwind-merge": "^3.7.0"
+  },
+  "devDependencies": {
+    "@tailwindcss/cli": "4.3.0",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "esbuild": "^0.28.2",
+    "tailwindcss": "4.3.0",
+    "typescript": "5.9"
+  }
+}

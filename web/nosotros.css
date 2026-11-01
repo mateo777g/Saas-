@@ -1,0 +1,266 @@
+/* nosotros.css — la página Nosotros de Fragmentless (nosotros.html). La barra, los botones y el footer vienen
+   de style.css; aquí van solo sus secciones: blancas, una gris, una negra (hacia dónde vamos) y la última en el azul de la marca. */
+
+.pagina-nosotros {
+  --ancho-texto: 1180px;
+  --relleno: clamp(24px, 6vw, 112px);
+}
+
+/* Cada sección ocupa el ancho de la página; su relleno a los lados centra el contenido en --ancho-texto
+   (nunca menos que --relleno), así los textos angostos se quedan alineados a la izquierda con los títulos. */
+:where(.pagina-nosotros main > section) {
+  padding-block: clamp(72px, 10vw, 140px);
+  padding-inline: max(var(--relleno), (100% - var(--ancho-texto)) / 2);
+}
+
+/* La etiqueta azul de cada sección, chica y en mayúsculas */
+.ns-etiqueta {
+  margin: 0 0 20px;
+  color: var(--azul);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.ns-titulo {
+  margin: 0;
+  font-size: clamp(2rem, 3.6vw, 3.5rem);
+  font-weight: 500;
+  line-height: 1.05;
+  letter-spacing: -0.04em;
+  text-wrap: balance;
+}
+
+.ns-texto,
+.ns-columna-texto p,
+p.ns-columna-texto {
+  color: #515154;
+  font-size: clamp(1rem, 1.1vw, 1.1875rem);
+  line-height: 1.65;
+}
+.ns-texto { max-width: 40em; margin: 24px 0 0; }
+.ns-columna-texto p { margin: 0 0 18px; }
+.ns-columna-texto strong { color: var(--tinta); font-weight: 600; }
+
+/* Dos columnas en escritorio: el título a la izquierda y el texto a la derecha */
+.ns-columnas {
+  display: grid;
+  grid-template-columns: minmax(0, 5fr) minmax(0, 6fr);
+  gap: clamp(32px, 6vw, 96px);
+  align-items: start;
+}
+
+/* Portada: el logo y debajo el titular, tan grande como el de index.html, todo centrado en la primera pantalla */
+.ns-portada {
+  position: relative;
+  box-sizing: border-box;
+  min-height: 100vh;
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  padding-top: calc(var(--alto-barra) + 32px);
+  padding-bottom: 64px;
+  border-bottom: 1px solid color-mix(in srgb, var(--tinta) 10%, transparent);
+}
+.ns-portada > :not(.ns-logo) { position: relative; z-index: 1; }
+
+/* El logo en su vidrio: un lienzo del tamaño de la pantalla con el logo al centro, que el componente pinta con
+   su fondo (gris en la entrada, blanco después). Al terminar la entrada sube --sube (nosotros.js) para que el
+   logo quede sobre .ns-logo-lugar. No se puede tocar: así no repite la entrada al hacer clic. */
+.ns-logo {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100vh;
+  height: 100svh;
+  min-height: 420px;
+  translate: 0 var(--sube, 0px);
+  pointer-events: none;
+}
+/* El espacio del logo ya terminado: lo que mide en el componente (0.46 de su cuadro, que es el lado corto de la
+   pantalla entre 1.75, hasta 256 px) */
+.ns-logo-lugar {
+  flex: none;
+  width: calc(min(256px, 100vw / 1.75, 100svh / 1.75) * 0.46);
+  aspect-ratio: 1;
+  margin-bottom: 40px;
+}
+
+/* La entrada (data-intro en <html>: «logo» lo pone un script en <head> y «sube», components/logo-vidrio.tsx).
+   Mientras el logo sale en su vidrio, toda la pantalla es el gris de la referencia, sin barra ni texto, y no se
+   puede bajar. Luego el logo sube a su lugar mientras el fondo se pone blanco, baja la barra y al final sube el
+   texto, con las mismas entradas que la barra y la portada del index. */
+:root[data-intro="logo"] { overflow: hidden; }
+/* Al subir, el lienzo del logo se lleva su fondo y deja ver la portada debajo: va del mismo color que él (gris, y
+   luego el que le pone components/logo-vidrio.tsx en --fondo-logo mientras pasa a blanco) */
+:root[data-intro] .ns-portada { background: var(--fondo-logo, #E9E9EB); }
+:root[data-intro="logo"] .ns-logo { translate: 0 0; background: #E9E9EB; }
+:root[data-intro="logo"] .barra { visibility: hidden; }
+:root[data-intro="logo"] .ns-portada > :not(.ns-logo) { opacity: 0; }
+:root[data-intro="sube"] .ns-logo { transition: translate 0.9s cubic-bezier(0.65, 0, 0.35, 1); }
+:root[data-intro="sube"] .barra { animation: entrada-barra 0.7s cubic-bezier(0.2, 0.7, 0.2, 1) 0.9s both; }
+:root[data-intro="sube"] .ns-portada > :is(h1, .ns-entrada) {
+  animation: entrada-portada 0.7s cubic-bezier(0.2, 0.7, 0.2, 1) 1.4s both;
+}
+:root[data-intro="sube"] .ns-portada > .ns-entrada { animation-delay: 1.48s; }
+/* En cuanto el titular termina de subir, le pasa el brillo azul de toda la página (brillo-submenu, en style.css),
+   letra por letra: nosotros.js pone cada una en su span con su lugar (--i) */
+:root[data-intro="sube"] .ns-portada h1 .brilla { animation: brillo-submenu 0.4s ease-in-out calc(1.9s + var(--i) * 18ms); }
+.ns-portada h1 {
+  margin: 0;
+  font-size: clamp(2.75rem, 7vw, 6.5rem);
+  font-weight: 500;
+  line-height: 1;
+  letter-spacing: -0.05em;
+}
+.ns-entrada {
+  margin: 28px 0 0;
+  text-wrap: balance;
+  color: #515154;
+  font-size: clamp(1.125rem, 1.6vw, 1.5rem);
+  line-height: 1.5;
+  max-width: 34em;
+}
+
+/* La misión: una frase grande; la segunda mitad en el azul de la marca */
+.ns-frase {
+  margin: 0;
+  font-size: clamp(2rem, 4.6vw, 4.5rem);
+  font-weight: 500;
+  line-height: 1.08;
+  letter-spacing: -0.045em;
+  text-wrap: balance;
+}
+.ns-frase span { color: var(--azul); }
+
+.ns-nombre { background: #F5F5F7; }
+
+/* Hacia dónde vamos, en negro: una línea con un punto azul por paso */
+.ns-vision {
+  --tinta: #FFFFFF;
+  background: var(--noche);
+  color: #FFFFFF;
+}
+.ns-vision .ns-etiqueta { color: var(--azul-noche); }
+.ns-vision .ns-columna-texto,
+.ns-vision .ns-linea p { color: #A1A1A6; }
+.ns-vision .ns-columna-texto strong { color: #FFFFFF; font-weight: 500; }
+p.ns-columna-texto { margin: 24px 0 0; max-width: 28em; }
+
+.ns-linea {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border-left: 1px solid #3A3A3D;
+}
+.ns-linea li {
+  position: relative;
+  padding: 0 0 40px 32px;
+}
+.ns-linea li:last-child { padding-bottom: 0; }
+.ns-linea li::before {
+  content: '';
+  position: absolute;
+  left: -5px;
+  top: 0.45em;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--azul-noche);
+  box-shadow: 0 0 0 4px var(--noche);
+}
+.ns-linea h3 { margin: 0 0 8px; font-size: 1.1875rem; font-weight: 500; letter-spacing: -0.01em; }
+.ns-linea p { margin: 0; font-size: 1rem; line-height: 1.6; max-width: 34em; }
+
+/* Una cita grande debajo de la línea: cómo construimos */
+.ns-leccion {
+  margin: clamp(64px, 8vw, 112px) 0 0;
+  padding-top: clamp(40px, 5vw, 64px);
+  border-top: 1px solid #3A3A3D;
+}
+.ns-leccion blockquote { margin: 0; }
+.ns-leccion blockquote p {
+  margin: 0;
+  max-width: 24em;
+  font-size: clamp(1.75rem, 3.4vw, 3rem);
+  font-weight: 400;
+  line-height: 1.15;
+  letter-spacing: -0.035em;
+  text-wrap: balance;
+}
+.ns-leccion figcaption { margin-top: 20px; color: #A1A1A6; font-size: 14px; }
+
+/* Los principios, en una rejilla de tres columnas con su número */
+.ns-rejilla {
+  counter-reset: principio;
+  margin: clamp(40px, 5vw, 64px) 0 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1px;
+  background: color-mix(in srgb, var(--tinta) 10%, transparent);
+  border: 1px solid color-mix(in srgb, var(--tinta) 10%, transparent);
+  border-radius: 16px;
+  overflow: hidden;
+}
+.ns-rejilla li {
+  counter-increment: principio;
+  padding: clamp(24px, 3vw, 40px);
+  background: var(--fondo);
+}
+.ns-rejilla li::before {
+  content: counter(principio, decimal-leading-zero);
+  display: block;
+  margin-bottom: 28px;
+  color: var(--azul);
+  font-size: 14px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.ns-rejilla h3 { margin: 0 0 10px; font-size: 1.1875rem; font-weight: 500; letter-spacing: -0.01em; }
+.ns-rejilla p { margin: 0; color: #515154; font-size: 0.9375rem; line-height: 1.6; }
+
+/* El producto, en el azul de la marca, con un botón blanco que lleva al sistema en index.html */
+.ns-producto {
+  background: var(--azul);
+  color: #FFFFFF;
+}
+.ns-producto .ns-etiqueta { color: #FFFFFF; opacity: 0.75; }
+.ns-producto .ns-texto { color: rgb(255 255 255 / 0.85); }
+.ns-botones { margin-top: 36px; }
+.ns-boton-blanco { background: #FFFFFF; color: var(--azul); font-weight: 500; }
+.ns-boton-blanco:hover { opacity: 0.9; }
+.ns-boton-blanco:focus-visible { outline-color: #FFFFFF; }
+
+/* Al bajar, cada bloque sube un poco y aparece (nosotros.js le pone data-visto). Solo si corrió el script:
+   sin él, todo se ve desde el principio. */
+.ns-animada .aparece {
+  opacity: 0;
+  transform: translateY(24px);
+  transition: opacity 0.7s ease, transform 0.7s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+.ns-animada .aparece[data-visto] { opacity: 1; transform: none; }
+/* Los pasos de la visión y los principios entran uno tras otro */
+.ns-animada :is(.ns-linea, .ns-rejilla) > .aparece:nth-child(2) { transition-delay: 80ms; }
+.ns-animada :is(.ns-linea, .ns-rejilla) > .aparece:nth-child(3) { transition-delay: 160ms; }
+.ns-animada :is(.ns-linea, .ns-rejilla) > .aparece:nth-child(4) { transition-delay: 240ms; }
+.ns-animada :is(.ns-linea, .ns-rejilla) > .aparece:nth-child(5) { transition-delay: 320ms; }
+.ns-animada :is(.ns-linea, .ns-rejilla) > .aparece:nth-child(6) { transition-delay: 400ms; }
+
+@media (prefers-reduced-motion: reduce) {
+  .ns-animada .aparece { opacity: 1; transform: none; transition: none; }
+}
+
+@media (max-width: 900px) {
+  .ns-columnas { grid-template-columns: minmax(0, 1fr); }
+  .ns-rejilla { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 560px) {
+  .ns-rejilla { grid-template-columns: minmax(0, 1fr); }
+}

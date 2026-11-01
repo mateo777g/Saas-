@@ -4,27 +4,45 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Fragmentless</title>
+<meta name="description" content="Creamos software para conectar ideas, simplificar procesos y abrir nuevas posibilidades.">
+<!-- La barra del navegador en el celular: negra, como el footer -->
+<meta name="theme-color" content="#000000">
+<link rel="icon" href="assets/fragmentless-logo.svg" type="image/svg+xml">
+<!-- Al compartir el enlace (WhatsApp, redes). og:image va con la dirección completa (https://…), porque la mayoría de
+     las redes no acepta rutas relativas; si cambia el dominio, cambiarla aquí y en nosotros.html. La imagen es un
+     cuadro de la entrada de Nosotros (el logo en el vidrio). Al cambiarla, subir su ?v=: Meta guarda la vieja. -->
+<meta property="og:type" content="website">
+<meta property="og:locale" content="es_MX">
+<meta property="og:site_name" content="Fragmentless">
+<meta property="og:title" content="Fragmentless — Un mundo sin piezas sueltas">
+<meta property="og:description" content="Creamos software para conectar ideas, simplificar procesos y abrir nuevas posibilidades.">
+<meta property="og:image" content="https://fragmentless-software.vercel.app/assets/og-imagen.jpg?v=vidrio-1">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@200;400;500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css">
-<script src="barra.js" defer></script>
-<script src="escena.js" defer></script>
-<script src="hoja.js" defer></script>
-<script src="vistas.js" defer></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@200;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css?v=zoom-ligero-1">
+<link rel="stylesheet" href="assets/components.css">
+<script src="assets/wave-background.js?v=logo-blanco-1" defer></script>
+<script src="barra.js?v=menu-brillo-1" defer></script>
+<!-- Antes que escena.js: así el azul ya está dibujado cuando la laptop se muestra -->
+<script src="pantalla.js?v=luz-en-su-lugar-1" defer></script>
+<script src="escena.js?v=zoom-ligero-1" defer></script>
+<!-- Después de escena.js: el cambio del azul al panel con una franja de luz -->
+<script src="barrido.js?v=luz-1" defer></script>
+<!-- La sección 3: dos tarjetas que se alejan, se inclinan y bajan con el scroll -->
+<script src="lanzamiento.js?v=celular-2" defer></script>
+
 </head>
 <body>
 
 <header class="barra">
   <div class="barra-fila">
     <a class="logo" href="./">
-      <!-- ∫∫ acostada: girada 90°, una integral encima de la otra -->
-      <svg viewBox="104 25 322 350" aria-hidden="true">
-        <g id="integral" fill="currentColor" transform="rotate(90 265 200)">
-          <path d="M 299.5 47.5 A 19 19 0 1 1 272.15 57.5 C 258 54 245 72 238 100 C 232 124 222 172 216 200 C 210 230 204 264 196 292 C 182 340 156 360 122 360 C 112 360 106 355.7 100.5 352.5 A 19 19 0 1 1 127.85 342.5 C 142 346 155 328 162 300 C 168 276 178 228 184 200 C 190 170 196 136 204 108 C 218 60 244 40 278 40 C 288 40 294 44.3 299.5 47.5 Z"></path>
-          <path transform="translate(130 0)" d="M 299.5 47.5 A 19 19 0 1 1 272.15 57.5 C 258 54 245 72 238 100 C 232 124 222 172 216 200 C 210 230 204 264 196 292 C 182 340 156 360 122 360 C 112 360 106 355.7 100.5 352.5 A 19 19 0 1 1 127.85 342.5 C 142 346 155 328 162 300 C 168 276 178 228 184 200 C 190 170 196 136 204 108 C 218 60 244 40 278 40 C 288 40 294 44.3 299.5 47.5 Z"></path>
-        </g>
-      </svg>
+      <img class="logo-claro" src="assets/fragmentless-logo.svg" alt="" width="24" height="23">
+      <img class="logo-oscuro" src="assets/fragmentless-logo-blanco.svg" alt="" width="24" height="23">
       <span>fragmentless</span>
     </a>
 
@@ -36,21 +54,26 @@
 
     <div class="acciones">
       <a class="boton boton-borde" href="#">Iniciar Sesión</a>
-      <a class="boton boton-negro" href="#">Empieza</a>
+      <a class="boton boton-primario" href="#sistema">Conoce el Sistema</a>
     </div>
+
+    <!-- En celular y en tablet, en lugar de los atajos: abre la barra con los tres submenús como renglones (barra.js) -->
+    <button type="button" class="hamburguesa" aria-expanded="false" aria-controls="menu-productos menu-soluciones menu-acerca" aria-label="Menú">
+      <span></span><span></span>
+    </button>
   </div>
 
   <!-- Lo que se despliega al tocar un atajo: la barra crece hacia abajo -->
   <div class="despliegue">
     <div class="despliegue-dentro">
       <ul class="submenu" id="menu-productos" hidden>
-        <li><a href="#">SaaS Restaurante</a></li>
+        <li><a href="#sistema">SaaS Restaurante</a></li>
       </ul>
       <ul class="submenu" id="menu-soluciones" hidden>
         <li><a href="#">Planes</a></li>
       </ul>
       <ul class="submenu" id="menu-acerca" hidden>
-        <li><a href="#">Nosotros</a></li>
+        <li><a href="nosotros.html">Nosotros</a></li>
         <li><a href="#">Contáctanos</a></li>
       </ul>
     </div>
@@ -67,141 +90,129 @@
   <section class="escena" aria-label="Presentación">
     <div class="escena-fija">
       <div class="noche" aria-hidden="true"></div>
+      <div class="portada-copy">
+        <h1>Un mundo sin piezas sueltas.</h1>
+        <p class="portada-resumen">Creamos software para conectar ideas, simplificar procesos y abrir nuevas posibilidades.</p>
+        <!-- Lleva a la empresa, no al sistema de restaurantes: a la página Nosotros -->
+        <div class="portada-botones">
+          <a class="boton boton-primario" href="nosotros.html">Conócenos</a>
+        </div>
+      </div>
 
       <!-- La laptop (escena.js la mueve entera): la pantalla es la tarjeta del video, y el teclado va pegado
            a su orilla de abajo, como con una bisagra. Arriba, a todo lo ancho, no se ven ni el marco de la
-           pantalla ni el teclado: aparecen mientras se encoge. Al subir la hoja de la sección 3 se cierra,
-           y entonces se ve la tapa por detrás. -->
+           pantalla ni el teclado: aparecen mientras se encoge. Al final se cierra (y entonces se ve la tapa
+           por detrás), la cámara gira para verla de frente, se vuelve a abrir con la pantalla en blanco y la
+           cámara avanza hasta que esa pantalla llena todo: ahí llega la sección 3. -->
       <div class="laptop">
-        <!-- Los videos de la página van sin audio. Sobre el fondo blanco se ve el panel oscuro; al
-             oscurecerse la página entra el panel claro. Por ahora son grabaciones de prueba (web/prueba/,
-             fuera de git); los de verdad vendrán de R2 (carpeta web/). Sin video, el hueco se ve negro. -->
+        <!-- El azul en vivo (pantalla.js) da paso a la captura del panel al encogerse la laptop, detrás de una
+             franja de luz (barrido.js). -->
         <div class="video">
-          <video class="video-dia" src="prueba/panel-oscuro2.mp4" autoplay muted loop playsinline aria-hidden="true"></video>
-          <video class="video-noche" src="prueba/panel-claro.mp4" autoplay muted loop playsinline aria-hidden="true"></video>
-          <h1>Un mundo sin piezas sueltas.</h1>
+          <canvas class="pantalla-azul" aria-hidden="true"></canvas>
+          <img class="panel-sistema" src="prueba/vista-inicio.webp" alt="Panel del agente de IA de Fragmentless" decoding="async">
+          <!-- La franja de luz que cambia el azul por el panel (barrido.js) -->
+          <canvas class="barrido-luz" aria-hidden="true"></canvas>
+          <!-- La pantalla en blanco que se ve al reabrirse de frente, como el fondo de la sección 3 -->
+          <div class="pantalla-seccion" aria-hidden="true"></div>
         </div>
-        <!-- La tapa por detrás de la pantalla: solo se ve al cerrarse -->
-        <div class="tapa" aria-hidden="true"></div>
-        <!-- El teclado: las teclas (una imagen, style.css), el trackpad y el canto de enfrente -->
+        <!-- El grosor de la pantalla: sus orillas y sus cuatro esquinas redondas, y al fondo la tapa, que solo
+             se ve al cerrarse -->
+        <div class="grosor-pantalla" aria-hidden="true">
+          <div class="tapa"></div>
+          <div class="orilla orilla-arriba"></div>
+          <div class="orilla orilla-abajo"></div>
+          <div class="orilla orilla-izq"></div>
+          <div class="orilla orilla-der"></div>
+          <div class="esquina esquina-der"></div>
+          <div class="esquina esquina-izq"></div>
+          <div class="esquina esquina-atras-izq"></div>
+          <div class="esquina esquina-atras-der"></div>
+        </div>
+        <!-- El teclado: las teclas (una imagen, style.css) con la rejilla de las bocinas arriba (también en
+             style.css), el trackpad, el brillo de la luz encima de ellos y el grosor de la base (los cantos
+             de enfrente y de atrás, los dos costados, el derecho con sus puertos, y las cuatro esquinas
+             redondas). Debajo de la base, el piso con luz de la parte negra y la sombra de la laptop. En su
+             orilla de atrás, la bisagra. -->
         <div class="teclado" aria-hidden="true">
+          <div class="piso"></div>
+          <div class="sombra"></div>
           <div class="teclas"></div>
           <div class="trackpad"></div>
+          <div class="brillo"></div>
           <div class="canto"></div>
+          <div class="canto canto-atras"></div>
+          <div class="costado costado-izq"></div>
+          <div class="costado costado-der"></div>
+          <div class="esquina esquina-izq"></div>
+          <div class="esquina esquina-der"></div>
+          <div class="esquina esquina-atras-izq"></div>
+          <div class="esquina esquina-atras-der"></div>
+          <!-- La bisagra: su cara de enfrente y sus dos puntas -->
+          <div class="bisagra">
+            <div class="bisagra-frente"></div>
+            <div class="bisagra-punta bisagra-punta-izq"></div>
+            <div class="bisagra-punta bisagra-punta-der"></div>
+          </div>
         </div>
       </div>
 
-      <div class="texto-centro">
-        <h2 class="se-pinta">Presentamos nuestro nuevo SaaS.</h2>
+      <div class="texto-centro" id="presentacion-saas">
+        <h2 class="se-brilla">Presentamos nuestro nuevo software.</h2>
         <p class="se-enciende">El siguiente nivel para los restaurantes de México: un solo sistema, sin piezas sueltas, con inteligencia artificial.</p>
+        <!-- Solo en celular (style.css), donde no sale el texto de la izquierda, que lleva estos mismos botones -->
+        <div class="texto-botones">
+          <a class="boton boton-borde" href="#">Más información</a>
+          <a class="boton boton-primario" href="#">Comprar</a>
+        </div>
       </div>
 
       <div class="texto-lado">
-        <h2 class="se-pinta">Moderniza tu negocio.</h2>
+        <h2 class="se-brilla">Moderniza tu negocio.</h2>
         <p class="se-enciende">Compra la licencia ya mismo y disfruta del sistema.</p>
         <!-- La entrada va en esta caja y no en los botones, para no pelearse con su opacidad al pasar el mouse -->
         <div class="texto-botones">
-          <a class="pildora pildora-llena" href="#">Más información</a>
-          <a class="pildora" href="#">Comprar</a>
-        </div>
+          <a class="boton boton-borde" href="#">Más información</a>
+          <a class="boton boton-primario" href="#">Comprar</a>
+        </div> 
       </div>
     </div>
   </section>
 
-  <!-- Sección 3 (hoja.js): una hoja blanca que sube encima de la escena ya quieta, como entraban los
-       planes en la página vieja. Llega a la pantalla, se queda quieta un tramo (el enganche) y sigue. -->
-  <section class="hoja">
-    <div class="hoja-fija">
-      <div class="hoja-contenido">
-        <!-- Las vistas del panel (vistas.js), como la página del iPhone: arriba el texto de la vista que se ve
-             y los botones; abajo unas manos que sostienen una tablet, y en su pantalla las capturas pasan de
-             lado una tras otra. Se pasan con los botones, las flechas del teclado o arrastrando la pantalla.
-             El nombre y la descripción de cada vista son los de su mismo lugar en la lista. La tablet es una
-             imagen generada con la pantalla vacía (prueba/tableta-manos.webp); las capturas van detrás y se
-             ven por el hueco, debajo de los pulgares. Por ahora son capturas de prueba (web/prueba/, fuera de git). -->
-        <div class="vistas" role="region" aria-roledescription="carrusel" aria-label="Vistas del panel" tabindex="0">
-          <!-- El título empieza con una frase fija y sigue con el nombre de la vista del frente. Los nombres y
-               las descripciones ocupan cada uno el mismo lugar y solo se ve el de la vista del frente: así los
-               botones no brincan cuando una descripción tiene más renglones que otra -->
-          <div class="vistas-textos">
-            <h2>
-              <span class="vistas-fijo">Nuestro sistema tiene</span>
-              <span class="vistas-nombres">
-                <span class="vistas-nombre">Inicio de sesión</span>
-                <span class="vistas-nombre">Inicio</span>
-                <span class="vistas-nombre">Menú</span>
-                <span class="vistas-nombre">Mesas</span>
-                <span class="vistas-nombre">Agente de IA</span>
-                <span class="vistas-nombre">Creación de contenido</span>
-                <span class="vistas-nombre">Biblioteca</span>
-              </span>
-            </h2>
-            <div class="vistas-descripciones">
-              <p class="vistas-descripcion">Entra con tu correo y tu contraseña para administrar tu restaurante.</p>
-              <p class="vistas-descripcion">Lo vendido hoy, tus mesas, lo más vendido y lo último de tu menú, de un vistazo.</p>
-              <p class="vistas-descripcion">Agrega tus platillos con foto, precio y categoría, y ocúltalos cuando se agoten.</p>
-              <p class="vistas-descripcion">Qué mesas están ocupadas, desde hace cuánto y cuánto llevan de cuenta.</p>
-              <p class="vistas-descripcion">Pregúntale lo que quieras de tu negocio: te responde con las cifras de tus ventas cerradas.</p>
-              <p class="vistas-descripcion">Elige un platillo y el formato, y la IA arma tu anuncio para Instagram con los datos de tu negocio.</p>
-              <p class="vistas-descripcion">Todos tus anuncios guardados por día, posts e historias, listos para descargar.</p>
-            </div>
-          </div>
-          <div class="vistas-botones">
-            <button type="button" class="pildora pildora-llena" data-paso="-1" aria-label="Vista anterior">Anterior</button>
-            <button type="button" class="pildora" data-paso="1" aria-label="Vista siguiente">Siguiente</button>
-          </div>
-          <div class="vistas-escenario">
-            <div class="vistas-tableta">
-              <div class="vistas-pantalla">
-                <ul class="vistas-pista">
-                  <li class="vistas-captura"><img src="prueba/vista-sesion.webp" alt="La pantalla para iniciar sesión en el panel" draggable="false"></li>
-                  <li class="vistas-captura"><img src="prueba/vista-inicio.webp" alt="La vista Inicio del panel" draggable="false"></li>
-                  <li class="vistas-captura"><img src="prueba/vista-menu.webp" alt="La vista Mi menú del panel" draggable="false"></li>
-                  <li class="vistas-captura"><img src="prueba/vista-mesas.webp" alt="La vista Mesas del panel" draggable="false"></li>
-                  <li class="vistas-captura"><img src="prueba/vista-agente.webp" alt="La vista Agente IA del panel" draggable="false"></li>
-                  <li class="vistas-captura"><img src="prueba/vista-contenido.webp" alt="La vista Crear contenido del panel" draggable="false"></li>
-                  <li class="vistas-captura"><img src="prueba/vista-biblioteca.webp" alt="La vista Mi biblioteca del panel" draggable="false"></li>
-                </ul>
+  <!-- Sección 3 (lanzamiento.js): sobre el blanco de la laptop aparece la primera tarjeta, se
+       aleja y se inclina, entra la segunda por la derecha, las dos bajan y sale el título. -->
+  <section class="lanzamiento" aria-labelledby="lanzamiento-titulo">
+    <div class="lanzamiento-ancla" id="sistema"></div>
+    <div class="lanzamiento-fija">
+      <div class="lanzamiento-grupo">
+        <!-- La primera tarjeta, que aparece de la nada. Primero una frase con tres imágenes que cambian
+             con el scroll; al alejarse, imágenes que forman un anillo, se da vuelta, se amontonan y queda una
+             sola (lanzamiento.js las pone). Al subir, esa regresa al centro y se vuelve la imagen de la
+             frase. Las tres imágenes de la frase son provisionales. -->
+        <div class="lanzamiento-tarjeta tarjeta-izq">
+          <div class="lanzamiento-giro">
+            <div class="lanzamiento-cara cara-clara">
+              <div class="orbita" aria-hidden="true"><div class="orbita-centro"></div></div>
+              <div class="intro">
+                <p class="intro-frase"><span class="intro-antes">Todo tu restaurante</span> <span class="intro-imagenes"><img src="prueba/tarjeta-libreta.webp" alt="" decoding="async"><img src="prueba/tarjeta-mesera.webp" alt="" decoding="async" hidden><img src="prueba/tarjeta-cuentas.webp" alt="" decoding="async" hidden></span> <span>en un solo sistema.</span></p>
               </div>
-              <img class="vistas-manos" src="prueba/tableta-manos.webp" alt="" width="2542" height="1428" draggable="false">
             </div>
           </div>
-          <p class="solo-lector" aria-live="polite"></p>
+        </div>
+        <!-- La segunda: un remolino de imágenes que giran alrededor de una frase y se van al centro -->
+        <div class="lanzamiento-tarjeta tarjeta-der">
+          <div class="lanzamiento-giro">
+            <div class="lanzamiento-cara cara-oscura">
+              <div class="remolino" aria-hidden="true"><div class="remolino-centro"></div></div>
+              <p class="remolino-titulo">Todo conectado.</p>
+            </div>
+          </div>
         </div>
       </div>
-    </div>
-    <div class="hoja-enganche" aria-hidden="true"></div>
-  </section>
-
-  <!-- Sección 4: una franja negra como la del Apple Watch en la página de Apple: arriba el título en blanco,
-       en medio la libreta con las ventas anotadas a mano y la calculadora (Higgsfield, GPT Image 2.5 Sunburst,
-       sin fondo) y abajo una línea que dice para qué. -->
-  <section class="franja" aria-labelledby="franja-titulo">
-    <div class="franja-contenido">
-      <h2 id="franja-titulo">Adiós a la libreta</h2>
-      <img src="prueba/libreta.webp" alt="Una libreta abierta con las ventas de la semana anotadas a lápiz y sumadas, un lápiz y una calculadora" width="1943" height="1064" loading="lazy">
-      <p>¿Sigues anotando tus ventas a mano y sumando con la calculadora? Nuestro sistema lo hace por ti.</p>
-    </div>
-  </section>
-
-  <!-- Sección 5: dos cuadros con foto, como los de la portada de Apple: el blanco de la página los rodea y
-       cada uno lleva su título y una línea; el de la izquierda con el texto arriba y el de la
-       derecha abajo. Las fotos se generaron en Higgsfield (GPT Image 2.5 Sunburst). -->
-  <section class="mosaico" aria-label="Lo que hace el sistema">
-    <article class="cuadro cuadro-arriba" style="--foco: 60%">
-      <img src="prueba/mesera.webp" alt="Una mesera, de espaldas, anota la cuenta en una tablet junto a una mesa con tres clientes" width="1920" height="1086" loading="lazy">
-      <div class="cuadro-texto">
-        <h2>Punto de venta</h2>
-        <p>Toma pedidos y cierra cuentas desde la mesa.</p>
+      <div class="lanzamiento-orillas" aria-hidden="true"></div>
+      <div class="lanzamiento-texto">
+        <h2 id="lanzamiento-titulo">Todo tu restaurante. En un solo lugar.</h2>
       </div>
-    </article>
-    <article class="cuadro cuadro-abajo" style="--foco: 55%">
-      <img src="prueba/cuentas.webp" alt="Alguien, de espaldas, hace las cuentas del restaurante con calculadora entre montones de tickets" width="1920" height="1086" loading="lazy">
-      <div class="cuadro-texto">
-        <h2>Agente de IA</h2>
-        <p>Deja la calculadora: pregúntale cuánto vendiste.</p>
-      </div>
-    </article>
+    </div>
   </section>
 
   <!-- Sección 6: un espacio blanco de media pantalla para los logos de los restaurantes que trabajen con
@@ -209,63 +220,8 @@
   <section class="clientes"></section>
 </main>
 
-<!-- El pie, en negro: a la izquierda el logo (el mismo de la barra), el eslogan y las redes; a la derecha los
-     atajos de la barra con lo de sus submenús; abajo los derechos y los avisos legales. Todos los enlaces van
-     a ninguna parte por ahora, como los de la barra. -->
-<footer class="pie">
-  <div class="pie-arriba">
-    <div class="pie-marca">
-      <a class="logo" href="./">
-        <svg viewBox="104 25 322 350" aria-hidden="true"><use href="#integral"></use></svg>
-        <span>fragmentless</span>
-      </a>
-      <p class="pie-eslogan">Un mundo sin piezas sueltas.</p>
-      <ul class="pie-redes">
-        <li>
-          <a href="#" aria-label="Instagram">
-            <!-- Íconos de Simple Icons (CC0) -->
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7.0301.084c-1.2768.0602-2.1487.264-2.911.5634-.7888.3075-1.4575.72-2.1228 1.3877-.6652.6677-1.075 1.3368-1.3802 2.127-.2954.7638-.4956 1.6365-.552 2.914-.0564 1.2775-.0689 1.6882-.0626 4.947.0062 3.2586.0206 3.6671.0825 4.9473.061 1.2765.264 2.1482.5635 2.9107.308.7889.72 1.4573 1.388 2.1228.6679.6655 1.3365 1.0743 2.1285 1.38.7632.295 1.6361.4961 2.9134.552 1.2773.056 1.6884.069 4.9462.0627 3.2578-.0062 3.668-.0207 4.9478-.0814 1.28-.0607 2.147-.2652 2.9098-.5633.7889-.3086 1.4578-.72 2.1228-1.3881.665-.6682 1.0745-1.3378 1.3795-2.1284.2957-.7632.4966-1.636.552-2.9124.056-1.2809.0692-1.6898.063-4.948-.0063-3.2583-.021-3.6668-.0817-4.9465-.0607-1.2797-.264-2.1487-.5633-2.9117-.3084-.7889-.72-1.4568-1.3876-2.1228C21.2982 1.33 20.628.9208 19.8378.6165 19.074.321 18.2017.1197 16.9244.0645 15.6471.0093 15.236-.005 11.977.0014 8.718.0076 8.31.0215 7.0301.0839m.1402 21.6932c-1.17-.0509-1.8053-.2453-2.2287-.408-.5606-.216-.96-.4771-1.3819-.895-.422-.4178-.6811-.8186-.9-1.378-.1644-.4234-.3624-1.058-.4171-2.228-.0595-1.2645-.072-1.6442-.079-4.848-.007-3.2037.0053-3.583.0607-4.848.05-1.169.2456-1.805.408-2.2282.216-.5613.4762-.96.895-1.3816.4188-.4217.8184-.6814 1.3783-.9003.423-.1651 1.0575-.3614 2.227-.4171 1.2655-.06 1.6447-.072 4.848-.079 3.2033-.007 3.5835.005 4.8495.0608 1.169.0508 1.8053.2445 2.228.408.5608.216.96.4754 1.3816.895.4217.4194.6816.8176.9005 1.3787.1653.4217.3617 1.056.4169 2.2263.0602 1.2655.0739 1.645.0796 4.848.0058 3.203-.0055 3.5834-.061 4.848-.051 1.17-.245 1.8055-.408 2.2294-.216.5604-.4763.96-.8954 1.3814-.419.4215-.8181.6811-1.3783.9-.4224.1649-1.0577.3617-2.2262.4174-1.2656.0595-1.6448.072-4.8493.079-3.2045.007-3.5825-.006-4.848-.0608M16.953 5.5864A1.44 1.44 0 1 0 18.39 4.144a1.44 1.44 0 0 0-1.437 1.4424M5.8385 12.012c.0067 3.4032 2.7706 6.1557 6.173 6.1493 3.4026-.0065 6.157-2.7701 6.1506-6.1733-.0065-3.4032-2.771-6.1565-6.174-6.1498-3.403.0067-6.156 2.771-6.1496 6.1738M8 12.0077a4 4 0 1 1 4.008 3.9921A3.9996 3.9996 0 0 1 8 12.0077"/></svg>
-          </a>
-        </li>
-        <li>
-          <a href="#" aria-label="WhatsApp">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/></svg>
-          </a>
-        </li>
-      </ul>
-    </div>
-
-    <nav class="pie-atajos" aria-label="Mapa del sitio">
-      <div>
-        <h2>Productos</h2>
-        <ul>
-          <li><a href="#">SaaS Restaurante</a></li>
-        </ul>
-      </div>
-      <div>
-        <h2>Soluciones</h2>
-        <ul>
-          <li><a href="#">Planes</a></li>
-        </ul>
-      </div>
-      <div>
-        <h2>Acerca de</h2>
-        <ul>
-          <li><a href="#">Nosotros</a></li>
-          <li><a href="#">Contáctanos</a></li>
-        </ul>
-      </div>
-    </nav>
-  </div>
-
-  <div class="pie-abajo">
-    <p>© 2026 Fragmentless. Todos los derechos reservados.</p>
-    <ul class="pie-legal">
-      <li><a href="#">Aviso de privacidad</a></li>
-      <li><a href="#">Términos y condiciones</a></li>
-    </ul>
-  </div>
-</footer>
+<!-- Footer de partículas, montado con React. -->
+<div id="site-footer"></div>
 
 </body>
 </html>

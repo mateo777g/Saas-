@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nosotros — Fragmentless</title>
+<meta name="description" content="Fragmentless es una empresa de software: juntamos la solución a los problemas de las empresas en un solo ecosistema, bien hecho. Un mundo sin piezas sueltas.">
+<!-- La barra del navegador en el celular: negra, como en index.html -->
+<meta name="theme-color" content="#000000">
+<link rel="icon" href="assets/fragmentless-logo.svg" type="image/svg+xml">
+<!-- La misma imagen que en index.html, con la dirección completa (https://…); si cambia el dominio, cambiarla en los dos -->
+<meta property="og:type" content="website">
+<meta property="og:locale" content="es_MX">
+<meta property="og:site_name" content="Fragmentless">
+<meta property="og:title" content="Nosotros — Fragmentless">
+<meta property="og:description" content="Una empresa de software que junta piezas sueltas en un solo sistema, bien hecho.">
+<meta property="og:image" content="https://fragmentless-software.vercel.app/assets/og-imagen.jpg?v=vidrio-1">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@200;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css?v=brillo-igual-1">
+<link rel="stylesheet" href="assets/components.css">
+<link rel="stylesheet" href="nosotros.css?v=intro-3">
+<script src="assets/wave-background.js?v=intro-4" defer></script>
+<script src="barra.js" defer></script>
+<script src="nosotros.js?v=intro-2" defer></script>
+<!-- La entrada del logo (components/logo-vidrio.tsx): desde antes de pintar, la barra y el texto de la portada
+     esperan escondidos y no se puede bajar. Siempre arranca arriba. Con «reducir movimiento» no hay entrada. -->
+<script>
+  if (!matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    document.documentElement.dataset.intro = 'logo';
+    history.scrollRestoration = 'manual';
+  }
+</script>
+</head>
+<body class="pagina-nosotros">
+
+<!-- La misma barra que en index.html -->
+<header class="barra">
+  <div class="barra-fila">
+    <a class="logo" href="./">
+      <img class="logo-claro" src="assets/fragmentless-logo.svg" alt="" width="24" height="23">
+      <img class="logo-oscuro" src="assets/fragmentless-logo-blanco.svg" alt="" width="24" height="23">
+      <span>fragmentless</span>
+    </a>
+
+    <nav class="atajos" aria-label="Atajos">
+      <button type="button" class="atajo" aria-expanded="false" aria-controls="menu-productos">Productos</button>
+      <button type="button" class="atajo" aria-expanded="false" aria-controls="menu-soluciones">Soluciones</button>
+      <button type="button" class="atajo" aria-expanded="false" aria-controls="menu-acerca">Acerca de</button>
+    </nav>
+
+    <div class="acciones">
+      <a class="boton boton-borde" href="#">Iniciar Sesión</a>
+      <a class="boton boton-primario" href="./#sistema">Conoce el Sistema</a>
+    </div>
+
+    <!-- En celular y en tablet, en lugar de los atajos: abre la barra con los tres submenús como renglones (barra.js) -->
+    <button type="button" class="hamburguesa" aria-expanded="false" aria-controls="menu-productos menu-soluciones menu-acerca" aria-label="Menú">
+      <span></span><span></span>
+    </button>
+  </div>
+
+  <div class="despliegue">
+    <div class="despliegue-dentro">
+      <ul class="submenu" id="menu-productos" hidden>
+        <li><a href="./#sistema">SaaS Restaurante</a></li>
+      </ul>
+      <ul class="submenu" id="menu-soluciones" hidden>
+        <li><a href="#">Planes</a></li>
+      </ul>
+      <ul class="submenu" id="menu-acerca" hidden>
+        <li><a href="nosotros.html" aria-current="page">Nosotros</a></li>
+        <li><a href="#">Contáctanos</a></li>
+      </ul>
+    </div>
+  </div>
+</header>
+
+<div class="velo" aria-hidden="true"></div>
+
+<main>
+  <!-- Portada: el logo y, debajo, quiénes somos en una frase. El logo entra primero, a pantalla completa, dentro
+       de un vidrio líquido (components/logo-vidrio.tsx, en el bundle); luego sube al lugar que le aparta
+       .ns-logo-lugar, y salen la barra y el texto. -->
+  <section class="ns-portada">
+    <div class="ns-logo" id="logo-vidrio"></div>
+    <div class="ns-logo-lugar" aria-hidden="true"></div>
+    <h1>Somos Fragmentless.</h1>
+    <p class="ns-entrada">Una empresa de software. Atacamos los problemas que tienen las empresas allá afuera y juntamos su solución en un solo ecosistema, bien hecho.</p>
+  </section>
+
+  <!-- La misión, grande: de piezas sueltas a un sistema completo -->
+  <section class="ns-mision" aria-labelledby="ns-mision-titulo">
+    <h2 id="ns-mision-titulo" class="ns-etiqueta aparece">La misión</h2>
+    <p class="ns-frase aparece">Donde antes había piezas sueltas, <span>queda un sistema completo.</span></p>
+    <p class="ns-texto aparece">En un restaurante, esas piezas son el inventario anotado a mano en una libreta, un stock que no se cuenta bien y ventas que no están del todo claras. En cada negocio son distintas; nuestro trabajo es juntarlas.</p>
+  </section>
+
+  <!-- El nombre y el eslogan -->
+  <section class="ns-nombre" aria-labelledby="ns-nombre-titulo">
+    <div class="ns-columnas">
+      <div class="aparece">
+        <h2 id="ns-nombre-titulo" class="ns-etiqueta">El nombre</h2>
+        <p class="ns-titulo">Fragment&shy;less: sin fragmentos.</p>
+      </div>
+      <div class="ns-columna-texto aparece">
+        <p>Fragmentless significa algo completo, sin pedazos sueltos: todo integrado y funcionando bien. El nombre promete eliminar las fracturas, los fragmentos y las complicaciones. Por eso conecta con resolver problemas.</p>
+        <p>Nuestro eslogan, <strong>Un mundo sin piezas sueltas</strong>, habla de hacia dónde vamos y no de nuestro primer cliente. «Un mundo» deja espacio para todo lo que venga.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Hacia dónde vamos: quién la fundó y la visión, de los restaurantes a un ecosistema completo -->
+  <section class="ns-vision" aria-labelledby="ns-vision-titulo">
+    <div class="ns-columnas">
+      <div class="aparece">
+        <h2 id="ns-vision-titulo" class="ns-etiqueta">Hacia dónde vamos</h2>
+        <p class="ns-titulo">Empezamos por los restaurantes. No terminamos ahí.</p>
+        <p class="ns-columna-texto">Fragmentless la fundó <strong>Matthew Santibañez Reyes</strong> a los 19 años con una idea: que ningún negocio tenga que trabajar con piezas sueltas.</p>
+      </div>
+      <ol class="ns-linea">
+        <li class="aparece">
+          <h3>Hoy</h3>
+          <p>Un sistema completo para restaurantes: administración, punto de venta, agente de IA y creación de contenido, en un mismo lugar.</p>
+        </li>
+        <li class="aparece">
+          <h3>Lo que sigue</h3>
+          <p>Llevar la misma forma de trabajar a más industrias. Cada sistema que construimos es la base del siguiente.</p>
+        </li>
+        <li class="aparece">
+          <h3>La meta</h3>
+          <p>Un ecosistema de software donde cada negocio encuentre lo que necesita, conectado y bien hecho.</p>
+        </li>
+      </ol>
+    </div>
+
+    <figure class="ns-leccion aparece">
+      <blockquote>
+        <p>No hacemos herramientas sueltas. Hacemos sistemas completos.</p>
+      </blockquote>
+      <figcaption>Así construimos en Fragmentless</figcaption>
+    </figure>
+  </section>
+
+  <!-- Cómo trabajamos: lo que cada cliente puede esperar de nosotros -->
+  <section class="ns-principios" aria-labelledby="ns-principios-titulo">
+    <h2 id="ns-principios-titulo" class="ns-etiqueta aparece">Cómo trabajamos</h2>
+    <p class="ns-titulo aparece">Hecho bien, desde los cimientos.</p>
+    <ol class="ns-rejilla">
+      <li class="aparece">
+        <h3>Bases sólidas</h3>
+        <p>Cada sistema se diseña completo antes de construirse, para que crezca sin romperse.</p>
+      </li>
+      <li class="aparece">
+        <h3>Solo lo que funciona</h3>
+        <p>Lo que ofrecemos está terminado y probado. Nada de promesas a medias.</p>
+      </li>
+      <li class="aparece">
+        <h3>Mejoras sin sorpresas</h3>
+        <p>Cada actualización se prueba antes de llegar a tu negocio.</p>
+      </li>
+      <li class="aparece">
+        <h3>Tus datos, solo tuyos</h3>
+        <p>Cada negocio está separado y protegido desde la base. Nadie más ve tu información.</p>
+      </li>
+      <li class="aparece">
+        <h3>Números en los que confías</h3>
+        <p>Las cifras salen de un solo lugar en todo el sistema, y la IA nunca inventa una.</p>
+      </li>
+      <li class="aparece">
+        <h3>Listo para crecer</h3>
+        <p>Una sola plataforma en la nube que funciona en cualquier dispositivo, sin instalar nada.</p>
+      </li>
+    </ol>
+  </section>
+
+  <!-- El primer producto: el sistema para restaurantes, como primer paso y no como destino -->
+  <section class="ns-producto" aria-labelledby="ns-producto-titulo">
+    <h2 id="ns-producto-titulo" class="ns-etiqueta aparece">Nuestro primer producto</h2>
+    <p class="ns-titulo aparece">Un sistema para restaurantes.</p>
+    <p class="ns-texto aparece">De tu menú a tus ventas, de tus mesas a tus redes. Administra tu restaurante, consulta a tu agente de IA y crea contenido para tu negocio desde un mismo panel, en la web y sin instalar nada.</p>
+    <p class="ns-texto aparece">Es el primer paso de Fragmentless, no el destino final.</p>
+    <div class="ns-botones aparece">
+      <a class="boton ns-boton-blanco" href="./#sistema">Conoce el sistema</a>
+    </div>
+  </section>
+</main>
+
+<div id="site-footer"></div>
+
+</body>
+</html>

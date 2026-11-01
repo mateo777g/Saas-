@@ -1,35 +1,13 @@
 # Llaves reales. Nunca van al repo.
 .env
 
-# Solo viven en esta compu (nuevo comienzo, 2026-10-04):
-#  - CLAUDE.md: las instrucciones de Claude Code, con el contexto privado del producto.
-#  - panel_licencias/: la app de licencias de Fragmentless; no es parte del producto.
+# Solo viven en esta compu: las instrucciones de Claude Code (CLAUDE.md, también la de web/), con el
+# contexto privado del producto, y los planes, roadmap y guías.
 CLAUDE.md
-panel_licencias/
-
-# Planes, roadmap y guías: documentación privada.
 planes/
-Hey Claude Code, read this file..txt
-
-# Carpetas de referencia de otros proyectos: traen llaves y URLs de ESOS proyectos.
-EJEMPLOS/
-EJEMPLOS 2/
-"EJEMPLOS 2"/
-EJEMPLOS_2/
-
-# Credenciales de los clientes del panel de licencias. Su sitio es
-# %LOCALAPPDATA%\PanelLicencias\clientes.json; esto es por si queda una copia aquí.
-clientes.json
-
-# Lo que quedó del panel de Flet en esta compu (su .env y su config.json) cuando salió del repo, el
-# 1 nov 2026. Solo esa carpeta.
-/panel/
 
 # Lo que Windows deja en cada carpeta con imágenes.
 desktop.ini
-
-# Por si la sesión del panel llegara a escribirse aquí por error.
-sesion.json
 
 # Permisos locales de Claude Code, y las vistas previas que solo usa Claude Code (.claude/launch.json).
 .claude/settings.local.json*
@@ -38,8 +16,8 @@ sesion.json
 __pycache__/
 *.pyc
 
-# La app web (app/) y el menú en línea (menu/): lo que instala npm y lo que compila Vite se
-# rehacen solos.
+# La app web (app/), el menú en línea (menu/) y la página (web/): lo que instala npm y lo que compila
+# Vite se rehacen solos.
 node_modules/
 app/dist/
 menu/dist/

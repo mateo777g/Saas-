@@ -21,9 +21,9 @@ EJEMPLOS_2/
 # %LOCALAPPDATA%\PanelLicencias\clientes.json; esto es por si queda una copia aquí.
 clientes.json
 
-# Los anuncios que genera el panel de Flet: imágenes, no código. Solo esa carpeta: la app tiene una
-# carpeta de código que se llama igual (app/src/pantallas/gerente/biblioteca/).
-/panel/biblioteca/
+# Lo que quedó del panel de Flet en esta compu (su .env y su config.json) cuando salió del repo, el
+# 1 nov 2026. Solo esa carpeta.
+/panel/
 
 # Video de prueba de la página (web/prueba/): el de verdad vivirá en R2, nunca en el repo.
 web/prueba/
@@ -31,8 +31,7 @@ web/prueba/
 # Por si la sesión del panel llegara a escribirse aquí por error.
 sesion.json
 
-# Permisos locales de Claude Code, y la vista previa del sitio que solo usa Claude Code
-# (.claude/launch.json, "menu-en-linea").
+# Permisos locales de Claude Code, y las vistas previas que solo usa Claude Code (.claude/launch.json).
 .claude/settings.local.json*
 .claude/launch.json
 

@@ -1,5 +1,6 @@
 <!--
-  «Crear contenido» (parte 7b-1 de la libreta 7; maqueta JQBw2yGFSiky1x9twUyYbe, aprobada el 30 de
+  «Crear anuncios» (se llamó «Crear contenido» hasta el 4 de noviembre de 2026, y el código conserva
+  ese nombre; parte 7b-1 de la libreta 7; maqueta JQBw2yGFSiky1x9twUyYbe, aprobada el 30 de
   octubre de 2026; sus decisiones en planes/trabajo/7b/lista-7b.md). Una sola pantalla, como en Flet:
   el anuncio nuevo a la izquierda (1 Producto, 2 Formato, 3 ¿Qué quieres decir?, la fila «Opcional»
   con Color y Estilo, «Irá en el anuncio» y Generar anuncio) y «Resultado» a la derecha.
@@ -420,7 +421,7 @@
 </script>
 
 <BarraArriba
-  titulo="Crear contenido"
+  titulo="Crear anuncios"
   estado={datos
     ? { texto: datos.de > 0 ? `Te quedan ${datos.quedan} de ${datos.de} este mes` : 'Sin anuncios este mes', vivo: true, hueco: datos.quedan <= 0 }
     : { texto: errorLectura ? 'No se pudo leer' : 'Leyendo…', vivo: false }}

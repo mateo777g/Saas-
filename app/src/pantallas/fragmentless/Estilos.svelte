@@ -133,7 +133,7 @@
   <Vidrio como="section" class="tarjeta-estilos" radio={26} aria-label="Estilos">
     <div class="herramientas">
       <p class="nota">
-        Así salen en la ventana de Crear contenido de cada restaurante: por grupos y, en cada grupo, de
+        Así salen en la ventana de Crear anuncios de cada restaurante: por grupos y, en cada grupo, de
         arriba abajo. Muévelos con las flechas.
       </p>
       <span class="crece"></span>

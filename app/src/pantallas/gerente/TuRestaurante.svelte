@@ -2,7 +2,7 @@
   «Tu restaurante», el primer renglón de GENERAL (maqueta de la 6a Qx4C5CbKJYpeAsJCfw4ghn, sección 2;
   libreta 6, decidido el 20 de octubre de 2026): el logo, el nombre, el teléfono (que también es su
   WhatsApp), la dirección y el horario de los 7 días de esta sucursal. De aquí los toman el menú en
-  línea, los flyers y el mini agente. El slug no se cambia aquí: lo asigna Fragmentless.
+  línea, los anuncios y el mini agente. El slug no se cambia aquí: lo asigna Fragmentless.
 
   «Guardar» guarda todo junto (guardar_restaurante). El logo sigue el orden de las fotos: se sube
   antes de guardar; si el guardado falla, se borra el que se acababa de subir; el anterior se borra
@@ -206,7 +206,7 @@
   <Vidrio como="section" class="tu-restaurante" radio={26} aria-label="Tu restaurante">
     <div class="cabeza">
       <span class="etiqueta">TU RESTAURANTE</span>
-      <p class="nota">Tu logo, tus datos y tu horario. Los ven tus clientes en tu menú en línea, y van en tus flyers.</p>
+      <p class="nota">Tu logo, tus datos y tu horario. Los ven tus clientes en tu menú en línea, y van en tus anuncios.</p>
     </div>
 
     {#if errorLectura}
@@ -251,7 +251,7 @@
               tipo="tel"
               modoTeclado="tel"
               placeholder="Ej. 222 123 4567"
-              pista="10 dígitos. Sale en tu menú y en tus flyers, y ahí te escriben tus clientes."
+              pista="10 dígitos. Sale en tu menú y en tus anuncios, y ahí te escriben tus clientes."
               mal={telefonoMal}
               mono
             />

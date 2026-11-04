@@ -302,7 +302,7 @@
             <span class="hueco" style:height="90px"></span>
           </div>
           <h2>Todavía no hay anuncios</h2>
-          <p>Cada anuncio que hagas en Crear contenido se guarda aquí 30 días.</p>
+          <p>Cada anuncio que hagas en Crear anuncios se guarda aquí 30 días.</p>
           <div class="boton-primero">
             <Boton etiqueta="Crear mi primer anuncio" icono="ia" tono="tinta" onclick={() => alIr('crear')} />
           </div>

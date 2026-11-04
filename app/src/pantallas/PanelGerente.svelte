@@ -9,7 +9,7 @@
   Mesas ahora y Tus meseros en Inicio, y la hora de corte en Ajustes vienen de la pieza 5 (maqueta
   7J6LvYWiktRnGxNugbuaoe); Inicio y Cortes también traen su barra. «Agente IA», al final de
   GENERAL con su insignia IA como en Flet, viene de su maqueta (KznKZdgQbLTZGs1EwVMvga); al entrar
-  al panel se prepara su saludo, para que salga al instante. «Crear contenido», después del agente
+  al panel se prepara su saludo, para que salga al instante. «Crear anuncios», después del agente
   con su insignia IA, viene de su maqueta (JQBw2yGFSiky1x9twUyYbe), y «Mi biblioteca», justo después
   y sin insignia, de la suya (SMeWoa5ypbcVQmvBGyyytt). «Abrir» en los
   accesos de Inicio abre ahí mismo el punto de venta o la cocina, con su sesión (maqueta Mesero y
@@ -221,7 +221,7 @@
         { valor: 'equipo', texto: 'Empleados', icono: 'usuarios' },
         { valor: 'cortes', texto: 'Cortes y reportes', icono: 'corte' },
         { valor: 'agente', texto: 'Agente IA', icono: 'ia', insignia: 'IA' },
-        { valor: 'crear', texto: 'Crear contenido', icono: 'crear', insignia: 'IA' },
+        { valor: 'crear', texto: 'Crear anuncios', icono: 'crear', insignia: 'IA' },
         { valor: 'biblioteca', texto: 'Mi biblioteca', icono: 'biblio' },
       ]}
       acciones={[

@@ -6,6 +6,9 @@
   Worker, como en Flet).
 
   Sin tope (`aviso`), en su lugar va el aviso de la libreta de Seguridad, con el icono de info.
+
+  Mientras piensa la pregunta de esta conversación (`alDetener`), el botón de mandar es «Detener»
+  (maqueta AyS4xUfa5XmDaPJG1iqSgw). Si piensa la de otra (`ocupado`), la flecha se apaga.
 -->
 <script lang="ts">
   import Icono from '../../../diseno/Icono.svelte';
@@ -20,6 +23,7 @@
     ocupado = false,
     aviso = null,
     alEnviar,
+    alDetener = null,
   }: {
     modo: 'bienvenida' | 'chat';
     valor?: string;
@@ -28,6 +32,7 @@
     ocupado?: boolean;
     aviso?: string | null;
     alEnviar: () => void;
+    alDetener?: (() => void) | null;
   } = $props();
 
   const PERIODOS: { valor: Periodo; texto: string }[] = [
@@ -57,6 +62,11 @@
   export function enfocar() {
     campo?.focus();
   }
+
+  // De dónde sale la burbuja de la pregunta al mandarla.
+  export function medir(): DOMRect | null {
+    return campo?.getBoundingClientRect() ?? null;
+  }
 </script>
 
 {#if aviso}
@@ -79,8 +89,16 @@
       <Selector opciones={PERIODOS} elegida={periodo} alElegir={(p) => (periodo = p)} etiqueta="Periodo" />
       <span class="atajo">Enter envía · Shift+Enter salto</span>
       <span class="crece"></span>
-      <button type="button" class="enviar" aria-label="Enviar" disabled={ocupado} onclick={alEnviar}>
-        <Icono nombre="flecha" tamano={20} />
+      <button
+        type="button"
+        class="enviar"
+        class:parando={!!alDetener}
+        aria-label={alDetener ? 'Detener' : 'Enviar'}
+        disabled={ocupado && !alDetener}
+        onclick={alDetener ?? alEnviar}
+      >
+        <span class="capa mandar"><Icono nombre="flecha" tamano={20} /></span>
+        <span class="capa parar"><Icono nombre="detener" tamano={20} /></span>
       </button>
     </div>
   </div>
@@ -139,6 +157,7 @@
   }
 
   .enviar {
+    position: relative;
     width: 44px;
     height: 44px;
     flex: none;
@@ -159,6 +178,28 @@
   .enviar:disabled {
     opacity: 0.4;
     cursor: default;
+  }
+
+  .capa {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition:
+      opacity 200ms,
+      transform 200ms;
+  }
+
+  .capa.parar,
+  .parando .capa.mandar {
+    opacity: 0;
+    transform: scale(0.75);
+  }
+
+  .parando .capa.parar {
+    opacity: 1;
+    transform: none;
   }
 
   .caja.tope {
@@ -187,7 +228,8 @@
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .enviar {
+    .enviar,
+    .capa {
       transition: none;
     }
   }

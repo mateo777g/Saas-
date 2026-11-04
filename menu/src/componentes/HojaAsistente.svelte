@@ -2,12 +2,12 @@
   La plática con el asistente (parte 6c; maqueta 2UPwZw31WrcYRZkH8jaT1Y, sección 1): sube desde abajo,
   casi a toda la pantalla, como las otras hojas del menú. Arriba «Asistente de La Fonda de Don Chuy»
   y su X; luego el saludo fijo (no gasta) con las 3 sugeridas antes de la primera pregunta, sus
-  preguntas en burbujas del color de Don Chuy y las respuestas con la estrella de Fragmentless a un
-  lado, con las tarjetas de los productos que nombró (su foto y su precio del menú; al tocarlas se
-  abre su hoja, encima). Abajo la caja y «IA de Fragmentless · puede equivocarse» con la estrella.
-  La estrella, en degradado, en su versión para el fondo de la hoja: la oficial en el tema claro, la
-  de fondo negro en el oscuro (decidido en la prueba de Banderitas, el 31 de octubre de 2026; antes,
-  la ∫∫ en la tinta del tema).
+  preguntas en burbujas del color de Don Chuy y las respuestas sin logo (maqueta AyS4xUfa5XmDaPJG1iqSgw),
+  con las tarjetas de los productos que nombró (su foto y su precio del menú; al tocarlas se abre su
+  hoja, encima). Mientras piensa, los puntos y sus pasos; al llegar la respuesta, los pasos se doblan en
+  su «Pensé 2 s ›», como en el Agente IA.
+  Abajo la caja y «IA de Fragmentless · puede equivocarse» con la estrella en su versión para el fondo
+  de la hoja: la oficial en el tema claro, la de fondo negro en el oscuro.
 
   Sin IA, el aviso va en lugar del saludo y la caja se apaga; con plática guardada, el aviso va al
   final (encuesta 1 de planes/trabajo/6c/menu-6c.md). En el límite, el aviso sale como respuesta y
@@ -15,12 +15,14 @@
 -->
 <script lang="ts">
   import { onMount, tick, type Snippet } from 'svelte';
-  import type { Mensaje, Motivo, Platica } from '../lib/asistente.svelte';
+  import Estrella from '@app/diseno/Estrella.svelte';
+  import Pensando from '@app/diseno/Pensando.svelte';
+  import Pildora from '@app/diseno/Pildora.svelte';
+  import type { ClavePaso, Mensaje, Motivo, Platica } from '../lib/asistente.svelte';
   import { urlImagen, type MenuPublico, type Producto } from '../lib/datos';
   import type { Moneda } from '../lib/preferencias';
   import { enSuLengua, type Lengua, type Textos } from '../lib/textos';
   import { quitarRevision } from '../lib/turnstile';
-  import Estrella from './Estrella.svelte';
   import Icono from './Icono.svelte';
   import Precio from './Precio.svelte';
 
@@ -70,6 +72,17 @@
   );
   const ocupado = $derived(platica.pendiente !== null);
 
+  const ICONO_PASO: Record<ClavePaso, string> = { buscar: 'lupa', recomendar: 'ia', escribir: 'crear' };
+  const pasos = $derived(
+    platica.pasos.map((p) => ({
+      clave: p.clave,
+      icono: ICONO_PASO[p.clave],
+      texto: t.pasos[p.clave].corre,
+      listo: t.pasos[p.clave].listo,
+      hecho: p.hecho,
+    })),
+  );
+
   function textoAviso(motivo: Motivo): string {
     if (motivo === 'sin_ia') return t.sinIa + (telefono ? t.sinIaWa : '');
     return (motivo === 'limite_celular' ? t.limiteCelular : t.limiteConexion) + (telefono ? t.limiteWa : t.limiteTarde);
@@ -109,6 +122,7 @@
   $effect(() => {
     void platica.mensajes;
     void platica.pendiente;
+    void platica.pasos;
     void platica.noContesto;
     void contesta;
     tick().then(() => {
@@ -118,7 +132,11 @@
 
   onMount(() => {
     hoja.focus({ preventScroll: true });
-    return () => quitarRevision();
+    return () => {
+      quitarRevision();
+      // Al volver a abrirla, ya es una respuesta guardada: sale quieta.
+      platica.nuevo = null;
+    };
   });
 </script>
 
@@ -126,19 +144,16 @@
   <a class="boton-wa" href="https://wa.me/52{telefono}" target="_blank" rel="noopener"><Icono nombre="mensaje" tamano={15} />{t.escribir}</a>
 {/snippet}
 
-{#snippet respuesta(cuerpo: Snippet)}
-  <div class="resp">
-    <span class="logo"><Estrella {fondo} tamano={24} /></span>
-    <div class="cuerpo">{@render cuerpo()}</div>
-  </div>
+{#snippet respuesta(cuerpo: Snippet, entra = false)}
+  <div class="cuerpo" class:entra>{@render cuerpo()}</div>
 {/snippet}
 
-{#snippet aviso(motivo: Motivo)}
+{#snippet aviso(motivo: Motivo, entra = false)}
   {#snippet cuerpo()}
     <p>{textoAviso(motivo)}</p>
     {#if telefono}{@render botonWa()}{/if}
   {/snippet}
-  {@render respuesta(cuerpo)}
+  {@render respuesta(cuerpo, entra)}
 {/snippet}
 
 <!-- El velo es un atajo del dedo; con el teclado se cierra con Escape (Menu.svelte). -->
@@ -172,10 +187,11 @@
       {#if m.rol === 'cliente'}
         <div class="ella">{m.texto}</div>
       {:else if m.rol === 'aviso'}
-        {@render aviso(m.motivo)}
+        {@render aviso(m.motivo, i === platica.nuevo)}
       {:else}
         {@const lasTarjetas = tarjetas(m)}
         {#snippet cuerpo()}
+          {#if m.segundos && m.pasos?.length}<Pildora texto={t.pense(m.segundos)} pasos={m.pasos.map((c) => t.pasos[c].listo)} />{/if}
           {#each parrafos(m.texto) as p, j (j)}<p>{p}</p>{/each}
           {#if lasTarjetas.length}
             <div class="tarjetas">
@@ -192,7 +208,7 @@
             </div>
           {/if}
         {/snippet}
-        {@render respuesta(cuerpo)}
+        {@render respuesta(cuerpo, i === platica.nuevo)}
       {/if}
     {/each}
 
@@ -200,7 +216,7 @@
 
     {#if platica.pendiente !== null}
       <div class="ella">{platica.pendiente}</div>
-      <div class="pensando"><Estrella {fondo} tamano={26} pensando /><span>{t.pensando}</span></div>
+      <Pensando texto={t.pensando} {pasos} color="var(--punto-menu)" />
     {/if}
     <div class="hueco" bind:this={hueco}></div>
 
@@ -309,36 +325,50 @@
     flex-direction: column;
     gap: 18px;
     scrollbar-width: none;
+    --pensando-texto: var(--m-texto);
+    --pensando-suave: var(--m-suave);
+    --pensando-tenue: var(--m-tenue);
+    --pensando-raya: var(--m-tenue);
+    --pensando-raya-opacidad: 0.5;
+    --pensando-linea: var(--m-linea);
+    --pensando-chip: var(--m-chip);
+    --pensando-acento: var(--m-paso);
+    --pensando-hueco: 10px;
   }
 
   .mensajes::-webkit-scrollbar {
     display: none;
   }
 
-  .resp {
-    display: flex;
-    gap: 10px;
-    flex: none;
-  }
-
-  .logo {
-    width: 26px;
-    height: 26px;
-    flex: none;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: var(--m-texto);
-  }
-
   .cuerpo {
-    flex: 1;
+    flex: none;
     min-width: 0;
     display: flex;
     flex-direction: column;
     align-items: flex-start;
     gap: 12px;
     padding-top: 2px;
+  }
+
+  .cuerpo.entra {
+    animation: entra-respuesta 330ms ease-out both;
+  }
+
+  @keyframes entra-respuesta {
+    from {
+      opacity: 0;
+      transform: translateY(6px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .cuerpo.entra {
+      animation: none;
+    }
   }
 
   .cuerpo p {
@@ -452,20 +482,6 @@
     font-size: 14px;
     font-weight: 800;
     font-variant-numeric: tabular-nums;
-  }
-
-  .pensando {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    color: var(--m-texto);
-    flex: none;
-  }
-
-  .pensando span {
-    font-size: 14px;
-    font-weight: 500;
-    color: var(--m-suave);
   }
 
   /* Invisible mientras Cloudflare no duda: no ocupa lugar ni hueco entre mensajes. */

@@ -43,16 +43,24 @@ export function acomodar(contenedor: HTMLElement): void {
   }
 }
 
-// Renglón por renglón: cada bloque (y cada punto de una lista) sale 110 ms después del anterior.
-// Regresa cuántos salieron.
+// Lo que el cursor se queda después del último renglón, antes de que salgan los botones.
+export const DESPUES_DEL_ULTIMO = 260;
+
+// Renglón por renglón: cada bloque (y cada punto de una lista) sale 110 ms después del anterior, con el
+// cursor al final del último párrafo que salió. Regresa cuántos salieron.
 export function revelar(contenedor: HTMLElement): number {
+  const conCursor = !matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const cursor = document.createElement('span');
+  cursor.className = 'cursor';
   let n = 0;
   for (const bloque of contenedor.children) {
     const piezas = bloque.matches('ul, ol') ? [...bloque.children] : [bloque];
     for (const p of piezas) {
+      if (conCursor && p.tagName === 'P') setTimeout(() => p.appendChild(cursor), n * 110);
       (p as HTMLElement).style.animationDelay = `${n++ * 110}ms`;
       p.classList.add('aparece');
     }
   }
+  if (conCursor) setTimeout(() => cursor.remove(), n * 110 + DESPUES_DEL_ULTIMO);
   return n;
 }

@@ -45,7 +45,7 @@ export interface Env {
 }
 
 export default {
-  async fetch(request, env): Promise<Response> {
+  async fetch(request, env, ctx): Promise<Response> {
     const url = new URL(request.url);
     const origen = request.headers.get('Origin');
     if (!origenPermitido(origen, env.ORIGENES)) {
@@ -58,13 +58,13 @@ export default {
     try {
       if (url.pathname === '/menu/foto') respuesta = await fotoDelMenu(request, env, url);
       else if (url.pathname === '/menu/pedido') respuesta = await pedidoDelMenu(request, env, url);
-      else if (url.pathname === '/menu/pregunta') respuesta = await preguntaDelMenu(request, env, url);
+      else if (url.pathname === '/menu/pregunta') respuesta = await preguntaDelMenu(request, env, url, ctx);
       else if (url.pathname === '/estilos/muestra') respuesta = await muestraDeEstilo(request, env, url);
       else if (url.pathname === '/estilos') respuesta = await listaDeEstilos(request, env);
       else if (url.pathname === '/anuncios' || url.pathname.startsWith('/anuncios/')) respuesta = await crearContenido(request, env, url);
       else if (url.pathname.startsWith('/equipo/')) respuesta = await equipo(request, env, url);
       else if (url.pathname.startsWith('/pos/')) respuesta = await pos(request, env, url);
-      else if (url.pathname.startsWith('/agente/')) respuesta = await agente(request, env, url);
+      else if (url.pathname.startsWith('/agente/')) respuesta = await agente(request, env, url, ctx);
       else respuesta = error(404, 'Ese trabajo no existe.');
     } catch (e) {
       if (e instanceof Rechazo) {

@@ -1,10 +1,17 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <!-- El ícono de la pestaña: la ∫∫ blanca sobre el azul de la marca (#1355E8). -->
-  <rect width="64" height="64" rx="16" fill="#1355E8"/>
-  <svg x="14" y="12" width="36" height="40" viewBox="104 25 322 350">
-    <g fill="#FFFFFF" transform="rotate(90 265 200)">
-      <path d="M 299.5 47.5 A 19 19 0 1 1 272.15 57.5 C 258 54 245 72 238 100 C 232 124 222 172 216 200 C 210 230 204 264 196 292 C 182 340 156 360 122 360 C 112 360 106 355.7 100.5 352.5 A 19 19 0 1 1 127.85 342.5 C 142 346 155 328 162 300 C 168 276 178 228 184 200 C 190 170 196 136 204 108 C 218 60 244 40 278 40 C 288 40 294 44.3 299.5 47.5 Z"/>
-      <path transform="translate(130 0)" d="M 299.5 47.5 A 19 19 0 1 1 272.15 57.5 C 258 54 245 72 238 100 C 232 124 222 172 216 200 C 210 230 204 264 196 292 C 182 340 156 360 122 360 C 112 360 106 355.7 100.5 352.5 A 19 19 0 1 1 127.85 342.5 C 142 346 155 328 162 300 C 168 276 178 228 184 200 C 190 170 196 136 204 108 C 218 60 244 40 278 40 C 288 40 294 44.3 299.5 47.5 Z"/>
+  <!-- El ícono de la pestaña: la estrella oficial «gris suave, fondo oscuro» de «Logo Fragmentless», con sus tonos, su
+       fondo y su proporción (400 de 640), con orillas suaves. -->
+  <defs>
+    <linearGradient id="estrella" gradientUnits="userSpaceOnUse" x1="192" y1="200" x2="350" y2="46">
+      <stop offset="0" stop-color="#B2B2B2"/><stop offset="0.45" stop-color="#CCCCCC"/>
+      <stop offset="0.8" stop-color="#E7E7E7"/><stop offset="1" stop-color="#FFFFFF"/>
+    </linearGradient>
+  </defs>
+  <rect width="64" height="64" rx="14" fill="#141415"/>
+  <svg x="12" y="12" width="40" height="40" viewBox="179 33 180 180">
+    <g fill="url(#estrella)" stroke="url(#estrella)" stroke-width="8" stroke-linejoin="round">
+      <path d="M214 92 Q282.3 83.6 346.4 49.7 Q309.6 112.2 298 180 Z"/>
+      <path d="M196 108 Q204 157 192 196 Q232 186 280 196 Z"/>
     </g>
   </svg>
 </svg>

@@ -4,15 +4,22 @@
 // con el pase de una hora que dio la revisión de Cloudflare, o con una revisión nueva si no hay pase
 // o ya venció; si el Worker no acepta el pase (motivo «pase»), se hace la revisión y se manda otra
 // vez, una vez. Los avisos (sin IA, los dos límites, «No pude contestar») los escribe el menú.
+// Los «no» llegan en JSON normal; el «sí» llega por partes, con sus pasos por clave, que el menú
+// escribe en su idioma (planes/trabajo/estrella/worker.md, puntos 31 a 34).
+import { Compas, leerRenglones, vienePorPartes, type Aviso } from '@app/lib/pasos';
 import { API, escribir, leer, marcaDelCelular } from './pedido';
 import type { Moneda } from './preferencias';
 import type { Lengua } from './textos';
 
 export type Motivo = 'sin_ia' | 'limite_celular' | 'limite_conexion';
 
+export type ClavePaso = 'buscar' | 'recomendar' | 'escribir';
+export type PasoMenu = { clave: ClavePaso; hecho: boolean };
+
 export type Mensaje =
   | { rol: 'cliente'; texto: string }
-  | { rol: 'asistente'; texto: string; productos: number[] }
+  // Sus pasos se guardan por su clave, por lo mismo que los avisos. Las de antes no los traen.
+  | { rol: 'asistente'; texto: string; productos: number[]; segundos?: number; pasos?: ClavePaso[] }
   // Un aviso se guarda por su motivo: su texto sigue al ES / EN de la barra.
   | { rol: 'aviso'; motivo: Motivo };
 
@@ -79,9 +86,42 @@ type Envio = {
   moneda: Moneda;
 };
 
-// Lo que no es un «sí» ni un «no» del Worker (sin red, 60 segundos sin respuesta, un 4xx o 5xx) es
-// una falla: ella lee «No pude contestar».
-async function mandar(cuerpo: object): Promise<DelWorker> {
+// Lee el «sí»: los pasos con su compás (cada uno se deja leer 400 ms) y, al final, la respuesta.
+async function leerPorPartes(
+  respuesta: Response,
+  senal: AbortSignal,
+  alPasos: (pasos: PasoMenu[]) => void,
+): Promise<DelWorker> {
+  const compas = new Compas();
+  const parar = () => compas.parar();
+  senal.addEventListener('abort', parar);
+  let pasos: PasoMenu[] = [];
+  const poner = (nuevos: PasoMenu[]) => {
+    pasos = nuevos;
+    alPasos(pasos);
+  };
+  let fin: Aviso | null = null;
+  try {
+    await leerRenglones(respuesta, (a) => {
+      if (a.tipo === 'paso') compas.entra(() => poner([...pasos, { clave: a.clave as ClavePaso, hecho: false }]));
+      else if (a.tipo === 'hecho') compas.sale(() => poner(pasos.map((p) => (p.clave === a.clave ? { ...p, hecho: true } : p))));
+      else if (a.tipo === 'fin') fin = a;
+      else if (a.tipo === 'error') throw new Error('el Worker avisó de un error a media respuesta');
+    });
+    if (!fin) throw new Error('la respuesta se acabó sin su final');
+    compas.sale(() => {});
+    await compas.termina();
+    senal.throwIfAborted();
+    return fin as unknown as DelWorker;
+  } finally {
+    senal.removeEventListener('abort', parar);
+    compas.parar();
+  }
+}
+
+// Lo que no es un «sí» ni un «no» del Worker (sin red, 60 segundos sin la respuesta completa, un 4xx o
+// 5xx) es una falla: ella lee «No pude contestar».
+async function mandar(cuerpo: object, alPasos: (pasos: PasoMenu[]) => void): Promise<DelWorker> {
   const corte = new AbortController();
   const reloj = setTimeout(() => corte.abort(new Error(`${ESPERA / 1000} s sin respuesta del Worker`)), ESPERA);
   try {
@@ -91,6 +131,7 @@ async function mandar(cuerpo: object): Promise<DelWorker> {
       body: JSON.stringify(cuerpo),
       signal: corte.signal,
     });
+    if (respuesta.ok && vienePorPartes(respuesta)) return await leerPorPartes(respuesta, corte.signal, alPasos);
     const datos = (await respuesta.json().catch(() => null)) as (DelWorker & { error?: string }) | null;
     if (respuesta.ok && datos && typeof datos.ok === 'boolean') return datos;
     throw new Error(`el Worker regresó ${respuesta.status}${datos?.error ? `: ${datos.error}` : ''}`);
@@ -99,14 +140,19 @@ async function mandar(cuerpo: object): Promise<DelWorker> {
   }
 }
 
-async function preguntarAlWorker(slug: string, envio: Envio, revision: () => Promise<string>): Promise<Contestacion> {
+async function preguntarAlWorker(
+  slug: string,
+  envio: Envio,
+  revision: () => Promise<string>,
+  alPasos: (pasos: PasoMenu[]) => void,
+): Promise<Contestacion> {
   const base = { slug, ...envio, marca: marcaDelCelular() };
   const pase = leerPase(slug);
-  let r = await mandar(pase ? { ...base, pase } : { ...base, turnstile: await revision() });
+  let r = await mandar(pase ? { ...base, pase } : { ...base, turnstile: await revision() }, alPasos);
   if (!r.ok && r.motivo === 'pase' && pase) {
     // El Worker no aceptó el pase: la revisión y la misma pregunta otra vez, una vez.
     escribir(llavePase(slug), null);
-    r = await mandar({ ...base, turnstile: await revision() });
+    r = await mandar({ ...base, turnstile: await revision() }, alPasos);
   }
   if (r.pase && r.pase_vence) escribir(llavePase(slug), { pase: r.pase, vence: r.pase_vence });
   if (!r.ok && r.motivo === 'pase') throw new Error('el Worker pidió la revisión después de pasarla');
@@ -121,6 +167,9 @@ export class Platica {
   mensajes = $state<Mensaje[]>([]);
   // La pregunta que espera su respuesta: se guarda en el celular hasta que llega lo que le toca.
   pendiente = $state<string | null>(null);
+  // Sus pasos: al llegar la respuesta se doblan en su «Pensé 2 s». Y qué mensaje acaba de llegar, el único que entra animado.
+  pasos = $state<PasoMenu[]>([]);
+  nuevo = $state<number | null>(null);
   borrador = $state('');
   noContesto = $state(false);
   readonly #slug: string;
@@ -137,14 +186,28 @@ export class Platica {
   ): Promise<Motivo | null> {
     if (!pregunta || this.pendiente !== null) return null;
     this.pendiente = pregunta;
+    this.pasos = [];
+    this.nuevo = null;
     this.noContesto = false;
     try {
       const envio = { pregunta, conversacion: paraElWorker(this.mensajes), lengua, moneda };
-      const r = await preguntarAlWorker(this.#slug, envio, revision);
+      // Los segundos cuentan desde el primer paso: la revisión de Cloudflare no es pensar.
+      let inicio = 0;
+      const r = await preguntarAlWorker(this.#slug, envio, revision, (pasos) => {
+        inicio ||= performance.now();
+        this.pasos = pasos;
+      });
       const llego: Mensaje = r.ok
-        ? { rol: 'asistente', texto: r.respuesta, productos: r.productos }
+        ? {
+            rol: 'asistente',
+            texto: r.respuesta,
+            productos: r.productos,
+            segundos: Math.max(1, Math.round((performance.now() - inicio) / 1000)),
+            pasos: this.pasos.map((p) => p.clave),
+          }
         : { rol: 'aviso', motivo: r.motivo };
       this.mensajes = guardarPlatica(this.#slug, [...this.mensajes, { rol: 'cliente', texto: pregunta }, llego]);
+      this.nuevo = this.mensajes.length - 1;
       return r.ok ? null : r.motivo;
     } catch (error) {
       console.error('[menu] el asistente no contestó:', error);
@@ -154,6 +217,7 @@ export class Platica {
       return null;
     } finally {
       this.pendiente = null;
+      this.pasos = [];
     }
   }
 }

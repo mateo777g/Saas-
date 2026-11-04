@@ -1,25 +1,29 @@
 <!--
-  Una respuesta del agente (maqueta Agente IA KznKZdgQbLTZGs1EwVMvga): la ∫∫ a la izquierda y el
-  Markdown como lo pinta, con el total en un renglón de texto debajo de la tabla (la barra negra
-  «Total de hoy» de la maqueta de Flet no sale del Markdown). Las tablas van en su caja, con los
-  números a la derecha y en mono y los encabezados en mayúsculas, como en Flet. Una respuesta
-  nueva sale renglón por renglón; las del Historial, enteras. Abajo, «Copiar» (copia el Markdown
-  tal cual) y, si la pregunta salió de una idea, sus dos seguimientos.
+  Una respuesta del agente (maqueta Agente IA KznKZdgQbLTZGs1EwVMvga; sin logo y con «Pensé 6 s ›», maqueta
+  AyS4xUfa5XmDaPJG1iqSgw): el Markdown como lo pinta, con el total en un renglón de texto debajo de la tabla
+  (la barra negra «Total de hoy» de la maqueta de Flet no sale del Markdown). Las tablas van en su caja, con
+  los números a la derecha y en mono y los encabezados en mayúsculas, como en Flet. Una respuesta nueva sale
+  renglón por renglón, con el cursor; las del Historial, enteras. Abajo, «Copiar» (copia el Markdown tal
+  cual) y, si la pregunta salió de una idea, sus dos seguimientos.
 -->
 <script lang="ts">
   import Icono from '../../../diseno/Icono.svelte';
-  import Integral from '../../../diseno/Integral.svelte';
-  import { acomodar, markdown, revelar } from '../../../lib/markdown';
+  import { acomodar, DESPUES_DEL_ULTIMO, markdown, revelar } from '../../../lib/markdown';
+  import Pildora from '../../../diseno/Pildora.svelte';
 
   let {
     texto,
     nueva = false,
+    segundos,
+    pasos,
     seguimiento = [],
     apagado = false,
     alSeguir,
   }: {
     texto: string;
     nueva?: boolean;
+    segundos?: number;
+    pasos?: string[];
     seguimiento?: { etiqueta: string; pregunta: string }[];
     apagado?: boolean;
     alSeguir: (s: { etiqueta: string; pregunta: string }) => void;
@@ -38,7 +42,7 @@
     void html;
     if (!cuerpo) return;
     acomodar(cuerpo);
-    if (animar) esperaAcciones = revelar(cuerpo) * 110;
+    if (animar) esperaAcciones = revelar(cuerpo) * 110 + DESPUES_DEL_ULTIMO;
   });
 
   async function copiar() {
@@ -52,49 +56,52 @@
   }
 </script>
 
-<div class="resp">
-  <span class="logo"><Integral ancho={20} alto={22} /></span>
-  <div class="cuerpo">
-    <div class="md" bind:this={cuerpo}>{@html html}</div>
-    <div class="acciones" class:aparece={animar} style:animation-delay={animar ? `${esperaAcciones}ms` : undefined}>
-      <button type="button" class="chico suave" onclick={copiar} disabled={copiado}>
-        {#if copiado}
-          <span class="verde"><Icono nombre="check" tamano={14} /></span>Copiado
-        {:else}
-          <Icono nombre="copiar" tamano={14} />Copiar
-        {/if}
-      </button>
-      {#each seguimiento as s (s.etiqueta)}
-        <button type="button" class="chico" disabled={apagado} onclick={() => alSeguir(s)}>{s.etiqueta}</button>
-      {/each}
-    </div>
+<div class="cuerpo">
+  {#if segundos && pasos}<Pildora texto="Pensé {segundos} s" {pasos} />{/if}
+  <div class="md" bind:this={cuerpo}>{@html html}</div>
+  <div class="acciones" class:aparece={animar} style:animation-delay={animar ? `${esperaAcciones}ms` : undefined}>
+    <button type="button" class="chico suave" onclick={copiar} disabled={copiado}>
+      {#if copiado}
+        <span class="verde"><Icono nombre="check" tamano={14} /></span>Copiado
+      {:else}
+        <Icono nombre="copiar" tamano={14} />Copiar
+      {/if}
+    </button>
+    {#each seguimiento as s (s.etiqueta)}
+      <button type="button" class="chico" disabled={apagado} onclick={() => alSeguir(s)}>{s.etiqueta}</button>
+    {/each}
   </div>
 </div>
 
 <style>
-  .resp {
-    flex: none;
-    display: flex;
-    gap: 12px;
-  }
-
-  .logo {
-    width: 30px;
-    height: 30px;
-    flex: none;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: var(--acento);
-  }
-
   .cuerpo {
-    flex: 1;
+    flex: none;
     min-width: 0;
     display: flex;
     flex-direction: column;
     gap: 14px;
     padding-top: 2px;
+  }
+
+  .md :global(.cursor) {
+    display: inline-block;
+    width: 4px;
+    height: 14px;
+    margin-left: 4px;
+    border-radius: 2px;
+    background: var(--acento);
+    vertical-align: -2px;
+    animation: latido 1s ease-in-out infinite;
+  }
+
+  @keyframes latido {
+    0%,
+    100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.35;
+    }
   }
 
   .md {

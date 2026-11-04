@@ -16,7 +16,7 @@
   import { onMount } from 'svelte';
   import BarraArriba from '../../diseno/BarraArriba.svelte';
   import BotonCuadro from '../../diseno/BotonCuadro.svelte';
-  import Integral from '../../diseno/Integral.svelte';
+  import Estrella from '../../diseno/Estrella.svelte';
   import Vidrio from '../../diseno/Vidrio.svelte';
   import { esDeRed } from '../../lib/errores';
   import { fechaLarga, saludoPorHora } from '../../lib/formato';
@@ -140,7 +140,7 @@
     <Vidrio como="section" class="saludo" radio={30} aria-label="Saludo">
       <div>
         <div class="fecha">
-          <span class="logo"><Integral ancho={20} alto={22} /></span>
+          <span class="logo"><Estrella fondo="panel" tamano={22} /></span>
           <span class="etiqueta">{fechaLarga(sucursal.hoy)}</span>
         </div>
         <p class="texto">
@@ -212,7 +212,6 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    color: var(--acento);
   }
 
   .fecha .etiqueta {

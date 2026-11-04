@@ -4,14 +4,18 @@
 // Como en los pedidos, en orden: revisa cada campo, pasa la revisión de Cloudflare (una por plática:
 // con ella el Worker da un pase de una hora, amarrado a ese celular y a ese menú), saca las dos
 // marcas y llama a preguntar_al_asistente con la llave secreta, que decide si se puede y ya cuenta
-// la pregunta. Después, una sola llamada a OpenAI con el menú entero en el prompt, y anotar_uso_ia.
-// El texto de la pregunta y el de la respuesta nunca se guardan ni pasan al registro.
+// la pregunta. Hasta ahí, cada «no» es un JSON normal. Después contesta por partes (porPartes.ts):
+// una sola llamada a OpenAI con el menú entero en el prompt, sus tres pasos y anotar_uso_ia. Los
+// pasos llevan una clave y el menú escribe su español y su inglés. El texto de la pregunta y el de
+// la respuesta nunca se guardan ni pasan al registro.
 import { anotar } from './agente';
 import type { Env } from './index';
 import { hmacHex, leerCuerpo } from './equipo';
 import { respuestaDelAsistente, modeloAsistente } from './openai';
 import type { Item } from './openai';
 import { conexionDelLimite, MARCA_CELULAR, pimientaMarcas, revisarTurnstile } from './pedidos';
+import { contestarPorPartes, POQUITO } from './porPartes';
+import type { Avisar } from './porPartes';
 import { ahoraParaElPrompt, REGLAS_ASISTENTE, restauranteParaElPrompt } from './promptAsistente';
 import type { MenuPublico } from './promptAsistente';
 import { json, Rechazo } from './respuestas';
@@ -30,7 +34,7 @@ const PASE = /^(\d{10})\.([0-9a-f]{64})$/;
 
 type Respuesta = { ok: true; restaurante_id: string; menu: MenuPublico } | { ok: false; motivo: string };
 
-export async function preguntaDelMenu(request: Request, env: Env, url: URL): Promise<Response> {
+export async function preguntaDelMenu(request: Request, env: Env, url: URL, ctx: ExecutionContext): Promise<Response> {
   if (request.method !== 'POST') throw new Rechazo(405, 'Ese trabajo solo acepta POST.');
   if (url.pathname !== '/menu/pregunta') throw new Rechazo(404, 'Ese trabajo no existe.');
   const cuerpo = await leerCuerpo(request);
@@ -72,26 +76,51 @@ export async function preguntaDelMenu(request: Request, env: Env, url: URL): Pro
     throw new Rechazo(502, NO_CONTESTO);
   }
 
+  const { restaurante_id: restaurante, menu } = respuesta;
   const entrada: Item[] = [
-    { role: 'developer', content: ahoraParaElPrompt(respuesta.menu, lengua, moneda) },
+    { role: 'developer', content: ahoraParaElPrompt(menu, lengua, moneda) },
     ...platica,
     { role: 'user', content: pregunta },
   ];
-  const { salida, tokens } = await respuestaDelAsistente(env, {
-    instrucciones: `${REGLAS_ASISTENTE}\n\n${restauranteParaElPrompt(respuesta.menu)}`,
-    entrada,
-    cache: respuesta.restaurante_id,
+  return contestarPorPartes(request, ctx, ETIQUETA, async (avisar, app) => {
+    try {
+      avisar({ tipo: 'paso', clave: 'buscar' });
+      const { salida, tokens } = await respuestaDelAsistente(
+        env,
+        { instrucciones: `${REGLAS_ASISTENTE}\n\n${restauranteParaElPrompt(menu)}`, entrada, cache: restaurante },
+        { alEscribir: escuchar(avisar) },
+        app.corte,
+      );
+      // Lo que OpenAI cobró se anota siempre; solo las contestadas cuentan en consultas_menu.
+      if (salida || tokens.entrada || tokens.salida) {
+        await anotar(env, restaurante, salida ? 'menu' : 'menu_sin_respuesta', modeloAsistente(env), tokens);
+      }
+      if (!salida) return avisar({ tipo: 'error' });
+      avisar({ tipo: 'fin', ok: true, respuesta: salida.respuesta, productos: productosDelMenu(salida.productos, menu), ...paseNuevo });
+    } catch (e) {
+      if (!(e instanceof Rechazo)) console.error(`${ETIQUETA} falló`, e);
+      avisar({ tipo: 'error' });
+    }
   });
-  // Lo que OpenAI cobró se anota siempre; solo las contestadas cuentan en consultas_menu.
-  await anotar(env, respuesta.restaurante_id, salida ? 'menu' : 'menu_sin_respuesta', modeloAsistente(env), tokens);
-  if (!salida) throw new Rechazo(502, NO_CONTESTO);
+}
 
-  return json({
-    ok: true,
-    respuesta: salida.respuesta,
-    productos: productosDelMenu(salida.productos, respuesta.menu),
-    ...paseNuevo,
-  });
+// Los pasos, leyendo el JSON que va escribiendo el modelo. Si un día «respuesta» llegara primero,
+// «recomendar» no sale. El texto se guarda solo hasta encontrar «respuesta» y nunca pasa al registro.
+function escuchar(avisar: Avisar): (parte: string) => number | null {
+  let inicio = '';
+  let recomendando = false;
+  return (parte) => {
+    if (!inicio) avisar({ tipo: 'hecho', clave: 'buscar' });
+    inicio += parte;
+    if (!recomendando && /"productos"\s*:\s*\[\s*\d/.test(inicio)) {
+      recomendando = true;
+      avisar({ tipo: 'paso', clave: 'recomendar' });
+    }
+    if (!/"respuesta"\s*:\s*"/.test(inicio)) return POQUITO;
+    if (recomendando) avisar({ tipo: 'hecho', clave: 'recomendar' });
+    avisar({ tipo: 'paso', clave: 'escribir' });
+    return null;
+  };
 }
 
 // La plática que guarda su celular: solo el texto de ella y del asistente, lo último.

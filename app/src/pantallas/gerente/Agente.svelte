@@ -6,9 +6,15 @@
     reserva, para que salga al instante; si no hay, el local, sin aviso), la caja, las 3 ideas y
     el selector Hoy · Semana · Mes;
   - la conversación: cada pregunta en su burbuja y cada respuesta en Markdown, renglón por
-    renglón, con «Pensando…» mientras tanto; a la derecha, «Lo que leí para responder» de la
-    última respuesta, en palabras, como lo mandó cada herramienta de Postgres.
+    renglón; a la derecha, «Lo que leí para responder» de la última respuesta, en palabras, como
+    lo mandó cada herramienta de Postgres.
   Cada número de una respuesta sale de una herramienta de Postgres: aquí no se cuenta nada.
+
+  Mientras piensa (maqueta AyS4xUfa5XmDaPJG1iqSgw): la pregunta vuela de la caja a su lugar, salen los
+  puntos, los segundos y cada paso real que manda el Worker, y al llegar la respuesta se doblan en
+  «Pensé 6 s ›». El botón de mandar es «Detener»: la pregunta se queda con «La detuviste» y vuelve a
+  la caja; nunca se le manda al agente y, lo ya gastado, el Worker lo anota. Lo que decidí yo sobre
+  todo esto, en planes/trabajo/estrella/vista.md.
 
   Historial guarda las conversaciones en este navegador, por sucursal (las últimas 30), y «Cerrar
   sesión» las borra. Sin tope (estado_ia), la caja dice el aviso y las ideas se apagan; el
@@ -20,10 +26,11 @@
   import BarraArriba from '../../diseno/BarraArriba.svelte';
   import Boton from '../../diseno/Boton.svelte';
   import CajaError from '../../diseno/CajaError.svelte';
+  import Estrella from '../../diseno/Estrella.svelte';
   import FondoDithering from '../../diseno/FondoDithering.svelte';
   import Icono from '../../diseno/Icono.svelte';
   import { ICONOS } from '../../diseno/iconos';
-  import Integral from '../../diseno/Integral.svelte';
+  import Pensando from '../../diseno/Pensando.svelte';
   import Vidrio from '../../diseno/Vidrio.svelte';
   import {
     guardarConversacion,
@@ -38,6 +45,7 @@
     tomarSaludo,
     type Conversacion,
     type EstadoIa,
+    type PasoAgente,
     type Periodo,
     type Turno,
   } from '../../lib/agente';
@@ -47,6 +55,7 @@
   import CajaSucursales from './CajaSucursales.svelte';
   import CajaPregunta from './agente/CajaPregunta.svelte';
   import Historial from './agente/Historial.svelte';
+  import Pildora from '../../diseno/Pildora.svelte';
   import Respuesta from './agente/Respuesta.svelte';
 
   let {
@@ -77,18 +86,25 @@
   let actual = $state<Conversacion | null>(null);
   // La pregunta que está esperando su respuesta, y de qué conversación es.
   let pendiente = $state<(Pedido & { id: string }) | null>(null);
+  // Sus pasos y sus segundos, y cómo cortar su llamada.
+  let pasos = $state<PasoAgente[]>([]);
+  let segundos = $state(0);
+  let llamada: AbortController | null = null;
   // La que no se pudo contestar: su burbuja se queda con el aviso y vuelve a la caja.
   let fallo = $state<(Pedido & { id: string; mensaje: string }) | null>(null);
+  // La que se acaba de detener: qué turno es y si su pregunta volvió a la caja.
+  let detenida = $state<(Pedido & { id: string; turno: number; volvio: boolean }) | null>(null);
   // La respuesta que acaba de llegar sale renglón por renglón; las demás, enteras.
   let nueva = $state<{ id: string; turno: number } | null>(null);
   let valor = $state('');
   let periodo = $state<Periodo>('hoy');
   let placeholder = $state(PH_BIENVENIDA);
   let mensajes = $state<HTMLDivElement | null>(null);
-  let caja = $state<{ enfocar: () => void } | null>(null);
+  let caja = $state<{ enfocar: () => void; medir: () => DOMRect | null } | null>(null);
 
   const sinTope = $derived(estado && !estado.puede ? estado : null);
   const ocupado = $derived(pendiente !== null);
+  const pensandoAqui = $derived(pendiente !== null && pendiente.id === actual?.id);
   const enChat = $derived(actual !== null);
   const titulo = $derived(actual?.titulo ?? 'Agente IA');
 
@@ -113,17 +129,91 @@
     if (mensajes && ultima) mensajes.scrollTo({ top: ultima.offsetTop - 32, behavior: 'smooth' });
   }
 
+  // Si los pasos ya no caben abajo, baja lo justo para verlos.
+  $effect(() => {
+    void pasos.length;
+    tick().then(() => {
+      const piensa = mensajes?.querySelector('.piensa');
+      if (!mensajes || !piensa) return;
+      const falta = piensa.getBoundingClientRect().bottom - mensajes.getBoundingClientRect().bottom + 16;
+      if (falta > 0) mensajes.scrollBy({ top: falta, behavior: 'smooth' });
+    });
+  });
+
+  // La burbuja de la pregunta vuela desde la caja hasta su lugar (la referencia de los pasos: 560 ms, su curva).
+  async function volarDesde(desde: DOMRect | null) {
+    await tick();
+    const burbujas = mensajes?.querySelectorAll('.burbuja');
+    const burbuja = burbujas?.[burbujas.length - 1] as HTMLElement | undefined;
+    if (!desde || !burbuja || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const lugar = burbuja.getBoundingClientRect();
+    if (!lugar.width || !lugar.height) return;
+    burbuja.style.transformOrigin = '0 0';
+    burbuja.animate(
+      [
+        {
+          transform: `translate(${desde.left - lugar.left}px, ${desde.top - lugar.top}px) scale(${desde.width / lugar.width}, ${Math.min(desde.height, 60) / lugar.height})`,
+        },
+        { transform: 'translate(0px, 0px) scale(1, 1)' },
+      ],
+      { duration: 560, easing: 'cubic-bezier(0.22, 1, 0.36, 1)' },
+    );
+  }
+
+  // Se queda en la conversación con lo que alcanzó a hacer. Solo se guarda en el Historial si la
+  // conversación ya tiene alguna respuesta: la fecha y la hora del restaurante llegan con ellas.
+  function quedoDetenida(p: Pedido, base: Conversacion, tardo: number) {
+    const hechos = pasos.filter((x) => x.hecho);
+    const turno: Turno = {
+      visible: p.visible,
+      pregunta: p.pregunta,
+      respuesta: '',
+      leido: hechos.filter((x) => x.dato).map((x) => ({ icono: x.icono, texto: x.texto })),
+      idea: p.idea,
+      segundos: tardo,
+      pasos: hechos.map((x) => x.listo),
+      detenida: true,
+    };
+    const antes = conversaciones.find((c) => c.id === base.id) ?? base;
+    const conversacion: Conversacion = { ...antes, turnos: [...antes.turnos, turno] };
+    if (conversacion.turnos.some((t) => !t.detenida)) conversaciones = guardarConversacion(sucursal.id, conversacion);
+    actual = conversacion;
+    // Si ya escribió otra cosa en la caja, no se le borra.
+    const volvio = !valor.trim();
+    if (volvio) valor = p.visible;
+    detenida = { ...p, id: base.id, turno: conversacion.turnos.length - 1, volvio };
+  }
+
   async function enviar(p: Pedido) {
     if (pendiente || sinTope) return;
+    const desde = caja?.medir() ?? null;
     const base: Conversacion = actual ?? { id: crypto.randomUUID(), titulo: p.visible, fecha: '', hora: '', turnos: [] };
     actual = base;
     fallo = null;
+    detenida = null;
     nueva = null;
     pendiente = { ...p, id: base.id };
+    pasos = [];
+    segundos = 0;
+    const esta = new AbortController();
+    llamada = esta;
+    const inicio = performance.now();
+    const tardo = () => Math.max(1, Math.round((performance.now() - inicio) / 1000));
+    const reloj = setInterval(() => (segundos = Math.floor((performance.now() - inicio) / 1000)), 250);
+    let alLlegar = 0;
     irALaPregunta();
+    volarDesde(desde);
 
     try {
-      const r = await preguntar(sucursal.id, p.pregunta, base.turnos, periodo);
+      const r = await preguntar(sucursal.id, p.pregunta, base.turnos, periodo, {
+        senal: esta.signal,
+        alPasos: (lista) => (pasos = lista),
+        alLlegar: () => {
+          clearInterval(reloj);
+          alLlegar = tardo();
+          segundos = alLlegar;
+        },
+      });
       if (r.tipo === 'sin_tope') {
         // Se acabó el tope antes de preguntar: la caja dice el aviso y la pregunta no se hizo.
         estado = r.estado;
@@ -132,7 +222,15 @@
       }
       // La conversación como está guardada (pudo cambiar de vista mientras tanto).
       const antes = conversaciones.find((c) => c.id === base.id) ?? base;
-      const turno: Turno = { visible: p.visible, pregunta: p.pregunta, respuesta: r.respuesta, leido: r.leido, idea: p.idea };
+      const turno: Turno = {
+        visible: p.visible,
+        pregunta: p.pregunta,
+        respuesta: r.respuesta,
+        leido: r.leido,
+        idea: p.idea,
+        segundos: alLlegar,
+        pasos: r.pasos,
+      };
       const lista = [...antes.turnos, turno];
       const conversacion: Conversacion = {
         ...antes,
@@ -153,6 +251,10 @@
         }
       }
     } catch (error) {
+      if (esta.signal.aborted) {
+        quedoDetenida(p, base, tardo());
+        return;
+      }
       console.error('[agente] la pregunta no se contestó:', error);
       const mensaje = error instanceof Error ? error.message : '';
       fallo = {
@@ -165,6 +267,8 @@
       };
       if (actual?.id === base.id) valor = p.visible;
     } finally {
+      clearInterval(reloj);
+      llamada = null;
       pendiente = null;
       await tick();
       if (fallo || nueva) irALaPregunta();
@@ -172,11 +276,16 @@
     }
   }
 
-  // Lo escrito en la caja. Si es la que no se pudo contestar, se manda igual que la primera vez.
+  function detener() {
+    llamada?.abort();
+  }
+
+  // Lo escrito en la caja. Si es la que no se pudo contestar o la que se detuvo, se manda igual que
+  // la primera vez.
   function enviarLoEscrito() {
     const texto = valor.trim();
     if (!texto) return;
-    const otraVez = fallo && fallo.id === actual?.id && fallo.visible === texto ? fallo : null;
+    const otraVez = [fallo, detenida].find((x) => x && x.id === actual?.id && x.visible === texto);
     valor = '';
     enviar(otraVez ?? { visible: texto, pregunta: texto, idea: null });
   }
@@ -189,6 +298,7 @@
   function nuevaConversacion() {
     actual = null;
     fallo = null;
+    detenida = null;
     nueva = null;
     valor = '';
     placeholder = PH_BIENVENIDA;
@@ -197,6 +307,7 @@
   async function abrirConversacion(c: Conversacion) {
     actual = c;
     fallo = null;
+    detenida = null;
     nueva = null;
     valor = '';
     await tick();
@@ -234,7 +345,7 @@
       <Vidrio como="section" class="bienvenida" radio={30} aria-label="Bienvenida">
         <div class="cabeza">
           <div class="fecha">
-            <span class="logo"><Integral ancho={20} alto={22} /></span>
+            <span class="logo"><Estrella fondo="panel" tamano={22} /></span>
             <span class="etiqueta">{fechaLarga(sucursal.hoy)}</span>
           </div>
           <h1 class="saludo">{saludoPorHora(sucursal.hora)}, {nombre}.<span>{segundo}</span></h1>
@@ -288,26 +399,33 @@
     <div class="mensajes" bind:this={mensajes}>
       {#each actual.turnos as t, i (i)}
         <div class="burbuja">{t.visible}</div>
-        <Respuesta
-          texto={t.respuesta}
-          nueva={nueva?.id === actual.id && nueva.turno === i}
-          seguimiento={t.idea !== null ? (IDEAS[t.idea]?.seguimiento ?? []) : []}
-          apagado={ocupado || !!sinTope}
-          alSeguir={(s) => enviar({ visible: s.etiqueta, pregunta: s.pregunta, idea: null })}
-        />
+        {#if t.detenida}
+          <div class="la-detuviste">
+            {#if t.segundos && t.pasos?.length}<Pildora texto="Pensé {t.segundos} s" pasos={t.pasos} />{/if}
+            <p>
+              {detenida?.volvio && detenida.id === actual.id && detenida.turno === i
+                ? 'La detuviste. Tu pregunta volvió a la caja por si quieres cambiarla.'
+                : 'La detuviste.'}
+            </p>
+          </div>
+        {:else}
+          <Respuesta
+            texto={t.respuesta}
+            nueva={nueva?.id === actual.id && nueva.turno === i}
+            segundos={t.segundos}
+            pasos={t.pasos}
+            seguimiento={t.idea !== null ? (IDEAS[t.idea]?.seguimiento ?? []) : []}
+            apagado={ocupado || !!sinTope}
+            alSeguir={(s) => enviar({ visible: s.etiqueta, pregunta: s.pregunta, idea: null })}
+          />
+        {/if}
       {/each}
       {#if pendiente && pendiente.id === actual.id}
         <div class="burbuja">{pendiente.visible}</div>
-        <div class="pensando" role="status">
-          <span class="logo"><Integral ancho={20} alto={22} pensando /></span>
-          <span class="pensando-texto">Pensando…</span>
-        </div>
+        <Pensando texto="Pensando…" {pasos} {segundos} color="var(--punto-panel)" />
       {:else if fallo && fallo.id === actual.id}
         <div class="burbuja">{fallo.visible}</div>
-        <div class="resp-error">
-          <span class="logo"><Integral ancho={20} alto={22} /></span>
-          <div class="error"><CajaError mensaje={fallo.mensaje} /></div>
-        </div>
+        <div class="error"><CajaError mensaje={fallo.mensaje} /></div>
       {/if}
     </div>
     <div class="chat-caja">
@@ -320,6 +438,7 @@
         {ocupado}
         aviso={sinTope ? textoSinTope(sinTope) : null}
         alEnviar={enviarLoEscrito}
+        alDetener={pensandoAqui ? detener : null}
       />
     </div>
   </Vidrio>
@@ -387,7 +506,6 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    color: var(--acento);
   }
 
   .fecha .etiqueta {
@@ -530,27 +648,23 @@
     overflow-wrap: anywhere;
   }
 
-  .pensando {
+  .la-detuviste {
     flex: none;
     display: flex;
-    align-items: center;
-    gap: 12px;
+    flex-direction: column;
+    gap: 14px;
+    padding-top: 2px;
   }
 
-  .pensando-texto {
-    font-size: 14px;
-    font-weight: 500;
+  .la-detuviste p {
+    margin: 0;
+    font-size: 14.5px;
+    line-height: 1.55;
     color: var(--suave);
   }
 
-  .resp-error {
-    flex: none;
-    display: flex;
-    gap: 12px;
-  }
-
   .error {
-    flex: 1;
+    flex: none;
     min-width: 0;
     padding-top: 2px;
   }

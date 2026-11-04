@@ -20,7 +20,7 @@
   import { onMount, type Snippet } from 'svelte';
   import CajaError from '../../diseno/CajaError.svelte';
   import Icono from '../../diseno/Icono.svelte';
-  import Integral from '../../diseno/Integral.svelte';
+  import Estrella from '../../diseno/Estrella.svelte';
   import { ALGO_SALIO_PANEL, esDeRed, Fallo, SIN_CONEXION } from '../../lib/errores';
   import { enZona, plural } from '../../lib/formato';
   import { avisarCambio, prepararSonido } from '../../lib/sonido';
@@ -236,7 +236,7 @@
     </div>
   {:else}
     <div class="k-arriba" class:vidrio={!enPanel} class:sombra={!enPanel}>
-      {#if !enPanel}<div class="logo"><Integral ancho={20} alto={22} /></div>{/if}
+      {#if !enPanel}<div class="logo"><Estrella fondo="panel" tamano={22} /></div>{/if}
       <button type="button" class="k-area" onclick={() => (pantalla = 'area')}>{area.nombre}<Icono nombre="abajo" tamano={16} /></button>
       <span class="chip-estado"><span class="punto"></span>{plural(pendientes.length, 'comanda', 'comandas')}</span>
       {@render pestanas?.()}
@@ -455,9 +455,6 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    border-radius: 10px;
-    background: var(--acento);
-    color: var(--sobre-acento);
   }
 
   .aparato {

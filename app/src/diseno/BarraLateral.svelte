@@ -1,6 +1,6 @@
 <!--
   La barra lateral de barra_lateral.py: una tarjeta de vidrio que flota a 16 del borde, de 244
-  de ancho. Arriba la marca (la ∫∫ en su cuadro del acento y "fragmentless" en Outfit 200);
+  de ancho. Arriba la marca (la estrella y "fragmentless" en Outfit 200);
   luego las opciones, con la activa en una píldora de tinta y las demás en gris, que se
   encienden con el cursor encima; abajo las acciones (Cerrar sesión) y el pie: el círculo con
   la inicial, el nombre y una línea en mono, sobre una raya fina. Si el pie trae alPulsar, es un
@@ -9,7 +9,7 @@
 -->
 <script lang="ts">
   import Icono from './Icono.svelte';
-  import Integral from './Integral.svelte';
+  import Estrella from './Estrella.svelte';
   import Vidrio from './Vidrio.svelte';
 
   // `insignia` es la etiqueta del acento al final de la opción («IA» del Agente IA, como en Flet).
@@ -57,7 +57,7 @@
 
 <Vidrio como="nav" class="barra-lateral" aria-label="Menú del panel">
   <div class="marca">
-    <span class="logo"><Integral ancho={25} alto={27} /></span>
+    <span class="logo"><Estrella fondo="panel" tamano={30} /></span>
     <span class="marca-texto">
       <span class="marca-nombre">fragmentless</span>
       <span class="mono marca-sub">{subtitulo}</span>
@@ -122,9 +122,6 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    border-radius: 12px;
-    background: var(--acento);
-    color: var(--sobre-acento);
   }
 
   .marca-texto {

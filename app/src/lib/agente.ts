@@ -7,9 +7,11 @@
 //  - el saludo de reserva, uno por sucursal, para que la bienvenida salga al instante.
 // El Markdown de cada respuesta vive en markdown.ts. Ningún número sale de aquí: las cuentas las
 // hace Postgres y el modelo solo redacta.
+import { ALGO_SALIO_PANEL, Fallo, SIN_CONEXION } from './errores';
 import { diaYMes } from './formato';
+import { Compas, leerRenglones, vienePorPartes, type Aviso, type Paso } from './pasos';
 import { supabase } from './supabase';
-import { llamarWorker } from './worker';
+import { abrirWorker, llamarWorker } from './worker';
 
 export const PREFIJO = 'fragmentless-agente-';
 const MAX_CONVERSACIONES = 30;
@@ -95,37 +97,116 @@ export const IDEAS: Idea[] = [
 // Una vuelta de la conversación: lo que se ve en la burbuja (el título de la idea o lo escrito),
 // lo que se le mandó al agente (el prompt de la idea o lo escrito), su respuesta en Markdown, lo
 // que leyó para responder y de qué idea salió (para sus seguimientos).
+// También cuánto tardó y lo que hizo («Pensé 6 s», planes/trabajo/estrella/vista.md; las conversaciones
+// de antes no lo traen). Una pregunta detenida es un turno sin respuesta que no se le manda al agente.
 export type Turno = {
   visible: string;
   pregunta: string;
   respuesta: string;
   leido: Leido[];
   idea: number | null;
+  segundos?: number;
+  pasos?: string[];
+  detenida?: boolean;
 };
 
 export type Contestacion =
-  | { tipo: 'respuesta'; respuesta: string; leido: Leido[]; puede: boolean; ahora: { fecha: string; hora: string } | null }
+  | {
+      tipo: 'respuesta';
+      respuesta: string;
+      leido: Leido[];
+      puede: boolean;
+      ahora: { fecha: string; hora: string } | null;
+      pasos: string[];
+    }
   | { tipo: 'sin_tope'; estado: SinTope };
 
+// Un paso del agente es de lo que encontró si trae `dato`: es lo que alcanzó a leer si se detiene.
+export type PasoAgente = Paso & { dato?: boolean };
+
+type Oyentes = {
+  senal: AbortSignal;
+  alPasos: (pasos: PasoAgente[]) => void;
+  alLlegar: () => void; // la respuesta ya llegó (los segundos son hasta aquí), aunque falte enseñar pasos
+};
+
+// El Worker contesta por partes (worker.md): cada paso, y al final la respuesta. Lo que rechaza antes de
+// empezar llega en JSON normal. Si se detiene (`senal`), esto lanza el error de la señal, sin esperar.
 // Errores del Worker ya en español (Fallo de worker.ts); la vista los pinta en su caja.
 export async function preguntar(
   restauranteId: string,
   pregunta: string,
   turnos: Turno[],
   periodo: Periodo,
+  { senal, alPasos, alLlegar }: Oyentes,
 ): Promise<Contestacion> {
-  const conversacion = turnos.flatMap((t) => [
-    { rol: 'gerente', texto: t.pregunta },
-    { rol: 'agente', texto: t.respuesta },
-  ]);
-  const r = await llamarWorker('agente', 'POST', '/agente/pregunta', {
-    restaurante: restauranteId,
-    pregunta,
-    conversacion,
-    periodo,
-  });
-  if (r?.puede === false && typeof r.respuesta !== 'string') return { tipo: 'sin_tope', estado: r as unknown as SinTope };
-  if (typeof r?.respuesta !== 'string') {
+  const conversacion = turnos
+    .filter((t) => !t.detenida)
+    .flatMap((t) => [
+      { rol: 'gerente', texto: t.pregunta },
+      { rol: 'agente', texto: t.respuesta },
+    ]);
+  const respuesta = await abrirWorker(
+    'agente',
+    '/agente/pregunta',
+    { restaurante: restauranteId, pregunta, conversacion, periodo },
+    senal,
+  );
+  if (!vienePorPartes(respuesta)) {
+    const r = await respuesta.json().catch((error) => {
+      if (senal.aborted) throw error;
+      return null;
+    });
+    if (r?.puede === false) return { tipo: 'sin_tope', estado: r as SinTope };
+    console.error('[agente] el Worker contestó algo que no se entiende:', r);
+    throw new Error('El Worker no mandó la respuesta');
+  }
+
+  const compas = new Compas();
+  const parar = () => compas.parar();
+  senal.addEventListener('abort', parar);
+  let pasos: PasoAgente[] = [];
+  const poner = (nuevos: PasoAgente[]) => {
+    pasos = nuevos;
+    alPasos(pasos);
+  };
+  let datos = 0;
+  let fin: Aviso | null = null;
+  try {
+    await leerRenglones(respuesta, (a) => {
+      if (a.tipo === 'paso') {
+        const paso = { clave: a.id as number, icono: a.icono as string, texto: a.texto as string, listo: a.listo as string, hecho: false };
+        compas.entra(() => poner([...pasos, paso]));
+      } else if (a.tipo === 'hecho') {
+        compas.sale(() => poner(pasos.map((p) => (p.clave === a.id ? { ...p, hecho: true } : p))));
+      } else if (a.tipo === 'quita') {
+        compas.sale(() => poner(pasos.filter((p) => p.clave !== a.id)));
+      } else if (a.tipo === 'dato') {
+        const paso = { clave: `dato-${datos++}`, icono: a.icono as string, texto: a.texto as string, listo: a.texto as string, hecho: true, dato: true };
+        compas.ahora(() => poner([...pasos, paso]));
+      } else if (a.tipo === 'fin') {
+        fin = a;
+        alLlegar();
+      } else if (a.tipo === 'error') {
+        throw new Fallo(typeof a.mensaje === 'string' ? a.mensaje : ALGO_SALIO_PANEL);
+      }
+    });
+    if (!fin) throw new Error('la respuesta se acabó sin su final');
+    // La respuesta espera a que el último paso se deje leer.
+    compas.sale(() => {});
+    await compas.termina();
+    senal.throwIfAborted();
+  } catch (error) {
+    if (senal.aborted || error instanceof Fallo) throw error;
+    console.error('[agente] la lectura de la respuesta se cortó:', error);
+    throw new Fallo(SIN_CONEXION);
+  } finally {
+    senal.removeEventListener('abort', parar);
+    compas.parar();
+  }
+
+  const r = fin as Aviso;
+  if (typeof r.respuesta !== 'string') {
     console.error('[agente] el Worker contestó algo que no se entiende:', r);
     throw new Error('El Worker no mandó la respuesta');
   }
@@ -139,6 +220,7 @@ export async function preguntar(
     leido,
     puede: r.puede !== false,
     ahora: typeof ahora?.fecha === 'string' && typeof ahora.hora === 'string' ? { fecha: ahora.fecha, hora: ahora.hora } : null,
+    pasos: pasos.map((p) => p.listo),
   };
 }
 

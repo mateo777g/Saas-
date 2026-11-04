@@ -17,7 +17,7 @@
 
 /* Arriba de cada pantalla */
 .pos .cel-arriba { display: flex; align-items: center; gap: 10px; min-height: 44px; flex: none; }
-.pos .cel-logo { width: 32px; height: 32px; border-radius: 10px; background: var(--acento); color: var(--sobre-acento); display: flex; align-items: center; justify-content: center; flex: none; }
+.pos .cel-logo { width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; flex: none; }
 .pos .cel-lugar { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
 .pos .cel-lugar b { font-size: 13.5px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .pos .cel-lugar span { font-family: var(--mono); font-size: 10.5px; color: var(--tenue); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }

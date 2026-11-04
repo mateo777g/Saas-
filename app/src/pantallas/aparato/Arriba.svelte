@@ -1,11 +1,11 @@
 <!--
-  Lo de arriba de cada pantalla del aparato (maqueta de Empleados 36iXMMqXCfVv4NuVR7vNSc): el ∫∫
-  en su cuadro de acento con el restaurante y el nombre del aparato, o, en el PIN de la tableta
+  Lo de arriba de cada pantalla del aparato (maqueta de Empleados 36iXMMqXCfVv4NuVR7vNSc): la
+  estrella con el restaurante y el nombre del aparato, o, en el PIN de la tableta
   compartida, «Cambiar de persona» para regresar a la lista. Sin ligar, solo el logo.
 -->
 <script lang="ts">
   import Icono from '../../diseno/Icono.svelte';
-  import Integral from '../../diseno/Integral.svelte';
+  import Estrella from '../../diseno/Estrella.svelte';
 
   let {
     lugar = null,
@@ -19,7 +19,7 @@
       <Icono nombre="anterior" tamano={16} />Cambiar de persona
     </button>
   {:else}
-    <span class="logo"><Integral ancho={20} alto={22} /></span>
+    <span class="logo"><Estrella fondo="panel" tamano={22} /></span>
     {#if lugar}
       <span class="lugar">
         <b>{lugar.restaurante}</b>
@@ -44,9 +44,6 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    border-radius: 10px;
-    background: var(--acento);
-    color: var(--sobre-acento);
   }
 
   .lugar {

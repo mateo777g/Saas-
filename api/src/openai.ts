@@ -4,6 +4,7 @@
 // defecto). Aquí no se calcula ningún costo: solo se leen los tokens que reporta OpenAI, y
 // Postgres los convierte en dinero (anotar_uso_ia).
 import type { Env } from './index';
+import { EN_CUANTO, JUNTAR, leerEventos } from './porPartes';
 import { Rechazo } from './respuestas';
 
 // Los modelos no se negocian; OPENAI_MODEL y OPENAI_MODEL_SALUDO solo existen para cambiarlos sin
@@ -116,6 +117,87 @@ function codigoDeError(texto: string): string {
   }
 }
 
+// ─── Pedir por partes: para saber qué hace el modelo mientras contesta ────────
+
+// Lo que le interesa a quien pide. `alEscribir` regresa cuántos bytes juntar antes de la siguiente
+// lectura (porPartes.ts), o null si ya no quiere más partes de texto: así no se convierte el JSON de
+// las demás.
+export type Oyente = {
+  alPedirHerramienta?: () => void;
+  alEscribir?: (parte: string) => number | null;
+};
+
+const EVENTOS_FINALES = new Set(['response.completed', 'response.incomplete', 'response.failed']);
+
+// Regresa el mismo objeto que la Responses API contesta sin partes: el evento final lo trae entero.
+// Sin evento final, null: queda en el registro y lo que haya cobrado OpenAI no se puede saber. Con
+// `corte` encendido, también null (ese registro ya lo dejó quien cortó).
+async function pedirPorPartes(
+  env: Env,
+  ruta: string,
+  cuerpo: Record<string, unknown>,
+  opciones: { soloCodigo?: boolean; espera?: number; corte: AbortSignal; oyente: Oyente; etiqueta: string },
+): Promise<Record<string, unknown> | null> {
+  const { oyente, etiqueta, corte, espera } = opciones;
+  const senal = espera ? AbortSignal.any([AbortSignal.timeout(espera), corte]) : corte;
+  let final: Record<string, unknown> | null = null;
+  let bytes = EN_CUANTO;
+  let leerTexto = !!oyente.alEscribir;
+  try {
+    const respuesta = await fetch(`https://api.openai.com/v1/${ruta}`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${llave(env)}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ...cuerpo, stream: true, stream_options: { include_obfuscation: false } }),
+      signal: senal,
+    });
+    if (!respuesta.ok) {
+      const texto = await respuesta.text();
+      console.error(`[openai] ${ruta} falló con ${respuesta.status}`, opciones.soloCodigo ? codigoDeError(texto) : texto.slice(0, 2000));
+      throw new Rechazo(502, 'El agente no pudo contestar. Intenta de nuevo.');
+    }
+    if (respuesta.body) {
+      await leerEventos(
+        respuesta.body,
+        () => bytes,
+        (evento) =>
+          EVENTOS_FINALES.has(evento) ||
+          evento === 'error' ||
+          evento === 'response.output_item.added' ||
+          (leerTexto && evento === 'response.output_text.delta'),
+        (evento, datos) => {
+          if (EVENTOS_FINALES.has(evento)) {
+            final = (datos.response ?? null) as Record<string, unknown> | null;
+          } else if (evento === 'error') {
+            const { type, code, param } = datos;
+            console.error(`${etiqueta} OpenAI mandó un error a media respuesta`, JSON.stringify({ type, code, param }));
+          } else if (evento === 'response.output_item.added') {
+            // Ya pidió una herramienta: lo que falta de esta vuelta se puede juntar.
+            if ((datos.item as { type?: unknown } | undefined)?.type === 'function_call') {
+              bytes = JUNTAR;
+              oyente.alPedirHerramienta?.();
+            }
+          } else if (typeof datos.delta === 'string') {
+            const siguiente = oyente.alEscribir?.(datos.delta) ?? null;
+            leerTexto = siguiente !== null;
+            bytes = siguiente ?? JUNTAR;
+          }
+        },
+      );
+    }
+  } catch (e) {
+    if (corte.aborted) return null;
+    if (e instanceof Rechazo) throw e;
+    if (e instanceof DOMException && e.name === 'TimeoutError') {
+      console.error(`[openai] ${ruta} no contestó en ${espera} ms; si cobró algo, no quedó anotado`);
+      throw new Rechazo(502, 'El agente no pudo contestar. Intenta de nuevo.');
+    }
+    console.error(`${etiqueta} se cortó la respuesta de OpenAI`, e);
+    return null;
+  }
+  if (!final) console.error(`${etiqueta} OpenAI terminó sin evento final; si cobró algo, no quedó anotado`);
+  return final;
+}
+
 // ─── El agente: Responses API ─────────────────────────────────────────────────
 
 // Lo que entra y sale de la Responses API. Los items de la salida (lo que razonó, las llamadas a
@@ -129,19 +211,27 @@ export type Llamada = { call_id: string; name: string; arguments: string };
 export async function rondaDelAgente(
   env: Env,
   peticion: { instrucciones: string; entrada: Item[]; herramientas: readonly unknown[]; sinHerramientas: boolean; cache: string },
+  oyente: Oyente,
+  corte: AbortSignal,
 ): Promise<Ronda> {
   const modelo = modeloAgente(env);
-  const r = await pedir(env, 'responses', {
-    model: modelo,
-    instructions: peticion.instrucciones,
-    input: peticion.entrada,
-    tools: peticion.herramientas,
-    tool_choice: peticion.sinHerramientas ? 'none' : 'auto',
-    store: false,
-    include: ['reasoning.encrypted_content'],
-    max_output_tokens: 25_000,
-    prompt_cache_key: peticion.cache,
-  });
+  const r = await pedirPorPartes(
+    env,
+    'responses',
+    {
+      model: modelo,
+      instructions: peticion.instrucciones,
+      input: peticion.entrada,
+      tools: peticion.herramientas,
+      tool_choice: peticion.sinHerramientas ? 'none' : 'auto',
+      store: false,
+      include: ['reasoning.encrypted_content'],
+      max_output_tokens: 25_000,
+      prompt_cache_key: peticion.cache,
+    },
+    { corte, oyente, etiqueta: '[agente]' },
+  );
+  if (!r) throw new RondaFallida(SIN_TOKENS);
 
   const uso = (r.usage ?? {}) as Record<string, Record<string, unknown> | unknown>;
   const detalle = (uso.input_tokens_details ?? {}) as Record<string, unknown>;
@@ -199,7 +289,8 @@ export async function saludoDeLaIa(env: Env, instrucciones: string): Promise<{ t
 
 // ─── El asistente del menú: Responses API con salida estructurada ─────────────
 
-// Lo que regresa el modelo: su texto y los números de los productos que nombró, en ese orden.
+// Lo que regresa el modelo, en este orden: primero los números de los productos que va a nombrar y
+// después su texto, para que «Haciendo tu recomendación…» salga antes que «Escribiendo…».
 const SALIDA_ASISTENTE = {
   type: 'json_schema',
   name: 'respuesta_del_asistente',
@@ -207,10 +298,10 @@ const SALIDA_ASISTENTE = {
   schema: {
     type: 'object',
     additionalProperties: false,
-    required: ['respuesta', 'productos'],
+    required: ['productos', 'respuesta'],
     properties: {
-      respuesta: { type: 'string' },
       productos: { type: 'array', items: { type: 'integer' } },
+      respuesta: { type: 'string' },
     },
   },
 } as const;
@@ -222,9 +313,11 @@ const SALIDA_ASISTENTE = {
 export async function respuestaDelAsistente(
   env: Env,
   peticion: { instrucciones: string; entrada: Item[]; cache: string },
+  oyente: Oyente,
+  corte: AbortSignal,
 ): Promise<{ salida: { respuesta: string; productos: unknown[] } | null; tokens: Tokens }> {
   const modelo = modeloAsistente(env);
-  const r = await pedir(
+  const r = await pedirPorPartes(
     env,
     'responses',
     {
@@ -236,8 +329,9 @@ export async function respuestaDelAsistente(
       max_output_tokens: 4_000,
       prompt_cache_key: peticion.cache,
     },
-    { soloCodigo: true, espera: 45_000 },
+    { soloCodigo: true, espera: 45_000, corte, oyente, etiqueta: '[asistente]' },
   );
+  if (!r) return { salida: null, tokens: SIN_TOKENS };
 
   const uso = (r.usage ?? {}) as Record<string, Record<string, unknown> | unknown>;
   const detalle = (uso.input_tokens_details ?? {}) as Record<string, unknown>;

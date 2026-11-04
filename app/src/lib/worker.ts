@@ -47,6 +47,41 @@ export async function llamarWorker(
   return respuestaJson;
 }
 
+// Una pregunta al Worker que contesta por partes (lib/pasos.ts): la respuesta sin leer, para irla
+// leyendo. `senal` la corta; ese error se deja pasar tal cual. Sus errores llegan como los de llamarWorker.
+export async function abrirWorker(
+  contexto: string,
+  camino: string,
+  cuerpo: Record<string, unknown>,
+  senal: AbortSignal,
+): Promise<Response> {
+  const { data, error } = await supabase.auth.getSession();
+  if (error || !data.session) {
+    console.error(`[${contexto}] no hay sesión para hablar con el Worker:`, error);
+    throw new Fallo('Tu sesión venció. Vuelve a entrar.');
+  }
+
+  let respuesta: Response;
+  try {
+    respuesta = await fetch(`${API}${camino}`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${data.session.access_token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify(cuerpo),
+      signal: senal,
+    });
+  } catch (falla) {
+    if (senal.aborted) throw falla;
+    console.error(`[${contexto}] POST ${camino}: no se pudo hablar con el Worker:`, falla);
+    throw new Fallo(SIN_CONEXION);
+  }
+  if (!respuesta.ok) {
+    const respuestaJson = await respuesta.json().catch(() => null);
+    console.error(`[${contexto}] POST ${camino}: el Worker dijo ${respuesta.status}:`, respuestaJson);
+    throw new Fallo(typeof respuestaJson?.error === 'string' ? respuestaJson.error : ALGO_SALIO_PANEL);
+  }
+  return respuesta;
+}
+
 // Un archivo que manda el Worker (el JPG de un anuncio, para «Descargar»), con el nombre que trae
 // en Content-Disposition. Sus errores llegan como los de llamarWorker.
 export async function bajarDelWorker(contexto: string, camino: string): Promise<{ archivo: Blob; nombre: string | null }> {

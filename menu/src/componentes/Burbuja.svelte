@@ -3,13 +3,13 @@
   «Ver tu pedido» (o del aviso de los pedidos), o sola en la esquina. Siempre está, aunque el
   restaurante esté cerrado, en pausa o sin IA: ahí aparece Fragmentless. Va en el color de Don Chuy
   con la estrella de Fragmentless en degradado, en la versión del logo para ese fondo (decidido en la
-  prueba de Banderitas, el 31 de octubre de 2026; antes iba en la tinta del tema con la ∫∫). Sin
-  color, en los neutros del menú: negra en el tema claro, clara en el oscuro.
+  prueba de Banderitas, el 31 de octubre de 2026). Sin color, en los neutros del menú: negra en el
+  tema claro, clara en el oscuro.
 -->
 <script lang="ts">
+  import Estrella, { type FondoEstrella } from '@app/diseno/Estrella.svelte';
   import { esClaro } from '@app/lib/color';
   import type { Textos } from '../lib/textos';
-  import Estrella, { type FondoEstrella } from './Estrella.svelte';
 
   let {
     color,

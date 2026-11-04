@@ -11,7 +11,7 @@
   Con la 6b (maqueta G2nxGb3xBgiPEYrDb6CgcW) se pide: el «+» de cada producto, «Ver tu pedido» abajo,
   «Tu pedido», «Hacer pedido» (Worker /menu/pedido) y luego «Falta un paso» y «Pedido enviado».
 
-  Con la 6c (maqueta 2UPwZw31WrcYRZkH8jaT1Y) llega el asistente: la burbuja ∫∫ abajo a la derecha y
+  Con la 6c (maqueta 2UPwZw31WrcYRZkH8jaT1Y) llega el asistente: la burbuja con la estrella abajo a la derecha y
   su plática (Worker /menu/pregunta); la hoja de un producto que nombró se abre encima de la plática.
 -->
 <script lang="ts">

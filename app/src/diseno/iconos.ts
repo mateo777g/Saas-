@@ -104,4 +104,10 @@ export const ICONOS: Record<string, string> = {
   'ubicacion': '<path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"></path><circle cx="12" cy="9.5" r="2.5"></circle>',
   // El cartel de 16:9, junto al post y la historia de Flet (maqueta Estilos 7a H2yFVjosPvSV56DJD1Un71).
   'cartel': '<rect x="2" y="6" width="20" height="12" rx="2"></rect>',
+  // Los pasos del «Pensando…» y «Detener» (maqueta AyS4xUfa5XmDaPJG1iqSgw). «lupa» es «buscar»: así la
+  // nombra el Worker.
+  'lupa': '<circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path>',
+  'globito': '<path d="M21 11.5a8.5 8.5 0 0 1-12.3 7.6L3 21l1.9-5.7A8.5 8.5 0 1 1 21 11.5z"></path>',
+  'tabla': '<rect x="3" y="4" width="18" height="16" rx="2"></rect><path d="M3 10h18"></path><path d="M10 10v10"></path>',
+  'detener': '<rect x="7" y="7" width="10" height="10" rx="2" fill="currentColor" stroke="none"></rect>',
 };

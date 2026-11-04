@@ -2,8 +2,10 @@
 // los dos con la sesión del gerente:
 //  - POST /agente/pregunta {restaurante, pregunta, conversacion, periodo}: Don Chuy pregunta, el
 //    modelo pide herramientas y el Worker se las pasa a Postgres (agente_herramienta) con la sesión
-//    de Don Chuy, hasta que el modelo contesta con texto. Regresa la respuesta en Markdown, lo que
-//    leyó para responder, si todavía queda tope y la fecha y la hora del restaurante.
+//    de Don Chuy, hasta que el modelo contesta con texto. Contesta por partes (porPartes.ts): cada
+//    paso mientras trabaja (pasos.ts) y al final la respuesta en Markdown, lo que leyó para
+//    responder, si todavía queda tope y la fecha y la hora del restaurante. Lo que rechaza antes de
+//    empezar sigue siendo un JSON normal. Si la app se va, termina la vuelta pedida, la anota y para.
 //  - POST /agente/saludo {restaurante}: el segundo renglón de la bienvenida. Si falla o no hay
 //    tope, regresa null y la app pone el suyo, sin aviso.
 // El Worker no decide nada: estado_ia dice si se puede, las herramientas hacen las cuentas y
@@ -12,6 +14,9 @@ import type { Env } from './index';
 import { leerCuerpo } from './equipo';
 import { modeloAgente, modeloSaludo, rondaDelAgente, RondaFallida, saludoDeLaIa, SIN_TOKENS, sumar } from './openai';
 import type { Item, Llamada, Tokens } from './openai';
+import { contestarPorPartes } from './porPartes';
+import type { Avisar, LaApp } from './porPartes';
+import { Escritura, LEYENDO, Pasos, pasoDeHerramienta } from './pasos';
 import { conPeriodo, contextoParaElPrompt, HERRAMIENTAS, limpiarSaludo, PERIODOS, promptSaludo, REGLAS_AGENTE, ULTIMA_RONDA } from './prompt';
 import { json, Rechazo } from './respuestas';
 import { leerSesion, llamar } from './supabase';
@@ -31,19 +36,26 @@ const NO_CONTESTO = 'El agente no pudo contestar. Intenta de nuevo.';
 type Estado = { puede: boolean; motivo?: string; con_distribuidor?: boolean; vuelve?: string };
 type Leido = { icono: string; texto: string };
 
-export async function agente(request: Request, env: Env, url: URL): Promise<Response> {
+export async function agente(request: Request, env: Env, url: URL, ctx: ExecutionContext): Promise<Response> {
   if (request.method !== 'POST') throw new Rechazo(405, 'Ese trabajo solo acepta POST.');
   const sesion = leerSesion(request);
   const cuerpo = await leerCuerpo(request);
   const restaurante = typeof cuerpo.restaurante === 'string' ? cuerpo.restaurante : '';
   if (!UUID.test(restaurante)) throw new Rechazo(400, 'Falta el restaurante.');
 
-  if (url.pathname === '/agente/pregunta') return pregunta(env, sesion, restaurante, cuerpo);
+  if (url.pathname === '/agente/pregunta') return pregunta(request, ctx, env, sesion, restaurante, cuerpo);
   if (url.pathname === '/agente/saludo') return saludo(env, sesion, restaurante);
   throw new Rechazo(404, 'Ese trabajo no existe.');
 }
 
-async function pregunta(env: Env, sesion: string, restaurante: string, cuerpo: Record<string, unknown>): Promise<Response> {
+async function pregunta(
+  request: Request,
+  ctx: ExecutionContext,
+  env: Env,
+  sesion: string,
+  restaurante: string,
+  cuerpo: Record<string, unknown>,
+): Promise<Response> {
   const texto = typeof cuerpo.pregunta === 'string' ? cuerpo.pregunta.trim() : '';
   if (!texto) throw new Rechazo(400, 'Escribe tu pregunta.');
   if (texto.length > LARGO_PREGUNTA) throw new Rechazo(400, 'La pregunta es muy larga. Hazla más corta.');
@@ -54,29 +66,71 @@ async function pregunta(env: Env, sesion: string, restaurante: string, cuerpo: R
   const estado = await llamar<Estado>(env, { sesion }, 'estado_ia', { p_restaurante_id: restaurante });
   if (!estado.puede) return json(estado);
 
-  const contexto = await llamar<{ ahora?: { fecha?: string; hora?: string } } | null>(
+  const contexto = await llamar<{ ahora?: { fecha?: string; hora?: string; dia_de_negocio?: string } } | null>(
     env, { sesion }, 'contexto_agente', { p_restaurante_id: restaurante },
   );
   const instrucciones = `${REGLAS_AGENTE}\n\n${contextoParaElPrompt(contexto)}`;
   // La fecha y la hora del restaurante, para el Historial de la app (nunca el reloj del aparato).
   const ahora = contexto?.ahora?.fecha && contexto.ahora.hora ? { fecha: contexto.ahora.fecha, hora: contexto.ahora.hora } : null;
+  const hoy = contexto?.ahora?.dia_de_negocio ?? null;
   const entrada: Item[] = [...conversacion, { role: 'user', content: conPeriodo(texto, periodo) }];
+
+  return contestarPorPartes(request, ctx, '[agente]', (avisar, app) =>
+    contestar(env, sesion, restaurante, instrucciones, entrada, ahora, hoy, avisar, app),
+  );
+}
+
+async function contestar(
+  env: Env,
+  sesion: string,
+  restaurante: string,
+  instrucciones: string,
+  entrada: Item[],
+  ahora: { fecha: string; hora: string } | null,
+  hoy: string | null,
+  avisar: Avisar,
+  app: LaApp,
+): Promise<void> {
+  const pasos = new Pasos(avisar);
   const leido: Leido[] = [];
   let gastado = SIN_TOKENS;
   let pedidas = 0;
+  let leyendo = pasos.abrir(LEYENDO);
+  const yaLeyo = () => {
+    pasos.cerrar(leyendo);
+    leyendo = null;
+  };
 
   try {
     for (let ronda = 1; ronda <= RONDAS; ronda++) {
       const ultima = ronda === RONDAS;
       if (ultima) entrada.push({ role: 'developer', content: ULTIMA_RONDA });
-      const r = await rondaDelAgente(env, {
-        instrucciones,
-        entrada,
-        herramientas: HERRAMIENTAS,
-        sinHerramientas: ultima,
-        cache: restaurante,
-      });
+      const escritura = new Escritura(pasos, yaLeyo);
+      const r = await rondaDelAgente(
+        env,
+        {
+          instrucciones,
+          entrada,
+          herramientas: HERRAMIENTAS,
+          sinHerramientas: ultima,
+          cache: restaurante,
+        },
+        {
+          alPedirHerramienta: () => {
+            yaLeyo();
+            escritura.quitar();
+          },
+          alEscribir: (parte) => escritura.parte(parte),
+        },
+        app.corte,
+      );
       gastado = sumar(gastado, r.tokens);
+
+      // La app ya no espera: esta vuelta se anota y no se pide otra.
+      if (app.seFue()) {
+        await anotar(env, restaurante, 'pregunta', modeloAgente(env), gastado);
+        return;
+      }
 
       if (!r.llamadas.length) {
         if (!r.texto) {
@@ -84,7 +138,8 @@ async function pregunta(env: Env, sesion: string, restaurante: string, cuerpo: R
           throw new Rechazo(502, NO_CONTESTO);
         }
         const puede = await anotar(env, restaurante, 'pregunta', modeloAgente(env), gastado);
-        return json({ respuesta: r.texto, leido, puede: puede !== false, ahora });
+        avisar({ tipo: 'fin', respuesta: r.texto, leido, puede: puede !== false, ahora });
+        return;
       }
 
       // Lo que salió de esta ronda vuelve tal cual, y después lo que regresó cada herramienta.
@@ -94,8 +149,12 @@ async function pregunta(env: Env, sesion: string, restaurante: string, cuerpo: R
         const salida =
           pedidas > HERRAMIENTAS_POR_PREGUNTA
             ? { error: 'Ya pediste demasiadas herramientas para esta pregunta: contesta con lo que ya tienes.' }
-            : await usarHerramienta(env, sesion, restaurante, llamada, leido);
+            : await usarHerramienta(env, sesion, restaurante, llamada, leido, hoy, pasos, avisar);
         entrada.push({ type: 'function_call_output', call_id: llamada.call_id, output: JSON.stringify(salida) });
+        if (app.seFue()) {
+          await anotar(env, restaurante, 'pregunta', modeloAgente(env), gastado);
+          return;
+        }
       }
     }
     console.error('[agente] se acabaron las rondas sin respuesta', restaurante);
@@ -125,24 +184,40 @@ function leerConversacion(valor: unknown): Item[] {
 // Una herramienta, por la única puerta de Postgres y con la sesión del gerente: el modelo nunca
 // elige el restaurante. Si la llamada viene mal, Postgres dice por qué y eso se le regresa al
 // modelo para que corrija; si Supabase no contesta, un error genérico para que no invente.
-async function usarHerramienta(env: Env, sesion: string, restaurante: string, llamada: Llamada, leido: Leido[]): Promise<unknown> {
+// Su paso sale antes de llamar a Postgres; si regresa error, se quita: «Busqué…» sería falso.
+async function usarHerramienta(
+  env: Env,
+  sesion: string,
+  restaurante: string,
+  llamada: Llamada,
+  leido: Leido[],
+  hoy: string | null,
+  pasos: Pasos,
+  avisar: Avisar,
+): Promise<unknown> {
   let argumentos: unknown;
   try {
     argumentos = llamada.arguments ? JSON.parse(llamada.arguments) : {};
   } catch {
     return { error: 'Los argumentos no son un JSON válido.' };
   }
+  const paso = pasos.abrir(pasoDeHerramienta(llamada.name, (argumentos ?? {}) as Record<string, unknown>, hoy));
   try {
     const resultado = await llamar<Record<string, unknown> | null>(env, { sesion }, 'agente_herramienta', {
       p_restaurante_id: restaurante,
       p_herramienta: llamada.name,
       p_argumentos: argumentos,
     });
+    pasos.cerrar(paso);
     // «Lo que leí para responder» es para la app; al modelo le van solo los números.
     const { leido: renglon, ...numeros } = resultado ?? {};
-    if (esLeido(renglon) && !leido.some((l) => l.texto === renglon.texto)) leido.push(renglon);
+    if (esLeido(renglon) && !leido.some((l) => l.texto === renglon.texto)) {
+      leido.push(renglon);
+      avisar({ tipo: 'dato', icono: renglon.icono, texto: renglon.texto });
+    }
     return numeros;
   } catch (e) {
+    pasos.quitar(paso);
     if (e instanceof Rechazo && (e.estado === 400 || e.estado === 404)) return { error: e.message };
     if (e instanceof Rechazo && (e.estado === 401 || e.estado === 403)) throw e;
     if (!(e instanceof Rechazo)) console.error('[agente] la herramienta falló', llamada.name, e);

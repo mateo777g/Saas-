@@ -25,6 +25,11 @@
   --sobre-tinta-linea: rgba(255, 255, 255, 0.24); /* el borde de su botón Elegir todos */
   --velo: rgba(0, 0, 0, 0.35);         /* detrás de una ventana */
   --sombra-anuncio: rgba(0, 0, 0, 0.22); /* el anuncio terminado en Crear contenido */
+  --estrella-1: #bd3a02;               /* la estrella naranja: de la punta de abajo a la de arriba */
+  --estrella-2: #e8622a;
+  --estrella-3: #ff9c32;
+  --estrella-4: #ffdea8;
+  --punto-panel: #e8612a;              /* los puntos del «Pensando…» */
 }
 
 :root[data-tema='oscuro'] {
@@ -49,6 +54,11 @@
   --sobre-tinta-linea: rgba(0, 0, 0, 0.24);
   --velo: rgba(0, 0, 0, 0.6);
   --sombra-anuncio: rgba(0, 0, 0, 0.6);
+  --estrella-1: #1b3fb5;               /* la estrella de fondo negro */
+  --estrella-2: #1f5ef0;
+  --estrella-3: #4fa3ff;
+  --estrella-4: #9fe6ff;
+  --punto-panel: #1854e8;
 }
 
 /* Iguales en los dos temas. */

@@ -19,7 +19,7 @@
     getShaderNoiseTexture,
     grainGradientFragmentShader,
   } from '@paper-design/shaders';
-  import Integral from './Integral.svelte';
+  import Estrella from './Estrella.svelte';
 
   // Los valores del componente original (auth-section-1 de 21st.dev).
   const VELOCIDAD = 1;
@@ -94,7 +94,7 @@
   <div class="lienzo" bind:this={lienzo}></div>
   <h2 class="frase">Moderniza<br />Tu Negocio</h2>
   <div class="marca">
-    <Integral ancho={21} alto={23} />
+    <Estrella fondo="gris" tamano={22} />
     <span><b>Fragmentless</b> · Panel web</span>
   </div>
 </section>

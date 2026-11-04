@@ -40,7 +40,7 @@ type EstiloDeHoy = {
   muestra_cartel_ruta: string;
 };
 
-// Lo que contestan datos_para_anuncio y apartar_anuncio cuando no se puede (sin_ia, limite, veinte,
+// Lo que contestan datos_para_anuncio y apartar_anuncio cuando no se puede (sin_ia, limite, cupo,
 // estilo, haciendo): pasa tal cual a la app.
 type NoSePuede = { ok: false; motivo: string };
 type Revision = NoSePuede | { ok: true; estilo: string; productos: ProductoRevisado[]; restaurante: RestauranteDelAnuncio };

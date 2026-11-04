@@ -27,8 +27,7 @@ export type SinTope = {
 };
 export type EstadoIa = { puede: true } | SinTope;
 
-// El aviso de la libreta de Seguridad, según por qué no puede y quién le vende. Lo dicen igual el
-// Agente IA y Crear contenido.
+// El aviso de la libreta de Seguridad, según por qué no puede y quién le vende.
 export function textoSinTope(e: SinTope): string {
   if (e.motivo === 'sin_ia') {
     return e.con_distribuidor

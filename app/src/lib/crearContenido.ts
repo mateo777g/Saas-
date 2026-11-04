@@ -1,6 +1,6 @@
 // Lo que usa «Crear contenido» (parte 7b-1 de la libreta 7; maqueta JQBw2yGFSiky1x9twUyYbe, sus
 // decisiones en planes/trabajo/7b/lista-7b.md y worker-7b1.md):
-//  - crear_contenido: en una sola lectura, «Te quedan N de 20», si la IA puede, su restaurante como
+//  - crear_contenido: en una sola lectura, «Te quedan N de M», si la IA puede, su restaurante como
 //    va en el anuncio, sus productos de Mi menú y el resultado (el que se está haciendo o el último
 //    suyo que todavía no ve). Se vuelve a leer cada vez que realtime avisa de un cambio en anuncios.
 //  - el Worker, con la sesión: los estilos que le salen hoy con las reglas de su prompt
@@ -8,8 +8,9 @@
 //    (POST /anuncios) y el JPG para «Descargar» (GET /anuncios/archivo).
 // Lo que dice «Irá en el anuncio» sale de esas reglas, las mismas con las que el Worker arma el
 // prompt, así nunca dice otra cosa. Ningún número sale de aquí: los precios ya vienen escritos.
-import type { EstadoIa } from './agente';
+import { textoSinTope, type EstadoIa, type SinTope } from './agente';
 import { mensajeDeError } from './errores';
+import { diaYMes } from './formato';
 import { escuchar } from './pos';
 import { supabase } from './supabase';
 import { bajarDelWorker, llamarWorker } from './worker';
@@ -94,7 +95,7 @@ export type Resultado = {
 export type DatosCrearContenido = {
   de: number;
   quedan: number;
-  // El día en que vuelven los 20 ('2026-11-01').
+  // El día en que vuelven ('2026-11-01').
   vuelve: string;
   ia: EstadoIa;
   restaurante: RestauranteDelAnuncio;
@@ -102,10 +103,20 @@ export type DatosCrearContenido = {
   resultado: Resultado | null;
 };
 
+// El aviso cuando no hay con qué hacer anuncios. Sin IA dice lo mismo que el Agente IA; al llegar a su
+// límite dice que son los anuncios, porque el agente sigue (decidido el 4 de noviembre de 2026).
+export function textoSinAnuncios(e: SinTope): string {
+  if (e.motivo === 'sin_ia') return textoSinTope(e);
+  const vuelven = e.vuelve ? `Vuelven el ${diaYMes(e.vuelve)}` : 'Vuelven el próximo mes';
+  return e.con_distribuidor
+    ? `Llegaste al límite de anuncios de este mes. ${vuelven} o pídele a tu distribuidor que lo suba.`
+    : `Llegaste al límite de anuncios de este mes. ${vuelven} o escríbele a Fragmentless para que lo suba.`;
+}
+
 // Lo que contestan el paso de texto y hacer el anuncio cuando no se puede.
 export type NoSePuede = {
   ok: false;
-  motivo: 'sin_ia' | 'limite' | 'veinte' | 'estilo' | 'haciendo';
+  motivo: 'sin_ia' | 'limite' | 'cupo' | 'estilo' | 'haciendo';
   con_distribuidor?: boolean;
   vuelve?: string | null;
 };

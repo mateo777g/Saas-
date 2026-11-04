@@ -412,7 +412,7 @@
   <Confirmar
     miniatura={{ src: urlFoto(confirmar.anuncio.ruta), alto: Math.round(72 * FORMA[confirmar.anuncio.formato].alto) }}
     titulo="¿Eliminar este anuncio?"
-    texto="Se borra de tu biblioteca y no se puede deshacer. Si ya lo descargaste o lo pusiste en tu menú, eso se queda. No te regresa a tus 20 del mes."
+    texto="Se borra de tu biblioteca y no se puede deshacer. Si ya lo descargaste o lo pusiste en tu menú, eso se queda. No te regresa a tus anuncios del mes."
     boton={{ etiqueta: 'Eliminar', icono: 'eliminar' }}
     textoCargando="Eliminando…"
     confirmar={siEliminar}

@@ -304,7 +304,7 @@
         {/await}
       {/key}
     {:else if vista === 'crear'}
-      <!-- Cada sucursal tiene sus propios 20 anuncios y su menú: se vuelve a abrir desde cero. -->
+      <!-- Cada sucursal tiene sus propios anuncios y su menú: se vuelve a abrir desde cero. -->
       {#key actual.id}
         <CrearContenido sucursal={actual} sucursales={datos.sucursales} alElegir={elegir} alIr={(a) => (vista = a)} />
       {/key}

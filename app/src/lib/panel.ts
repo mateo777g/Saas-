@@ -193,6 +193,11 @@ export type UsoIa = {
   consultas_agente: number;
   saludos: number;
   agente_en_limite: boolean;
+  sobre_anuncios: number;
+  gastado_anuncios: number;
+  anuncios: number;
+  anuncios_caben: number;
+  anuncios_en_limite: boolean;
   sobre_menu: number;
   gastado_menu: number;
   consultas_menu: number;

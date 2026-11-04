@@ -17,7 +17,6 @@
   import CajaError from '../../diseno/CajaError.svelte';
   import Icono from '../../diseno/Icono.svelte';
   import Vidrio from '../../diseno/Vidrio.svelte';
-  import { textoSinTope } from '../../lib/agente';
   import {
     anuncioVisto,
     datosQueVan,
@@ -31,6 +30,7 @@
     pedirPalabras,
     pistaDe,
     sinAcentos,
+    textoSinAnuncios,
     vacioDe,
     type DatosCrearContenido,
     type EstiloDeHoy,
@@ -117,8 +117,9 @@
   const sinIa = $derived(datos && !datos.ia.puede ? datos.ia : null);
   const aviso = $derived.by(() => {
     if (!datos) return null;
-    if (sinIa) return textoSinTope(sinIa);
-    if (datos.quedan <= 0) return `Ya hiciste tus ${datos.de} anuncios de este mes. Vuelven el ${diaYMes(datos.vuelve)}.`;
+    // Si ya hizo los que le caben gana ese aviso, aunque también se haya acabado el dinero.
+    if (datos.de > 0 && datos.quedan <= 0) return `Ya hiciste tus ${datos.de} anuncios de este mes. Vuelven el ${diaYMes(datos.vuelve)}.`;
+    if (sinIa) return textoSinAnuncios(sinIa);
     return null;
   });
 
@@ -314,7 +315,7 @@
       error = YA_NO_ESTA;
       leerEstilos();
     }
-    // Sin IA, el límite, los 20 o uno que ya se hace: lo dice la lectura.
+    // Sin IA, el límite, los que le caben o uno que ya se hace: lo dice la lectura.
     leer();
   }
 
@@ -421,7 +422,7 @@
 <BarraArriba
   titulo="Crear contenido"
   estado={datos
-    ? { texto: `Te quedan ${datos.quedan} de ${datos.de} este mes`, vivo: true, hueco: datos.quedan <= 0 }
+    ? { texto: datos.de > 0 ? `Te quedan ${datos.quedan} de ${datos.de} este mes` : 'Sin anuncios este mes', vivo: true, hueco: datos.quedan <= 0 }
     : { texto: errorLectura ? 'No se pudo leer' : 'Leyendo…', vivo: false }}
 >
   <CajaSucursales {sucursales} actual={sucursal} {alElegir} />

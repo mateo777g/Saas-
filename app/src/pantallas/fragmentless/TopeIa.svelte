@@ -8,6 +8,9 @@
   Con la 6c (maqueta 2UPwZw31WrcYRZkH8jaT1Y, sección 2) cada sobre va en su renglón, con lo gastado
   «de» su parte, y cada uno avisa cuando llega a lo suyo, también sin día (encuesta 19 de
   planes/trabajo/6c/lista-6c.md). Las partes las calcula Postgres: la app nunca divide el tope.
+
+  Con la 7b-3 los anuncios tienen su sobre y su renglón, que siempre dice cuántos caben con este
+  tope (planes/trabajo/7b/sobre-7b3.md).
 -->
 <script lang="ts">
   import { onMount } from 'svelte';
@@ -67,6 +70,10 @@
           <span class="mono">{dolares(u.gastado_agente)} <span class="de">de {dolares(u.sobre_agente)}</span></span>
         </div>
         <div class="fila">
+          <span>Anuncios · {u.anuncios} de {u.anuncios_caben}</span>
+          <span class="mono">{dolares(u.gastado_anuncios)} <span class="de">de {dolares(u.sobre_anuncios)}</span></span>
+        </div>
+        <div class="fila">
           <span>
             Asistente del menú · {u.consultas_menu || u.gastado_menu > 0
               ? plural(u.consultas_menu, 'pregunta', 'preguntas')
@@ -81,13 +88,16 @@
       {#if u.agente_en_limite}
         <Aviso>El Agente IA llegó a sus {dolares(u.sobre_agente)}. Vuelve el {vuelve}, o antes si le subes el tope.</Aviso>
       {/if}
+      {#if u.anuncios_en_limite}
+        <Aviso>Los anuncios llegaron a sus {dolares(u.sobre_anuncios)}. Vuelven el {vuelve}, o antes si le subes el tope.</Aviso>
+      {/if}
       {#if u.menu_en_limite}
         <Aviso>El asistente del menú llegó a sus {dolares(u.sobre_menu)}. Vuelve el {vuelve}, o antes si le subes el tope.</Aviso>
       {/if}
       <Campo id="tope-ia" etiqueta="TOPE AL MES (USD)" tipo="number" bind:valor min={0} step={0.01} modoTeclado="decimal" />
       <p class="pista">
-        De 0 a 10 dólares. En 0 no tiene IA. La quinta parte es para el asistente del menú y el resto para el
-        Agente IA. Cada uno se pausa hasta el {vuelve} al gastar lo suyo.
+        De 0 a 10 dólares. En 0 no tiene IA. Una quinta parte es para el asistente del menú, dos para los anuncios y
+        dos para el Agente IA. Cada uno se pausa hasta el {vuelve} al gastar lo suyo.
       </p>
       <p class="pista">
         {u.distribuidor

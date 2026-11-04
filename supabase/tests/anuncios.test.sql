@@ -542,9 +542,9 @@ select tests.authenticate_as('don_chuy');
 
 select is(
   public.crear_contenido('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa') - 'productos' - 'restaurante',
-  jsonb_build_object('de', 20, 'quedan', 20, 'vuelve', tests.vuelve(), 'ia', jsonb_build_object('puede', true),
+  jsonb_build_object('de', 40, 'quedan', 40, 'vuelve', tests.vuelve(), 'ia', jsonb_build_object('puede', true),
                      'resultado', null),
-  'Al entrar: Te quedan 20 de 20, vuelven el 1 del mes que viene, la IA puede y «Resultado» vacío'
+  'Al entrar: Te quedan 40 de 40, vuelven el 1 del mes que viene, la IA puede y «Resultado» vacío'
 );
 
 select is(
@@ -753,8 +753,8 @@ select is(
 
 select is(
   public.crear_contenido('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa') ->> 'quedan',
-  '19',
-  'El que se está haciendo ya cuenta: Te quedan 19 de 20'
+  '39',
+  'El que se está haciendo ya cuenta: Te quedan 39 de 40'
 );
 
 select is(
@@ -991,8 +991,8 @@ select is(
 );
 select is(
   public.crear_contenido('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa') ->> 'quedan',
-  '19',
-  'Ya salió: sigue contando uno, Te quedan 19'
+  '39',
+  'Ya salió: sigue contando uno, Te quedan 39'
 );
 
 select tests.authenticate_as('marcos');
@@ -1082,8 +1082,8 @@ select is(
 select tests.authenticate_as('don_chuy');
 select is(
   public.crear_contenido('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa') ->> 'quedan',
-  '19',
-  'No contó: Te quedan 19'
+  '39',
+  'No contó: Te quedan 39'
 );
 select is(
   (public.crear_contenido('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa') -> 'resultado') - 'segundos' - 'productos' - 'estilo_id',
@@ -1137,7 +1137,7 @@ select ok(
   and (tests.anuncio(tests.id('tercero'))).vence = tests.hoy() + 29,
   'Con cuándo se soltó y su día de vencer, como cualquier otro'
 );
-select is(public.crear_contenido('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa') ->> 'quedan', '19', 'Y suelta su lugar: Te quedan 19');
+select is(public.crear_contenido('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa') ->> 'quedan', '39', 'Y suelta su lugar: Te quedan 39');
 
 select tests.como_worker();
 select is(
@@ -1261,15 +1261,15 @@ select is((tests.anuncio(tests.id('atorado_3'))).motivo, 'no_salio',
           'Pasados los 15 minutos ya era «no salió», aunque OpenAI lo rechazara después');
 
 
--- ─── Los 20 del mes ───────────────────────────────────────────────────────────
+-- ─── Los anuncios del mes ───────────────────────────────────────────────────────────
 
 reset role;
-update public.uso_ia set anuncios = 19
+update public.uso_ia set anuncios = 39
 where restaurante_id = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'
   and mes = date_trunc('month', (now() at time zone 'America/Mexico_City')::date)::date;
 
 select tests.authenticate_as('don_chuy');
-select is(public.crear_contenido('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa') ->> 'quedan', '1', 'Con 19 hechos, le queda 1');
+select is(public.crear_contenido('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa') ->> 'quedan', '1', 'Con 39 hechos, le queda 1');
 select is(
   tests.apartar('sexto', 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 'clasico', 'post', array[501], null, null, true, null) - 'anuncio_id',
   '{"ok": true}'::jsonb,
@@ -1288,29 +1288,30 @@ select is(
                           'restaurantes/aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa/biblioteca/' || repeat('e', 32) || '.jpg',
                           'gpt-image-2.5-sunburst', 0, 0, 0) ->> 'ok',
   'true',
-  'Sale el vigésimo'
+  'Sale el último'
 );
 
 select tests.authenticate_as('don_chuy');
 select is(
   tests.apartar(null, 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 'clasico', 'post', array[501], null, null, true, null),
-  jsonb_build_object('ok', false, 'motivo', 'veinte', 'vuelve', tests.vuelve()),
-  'Con los 20 hechos: «Ya hiciste tus 20 anuncios de este mes. Vuelven el 1 de noviembre.»'
+  jsonb_build_object('ok', false, 'motivo', 'cupo', 'vuelve', tests.vuelve()),
+  'Con los 40 hechos: «Ya hiciste tus 40 anuncios de este mes. Vuelven el 1 de diciembre.»'
 );
 select is(
   public.datos_para_anuncio('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', tests.e('clasico'), array[501]::bigint[]) ->> 'ok',
   'true',
-  'El paso de texto no revisa los 20, como en la maqueta'
+  'El paso de texto no revisa los del mes, como en la maqueta'
 );
 
 reset role;
-update public.uso_ia set anuncios = 25
+update public.uso_ia set anuncios = 45
 where restaurante_id = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'
   and mes = date_trunc('month', (now() at time zone 'America/Mexico_City')::date)::date;
 select tests.authenticate_as('don_chuy');
 select is(public.crear_contenido('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa') ->> 'quedan', '0', '«Te quedan» nunca baja de 0');
 
 reset role;
+update public.restaurantes set tope_ia_usd_mes = 5 where id = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
 insert into public.uso_ia (restaurante_id, mes, anuncios)
 values ('bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
         (date_trunc('month', (now() at time zone 'America/Mexico_City')::date) - interval '1 month')::date, 20);
@@ -1320,9 +1321,12 @@ select is(
   '20',
   'Los del mes pasado no cuentan: el mes es el del calendario'
 );
+reset role;
+update public.restaurantes set tope_ia_usd_mes = 0 where id = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
+select tests.authenticate_as('gerente_b');
 
 
--- ─── El sobre: hasta la 7b-3, la parte del agente ─────────────────────────────
+-- ─── El sobre: cada uno por su lado ─────────────────────────────
 
 reset role;
 update public.uso_ia set anuncios = 2, costo_agente_usd = 0, costo_anuncios_usd = 0
@@ -1342,7 +1346,7 @@ select is(
         (tests.uso('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa')).consultas_agente::numeric,
         (tests.uso('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa')).saludos::numeric],
   array[2, 0.0008, 0, 0, 0]::numeric[],
-  'Va al sobre de los anuncios y no cuenta en los 20 ni como pregunta'
+  'Va al sobre de los anuncios y no cuenta en los del mes ni como pregunta'
 );
 select is(
   (public.anotar_uso_ia('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 'pregunta', 'gpt-5.6-luna', 0, 0, 0, 0) ->> 'puede'),
@@ -1358,23 +1362,23 @@ select tests.authenticate_as('don_chuy');
 select is(
   public.crear_contenido('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa') -> 'ia',
   '{"puede": true}'::jsonb,
-  'Con 10 dólares, la parte del agente es 8: con 7.99 gastados entre el agente y los anuncios, todavía puede'
+  'Con 10 dólares, los anuncios tienen 4: con 3.99 gastados todavía pueden, aunque el agente ya gastó sus 4'
 );
 
 reset role;
-update public.uso_ia set costo_anuncios_usd = 4
+update public.uso_ia set costo_agente_usd = 0, costo_anuncios_usd = 4
 where restaurante_id = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'
   and mes = date_trunc('month', (now() at time zone 'America/Mexico_City')::date)::date;
 select tests.authenticate_as('don_chuy');
 select is(
   public.crear_contenido('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa') -> 'ia',
   jsonb_build_object('puede', false, 'motivo', 'limite', 'con_distribuidor', false, 'vuelve', tests.vuelve()),
-  'Con 8 gastados entre los dos, «Crear contenido» dice que llegó al límite'
+  'Con sus 4 gastados, «Crear contenido» dice que llegó al límite'
 );
 select is(
   public.estado_ia('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'),
-  jsonb_build_object('puede', false, 'motivo', 'limite', 'con_distribuidor', false, 'vuelve', tests.vuelve()),
-  'Y el agente también se pausa: los anuncios gastaron de su parte'
+  '{"puede": true}'::jsonb,
+  'Y el agente sigue: cada sobre se pausa por su lado'
 );
 select is(
   tests.apartar(null, 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 'clasico', 'post', array[501], null, null, true, null),
@@ -1404,9 +1408,10 @@ select tests.authenticate_as('fragmentless');
 select is(
   public.uso_ia_cliente('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa') - 'mes' - 'distribuidor_id' - 'distribuidor'
     - 'sobre_menu' - 'gastado_menu' - 'consultas_menu' - 'menu_en_limite',
-  '{"tope": 10.00, "gastado": 8.0000, "sobre_agente": 8.00, "gastado_agente": 8.0000, "consultas_agente": 1,
-    "saludos": 0, "agente_en_limite": true, "anuncios": 2, "gastado_anuncios": 4.0000}'::jsonb,
-  '«Tope de IA»: el renglón del agente suma los dos, y ya trae cuántos anuncios salieron y cuánto costaron'
+  '{"tope": 10.00, "gastado": 4.0000, "sobre_agente": 4.00, "gastado_agente": 0.0000, "consultas_agente": 1,
+    "saludos": 0, "agente_en_limite": false, "sobre_anuncios": 4.00, "gastado_anuncios": 4.0000, "anuncios": 2,
+    "anuncios_caben": 40, "anuncios_en_limite": true}'::jsonb,
+  '«Tope de IA»: cada sobre con lo suyo, y cuántos anuncios salieron, cuántos caben y cuánto costaron'
 );
 
 

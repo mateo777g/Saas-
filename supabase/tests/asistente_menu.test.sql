@@ -345,8 +345,8 @@ select is(
   array[privado.parte_del_tope(10, 'menu'), privado.parte_del_tope(10, 'agente'),
         privado.parte_del_tope(5, 'menu'), privado.parte_del_tope(5, 'agente'),
         privado.parte_del_tope(7.77, 'menu'), privado.parte_del_tope(7.77, 'agente')],
-  array[2.00, 8.00, 1.00, 4.00, 1.55, 6.22]::numeric[],
-  'El menú tiene la quinta parte del tope y el agente lo demás: con 10, 2 y 8; con 5, 1 y 4; con 7.77, 1.55 y 6.22'
+  array[2.00, 4.00, 1.00, 2.00, 1.55, 3.11]::numeric[],
+  'El menú tiene la quinta parte del tope y el agente lo que le toca: con 10, 2 y 4; con 5, 1 y 2; con 7.77, 1.55 y 3.11'
 );
 
 select is(
@@ -357,9 +357,10 @@ select is(
 );
 
 select ok(
-  (select bool_and(privado.parte_del_tope(t / 100.0, 'menu') + privado.parte_del_tope(t / 100.0, 'agente') = t / 100.0)
+  (select bool_and(privado.parte_del_tope(t / 100.0, 'menu') + privado.parte_del_tope(t / 100.0, 'anuncios')
+                   + privado.parte_del_tope(t / 100.0, 'agente') = t / 100.0)
    from generate_series(0, 1000) as t),
-  'Con cualquier tope de 0 a 10 dólares, las dos partes suman el tope exacto'
+  'Con cualquier tope de 0 a 10 dólares, las tres partes suman el tope exacto'
 );
 
 
@@ -612,25 +613,25 @@ select is(
 );
 reset role;
 
--- Y al revés: el agente gasta sus 8 dólares y el menú tiene otra vez con qué contestar.
-update public.uso_ia set costo_agente_usd = 7.9999, costo_menu_usd = 1.99
+-- Y al revés: el agente gasta sus 4 dólares y el menú tiene otra vez con qué contestar.
+update public.uso_ia set costo_agente_usd = 3.9999, costo_menu_usd = 1.99
 where restaurante_id = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
 
 select tests.authenticate_as('gerente_a');
 select is(
   public.estado_ia('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'),
   '{"puede": true}'::jsonb,
-  'Con $7.9999 de sus 8, el agente todavía puede'
+  'Con $3.9999 de sus 4, el agente todavía puede'
 );
 reset role;
 
-update public.uso_ia set costo_agente_usd = 8 where restaurante_id = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
+update public.uso_ia set costo_agente_usd = 4 where restaurante_id = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
 
 select tests.authenticate_as('gerente_a');
 select is(
   public.estado_ia('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa') ->> 'motivo',
   'limite',
-  'Con sus 8 gastados, el agente se pausa aunque el tope sea de 10: ya no gasta el tope completo'
+  'Con sus 4 gastados, el agente se pausa aunque el tope sea de 10: ya no gasta el tope completo'
 );
 select is(
   public.estado_menu_en_linea('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa') -> 'asistente',
@@ -663,17 +664,19 @@ select is(
 select tests.authenticate_as('fragmentless');
 select is(
   public.uso_ia_cliente('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa') - 'mes',
-  '{"tope": 5.00, "gastado": 9.99, "sobre_agente": 4.00, "gastado_agente": 8.0000, "consultas_agente": 1,
-    "saludos": 0, "agente_en_limite": true, "anuncios": 0, "gastado_anuncios": 0.0000, "sobre_menu": 1.00, "gastado_menu": 1.9900, "consultas_menu": 2,
+  '{"tope": 5.00, "gastado": 5.99, "sobre_agente": 2.00, "gastado_agente": 4.0000, "consultas_agente": 1,
+    "saludos": 0, "agente_en_limite": true, "sobre_anuncios": 2.00, "gastado_anuncios": 0.0000, "anuncios": 0, "anuncios_caben": 20,
+    "anuncios_en_limite": false, "sobre_menu": 1.00, "gastado_menu": 1.9900, "consultas_menu": 2,
     "menu_en_limite": true, "distribuidor_id": null, "distribuidor": null}'::jsonb,
   'La ventana «Tope de IA» trae cada sobre en su renglón: su parte, lo gastado, cuántas preguntas y si llegó a lo suyo'
 );
 select is(
   public.uso_ia_cliente('eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee') - 'mes' - 'distribuidor_id' - 'distribuidor',
-  '{"tope": 7.77, "gastado": 0, "sobre_agente": 6.22, "gastado_agente": 0, "consultas_agente": 0, "saludos": 0,
-    "agente_en_limite": false, "anuncios": 0, "gastado_anuncios": 0, "sobre_menu": 1.55, "gastado_menu": 0, "consultas_menu": 0,
+  '{"tope": 7.77, "gastado": 0, "sobre_agente": 3.11, "gastado_agente": 0, "consultas_agente": 0, "saludos": 0,
+    "agente_en_limite": false, "sobre_anuncios": 3.11, "gastado_anuncios": 0, "anuncios": 0, "anuncios_caben": 31,
+    "anuncios_en_limite": false, "sobre_menu": 1.55, "gastado_menu": 0, "consultas_menu": 0,
     "menu_en_limite": false}'::jsonb,
-  'Con 7.77, 6.22 para el agente y 1.55 para el menú, ya calculados'
+  'Con 7.77, 3.11 para el agente, 3.11 para los anuncios y 1.55 para el menú, ya calculados'
 );
 select is(
   public.uso_ia_cliente('bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb') ->> 'menu_en_limite',

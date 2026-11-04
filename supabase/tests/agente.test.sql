@@ -1149,7 +1149,7 @@ select throws_ok(
   'Va en dólares con centavos'
 );
 select lives_ok(
-  $$ select public.fijar_tope_ia('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 0.02) $$,
+  $$ select public.fijar_tope_ia('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 0.05) $$,
   'Fragmentless le pone 2 centavos de tope a A'
 );
 reset role;
@@ -1217,8 +1217,9 @@ reset role;
 select tests.authenticate_as('fragmentless');
 select is(
   public.uso_ia_cliente('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa') - 'mes',
-  '{"tope": 0.02, "gastado": 0.0200, "sobre_agente": 0.02, "gastado_agente": 0.0200, "consultas_agente": 1,
-    "saludos": 1, "agente_en_limite": true, "anuncios": 0, "gastado_anuncios": 0.0000, "sobre_menu": 0.00, "gastado_menu": 0.0000, "consultas_menu": 0,
+  '{"tope": 0.05, "gastado": 0.0200, "sobre_agente": 0.02, "gastado_agente": 0.0200, "consultas_agente": 1,
+    "saludos": 1, "agente_en_limite": true, "sobre_anuncios": 0.02, "gastado_anuncios": 0.0000, "anuncios": 0, "anuncios_caben": 0,
+    "anuncios_en_limite": false, "sobre_menu": 0.01, "gastado_menu": 0.0000, "consultas_menu": 0,
     "menu_en_limite": false, "distribuidor_id": null, "distribuidor": null}'::jsonb,
   'La ventana «Tope de IA» trae lo gastado este mes, el tope y quién paga'
 );

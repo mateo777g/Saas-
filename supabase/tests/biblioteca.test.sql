@@ -692,8 +692,8 @@ select is(
 select tests.authenticate_as('don_chuy');
 select is(
   public.crear_contenido('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa') ->> 'quedan',
-  '12',
-  'No le regresa a sus 20 del mes: 7 hechos y uno haciéndose, Te quedan 12'
+  '32',
+  'No le regresa a sus 40 del mes: 7 hechos y uno haciéndose, Te quedan 32'
 );
 select is(
   tests.lista(public.mi_biblioteca('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa') -> 'anuncios'),

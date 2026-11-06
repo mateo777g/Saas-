@@ -27,6 +27,7 @@
   --linea-fuerte: rgba(0, 0, 0, 0.18);
   --chip: rgba(0, 0, 0, 0.043);        /* fondo de chips, iconos y el selector */
   --fila-abierta: rgba(0, 0, 0, 0.09);  /* la conversación abierta en la barra de chats */
+  --barrita: #b0b0b0;                  /* la barrita de una mini tabla que no cabe */
   --tinta: #0b0b0b;                    /* lo activo: opción del menú, botón principal */
   --sobre-tinta: #ffffff;
   --sobre-tinta-suave: rgba(255, 255, 255, 0.64); /* el texto chico de la barra de Ocultar varios */
@@ -78,6 +79,7 @@
   --linea-fuerte: rgba(255, 255, 255, 0.2);
   --chip: rgba(255, 255, 255, 0.06);
   --fila-abierta: rgba(255, 255, 255, 0.1);
+  --barrita: #5f5f5f;
   --tinta: #f5f5f2;
   --sobre-tinta: #0b0b0b;
   --sobre-tinta-suave: rgba(0, 0, 0, 0.64);

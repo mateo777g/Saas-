@@ -9,6 +9,7 @@
   alta el primero en Distribuidores.» (decidido el 12 de octubre de 2026).
 -->
 <script lang="ts">
+  import TablaDeslizable from '../../diseno/TablaDeslizable.svelte';
   import BotonCuadro from '../../diseno/BotonCuadro.svelte';
   import Buscador, { type RenglonBusqueda } from '../../diseno/Buscador.svelte';
   import Columnas, { type ItemColumna } from '../../diseno/Columnas.svelte';
@@ -124,28 +125,30 @@
         {:else if distribuidores.length === 0}
           <p class="mensaje">Ningún distribuidor se llama así. Prueba con otro nombre o correo.</p>
         {:else}
-          <table>
-            <thead>
-              <tr>
-                <th class="etiqueta">Nombre</th>
-                <th class="etiqueta">Estado</th>
-                <th class="etiqueta">Correo</th>
-                <th class="etiqueta">Teléfono</th>
-                <th class="etiqueta der">Clientes</th>
-              </tr>
-            </thead>
-            <tbody>
-              {#each distribuidores as d (d.id)}
-                <tr class:apagado={!d.activo}>
-                  <td><span class="persona"><span class="inicial">{d.nombre.charAt(0)}</span><span>{d.nombre}</span></span></td>
-                  <td><span class="estado"><i class:si={d.activo}></i>{d.activo ? 'Activo' : 'De baja'}</span></td>
-                  <td class="correo" title={d.correo ?? undefined}>{d.correo ?? '—'}</td>
-                  <td class="telefono">{d.telefono ?? '—'}</td>
-                  <td class="der">{d.clientes}</td>
+          <TablaDeslizable>
+            <table>
+              <thead>
+                <tr>
+                  <th class="etiqueta">Nombre</th>
+                  <th class="etiqueta">Estado</th>
+                  <th class="etiqueta">Correo</th>
+                  <th class="etiqueta">Teléfono</th>
+                  <th class="etiqueta der">Clientes</th>
                 </tr>
-              {/each}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {#each distribuidores as d (d.id)}
+                  <tr class:apagado={!d.activo}>
+                    <td><span class="persona"><span class="inicial">{d.nombre.charAt(0)}</span><span class="nombre" title={d.nombre}>{d.nombre}</span></span></td>
+                    <td><span class="estado"><i class:si={d.activo}></i>{d.activo ? 'Activo' : 'De baja'}</span></td>
+                    <td class="correo" title={d.correo ?? undefined}>{d.correo ?? '—'}</td>
+                    <td class="telefono">{d.telefono ?? '—'}</td>
+                    <td class="der">{d.clientes}</td>
+                  </tr>
+                {/each}
+              </tbody>
+            </table>
+          </TablaDeslizable>
         {/if}
 
         <div class="pie">
@@ -368,6 +371,14 @@
   }
 
   .telefono {
+    white-space: nowrap;
+  }
+
+  /* En un renglón y con «…», como el correo. */
+  .nombre {
+    max-width: 110px;
+    overflow: hidden;
+    text-overflow: ellipsis;
     white-space: nowrap;
   }
 

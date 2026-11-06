@@ -5,6 +5,7 @@
   Vendido, las cerradas de hoy. Todo lo cuenta tus_meseros; aquí solo se pinta, en el orden que dio Postgres.
 -->
 <script lang="ts">
+  import TablaDeslizable from '../../../diseno/TablaDeslizable.svelte';
   import Icono from '../../../diseno/Icono.svelte';
   import { pesos, plural } from '../../../lib/formato';
   import type { TusMeseros } from '../../../lib/reportes';
@@ -46,31 +47,33 @@
   {:else if !lectura.datos.personas.length}
     <p class="mensaje">Todavía no tienes meseros. Dalos de alta en Empleados.</p>
   {:else}
-    <table>
-      <thead>
-        <tr>
-          <th class="etiqueta">Mesero</th>
-          <th class="etiqueta der">Mesas</th>
-          <th class="etiqueta der">Ventas</th>
-          <th class="etiqueta der">Vendido</th>
-        </tr>
-      </thead>
-      <tbody>
-        {#each lectura.datos.personas as p (p.miembro_id)}
+    <TablaDeslizable>
+      <table>
+        <thead>
           <tr>
-            <td>
-              <span class="persona">
-                <span class="inicial">{p.nombre.charAt(0).toUpperCase()}</span>
-                <span>{p.nombre}<span class="rol">{rol(p.roles)}</span></span>
-              </span>
-            </td>
-            <td class="der" class:cero={!p.abiertas}>{p.abiertas}</td>
-            <td class="der" class:cero={!p.ventas}>{p.ventas}</td>
-            <td class="der" class:cero={!p.vendido}>{pesos(p.vendido)}</td>
+            <th class="etiqueta">Mesero</th>
+            <th class="etiqueta der">Mesas</th>
+            <th class="etiqueta der">Ventas</th>
+            <th class="etiqueta der">Vendido</th>
           </tr>
-        {/each}
-      </tbody>
-    </table>
+        </thead>
+        <tbody>
+          {#each lectura.datos.personas as p (p.miembro_id)}
+            <tr>
+              <td>
+                <span class="persona">
+                  <span class="inicial">{p.nombre.charAt(0).toUpperCase()}</span>
+                  <span><span class="nombre" title={p.nombre}>{p.nombre}</span><span class="rol">{rol(p.roles)}</span></span>
+                </span>
+              </td>
+              <td class="der" class:cero={!p.abiertas}>{p.abiertas}</td>
+              <td class="der" class:cero={!p.ventas}>{p.ventas}</td>
+              <td class="der" class:cero={!p.vendido}>{pesos(p.vendido)}</td>
+            </tr>
+          {/each}
+        </tbody>
+      </table>
+    </TablaDeslizable>
   {/if}
 
   <div class="pie">
@@ -173,6 +176,15 @@
     background: var(--chip);
     font-size: 12px;
     font-weight: 700;
+  }
+
+  /* En un renglón y con «…». Aquí hay más lugar que en «Tus distribuidores». */
+  .nombre {
+    display: block;
+    max-width: 260px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .rol {

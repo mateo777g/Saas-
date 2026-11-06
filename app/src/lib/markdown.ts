@@ -47,8 +47,9 @@ export function acomodar(contenedor: HTMLElement): void {
 export const DESPUES_DEL_ULTIMO = 260;
 
 // Renglón por renglón: cada bloque (y cada punto de una lista) sale 110 ms después del anterior, con el
-// cursor al final del último párrafo que salió. Regresa cuántos salieron.
-export function revelar(contenedor: HTMLElement): number {
+// cursor al final del último párrafo que salió. `alRenglon` avisa cuál va saliendo, salvo con «reducir
+// movimiento». Regresa cuántos salieron.
+export function revelar(contenedor: HTMLElement, alRenglon?: (pieza: HTMLElement) => void): number {
   const conCursor = !matchMedia('(prefers-reduced-motion: reduce)').matches;
   const cursor = document.createElement('span');
   cursor.className = 'cursor';
@@ -57,6 +58,7 @@ export function revelar(contenedor: HTMLElement): number {
     const piezas = bloque.matches('ul, ol') ? [...bloque.children] : [bloque];
     for (const p of piezas) {
       if (conCursor && p.tagName === 'P') setTimeout(() => p.appendChild(cursor), n * 110);
+      if (conCursor && alRenglon) setTimeout(() => alRenglon(p as HTMLElement), n * 110);
       (p as HTMLElement).style.animationDelay = `${n++ * 110}ms`;
       p.classList.add('aparece');
     }

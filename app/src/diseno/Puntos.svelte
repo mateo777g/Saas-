@@ -2,10 +2,11 @@
   Los tres puntos del «Pensando…» (las dos primeras referencias de planes/trabajo/estrella/referencias-cargas.md,
   juntas; maqueta AyS4xUfa5XmDaPJG1iqSgw). Una vuelta dura 3.2 s: brincan en fila uno tras otro, se juntan
   y se funden en uno (el «goo»), se abren en triángulo, giran y vuelven a la fila. Los tres de un solo color,
-  el que manda quien los usa. Con «reducir movimiento» solo laten por turnos.
+  el que manda quien los usa. Con «reducir movimiento» solo laten por turnos. Con `chicos` van al 50 %, 4 px
+  cada punto (el Agente IA; planes/trabajo/rediseno/encuestas-carga.md); el menú en línea los deja como están.
 -->
 <script lang="ts">
-  let { color }: { color: string } = $props();
+  let { color, chicos = false }: { color: string; chicos?: boolean } = $props();
 
   const id = $props.id();
 </script>
@@ -18,7 +19,7 @@
     </filter>
   </defs>
 </svg>
-<span class="puntos" style:filter="url(#{id})" aria-hidden="true">
+<span class="puntos" class:chicos style:filter="url(#{id})" aria-hidden="true">
   <span class="giro">
     <i style:background={color}></i>
     <i style:background={color}></i>
@@ -37,6 +38,13 @@
     width: 30px;
     height: 30px;
     flex: none;
+  }
+
+  /* El filtro va antes de la escala, así que se funden igual. En la página miden 15 × 15. */
+  .puntos.chicos {
+    margin: var(--puntos-arriba, 0) -15px -15px 0;
+    transform: scale(0.5);
+    transform-origin: 0 0;
   }
 
   .giro {

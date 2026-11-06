@@ -1,7 +1,8 @@
 <!--
   «Pensando…» (maqueta AyS4xUfa5XmDaPJG1iqSgw): los puntos en la orilla, el texto con su brillo que corre,
   los segundos a la derecha (el menú en línea no los lleva) y, debajo, los pasos. Lo usan el Agente IA y
-  el asistente del menú; el menú cambia los colores con --pensando-*.
+  el asistente del menú; el menú cambia los colores con --pensando-*. Con `chicos`, los puntos van a la mitad
+  (el Agente IA; planes/trabajo/rediseno/encuestas-carga.md).
 -->
 <script lang="ts">
   import type { Paso } from '../lib/pasos';
@@ -13,14 +14,15 @@
     pasos,
     color,
     segundos = null,
-  }: { texto: string; pasos: Paso[]; color: string; segundos?: number | null } = $props();
+    chicos = false,
+  }: { texto: string; pasos: Paso[]; color: string; segundos?: number | null; chicos?: boolean } = $props();
 
   const ultimo = $derived(pasos.at(-1));
   const paraElLector = $derived(ultimo ? `${texto} ${ultimo.hecho ? ultimo.listo : ultimo.texto}` : texto);
 </script>
 
-<div class="piensa" role="status" aria-label={paraElLector}>
-  <Puntos {color} />
+<div class="piensa" class:chicos role="status" aria-label={paraElLector}>
+  <Puntos {color} {chicos} />
   <div class="cuerpo">
     <div class="cabeza">
       <span class="brillo">{texto}</span>
@@ -36,6 +38,11 @@
     gap: var(--pensando-hueco, 12px);
     flex: none;
     max-width: 620px;
+  }
+
+  /* Al centro del renglón de 30 px, que es lo que medían los puntos grandes. */
+  .piensa.chicos {
+    --puntos-arriba: 7.5px;
   }
 
   .cuerpo {

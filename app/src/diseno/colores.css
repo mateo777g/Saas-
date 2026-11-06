@@ -37,6 +37,23 @@
   --estrella-3: #ff9c32;
   --estrella-4: #ffdea8;
   --punto-panel: #e8612a;              /* los puntos del «Pensando…» */
+  --pensando-acento: var(--acento);    /* el icono del paso que va corriendo */
+  --mandar: var(--tinta);              /* el botón de mandar del agente: negro en claro */
+  --sobre-mandar: var(--sobre-tinta);
+  --burbuja: rgba(0, 0, 0, 0.08);      /* la burbuja de la pregunta en el agente */
+  /* La línea de colores bajo la frase del agente y las chispas que suelta su punta. */
+  --raya: linear-gradient(90deg, transparent, hsl(240, 55%, 55%) 14%, hsl(262, 55%, 56%) 26%, hsl(327, 50%, 54%) 40%, hsl(5, 62%, 58%) 52%, hsl(22, 72%, 56%) 63%, hsl(42, 75%, 52%) 74%, #fffaf0 88%, #fffaf0 100%);
+  --chispa: #fffaf0;
+  --chispa-2: #ffffff;
+  /* El brillo detrás de la caja del agente: en claro, capas rectas (azul, lila, rosa, durazno y naranja fuerte) recortadas con la forma del oscuro. */
+  --brillo-opacidad: 0.65;
+  --brillo-capas:
+    radial-gradient(ellipse 280px 185px at 595px 364px, rgba(255, 255, 255, 0.45), transparent),
+    linear-gradient(to bottom, rgb(148, 201, 233) 140px, rgb(172, 192, 226) 260px, rgb(202, 179, 214) 380px, rgb(226, 176, 207) 470px, rgb(238, 174, 202) 540px, rgb(243, 172, 165) 640px, rgb(245, 170, 120) 720px, rgb(245, 160, 80) 790px, rgb(245, 130, 40) 860px, rgb(245, 100, 15) 930px);
+  --brillo-mascara:
+    radial-gradient(ellipse 420px 300px at 1007px 394px, rgba(0, 0, 0, 0.405), rgba(0, 0, 0, 0.27) 40%, rgba(0, 0, 0, 0.08) 75%, transparent),
+    radial-gradient(ellipse 560px 420px at 770px 520px, rgba(0, 0, 0, 0.19), rgba(0, 0, 0, 0.135) 40%, rgba(0, 0, 0, 0.054) 75%, transparent),
+    radial-gradient(ellipse 650px 330px at 770px 657px, rgba(0, 0, 0, 0.934), rgba(0, 0, 0, 0.883) 12.5%, rgba(0, 0, 0, 0.772) 25%, rgba(0, 0, 0, 0.635) 37.5%, rgba(0, 0, 0, 0.459) 50%, rgba(0, 0, 0, 0.27) 62.5%, rgba(0, 0, 0, 0.135) 75%, rgba(0, 0, 0, 0.062) 87.5%, transparent);
 }
 
 :root[data-tema='oscuro'] {
@@ -69,7 +86,22 @@
   --estrella-2: #1f5ef0;
   --estrella-3: #4fa3ff;
   --estrella-4: #9fe6ff;
-  --punto-panel: #1854e8;
+  --punto-panel: #4fa3ff;              /* azul claro: el oscuro casi no se veía sobre negro */
+  --pensando-acento: #4fa3ff;
+  --mandar: var(--acento);             /* y azul en oscuro */
+  --sobre-mandar: var(--sobre-acento);
+  --burbuja: rgba(255, 255, 255, 0.1);
+  --raya: linear-gradient(90deg, transparent, var(--estrella-2) 18%, var(--estrella-3) 48%, var(--estrella-4) 76%, var(--estrella-4) 100%);
+  --chispa: var(--estrella-4);
+  --chispa-2: #ffffff;
+  /* En oscuro, el azul medido del video de Gemini del developer, con una sombra arriba a la izquierda. */
+  --brillo-opacidad: 1;
+  --brillo-capas:
+    radial-gradient(ellipse 280px 185px at 595px 364px, rgba(0, 0, 0, 0.45), transparent),
+    radial-gradient(ellipse 420px 300px at 1007px 394px, rgba(19, 85, 232, 0.15), rgba(19, 85, 232, 0.1) 40%, rgba(19, 85, 232, 0.03) 75%, transparent),
+    radial-gradient(ellipse 560px 420px at 770px 520px, rgba(19, 85, 232, 0.07), rgba(19, 85, 232, 0.05) 40%, rgba(19, 85, 232, 0.02) 75%, transparent),
+    radial-gradient(ellipse 650px 330px at 770px 657px, rgba(19, 85, 232, 0.346), rgba(19, 85, 232, 0.327) 12.5%, rgba(19, 85, 232, 0.286) 25%, rgba(19, 85, 232, 0.235) 37.5%, rgba(19, 85, 232, 0.17) 50%, rgba(19, 85, 232, 0.1) 62.5%, rgba(19, 85, 232, 0.05) 75%, rgba(19, 85, 232, 0.023) 87.5%, transparent);
+  --brillo-mascara: none;
 }
 
 /* Iguales en los dos temas. */

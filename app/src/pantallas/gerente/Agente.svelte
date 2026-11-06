@@ -1,13 +1,14 @@
 <!--
-  El Agente IA del gerente (libreta 1; rediseño del 5 de noviembre de 2026, encuestas 17 a 22; maqueta
-  V64Pv4gmANPRZuJW5hTe5D). Tranquilo, como Claude: la vista entra en blanco y al picarle a un espacio vacío
-  del fondo sale la ondita.
-  - la bienvenida, al centro de la pantalla: el saludo por la hora con su nombre y la fecha (las da Postgres,
-    nunca el reloj del aparato), en grande el renglón que escribe la IA (el de reserva, para que salga al
-    instante; si no hay, el local, sin aviso) con su última palabra subrayada, la caja, las 3 ideas y el
-    candado. Al pasar sobre una idea cambia el texto de la caja; al picarla, se escribe. Lo que se le manda
-    al agente es su prompt largo, no lo que se ve;
-  - la conversación: cada pregunta en su globo gris y cada respuesta en Markdown, renglón por renglón, con
+  El Agente IA del gerente (libreta 1; rediseño del 6 de noviembre de 2026, maqueta Cu768ereKMYRaYhhaAyMb4 y
+  planes/trabajo/rediseno/pildora-agente.md). Tranquilo, como Claude:
+  - la bienvenida, sin saludo ni fecha: primero el fondo normal con la píldora, luego el brillo detrás de ella y
+    luego sube, en grande, el renglón que escribe la IA (el de reserva, para que salga al instante; si no hay,
+    el local, sin aviso), con la línea de colores y las chispas en su última palabra. Las 3 ideas ya guardan su
+    lugar y salen en fila al abrir la caja: al pasar sobre una cambia el texto de la caja; al picarla, se
+    escribe, y la caja no se cierra. Lo que se le manda al agente es su prompt largo, no lo que se ve. El
+    candado va hasta abajo, a la misma altura que en la conversación;
+  - la conversación, 20 px adentro de la caja por cada lado (planes/trabajo/rediseno/encuestas-carga.md): cada
+    pregunta en su globo gris y cada respuesta en Markdown, renglón por renglón, con
     «Lo que leí» debajo de cada una, en palabras, como lo mandó cada herramienta de Postgres. La caja se
     queda fija abajo.
   Cada número de una respuesta sale de una herramienta de Postgres: aquí no se cuenta nada.
@@ -50,25 +51,22 @@
     type Turno,
   } from '../../lib/agente';
   import { esDeRed, SIN_CONEXION } from '../../lib/errores';
-  import { diaConNombre, saludoPorHora } from '../../lib/formato';
+  import { saludoPorHora } from '../../lib/formato';
   import type { Sucursal } from '../../lib/gerente';
   import { prepararReporte, tituloDelPedido, type PeriodoReporte } from '../../lib/reporte';
   import CajaSucursales from './CajaSucursales.svelte';
   import ArchivoReporte from './agente/ArchivoReporte.svelte';
   import CajaPregunta from './agente/CajaPregunta.svelte';
   import Historial from './agente/Historial.svelte';
-  import Ondita from './agente/Ondita.svelte';
   import Respuesta from './agente/Respuesta.svelte';
 
   let {
     sucursal,
     sucursales,
-    nombre,
     alElegir,
   }: {
     sucursal: Sucursal;
     sucursales: Sucursal[];
-    nombre: string;
     alElegir: (sucursal: Sucursal) => void;
   } = $props();
 
@@ -105,17 +103,13 @@
   let vista = $state<HTMLElement | null>(null);
   let abajo = $state<HTMLDivElement | null>(null);
   let caja = $state<{ enfocar: () => void; medir: () => DOMRect | null } | null>(null);
-  let ondita = $state<{ picar: (e: MouseEvent) => void } | null>(null);
+  // La caja de la bienvenida: abierta, salen las ideas. En la conversación, la caja lleva la suya.
+  let cajaAbierta = $state(false);
+  let bienvenida = $state<HTMLDivElement | null>(null);
 
   const sinTope = $derived(estado && !estado.puede ? estado : null);
   const ocupado = $derived(pendiente !== null || reporteEnCamino !== null);
   const pensandoAqui = $derived(pendiente !== null && pendiente.id === actual?.id);
-
-  // La fecha va en minúscula después del nombre: «Buenas tardes, Don Chuy · jueves 5 de noviembre».
-  const linea1 = $derived.by(() => {
-    const dia = diaConNombre(sucursal.hoy);
-    return `${saludoPorHora(sucursal.hora)}, ${nombre} · ${dia.charAt(0).toLowerCase()}${dia.slice(1)}`;
-  });
 
   // Siempre la última palabra, porque la frase la escribe la IA y cambia.
   const frase = $derived.by(() => {
@@ -129,12 +123,6 @@
       ? 'Siempre tengo a la mano tu menú, tus mesas y las cuentas abiertas ahora. Las sumas las hace el panel, no la IA.'
       : `Siempre tengo a la mano tu menú, tus mesas y las cuentas abiertas ahora. Tu día se cuenta de ${corte}:00 a ${corte}:00, y las sumas las hace el panel, no la IA.`,
   );
-
-  // La ondita sale solo en lo vacío del fondo.
-  function alPicar(e: MouseEvent) {
-    if ((e.target as Element).closest('button, textarea, input, a, .caja-pregunta, .idea, .burbuja, .respuesta, .piensa, .error, .abajo')) return;
-    ondita?.picar(e);
-  }
 
   // La pregunta queda hasta arriba: la respuesta se lee desde su principio (como en Flet).
   async function irALaPregunta() {
@@ -362,6 +350,7 @@
     detenida = null;
     nueva = null;
     valor = '';
+    cajaAbierta = false;
     placeholder = PH_BIENVENIDA;
     vista?.scrollTo({ top: 0 });
   }
@@ -400,54 +389,70 @@
 </BarraArriba>
 
 <main class="vista" bind:this={vista}>
-  <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_noninteractive_element_interactions -->
-  <section class="agente" aria-label="Agente IA" onclick={alPicar}>
-    <Ondita bind:this={ondita} />
-
+  <section class="agente" aria-label="Agente IA">
     {#if !actual}
       {#if listo}
-        <div class="bienvenida">
-          <div class="linea1">{linea1}</div>
-          <h1>{frase.inicio}<span class="subrayada">{frase.ultima}</span></h1>
+        <div class="bienvenida" class:abierta={cajaAbierta || !!sinTope} bind:this={bienvenida}>
+          <h1>
+            {frase.inicio}<span class="subrayada"
+              >{frase.ultima}<span class="chispas" aria-hidden="true"
+                ><span class="chispas-van"
+                  ><i style="--d: 0s; --x: -5px; --y: -8px"></i><i style="--d: 0.08s; --x: -11px; --y: -4px"></i><i
+                    style="--d: 0.16s; --x: -3px; --y: -11px"
+                  ></i><i style="--d: 0.24s; --x: -13px; --y: 3px"></i><i style="--d: 0.32s; --x: -7px; --y: -6px"></i><i
+                    style="--d: 0.4s; --x: -4px; --y: 5px"
+                  ></i><i style="--d: 0.48s; --x: -15px; --y: -9px"></i></span
+                ></span
+              ></span
+            >
+          </h1>
 
-          <CajaPregunta
-            bind:this={caja}
-            modo="bienvenida"
-            bind:valor
-            {placeholder}
-            {ocupado}
-            aviso={sinTope ? textoSinTope(sinTope) : null}
-            alEnviar={enviarLoEscrito}
-            alReporte={pedirReporte}
-          />
-
-          <div class="etiqueta ideas-titulo">Ideas para ti</div>
-          <div class="ideas">
-            {#each IDEAS as idea, i (idea.titulo)}
-              <button
-                type="button"
-                class="idea"
-                disabled={!!sinTope || ocupado}
-                onclick={() => usarIdea(i)}
-                onmouseenter={() => (placeholder = idea.frase)}
-                onmouseleave={() => (placeholder = PH_BIENVENIDA)}
-              >
-                <span class="idea-cabeza">
-                  <span class="cuadro-icono"><Icono nombre={idea.icono} tamano={18} /></span>
-                  <Icono nombre="r-derecha" tamano={14} />
-                </span>
-                <span>
-                  <b>{idea.titulo}</b>
-                  <span class="idea-texto">{idea.texto}</span>
-                </span>
-              </button>
-            {/each}
+          <div class="caja-zona">
+            <div class="brillo" aria-hidden="true"></div>
+            <CajaPregunta
+              bind:this={caja}
+              modo="bienvenida"
+              bind:valor
+              bind:abierta={cajaAbierta}
+              zona={bienvenida}
+              {placeholder}
+              {ocupado}
+              aviso={sinTope ? textoSinTope(sinTope) : null}
+              alEnviar={enviarLoEscrito}
+              alReporte={pedirReporte}
+            />
           </div>
 
-          <div class="candado">
-            <Icono nombre="r-candado" tamano={14} />
-            Solo responde sobre tu negocio. Las cifras salen de tus ventas cerradas.
+          <div class="ideas-zona">
+            <div class="etiqueta ideas-titulo aparece" style="--i: 0">Ideas para ti</div>
+            <div class="ideas">
+              {#each IDEAS as idea, i (idea.titulo)}
+                <button
+                  type="button"
+                  class="idea aparece"
+                  style="--i: {i + 1}"
+                  disabled={!!sinTope || ocupado}
+                  onmousedown={(e) => e.preventDefault()}
+                  onclick={() => usarIdea(i)}
+                  onmouseenter={() => (placeholder = idea.frase)}
+                  onmouseleave={() => (placeholder = PH_BIENVENIDA)}
+                >
+                  <span class="idea-cabeza">
+                    <span class="cuadro-icono"><Icono nombre={idea.icono} tamano={18} /></span>
+                    <Icono nombre="r-derecha" tamano={14} />
+                  </span>
+                  <span>
+                    <b>{idea.titulo}</b>
+                    <span class="idea-texto">{idea.texto}</span>
+                  </span>
+                </button>
+              {/each}
+            </div>
           </div>
+        </div>
+        <div class="candado candado-abajo">
+          <Icono nombre="r-candado" tamano={14} />
+          Solo responde sobre tu negocio. Las cifras salen de tus ventas cerradas.
         </div>
       {/if}
     {:else}
@@ -484,10 +489,10 @@
         {/each}
         {#if pendiente && pendiente.id === actual.id}
           <div class="burbuja">{pendiente.visible}</div>
-          <Pensando texto="Pensando…" {pasos} {segundos} color="var(--punto-panel)" />
+          <Pensando chicos texto="Pensando…" {pasos} {segundos} color="var(--punto-panel)" />
         {:else if reporteEnCamino && reporteEnCamino.id === actual.id}
           <div class="burbuja">{reporteEnCamino.visible}</div>
-          <Pensando texto="Armando tu reporte…" pasos={[]} color="var(--punto-panel)" />
+          <Pensando chicos texto="Armando tu reporte…" pasos={[]} color="var(--punto-panel)" />
         {:else if fallo && fallo.id === actual.id}
           <div class="burbuja">{fallo.visible}</div>
           <div class="error"><CajaError mensaje={fallo.mensaje} /></div>
@@ -526,12 +531,14 @@
     overflow-y: auto;
   }
 
+  /* overflow: clip y no hidden, para que el brillo no la haga crecer sin romper el sticky de .abajo. */
   .agente {
     position: relative;
     min-height: 100%;
     display: flex;
     flex-direction: column;
     font-weight: 400;
+    overflow: clip;
   }
 
   .bienvenida,
@@ -540,37 +547,108 @@
     z-index: 1;
   }
 
+  /* La frase y la píldora van al centro: lo de arriba y lo de abajo miden lo mismo. Las ideas ya ocupan
+     su lugar aunque no se vean, para que nada brinque. */
   .bienvenida {
+    flex: 1;
     width: 100%;
     max-width: 720px;
-    margin: auto;
-    padding: 40px 32px 56px;
+    margin: 0 auto;
+    padding: 40px 32px 16px;
     display: flex;
     flex-direction: column;
     gap: 22px;
   }
 
-  .linea1 {
+  .bienvenida::before {
+    content: '';
+    flex: 1 1 0;
+  }
+
+  .ideas-zona {
+    flex: 1 1 0;
     display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 9px;
-    font-size: 13px;
-    color: var(--suave);
+    flex-direction: column;
+    gap: 22px;
+  }
+
+  /* Las ideas salen en fila cuando la caja ya es rectangular: el título y luego cada tarjeta. Se van juntas. */
+  .aparece {
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(10px) scale(0.97);
+    transition:
+      opacity 0.15s ease,
+      transform 0.15s ease,
+      visibility 0s linear 0.15s;
+  }
+
+  .bienvenida.abierta .aparece {
+    --espera: calc(220ms + var(--i) * 80ms);
+    opacity: 1;
+    visibility: visible;
+    transform: none;
+    transition:
+      opacity 0.35s ease var(--espera),
+      transform 0.45s cubic-bezier(0.175, 0.885, 0.32, 1.275) var(--espera),
+      visibility 0s linear var(--espera);
+  }
+
+  .bienvenida.abierta .idea.aparece:disabled {
+    opacity: 0.45;
+  }
+
+  .caja-zona {
+    position: relative;
+    flex: none;
+  }
+
+  /* El brillo detrás de la caja, a partir de su centro. Sale primero y después sube la frase. Sus colores y
+     su forma están en colores.css. */
+  .brillo {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    z-index: -1;
+    width: 1540px;
+    height: 2400px;
+    margin: -580px 0 0 -770px;
+    pointer-events: none;
+    opacity: var(--brillo-opacidad);
+    transform-origin: 770px 580px;
+    background: var(--brillo-capas);
+    -webkit-mask-image: var(--brillo-mascara);
+    mask-image: var(--brillo-mascara);
+    animation: brillo-entra 0.9s cubic-bezier(0.4, 0, 0.2, 1) 0.45s both;
+  }
+
+  @keyframes brillo-entra {
+    from {
+      opacity: 0;
+      transform: scale(0.8);
+    }
   }
 
   h1 {
-    margin: -10px 0 0;
+    margin: 0;
     text-align: center;
     text-wrap: balance;
     font-size: 34px;
     font-weight: 700;
     letter-spacing: -0.7px;
     line-height: 1.15;
+    animation: frase-sube 0.55s cubic-bezier(0.22, 1, 0.36, 1) 1.05s both;
   }
 
-  /* La última palabra: una raya gris por la que pasa dos veces un brillo con la parte viva del degradado
-     de la estrella; luego la raya se borra. */
+  @keyframes frase-sube {
+    from {
+      opacity: 0;
+      transform: translateY(18px);
+    }
+  }
+
+  /* La última palabra: una raya gris por la que pasa dos veces la línea de colores, que acaba de golpe en su
+     tono más claro; luego la raya se borra. */
   .subrayada {
     position: relative;
     display: inline-block;
@@ -585,7 +663,7 @@
     height: 2.5px;
     border-radius: 2px;
     background:
-      linear-gradient(90deg, transparent, var(--estrella-2) 18%, var(--estrella-3) 48%, var(--estrella-4) 76%, transparent) no-repeat,
+      var(--raya) no-repeat,
       var(--linea-fuerte);
     background-size:
       45% 100%,
@@ -594,8 +672,69 @@
       -85% 0,
       0 0;
     animation:
-      brillo 1.3s ease-in-out 0.35s 2,
-      apagar 0.5s ease 2.95s forwards;
+      brillo 1.3s ease-in-out 1.6s 2,
+      apagar 0.5s ease 4.2s forwards;
+  }
+
+  /* Las chispas: la punta de la línea las va soltando. El punto que las suelta avanza igual que la punta (mismo
+     tiempo y misma curva) y, al pasar el final de la palabra, se recortan. */
+  .chispas {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: -5px;
+    height: 2.5px;
+    pointer-events: none;
+    clip-path: inset(-24px 0 -10px 0);
+  }
+
+  .chispas-van {
+    position: absolute;
+    inset: 0;
+    animation: chispas-van 1.3s ease-in-out 1.6s 2 both;
+  }
+
+  @keyframes chispas-van {
+    from {
+      transform: translateX(-1.75%);
+    }
+    to {
+      transform: translateX(146.75%);
+    }
+  }
+
+  .chispas i {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 2px;
+    height: 2px;
+    border-radius: 50%;
+    background: var(--chispa);
+    box-shadow: 0 0 3px var(--chispa);
+    opacity: 0;
+    animation: chispa 0.55s ease-out calc(1.6s + var(--d)) 5 both;
+  }
+
+  .chispas i:nth-child(even) {
+    width: 1.5px;
+    height: 1.5px;
+    background: var(--chispa-2);
+    box-shadow: 0 0 3px var(--chispa-2);
+  }
+
+  @keyframes chispa {
+    0% {
+      opacity: 0;
+      transform: translate(0, 0) scale(1);
+    }
+    15% {
+      opacity: 1;
+    }
+    100% {
+      opacity: 0;
+      transform: translate(var(--x), var(--y)) scale(0.4);
+    }
   }
 
   @keyframes brillo {
@@ -687,12 +826,19 @@
     color: var(--tenue);
   }
 
+  .candado-abajo {
+    position: relative;
+    z-index: 1;
+    flex: none;
+    padding: 0 32px 16px;
+  }
+
   .chat {
     flex: 1;
     width: 100%;
     max-width: 720px;
     margin: 0 auto;
-    padding: 40px 32px 24px;
+    padding: 40px 52px 24px;
     display: flex;
     flex-direction: column;
     gap: 22px;
@@ -703,8 +849,8 @@
     align-self: flex-end;
     max-width: 80%;
     padding: 10px 16px;
-    border-radius: 18px;
-    background: var(--chip);
+    border-radius: 10px;
+    background: var(--burbuja);
     font-size: 14.5px;
     line-height: 1.5;
     white-space: pre-wrap;
@@ -736,6 +882,21 @@
     .subrayada::after {
       animation: none;
       opacity: 0;
+    }
+
+    .chispas {
+      display: none;
+    }
+
+    .brillo,
+    h1 {
+      animation: none;
+    }
+
+    .aparece,
+    .bienvenida.abierta .aparece {
+      transform: none;
+      transition: none;
     }
   }
 </style>

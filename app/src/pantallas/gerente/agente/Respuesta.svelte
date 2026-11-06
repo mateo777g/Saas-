@@ -2,7 +2,8 @@
   Una respuesta del agente (rediseño del 5 de noviembre de 2026; maqueta V64Pv4gmANPRZuJW5hTe5D; «Pensé 6 s ›»,
   maqueta AyS4xUfa5XmDaPJG1iqSgw): el Markdown en texto plano, con el total en un renglón de texto debajo de
   la tabla. Las tablas llevan los números a la derecha. Una respuesta nueva sale renglón por renglón, con el
-  cursor; las del Historial, enteras. Abajo, «Copiar» (copia el Markdown tal cual), «Lo que leí» (lo que el
+  cursor y los puntitos, que bajan debajo del último renglón y al terminar se van
+  (planes/trabajo/rediseno/encuestas-carga.md); las del Historial, enteras. Abajo, «Copiar» (copia el Markdown tal cual), «Lo que leí» (lo que el
   panel calculó para responder, que se abre debajo; planes/trabajo/rediseno/encuestas-agente.md) y, si la
   pregunta salió de una idea, sus dos seguimientos.
 
@@ -13,6 +14,7 @@
   import Icono from '../../../diseno/Icono.svelte';
   import { ICONOS } from '../../../diseno/iconos';
   import Pildora from '../../../diseno/Pildora.svelte';
+  import Puntos from '../../../diseno/Puntos.svelte';
   import type { Leido } from '../../../lib/agente';
   import { acomodar, DESPUES_DEL_ULTIMO, markdown, revelar } from '../../../lib/markdown';
 
@@ -46,6 +48,10 @@
   let leyendo = $state(false);
   // Los botones salen al terminar de salir el texto, como en Flet.
   let esperaAcciones = $state(0);
+  // Los puntitos mientras sale el texto: empiezan donde estaba el «Pensando…» y bajan con cada renglón.
+  let puntitos = $state<'no' | 'bajan' | 'se-van'>('no');
+  let altoPuntitos = $state<number | null>(null);
+  let bajan = $state<HTMLSpanElement | null>(null);
 
   // svelte-ignore state_referenced_locally
   const animar = nueva;
@@ -54,7 +60,25 @@
     void html;
     if (!cuerpo) return;
     acomodar(cuerpo);
-    if (animar) esperaAcciones = revelar(cuerpo) * 110 + DESPUES_DEL_ULTIMO;
+    if (!animar) return;
+    const conMovimiento = !matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (conMovimiento) puntitos = 'bajan';
+    const espera =
+      revelar(cuerpo, (pieza) => {
+        // Para que el primer renglón también se vea bajar.
+        void bajan?.offsetWidth;
+        altoPuntitos = pieza.offsetTop + pieza.offsetHeight + 8;
+      }) *
+        110 +
+      DESPUES_DEL_ULTIMO;
+    esperaAcciones = espera;
+    if (!conMovimiento) return;
+    const seVan = setTimeout(() => (puntitos = 'se-van'), espera);
+    const fuera = setTimeout(() => (puntitos = 'no'), espera + 150);
+    return () => {
+      clearTimeout(seVan);
+      clearTimeout(fuera);
+    };
   });
 
   async function copiar() {
@@ -69,6 +93,17 @@
 </script>
 
 <div class="respuesta">
+  {#if puntitos !== 'no'}
+    <span
+      class="bajan"
+      class:se-van={puntitos === 'se-van'}
+      style:top={altoPuntitos === null ? null : `${altoPuntitos}px`}
+      aria-hidden="true"
+      bind:this={bajan}
+    >
+      <Puntos chicos color="var(--punto-panel)" />
+    </span>
+  {/if}
   {#if segundos && pasos && (!aviso || pasos.length)}<Pildora texto="Pensé {segundos} s" {pasos} plana />{/if}
   {#if aviso}
     <p class="aviso">{aviso}</p>
@@ -111,6 +146,7 @@
 
 <style>
   .respuesta {
+    position: relative;
     flex: none;
     min-width: 0;
     display: flex;
@@ -118,6 +154,19 @@
     gap: 12px;
     font-size: 14.5px;
     line-height: 1.6;
+  }
+
+  .bajan {
+    position: absolute;
+    left: 0;
+    top: 7.5px;
+    transition:
+      top 0.26s cubic-bezier(0.22, 1, 0.36, 1),
+      opacity 0.15s ease;
+  }
+
+  .bajan.se-van {
+    opacity: 0;
   }
 
   .aviso {

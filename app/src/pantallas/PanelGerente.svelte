@@ -331,7 +331,7 @@
       <!-- El Historial y las ventas son de cada sucursal: cambiar de sucursal abre su bienvenida. -->
       {#key actual.id}
         {#await cargarAgente() then { default: Agente }}
-          <Agente sucursal={actual} sucursales={datos.sucursales} {nombre} alElegir={elegir} />
+          <Agente sucursal={actual} sucursales={datos.sucursales} alElegir={elegir} />
         {:catch error}
           <BarraArriba titulo="Agente IA" estado={{ texto: 'No se pudo abrir', vivo: false }} />
           <main class="cuerpo">

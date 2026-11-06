@@ -1,14 +1,20 @@
 <!--
-  La caja de la pregunta del Agente IA (rediseño del 5 de noviembre de 2026; maqueta V64Pv4gmANPRZuJW5hTe5D):
-  el texto, el «+» con «Reporte en PDF», «Enter envía · Shift+Enter salto» y el botón de mandar, que se
-  prende en el acento cuando hay texto. En la bienvenida abre con dos renglones y en la conversación con
-  uno; crece mientras se escribe, hasta seis.
+  La caja de la pregunta del Agente IA (rediseño del 6 de noviembre de 2026; maqueta Cu768ereKMYRaYhhaAyMb4 y
+  planes/trabajo/rediseno/pildora-agente.md). Es una píldora de 48 px con el «+» a la izquierda del texto y sin
+  botón de mandar. Al picarle o escribir se hace rectangular, con resorte, y crece con lo escrito de 2 a 6
+  renglones, ya sin resorte: abajo lleva el «+», «Enter envía · Shift+Enter salto» y mandar, que se prende con
+  texto. Vuelve a ser píldora si sale vacía, con Esc estando vacía o al mandar. La forma y el movimiento son los
+  del PromptInput de 21st.dev.
+
+  `zona` es donde el foco la mantiene abierta (en la bienvenida, también las ideas); sin ella, la caja misma.
+  `enfocar()` enfoca sin abrir: la píldora se queda y escribir la abre.
 
   Sin tope (`aviso`), en su lugar va el aviso de la libreta de Seguridad, con el icono de info y el «+» a
-  su lado: el reporte no usa IA (planes/trabajo/rediseno/encuestas-agente.md).
+  su lado: el reporte no usa IA (planes/trabajo/rediseno/encuestas-agente.md). Ahí no hay píldora.
 
   Mientras piensa la pregunta de esta conversación (`alDetener`), el botón de mandar es «Detener»
-  (maqueta AyS4xUfa5XmDaPJG1iqSgw). Si piensa la de otra (`ocupado`), la flecha se apaga.
+  (maqueta AyS4xUfa5XmDaPJG1iqSgw) y se ve también en la píldora: es la única forma de detener. Si piensa
+  la de otra (`ocupado`), la flecha se apaga.
 -->
 <script lang="ts">
   import Icono from '../../../diseno/Icono.svelte';
@@ -20,6 +26,8 @@
     placeholder,
     ocupado = false,
     aviso = null,
+    abierta = $bindable(false),
+    zona = null,
     alEnviar,
     alDetener = null,
     alReporte,
@@ -29,26 +37,71 @@
     placeholder: string;
     ocupado?: boolean;
     aviso?: string | null;
+    abierta?: boolean;
+    zona?: HTMLElement | null;
     alEnviar: () => void;
     alDetener?: (() => void) | null;
     alReporte: (periodo: PeriodoReporte) => void;
   } = $props();
 
   const id = $props.id();
-  // Seis renglones de 22.5 px.
-  const ALTO_MAXIMO = 135;
+  // El campo va de dos renglones a seis (de 22.5 px, con su margen), y el pie mide lo mismo siempre.
+  const ALTO_CAMPO = 68;
+  const ALTO_MAXIMO = 160;
+  const ALTO_PIE = 48;
 
+  let caja = $state<HTMLDivElement | null>(null);
   let campo = $state<HTMLTextAreaElement | null>(null);
   let envoltura = $state<HTMLDivElement | null>(null);
   let menuAbierto = $state(false);
+  // Mientras se escribe en la caja ya abierta, crece sin el resorte.
+  let escribiendo = $state(false);
+  let altoCampo = $state<number | null>(null);
+  let desborda = $state(false);
 
-  // Crece con lo escrito, de su alto inicial hasta seis renglones.
+  // Con texto se abre: también cuando una respuesta fallida o detenida vuelve a la caja.
+  $effect(() => {
+    if (valor.trim() && !aviso) abierta = true;
+  });
+
+  // Mide lo escrito sin que se note: el alto del campo se pone en 0 un momento y sin transición.
   $effect(() => {
     void valor;
     const c = campo;
     if (!c) return;
-    c.style.height = 'auto';
-    c.style.height = `${Math.min(c.scrollHeight, ALTO_MAXIMO)}px`;
+    if (!abierta) {
+      escribiendo = false;
+      altoCampo = null;
+      desborda = false;
+      c.scrollTop = 0;
+      return;
+    }
+    const antes = c.style.height;
+    c.style.transition = 'none';
+    c.style.height = '0px';
+    const lleno = c.scrollHeight;
+    c.style.height = antes;
+    void c.offsetHeight;
+    c.style.transition = '';
+    altoCampo = Math.max(ALTO_CAMPO, Math.min(lleno, ALTO_MAXIMO));
+    desborda = lleno > ALTO_MAXIMO;
+  });
+
+  // Vacía, se vuelve píldora cuando el foco sale de su zona; no si solo se fue la ventana.
+  $effect(() => {
+    const lugar = zona ?? caja;
+    if (!lugar) return;
+    const alSalir = (e: FocusEvent) => {
+      if (valor.trim()) return;
+      if (e.relatedTarget instanceof Node && lugar.contains(e.relatedTarget)) return;
+      if (document.activeElement === campo) return;
+      // El navegador también avisa mientras Svelte quita la caja de la pantalla: ahí ya no hay nada que cerrar.
+      queueMicrotask(() => {
+        if (lugar.isConnected) abierta = false;
+      });
+    };
+    lugar.addEventListener('focusout', alSalir);
+    return () => lugar.removeEventListener('focusout', alSalir);
   });
 
   $effect(() => {
@@ -67,11 +120,44 @@
     };
   });
 
+  function abrir() {
+    abierta = true;
+    campo?.focus();
+  }
+
+  function mandar() {
+    if (ocupado || !valor.trim()) return;
+    alEnviar();
+    abierta = false;
+  }
+
   function alTeclear(e: KeyboardEvent) {
     if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) {
       e.preventDefault();
-      if (!ocupado) alEnviar();
+      mandar();
     }
+    // Con el menú abierto, Esc solo cierra el menú.
+    if (e.key === 'Escape' && !valor.trim() && !menuAbierto) {
+      abierta = false;
+      campo?.blur();
+    }
+  }
+
+  // Picar lo demás de la caja abierta no le quita el foco al texto.
+  function alApretar(e: MouseEvent) {
+    if (!abierta || e.target === campo) return;
+    e.preventDefault();
+    campo?.focus();
+  }
+
+  // En la píldora, el «+» abre la caja con su menú.
+  function picarMas() {
+    if (!abierta && !aviso) {
+      menuAbierto = true;
+      abrir();
+      return;
+    }
+    menuAbierto = !menuAbierto;
   }
 
   function elegir(periodo: PeriodoReporte) {
@@ -85,7 +171,7 @@
 
   // De dónde sale la burbuja de la pregunta al mandarla.
   export function medir(): DOMRect | null {
-    return campo?.getBoundingClientRect() ?? null;
+    return (abierta ? campo : caja)?.getBoundingClientRect() ?? null;
   }
 </script>
 
@@ -97,7 +183,7 @@
       aria-label="Más"
       aria-expanded={menuAbierto}
       disabled={ocupado}
-      onclick={() => (menuAbierto = !menuAbierto)}
+      onclick={picarMas}
     >
       <Icono nombre="r-mas" tamano={18} />
     </button>
@@ -119,7 +205,17 @@
     {@render mas()}
   </div>
 {:else}
-  <div class="caja-pregunta">
+  <!-- svelte-ignore a11y_no_static_element_interactions -->
+  <div
+    class="caja-pregunta"
+    class:pildora={!abierta}
+    class:en-chat={modo === 'chat'}
+    class:escribiendo
+    style:height={altoCampo === null ? null : `${altoCampo + ALTO_PIE}px`}
+    bind:this={caja}
+    onmousedown={alApretar}
+  >
+    <button type="button" class="pildora-texto" tabindex={abierta ? -1 : 0} onclick={abrir}>{placeholder}</button>
     <label for={id} class="solo-lector">Tu pregunta</label>
     <textarea
       {id}
@@ -127,55 +223,135 @@
       bind:value={valor}
       rows={modo === 'chat' ? 1 : 2}
       {placeholder}
+      tabindex={abierta ? 0 : -1}
+      style:height={altoCampo === null ? null : `${altoCampo}px`}
+      style:overflow-y={desborda ? 'auto' : null}
       onkeydown={alTeclear}
+      oninput={() => {
+        if (abierta) escribiendo = true;
+      }}
     ></textarea>
     <div class="caja-pie">
       {@render mas()}
       <span class="hueco"></span>
       <span class="pista">Enter envía · Shift+Enter salto</span>
-      <button
-        type="button"
-        class="mandar"
-        class:parando={!!alDetener}
-        aria-label={alDetener ? 'Detener' : 'Mandar la pregunta'}
-        disabled={alDetener ? false : ocupado || !valor.trim()}
-        onclick={alDetener ?? alEnviar}
-      >
-        <span class="capa flecha"><Icono nombre="r-arriba" tamano={17} /></span>
-        <span class="capa parar"><Icono nombre="detener" tamano={17} /></span>
-      </button>
     </div>
+    <button
+      type="button"
+      class="mandar"
+      class:parando={!!alDetener}
+      aria-label={alDetener ? 'Detener' : 'Mandar la pregunta'}
+      disabled={alDetener ? false : ocupado || !valor.trim()}
+      onclick={alDetener ?? mandar}
+    >
+      <span class="capa flecha"><Icono nombre="r-arriba" tamano={17} /></span>
+      <span class="capa parar"><Icono nombre="detener" tamano={17} /></span>
+    </button>
   </div>
 {/if}
 
 <style>
   .caja-pregunta {
     position: relative;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    padding: 14px 14px 12px 18px;
-    border: 1px solid var(--linea-fuerte);
-    border-radius: 18px;
+    flex: none;
+    width: 100%;
+    max-width: 656px;
+    height: 116px;
+    margin-inline: auto;
+    border: 1px solid var(--borde-tarjeta);
+    border-radius: 24px;
     background: var(--solido);
+    cursor: text;
+    transition:
+      max-width 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275),
+      height 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  }
+
+  .caja-pregunta.escribiendo {
+    transition:
+      max-width 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275),
+      height 0.15s ease-out;
+  }
+
+  .caja-pregunta.pildora {
+    max-width: 440px;
+    height: 48px;
+    overflow: hidden;
+  }
+
+  .caja-pregunta.pildora.en-chat {
+    max-width: 656px;
   }
 
   .caja-pregunta:focus-within {
-    border-color: var(--texto);
+    border-color: var(--linea-fuerte);
+  }
+
+  .pildora-texto {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    display: block;
+    height: 46px;
+    padding: 0 52px 0 48px;
+    border: 0;
+    border-radius: 24px;
+    background: none;
+    color: var(--tenue);
+    font-size: 15px;
+    line-height: 1.5;
+    text-align: left;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    cursor: text;
+    transition:
+      opacity 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275),
+      transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  }
+
+  .pildora-texto:focus-visible {
+    outline-offset: -3px;
+  }
+
+  .caja-pregunta:not(.pildora) .pildora-texto {
+    opacity: 0;
+    transform: translateY(4px) scale(1.05);
+    pointer-events: none;
   }
 
   textarea {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
     width: 100%;
-    min-height: 48px;
-    padding: 2px;
+    height: 68px;
+    padding: 12px 52px 11px 20px;
     border: 0;
     outline: none;
     resize: none;
+    overflow-y: hidden;
     background: none;
     color: var(--texto);
     font: inherit;
     font-size: 15px;
     line-height: 1.5;
+    transition:
+      opacity 0.3s ease-out,
+      transform 0.3s ease-out,
+      height 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  }
+
+  .escribiendo textarea {
+    transition: height 0.15s ease-out;
+  }
+
+  .pildora textarea {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.95);
+    pointer-events: none;
   }
 
   textarea::placeholder {
@@ -184,9 +360,23 @@
   }
 
   .caja-pie {
+    position: absolute;
+    left: 12px;
+    right: 52px;
+    bottom: 7px;
+    height: 32px;
     display: flex;
     align-items: center;
     gap: 12px;
+  }
+
+  /* En la píldora solo se queda el «+», a la izquierda del texto. */
+  .pildora .caja-pie {
+    pointer-events: none;
+  }
+
+  .pildora .mas {
+    pointer-events: auto;
   }
 
   .hueco {
@@ -198,27 +388,50 @@
     font-size: 10.5px;
     color: var(--tenue);
     white-space: nowrap;
+    transition:
+      opacity 0.3s ease,
+      filter 0.3s ease,
+      transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  }
+
+  .pildora .pista {
+    opacity: 0;
+    filter: blur(4px);
+    transform: translateY(8px);
   }
 
   .mandar {
-    position: relative;
-    width: 36px;
-    height: 36px;
-    flex: none;
+    position: absolute;
+    right: 7px;
+    bottom: 7px;
+    width: 32px;
+    height: 32px;
     display: grid;
     place-items: center;
     padding: 0;
     border: 0;
-    border-radius: 10px;
-    background: var(--acento);
-    color: var(--sobre-acento);
-    transition: background 0.15s ease;
+    border-radius: 50%;
+    background: var(--mandar);
+    color: var(--sobre-mandar);
+    transition:
+      background 0.15s ease,
+      opacity 0.3s ease,
+      filter 0.3s ease,
+      transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
   }
 
   .mandar:disabled {
     background: var(--chip);
     color: var(--tenue);
     cursor: default;
+  }
+
+  /* En la píldora no se ve, salvo «Detener». */
+  .pildora .mandar:not(.parando) {
+    opacity: 0;
+    filter: blur(4px);
+    transform: translateY(8px);
+    pointer-events: none;
   }
 
   .capa {
@@ -248,20 +461,20 @@
   }
 
   .mas {
-    width: 34px;
-    height: 34px;
+    width: 32px;
+    height: 32px;
     display: grid;
     place-items: center;
     padding: 0;
-    border: 1px solid var(--linea);
-    border-radius: 10px;
+    border: 0;
+    border-radius: 50%;
     background: none;
     color: var(--suave);
   }
 
   .mas:hover:not(:disabled),
   .mas[aria-expanded='true'] {
-    border-color: var(--linea-fuerte);
+    background: var(--chip);
     color: var(--texto);
   }
 
@@ -282,6 +495,7 @@
     background: var(--solido);
     box-shadow: 0 14px 34px var(--sombra-menu);
     text-align: left;
+    cursor: default;
   }
 
   .menu-mas.arriba {
@@ -323,11 +537,14 @@
     background: var(--chip);
   }
 
+  /* Sin tope: el aviso, rectangular y del alto de su texto. */
   .caja-pregunta.tope {
-    flex-direction: row;
+    height: auto;
+    display: flex;
     align-items: center;
     gap: 14px;
     padding: 14px 14px 14px 18px;
+    cursor: default;
   }
 
   .tope p {
@@ -350,6 +567,12 @@
   }
 
   @media (prefers-reduced-motion: reduce) {
+    .caja-pregunta,
+    .caja-pregunta.escribiendo,
+    .pildora-texto,
+    textarea,
+    .escribiendo textarea,
+    .pista,
     .mandar,
     .capa {
       transition: none;

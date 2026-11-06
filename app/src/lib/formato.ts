@@ -31,15 +31,8 @@ export function mesLargo(iso: string): string {
   return `${MESES_LARGOS[mes - 1]} ${anio}`;
 }
 
-// La fecha de Inicio, como en Flet: '2026-10-10' → 'SÁBADO, 10 DE OCTUBRE'. El día de la
-// semana sale de la misma fecha (que dio Postgres), no del reloj del aparato.
+// El día de la semana sale de la misma fecha (que dio Postgres), no del reloj del aparato.
 const DIAS = ['DOMINGO', 'LUNES', 'MARTES', 'MIÉRCOLES', 'JUEVES', 'VIERNES', 'SÁBADO'];
-
-export function fechaLarga(iso: string): string {
-  const { anio, mes, dia } = partes(iso);
-  const semana = new Date(Date.UTC(anio, mes - 1, dia)).getUTCDay();
-  return `${DIAS[semana]}, ${dia} DE ${MESES_LARGOS[mes - 1].toUpperCase()}`;
-}
 
 // La fecha en palabras, como en la suscripción terminada: '2026-11-08' → '8 de noviembre de 2026';
 // sin fecha, la raya.
@@ -59,6 +52,25 @@ export function diaAnterior(iso: string): string {
 export function diaSiguiente(iso: string): string {
   const { anio, mes, dia } = partes(iso);
   return new Date(Date.UTC(anio, mes - 1, dia + 1)).toISOString().slice(0, 10);
+}
+
+// Unos días después (o antes): sumarDias('2026-11-05', -30) → '2026-10-06'. Cuenta sobre el texto, sin reloj.
+export function sumarDias(iso: string, cuantos: number): string {
+  const { anio, mes, dia } = partes(iso);
+  return new Date(Date.UTC(anio, mes - 1, dia + cuantos)).toISOString().slice(0, 10);
+}
+
+// Cuántos días van de una fecha a otra: diasEntre('2026-11-04', '2026-11-05') → 1.
+export function diasEntre(desde: string, hasta: string): number {
+  const a = partes(desde);
+  const b = partes(hasta);
+  return Math.round((Date.UTC(b.anio, b.mes - 1, b.dia) - Date.UTC(a.anio, a.mes - 1, a.dia)) / 86_400_000);
+}
+
+// '2026-10-06' → '6 oct'.
+export function diaCorto(iso: string): string {
+  const { mes, dia } = partes(iso);
+  return `${dia} ${MESES[mes - 1]}`;
 }
 
 // El día 1 del mes que sigue: '2026-10-01' → '2026-11-01'; diciembre pasa al año que sigue.

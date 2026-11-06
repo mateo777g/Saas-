@@ -2,19 +2,20 @@
   «Pensé 6 s ›» (maqueta AyS4xUfa5XmDaPJG1iqSgw): los pasos de una respuesta, doblados. Sale cerrada y se
   abre para verlos otra vez; no se recuerda abierta. Las conversaciones de antes no la llevan. La usan el
   Agente IA y el asistente del menú, que cambia los colores con --pensando-* y trae su texto en ES / EN.
+  `plana` es la del Agente IA desde el rediseño: el puro texto con su flechita, sin pastilla.
 -->
 <script lang="ts">
   import Icono from './Icono.svelte';
   import ListaPasos from './ListaPasos.svelte';
 
-  let { texto, pasos }: { texto: string; pasos: string[] } = $props();
+  let { texto, pasos, plana = false }: { texto: string; pasos: string[]; plana?: boolean } = $props();
 
   let abierta = $state(false);
   const lista = $derived(pasos.map((texto, clave) => ({ clave, icono: 'check', texto, listo: texto, hecho: true })));
 </script>
 
-<button type="button" class="pildora" aria-expanded={abierta} onclick={() => (abierta = !abierta)}>
-  {texto}<Icono nombre="siguiente" tamano={14} />
+<button type="button" class="pildora" class:plana aria-expanded={abierta} onclick={() => (abierta = !abierta)}>
+  {texto}<Icono nombre={plana ? 'r-derecha' : 'siguiente'} tamano={14} />
 </button>
 {#if abierta}
   <div class="abierta"><ListaPasos pasos={lista} /></div>
@@ -39,6 +40,16 @@
 
   .pildora:hover {
     color: var(--pensando-texto, var(--texto));
+  }
+
+  .plana {
+    height: auto;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: none;
+    font-size: 13px;
+    font-weight: 400;
   }
 
   .pildora :global(svg) {

@@ -1,22 +1,19 @@
 <!--
-  «Mesas ahora» de Inicio, tal cual Flet (home_view._pintar_mesas; maqueta Cortes y reportes
-  7J6LvYWiktRnGxNugbuaoe): las ocupadas primero y después las libres, cada grupo en el orden del
-  catálogo; cinco renglones y abajo cuántas más hay. Lo ocupado y el total salen de mesas_ahora
-  (las cuentas abiertas, contadas por Postgres). Si no se pudo leer, lo dice: nunca un «Disponible»
-  inventado.
+  «Mesas ahora» de Inicio (maqueta V64Pv4gmANPRZuJW5hTe5D): las ocupadas primero, con su puntito verde, y
+  después las libres, cada grupo en el orden del catálogo; seis renglones y abajo cuántas más hay. Lo
+  ocupado y el total salen de mesas_ahora (las cuentas abiertas, contadas por Postgres). Si no se pudo
+  leer, lo dice: nunca un «Disponible» inventado.
 -->
 <script lang="ts">
-  import Boton from '../../../diseno/Boton.svelte';
-  import Vidrio from '../../../diseno/Vidrio.svelte';
-  import { dinero, plural } from '../../../lib/formato';
+  import Icono from '../../../diseno/Icono.svelte';
+  import { pesos, plural } from '../../../lib/formato';
   import type { MesasAhora } from '../../../lib/reportes';
 
   type Lectura = { estado: 'leyendo' } | { estado: 'listo'; datos: MesasAhora } | { estado: 'error'; deRed: boolean };
 
   let { lectura, alAdministrar }: { lectura: Lectura; alAdministrar: () => void } = $props();
 
-  // Como TOPE_MESAS de Flet: cinco renglones; el resto se cuenta abajo.
-  const TOPE = 5;
+  const TOPE = 6;
 
   const vista = $derived.by(() => {
     if (lectura.estado !== 'listo') return null;
@@ -26,18 +23,18 @@
     const restantes = ordenadas.length - visibles.length;
     return {
       visibles,
-      etiqueta: mesas.length ? `${ocupadas} DE ${mesas.length} OCUPADA${ocupadas === 1 ? '' : 'S'}` : '',
+      etiqueta: mesas.length ? `${ocupadas} de ${mesas.length} ocupada${ocupadas === 1 ? '' : 's'}` : '',
       mas: restantes ? `y ${plural(restantes, 'mesa más', 'mesas más')}` : '',
     };
   });
 </script>
 
-<Vidrio como="section" class="tarjeta-mesas-ahora" aria-label="Mesas ahora">
-  <div class="fila-titulo">
-    <span class="titulo-tarjeta">Mesas ahora</span>
-    <span class="etiqueta">{lectura.estado === 'error' ? '—' : (vista?.etiqueta ?? '')}</span>
+<section class="tarjeta" aria-label="Mesas ahora">
+  <div class="cabeza">
+    <b>Mesas ahora</b>
+    <span class="etiqueta resumen">{lectura.estado === 'error' ? '—' : (vista?.etiqueta ?? '')}</span>
   </div>
-  <div class="caja-solida">
+  <div class="lista">
     {#if lectura.estado === 'leyendo'}
       <p class="mensaje">Cargando tus mesas…</p>
     {:else if lectura.estado === 'error'}
@@ -49,112 +46,104 @@
     {:else if vista}
       {#each vista.visibles as m (m.id)}
         {@const libre = m.venta_id === null}
-        <div class="mesa">
-          <span class="marca" class:libre></span>
+        <div class="mesa" class:libre>
+          <span class="marca"></span>
           <span class="nombre">{m.nombre}</span>
-          <span class="estado" class:libre>{libre ? 'Disponible' : 'Ocupada'}</span>
-          <span class="monto" class:libre>{libre || m.total === null ? '—' : dinero(m.total)}</span>
+          <span class="est">{libre ? 'Disponible' : 'Ocupada'}</span>
+          <span class="monto">{libre || m.total === null ? '—' : pesos(m.total)}</span>
         </div>
       {/each}
     {/if}
   </div>
   <div class="pie">
     <span class="nota">{vista?.mas ?? ''}</span>
-    <Boton etiqueta="Administrar mesas" icono="derecha" iconoAlFinal tamano="chico" onclick={alAdministrar} />
+    <button type="button" class="boton-chico" onclick={alAdministrar}>Administrar mesas <Icono nombre="r-derecha" tamano={14} /></button>
   </div>
-</Vidrio>
+</section>
 
 <style>
-  :global(.tarjeta-mesas-ahora) {
-    width: 360px;
-    flex: none;
-    min-height: 0;
-    padding: 20px;
+  .tarjeta {
+    min-width: 0;
     display: flex;
     flex-direction: column;
-    gap: 14px;
+    gap: 12px;
+    padding: 18px;
+    background: var(--solido);
+    border: 1px solid var(--borde-tarjeta);
+    border-radius: 14px;
   }
 
-  .fila-titulo {
+  .cabeza {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     justify-content: space-between;
-    gap: 16px;
+    gap: 12px;
   }
 
-  .titulo-tarjeta {
-    font-size: 14.5px;
+  b {
+    font-size: 15px;
     font-weight: 700;
   }
 
-  .caja-solida {
-    border-radius: 16px;
-    border: 1px solid var(--linea);
-    background: var(--solido);
-    overflow: hidden;
+  .resumen {
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
   }
 
   .mensaje {
     margin: 0;
-    padding: 14px;
     font-size: 13px;
-    font-weight: 500;
+    font-weight: 400;
     line-height: 1.45;
     color: var(--suave);
   }
 
   .mesa {
-    height: 44px;
-    padding: 0 14px;
-    display: flex;
+    height: 36px;
+    display: grid;
+    grid-template-columns: 10px minmax(0, 1fr) auto 96px;
     align-items: center;
     gap: 10px;
     border-bottom: 1px solid var(--linea);
+    font-size: 13.5px;
+    font-weight: 400;
   }
 
-  .mesa:last-child {
+  .mesa:last-of-type {
     border-bottom: 0;
   }
 
   .marca {
     width: 8px;
     height: 8px;
-    flex: none;
-    border-radius: 4px;
-    background: var(--tinta);
+    border-radius: 50%;
+    background: var(--verde);
   }
 
-  .marca.libre {
-    background: transparent;
-    border: 1.5px solid var(--tenue);
+  .mesa.libre .marca {
+    background: var(--linea-fuerte);
   }
 
   .nombre {
-    flex: 1;
-    min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    font-size: 13.5px;
-    font-weight: 600;
   }
 
-  .estado {
-    font-size: 12.5px;
-    font-weight: 500;
+  .est {
+    font-size: 12px;
     color: var(--suave);
   }
 
   .monto {
-    width: 64px;
     text-align: right;
-    font-family: var(--mono);
-    font-size: 12.5px;
+    font-weight: 600;
     font-variant-numeric: tabular-nums;
   }
 
-  .estado.libre,
-  .monto.libre {
+  .mesa.libre .est,
+  .mesa.libre .monto {
+    font-weight: 400;
     color: var(--tenue);
   }
 
@@ -163,12 +152,30 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 12px;
+    gap: 10px;
   }
 
   .nota {
     font-size: 12px;
-    font-weight: 500;
+    font-weight: 400;
     color: var(--tenue);
+  }
+
+  .boton-chico {
+    height: 30px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 0 11px;
+    border: 1px solid var(--linea);
+    border-radius: 8px;
+    background: transparent;
+    color: var(--texto);
+    font-size: 12.5px;
+    font-weight: 600;
+  }
+
+  .boton-chico:hover {
+    border-color: var(--linea-fuerte);
   }
 </style>

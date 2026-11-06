@@ -22,7 +22,7 @@
 <style>
   .lugar {
     position: fixed;
-    left: 276px;
+    left: var(--ancho-lateral, 0px);
     right: 0;
     bottom: 40px;
     z-index: 20;

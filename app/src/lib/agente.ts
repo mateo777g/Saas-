@@ -10,6 +10,7 @@
 import { ALGO_SALIO_PANEL, Fallo, SIN_CONEXION } from './errores';
 import { diaYMes } from './formato';
 import { Compas, leerRenglones, vienePorPartes, type Aviso, type Paso } from './pasos';
+import type { ReporteGuardado } from './reporte';
 import { supabase } from './supabase';
 import { abrirWorker, llamarWorker } from './worker';
 
@@ -17,7 +18,6 @@ export const PREFIJO = 'fragmentless-agente-';
 const MAX_CONVERSACIONES = 30;
 
 export type Leido = { icono: string; texto: string };
-export type Periodo = 'hoy' | 'semana' | 'mes';
 
 export type SinTope = {
   puede: false;
@@ -50,19 +50,22 @@ const FORMA =
   'dinero representa cada uno, de mayor a menor. El total no va dentro de la tabla: va debajo, ' +
   'en un renglón de texto. No lo desgloses por mesa.';
 
+// `frase` es lo que se ve en la caja y en la burbuja; `prompt`, lo que se le manda al agente.
 export type Idea = {
   icono: string;
   titulo: string;
   texto: string;
+  frase: string;
   prompt: string;
   seguimiento: { etiqueta: string; pregunta: string }[];
 };
 
 export const IDEAS: Idea[] = [
   {
-    icono: 'hoy',
+    icono: 'r-hoy',
     titulo: 'Qué se vendió hoy',
     texto: 'Por producto, con el total al final.',
+    frase: '¿Qué se vendió hoy? Por producto, con el total al final.',
     prompt: `Ventas de HOY por producto, ${FORMA}`,
     seguimiento: [
       { etiqueta: 'Compárala con ayer', pregunta: 'Compara lo de hoy con lo de ayer, por producto.' },
@@ -70,9 +73,10 @@ export const IDEAS: Idea[] = [
     ],
   },
   {
-    icono: 'semana',
+    icono: 'r-semana',
     titulo: 'Reporte de la semana',
     texto: 'Lunes a hoy, producto por producto.',
+    frase: 'Dame el reporte de la semana: de lunes a hoy, producto por producto.',
     prompt: `Ventas de ESTA SEMANA por producto, ${FORMA}`,
     seguimiento: [
       { etiqueta: 'Compárala con la pasada', pregunta: 'Compara esta semana con la semana pasada, por producto.' },
@@ -80,9 +84,10 @@ export const IDEAS: Idea[] = [
     ],
   },
   {
-    icono: 'mes',
+    icono: 'r-mes',
     titulo: 'Reporte del mes',
     texto: 'Lo que más dejó este mes.',
+    frase: 'Dame el reporte del mes: lo que más dejó este mes.',
     prompt: `Ventas de ESTE MES por producto, ${FORMA}`,
     seguimiento: [
       { etiqueta: 'Compáralo con el pasado', pregunta: 'Compara este mes con el mes pasado, por producto.' },
@@ -97,7 +102,8 @@ export const IDEAS: Idea[] = [
 // lo que se le mandó al agente (el prompt de la idea o lo escrito), su respuesta en Markdown, lo
 // que leyó para responder y de qué idea salió (para sus seguimientos).
 // También cuánto tardó y lo que hizo («Pensé 6 s», planes/trabajo/estrella/vista.md; las conversaciones
-// de antes no lo traen). Una pregunta detenida es un turno sin respuesta que no se le manda al agente.
+// de antes no lo traen). Una pregunta detenida es un turno sin respuesta que no se le manda al agente, y
+// un «Reporte en PDF» tampoco: lo arma el sistema, sin IA (reporte.ts).
 export type Turno = {
   visible: string;
   pregunta: string;
@@ -107,6 +113,7 @@ export type Turno = {
   segundos?: number;
   pasos?: string[];
   detenida?: boolean;
+  reporte?: ReporteGuardado;
 };
 
 export type Contestacion =
@@ -136,11 +143,10 @@ export async function preguntar(
   restauranteId: string,
   pregunta: string,
   turnos: Turno[],
-  periodo: Periodo,
   { senal, alPasos, alLlegar }: Oyentes,
 ): Promise<Contestacion> {
   const conversacion = turnos
-    .filter((t) => !t.detenida)
+    .filter((t) => !t.detenida && !t.reporte)
     .flatMap((t) => [
       { rol: 'gerente', texto: t.pregunta },
       { rol: 'agente', texto: t.respuesta },
@@ -148,7 +154,7 @@ export async function preguntar(
   const respuesta = await abrirWorker(
     'agente',
     '/agente/pregunta',
-    { restaurante: restauranteId, pregunta, conversacion, periodo },
+    { restaurante: restauranteId, pregunta, conversacion },
     senal,
   );
   if (!vienePorPartes(respuesta)) {

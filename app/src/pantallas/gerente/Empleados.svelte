@@ -22,7 +22,7 @@
   import NotaTabla from '../../diseno/NotaTabla.svelte';
   import Selector from '../../diseno/Selector.svelte';
   import Tabla from '../../diseno/Tabla.svelte';
-  import Vidrio from '../../diseno/Vidrio.svelte';
+  import Tarjeta from '../../diseno/Tarjeta.svelte';
   import {
     darDeBaja,
     desbloquear,
@@ -40,7 +40,7 @@
   import VentanaPin from './empleados/VentanaPin.svelte';
   import VentanaVincular from './empleados/VentanaVincular.svelte';
 
-  let { sucursal, usuarioId }: { sucursal: Sucursal; usuarioId: string } = $props();
+  let { sucursal, usuarioId, abrirNuevo }: { sucursal: Sucursal; usuarioId: string; abrirNuevo?: () => boolean } = $props();
 
   const ESPERA_EXITO = 1600;
   const COLUMNAS_PERSONAS = 'minmax(0, 2fr) minmax(0, 1.6fr) minmax(0, 2fr) 132px';
@@ -88,7 +88,11 @@
   }
 
   onMount(() => {
-    leer();
+    // «Dar de alta a un empleado» de la búsqueda de Inicio: al terminar de leer, su ventana.
+    const abrir = abrirNuevo?.() ?? false;
+    leer().then(() => {
+      if (abrir && lectura.estado === 'listo') ventana = { tipo: 'empleado', persona: null };
+    });
     const alVolver = () => {
       if (document.visibilityState === 'visible') leer();
     };
@@ -159,7 +163,7 @@
 </BarraArriba>
 
 <main class="cuerpo">
-  <Vidrio como="section" class="tarjeta-equipo" radio={26} aria-label="Empleados">
+  <Tarjeta como="section" class="tarjeta-equipo" aria-label="Empleados">
     <div class="herramientas">
       <p class="nota">
         {seccion === 'personas'
@@ -312,7 +316,7 @@
         {/if}
       </Tabla>
     {/if}
-  </Vidrio>
+  </Tarjeta>
 </main>
 
 {#if equipo && ventana?.tipo === 'empleado'}
@@ -364,13 +368,12 @@
 {/if}
 
 <style>
-  /* Debajo de la barra de arriba (16 + 60 + 16) y a la derecha de la lateral (16 + 244 + 16). */
   .cuerpo {
     position: absolute;
-    left: 276px;
-    right: 16px;
-    top: 92px;
-    bottom: 16px;
+    left: var(--vista-izquierda);
+    right: var(--vista-derecha);
+    top: var(--vista-arriba);
+    bottom: var(--vista-abajo);
   }
 
   .cuerpo > :global(.tarjeta-equipo) {

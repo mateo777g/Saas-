@@ -55,7 +55,7 @@
 </script>
 
 <span class="ancla" bind:this={ancla}>
-  <Boton etiqueta="Historial" icono="historial" chip={abierta} onclick={() => (abierta = !abierta)} />
+  <Boton etiqueta="Historial" icono="r-reloj" chip={abierta} onclick={() => (abierta = !abierta)} />
   {#if abierta}
     <div class="lista" role="dialog" aria-label="Historial">
       <span class="etiqueta titulo">CONVERSACIONES DE ESTA SUCURSAL</span>
@@ -83,9 +83,10 @@
     display: inline-flex;
   }
 
+  /* 8 debajo de la barra de arriba: el botón mide 34 y la barra 56, con su línea de 1 (11.5 que le sobran + 8). */
   .lista {
     position: absolute;
-    top: calc(100% + 14px);
+    top: calc(100% + 19.5px);
     right: 0;
     z-index: 6;
     width: 360px;

@@ -19,7 +19,7 @@
   import Boton from '../../../diseno/Boton.svelte';
   import CajaError from '../../../diseno/CajaError.svelte';
   import Icono from '../../../diseno/Icono.svelte';
-  import Vidrio from '../../../diseno/Vidrio.svelte';
+  import Tarjeta from '../../../diseno/Tarjeta.svelte';
   import { formatoDe } from '../../../lib/crearContenido';
   import { Fallo, mensajeDeError } from '../../../lib/errores';
   import { urlFoto } from '../../../lib/fotos';
@@ -93,7 +93,7 @@
   }
 </script>
 
-<Vidrio como="section" class="tarjeta-resultado" radio={26} aria-label="Resultado">
+<Tarjeta como="section" class="tarjeta-resultado" aria-label="Resultado">
   <div class="cabeza">
     <span class="etq">Resultado</span>
     <span class="crece"></span>
@@ -168,14 +168,14 @@
       {/if}
     </div>
   {/if}
-</Vidrio>
+</Tarjeta>
 
 <style>
   :global(.tarjeta-resultado) {
     position: absolute;
-    right: 16px;
-    top: 92px;
-    bottom: 16px;
+    right: var(--vista-derecha);
+    top: var(--vista-arriba);
+    bottom: var(--vista-abajo);
     width: 440px;
     padding: 20px;
     display: flex;

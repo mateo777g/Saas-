@@ -17,7 +17,7 @@
   import CajaError from '../../diseno/CajaError.svelte';
   import Confirmar from '../../diseno/Confirmar.svelte';
   import Icono from '../../diseno/Icono.svelte';
-  import Vidrio from '../../diseno/Vidrio.svelte';
+  import Tarjeta from '../../diseno/Tarjeta.svelte';
   import {
     anuncios as cuantosAnuncios,
     cabeceraDelDia,
@@ -291,7 +291,7 @@
 {#if errorLectura && !datos}
   <main class="cuerpo-error"><CajaError mensaje={errorLectura} /></main>
 {:else}
-  <Vidrio como="main" class="tarjeta-biblio" radio={26}>
+  <Tarjeta como="main" class="tarjeta-biblio">
     <div class="cuerpo-biblio" bind:this={cuerpo} bind:clientWidth={ancho}>
       {#if errorAccion}<CajaError mensaje={errorAccion} compacta />{/if}
       {#if datos && !listos.length && !haciendo}
@@ -385,7 +385,7 @@
         {/each}
       {/if}
     </div>
-  </Vidrio>
+  </Tarjeta>
 {/if}
 
 {#if enGrande && datos}
@@ -424,9 +424,9 @@
 <style>
   .cuerpo-error {
     position: absolute;
-    left: 276px;
-    right: 16px;
-    top: 92px;
+    left: var(--vista-izquierda);
+    right: var(--vista-derecha);
+    top: var(--vista-arriba);
   }
 
   /* El filtro de la barra de arriba: Todo / Posts / Historias / Carteles, con cuántos de cada uno. */
@@ -468,10 +468,10 @@
 
   :global(.tarjeta-biblio) {
     position: absolute;
-    left: 276px;
-    top: 92px;
-    right: 16px;
-    bottom: 16px;
+    left: var(--vista-izquierda);
+    top: var(--vista-arriba);
+    right: var(--vista-derecha);
+    bottom: var(--vista-abajo);
     padding: 20px;
     display: flex;
   }

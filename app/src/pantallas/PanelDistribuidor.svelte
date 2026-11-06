@@ -1,8 +1,8 @@
 <!--
   El panel del distribuidor (libreta 8, paso 2), portado de la maqueta aprobada el 12 de octubre
   de 2026 (YXYVVNdLRXwgWCNErFSeyK): las piezas del panel de Fragmentless con la barra lateral de
-  Juanito («Distribuidor» bajo el logo; Inicio, Clientes, Ajustes y Cerrar sesión, sin Ayuda; al
-  pie su nombre y el correo de su sesión) y arriba solo Actualizar, con el chip de cuántos
+  Juanito (Inicio, Clientes, Ajustes y Cerrar sesión, sin Ayuda; al pie su nombre y el correo de su
+  sesión) y arriba solo Actualizar, con el chip de cuántos
   clientes tiene. Ajustes es el mismo del gerente, solo con el tema (decidido el 12 de octubre).
   Solo lee: no ve ventas ni gerentes, y no cambia nada.
 
@@ -13,8 +13,8 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import BarraArriba from '../diseno/BarraArriba.svelte';
-  import BarraLateral from '../diseno/BarraLateral.svelte';
   import Boton from '../diseno/Boton.svelte';
+  import Marco from '../diseno/Marco.svelte';
   import { leerCuenta, leerPanelDistribuidor, type Cuenta, type DatosDistribuidor } from '../lib/distribuidor';
   import { plural } from '../lib/formato';
   import { SIN_PANEL } from '../lib/sesion';
@@ -87,8 +87,7 @@
   });
 
   function elegir(valor: string) {
-    if (valor === 'salir') alSalir();
-    else vista = valor as Vista;
+    vista = valor as Vista;
   }
 
   onMount(() => {
@@ -105,21 +104,17 @@
 {#if !cuenta.activo}
   <Baja {alSalir} />
 {:else}
-  <div class="panel">
-    <BarraLateral
-      subtitulo="Distribuidor"
-      opciones={[
-        { valor: 'inicio', texto: 'Inicio', icono: 'inicio' },
-        { valor: 'clientes', texto: 'Clientes', icono: 'tienda' },
-      ]}
-      acciones={[
-        { valor: 'ajustes', texto: 'Ajustes', icono: 'ajustes' },
-        { valor: 'salir', texto: 'Cerrar sesión', icono: 'salir' },
-      ]}
-      activa={vista}
-      alElegir={elegir}
-      pie={{ inicial: cuenta.nombre.charAt(0).toUpperCase(), nombre: cuenta.nombre, linea: correo }}
-    />
+  <Marco
+    opciones={[
+      { valor: 'inicio', texto: 'Inicio', icono: 'r-inicio' },
+      { valor: 'clientes', texto: 'Clientes', icono: 'r-tienda' },
+    ]}
+    acciones={[{ valor: 'ajustes', texto: 'Ajustes', icono: 'r-ajustes' }]}
+    activa={vista}
+    alElegir={elegir}
+    {alSalir}
+    pie={{ inicial: cuenta.nombre.charAt(0).toUpperCase(), nombre: cuenta.nombre, linea: correo }}
+  >
 
     <BarraArriba titulo={TITULOS[vista]} {estado}>
       {#if vista !== 'ajustes'}
@@ -136,25 +131,16 @@
         <Ajustes />
       {/if}
     </main>
-  </div>
+  </Marco>
 {/if}
 
 <style>
-  .panel {
-    position: relative;
-    height: 100vh;
-    height: 100dvh;
-    overflow: hidden;
-    background: var(--suelo);
-  }
-
-  /* Debajo de la barra de arriba (16 + 60 + 16) y a la derecha de la lateral (16 + 244 + 16),
-     como en el panel de Fragmentless. */
+  /* Como en el panel de Fragmentless. */
   .cuerpo {
     position: absolute;
-    left: 276px;
-    right: 16px;
-    top: 92px;
-    bottom: 16px;
+    left: var(--vista-izquierda);
+    right: var(--vista-derecha);
+    top: var(--vista-arriba);
+    bottom: var(--vista-abajo);
   }
 </style>

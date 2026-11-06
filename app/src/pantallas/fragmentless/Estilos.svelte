@@ -23,7 +23,7 @@
   import Interruptor from '../../diseno/Interruptor.svelte';
   import NotaTabla from '../../diseno/NotaTabla.svelte';
   import Tabla from '../../diseno/Tabla.svelte';
-  import Vidrio from '../../diseno/Vidrio.svelte';
+  import Tarjeta from '../../diseno/Tarjeta.svelte';
   import {
     fechasDe,
     GRUPOS,
@@ -41,9 +41,13 @@
   import type { Lectura } from '../../lib/panel';
   import VentanaEstilo from './VentanaEstilo.svelte';
 
+  // Si llegaron por «Nuevo estilo» (la búsqueda o Atajos), su ventana se abre al entrar; se toma una vez.
+  let { tomarEstilo }: { tomarEstilo: () => boolean } = $props();
+
   let lectura = $state<Lectura<DatosEstilos> | null>(null);
   let leyendo = $state(false);
-  let ventana = $state<{ estilo: Estilo | null } | null>(null);
+  // svelte-ignore state_referenced_locally
+  let ventana = $state<{ estilo: Estilo | null } | null>(tomarEstilo() ? { estilo: null } : null);
   let aviso = $state<string | null>(null);
   let tarjeta = $state<HTMLElement>();
   // Las muestras de post que no cargaron: se quedan en su cuadro negro, como la foto que falta.
@@ -130,7 +134,7 @@
 </BarraArriba>
 
 <main class="cuerpo" bind:this={tarjeta}>
-  <Vidrio como="section" class="tarjeta-estilos" radio={26} aria-label="Estilos">
+  <Tarjeta como="section" class="tarjeta-estilos" aria-label="Estilos">
     <div class="herramientas">
       <p class="nota">
         Así salen en la ventana de Crear anuncios de cada restaurante: por grupos y, en cada grupo, de
@@ -233,7 +237,7 @@
         {/each}
       {/if}
     </Tabla>
-  </Vidrio>
+  </Tarjeta>
 </main>
 
 {#if datos && ventana}
@@ -253,13 +257,12 @@
 {/if}
 
 <style>
-  /* Debajo de la barra de arriba (16 + 60 + 16) y a la derecha de la lateral (16 + 244 + 16). */
   .cuerpo {
     position: absolute;
-    left: 276px;
-    right: 16px;
-    top: 92px;
-    bottom: 16px;
+    left: var(--vista-izquierda);
+    right: var(--vista-derecha);
+    top: var(--vista-arriba);
+    bottom: var(--vista-abajo);
   }
 
   .cuerpo > :global(.tarjeta-estilos) {

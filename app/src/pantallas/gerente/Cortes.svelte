@@ -14,7 +14,7 @@
   import BarraArriba from '../../diseno/BarraArriba.svelte';
   import BotonCuadro from '../../diseno/BotonCuadro.svelte';
   import Icono from '../../diseno/Icono.svelte';
-  import Vidrio from '../../diseno/Vidrio.svelte';
+  import Tarjeta from '../../diseno/Tarjeta.svelte';
   import { esDeRed, SIN_CONEXION } from '../../lib/errores';
   import { diaAnterior, diaConNombre, diaSiguiente, dinero, enZona, pesos, plural } from '../../lib/formato';
   import type { Sucursal } from '../../lib/gerente';
@@ -182,7 +182,7 @@
 </BarraArriba>
 
 <main class="columnas">
-  <Vidrio como="section" class="tarjeta-cortes" radio={26} aria-label="Cortes de caja">
+  <Tarjeta como="section" class="tarjeta-cortes" aria-label="Cortes de caja">
     <div class="fila-titulo">
       <div>
         <span class="titulo-tarjeta">Cortes de caja</span>
@@ -209,9 +209,9 @@
         {/each}
       {/if}
     </div>
-  </Vidrio>
+  </Tarjeta>
 
-  <Vidrio como="section" class="tarjeta-cortes" radio={26} aria-label="Descuentos y cancelaciones">
+  <Tarjeta como="section" class="tarjeta-cortes" aria-label="Descuentos y cancelaciones">
     <div class="fila-titulo">
       <div>
         <span class="titulo-tarjeta">Descuentos y cancelaciones</span>
@@ -276,7 +276,7 @@
         </div>
       {/if}
     </div>
-  </Vidrio>
+  </Tarjeta>
 </main>
 
 <style>
@@ -324,13 +324,12 @@
     opacity: 0.86;
   }
 
-  /* Debajo de la barra de arriba (16 + 60 + 16) y a la derecha de la lateral (16 + 244 + 16). */
   .columnas {
     position: absolute;
-    left: 276px;
-    right: 16px;
-    top: 92px;
-    bottom: 16px;
+    left: var(--vista-izquierda);
+    right: var(--vista-derecha);
+    top: var(--vista-arriba);
+    bottom: var(--vista-abajo);
     display: grid;
     grid-template-columns: minmax(0, 1.18fr) minmax(0, 1fr);
     gap: 16px;

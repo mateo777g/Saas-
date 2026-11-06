@@ -1,6 +1,6 @@
 // El agente IA (libreta 1, «Cómo las usa el modelo»; libreta 3, «El gasto de IA»). Dos trabajos,
 // los dos con la sesión del gerente:
-//  - POST /agente/pregunta {restaurante, pregunta, conversacion, periodo}: Don Chuy pregunta, el
+//  - POST /agente/pregunta {restaurante, pregunta, conversacion}: Don Chuy pregunta, el
 //    modelo pide herramientas y el Worker se las pasa a Postgres (agente_herramienta) con la sesión
 //    de Don Chuy, hasta que el modelo contesta con texto. Contesta por partes (porPartes.ts): cada
 //    paso mientras trabaja (pasos.ts) y al final la respuesta en Markdown, lo que leyó para
@@ -17,7 +17,7 @@ import type { Item, Llamada, Tokens } from './openai';
 import { contestarPorPartes } from './porPartes';
 import type { Avisar, LaApp } from './porPartes';
 import { Escritura, LEYENDO, Pasos, pasoDeHerramienta } from './pasos';
-import { conPeriodo, contextoParaElPrompt, HERRAMIENTAS, limpiarSaludo, PERIODOS, promptSaludo, REGLAS_AGENTE, ULTIMA_RONDA } from './prompt';
+import { contextoParaElPrompt, HERRAMIENTAS, limpiarSaludo, promptSaludo, REGLAS_AGENTE, ULTIMA_RONDA } from './prompt';
 import { json, Rechazo } from './respuestas';
 import { leerSesion, llamar } from './supabase';
 
@@ -59,7 +59,6 @@ async function pregunta(
   const texto = typeof cuerpo.pregunta === 'string' ? cuerpo.pregunta.trim() : '';
   if (!texto) throw new Rechazo(400, 'Escribe tu pregunta.');
   if (texto.length > LARGO_PREGUNTA) throw new Rechazo(400, 'La pregunta es muy larga. Hazla más corta.');
-  const periodo = typeof cuerpo.periodo === 'string' && cuerpo.periodo in PERIODOS ? cuerpo.periodo : undefined;
   const conversacion = leerConversacion(cuerpo.conversacion);
 
   // Sin tope no se llama a OpenAI: la app pone el aviso con lo que dice estado_ia.
@@ -73,7 +72,7 @@ async function pregunta(
   // La fecha y la hora del restaurante, para el Historial de la app (nunca el reloj del aparato).
   const ahora = contexto?.ahora?.fecha && contexto.ahora.hora ? { fecha: contexto.ahora.fecha, hora: contexto.ahora.hora } : null;
   const hoy = contexto?.ahora?.dia_de_negocio ?? null;
-  const entrada: Item[] = [...conversacion, { role: 'user', content: conPeriodo(texto, periodo) }];
+  const entrada: Item[] = [...conversacion, { role: 'user', content: texto }];
 
   return contestarPorPartes(request, ctx, '[agente]', (avisar, app) =>
     contestar(env, sesion, restaurante, instrucciones, entrada, ahora, hoy, avisar, app),

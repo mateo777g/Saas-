@@ -14,7 +14,7 @@
   import EstadoPunto from '../../diseno/EstadoPunto.svelte';
   import NotaTabla from '../../diseno/NotaTabla.svelte';
   import Tabla from '../../diseno/Tabla.svelte';
-  import Vidrio from '../../diseno/Vidrio.svelte';
+  import Tarjeta from '../../diseno/Tarjeta.svelte';
   import type { Distribuidor, Lectura } from '../../lib/panel';
 
   let {
@@ -27,7 +27,7 @@
 </script>
 
 <div class="distribuidores">
-  <Vidrio como="section" class="tarjeta" radio={26} aria-label="Tus distribuidores">
+  <Tarjeta como="section" class="tarjeta" aria-label="Tus distribuidores">
     <div class="cabeza">
       <span class="etiqueta">TUS DISTRIBUIDORES</span>
       <p class="descripcion">
@@ -108,7 +108,7 @@
         {/each}
       {/if}
     </Tabla>
-  </Vidrio>
+  </Tarjeta>
 </div>
 
 <style>

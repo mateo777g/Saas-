@@ -53,9 +53,9 @@
     aria-controls={idLista}
     onclick={() => (abierta = !abierta)}
   >
-    <Icono nombre="tienda" tamano={16} />
+    <Icono nombre="r-tienda" tamano={18} />
     <span>{actual.nombre}</span>
-    <span class="suave"><Icono nombre="abajo" tamano={14} /></span>
+    <span class="flecha"><Icono nombre="r-abajo" tamano={14} /></span>
   </button>
 
   {#if abierta}
@@ -93,15 +93,15 @@
     display: flex;
   }
 
-  /* boton() de diseno.py, el secundario: borde fino, sin relleno; abierto, con chip. */
+  /* El botón secundario, con las medidas de la barra de arriba; abierto, con chip. */
   .boton {
-    height: 40px;
+    height: 34px;
     display: inline-flex;
     align-items: center;
     gap: 8px;
-    padding: 0 14px;
+    padding: 0 13px;
     border: 1px solid var(--linea);
-    border-radius: 12px;
+    border-radius: 9px;
     background: transparent;
     color: var(--texto);
     font-size: 13px;
@@ -123,12 +123,16 @@
     color: var(--suave);
   }
 
-  /* La barra tiene borde de 1 y el absoluto se mide desde adentro de él: 8 debajo de la barra
-     y a ras de su borde derecho, como en la maqueta. */
+  /* En su propia caja, para que siga midiendo 14 aunque la barra de arriba agrande los íconos del botón. */
+  .flecha {
+    display: flex;
+  }
+
+  /* 8 debajo de la barra y a ras de sus botones. */
   .lista {
     position: absolute;
-    top: calc(100% + 1px + 8px);
-    right: -1px;
+    top: calc(100% + 8px);
+    right: 20px;
     z-index: 4;
     width: 320px;
     padding: 8px;

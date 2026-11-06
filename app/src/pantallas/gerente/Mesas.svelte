@@ -23,7 +23,7 @@
   import Icono from '../../diseno/Icono.svelte';
   import NotaTabla from '../../diseno/NotaTabla.svelte';
   import Tabla from '../../diseno/Tabla.svelte';
-  import Vidrio from '../../diseno/Vidrio.svelte';
+  import Tarjeta from '../../diseno/Tarjeta.svelte';
   import { ALGO_SALIO_PANEL, esDeRed, Fallo, SIN_CONEXION } from '../../lib/errores';
   import { dinero, plural } from '../../lib/formato';
   import type { Sucursal } from '../../lib/gerente';
@@ -33,7 +33,7 @@
   import { supabase } from '../../lib/supabase';
   import VentanaMesa from './mesas/VentanaMesa.svelte';
 
-  let { sucursal }: { sucursal: Sucursal } = $props();
+  let { sucursal, abrirNueva }: { sucursal: Sucursal; abrirNueva?: () => boolean } = $props();
 
   type Lectura = { estado: 'leyendo' } | { estado: 'listo'; mesas: Mesa[] } | { estado: 'error'; deRed: boolean };
 
@@ -99,7 +99,11 @@
 
   let espera: ReturnType<typeof setTimeout> | undefined;
   onMount(() => {
-    leer();
+    // «Agregar mesa» de la búsqueda de Inicio: al terminar de leer, su ventana.
+    const abrir = abrirNueva?.() ?? false;
+    leer().then(() => {
+      if (abrir && lectura.estado === 'listo') ventana = { tipo: 'mesa', mesa: null };
+    });
     const dejar = escuchar(supabase, sucursal.id, ['ventas'], () => {
       clearTimeout(espera);
       espera = setTimeout(leerCuentas, 400);
@@ -161,7 +165,7 @@
 </BarraArriba>
 
 <main class="cuerpo" bind:this={tarjeta}>
-  <Vidrio como="section" class="tarjeta-mesas" radio={26} aria-label="Mesas">
+  <Tarjeta como="section" class="tarjeta-mesas" aria-label="Mesas">
     <div class="herramientas">
       <p class="nota">Las mesas que tu equipo elige al tomar un pedido, en este orden. Muévelas con las flechas.</p>
       <span class="crece"></span>
@@ -242,7 +246,7 @@
         {/each}
       {/if}
     </Tabla>
-  </Vidrio>
+  </Tarjeta>
 </main>
 
 {#if mesas && ventana?.tipo === 'mesa'}
@@ -273,13 +277,12 @@
 {/if}
 
 <style>
-  /* Debajo de la barra de arriba (16 + 60 + 16) y a la derecha de la lateral (16 + 244 + 16). */
   .cuerpo {
     position: absolute;
-    left: 276px;
-    right: 16px;
-    top: 92px;
-    bottom: 16px;
+    left: var(--vista-izquierda);
+    right: var(--vista-derecha);
+    top: var(--vista-arriba);
+    bottom: var(--vista-abajo);
   }
 
   .cuerpo > :global(.tarjeta-mesas) {

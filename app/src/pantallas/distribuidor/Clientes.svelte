@@ -9,7 +9,7 @@
   import Icono from '../../diseno/Icono.svelte';
   import NotaTabla from '../../diseno/NotaTabla.svelte';
   import Tabla from '../../diseno/Tabla.svelte';
-  import Vidrio from '../../diseno/Vidrio.svelte';
+  import Tarjeta from '../../diseno/Tarjeta.svelte';
   import type { ClienteDistribuidor } from '../../lib/distribuidor';
   import { fecha, vigencia } from '../../lib/formato';
   import { urgente, type Lectura } from '../../lib/panel';
@@ -18,7 +18,7 @@
 </script>
 
 <div class="clientes">
-  <Vidrio como="section" class="tarjeta" radio={26} aria-label="Tus clientes">
+  <Tarjeta como="section" class="tarjeta" aria-label="Tus clientes">
     <div class="cabeza">
       <span class="etiqueta">TUS CLIENTES</span>
       <p class="descripcion">
@@ -65,7 +65,7 @@
         {/each}
       {/if}
     </Tabla>
-  </Vidrio>
+  </Tarjeta>
 </div>
 
 <style>

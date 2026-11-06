@@ -6,9 +6,10 @@
 -->
 <script lang="ts">
   import { onMount } from 'svelte';
+  import BarraArriba from '../../diseno/BarraArriba.svelte';
   import CajaError from '../../diseno/CajaError.svelte';
   import Icono from '../../diseno/Icono.svelte';
-  import Vidrio from '../../diseno/Vidrio.svelte';
+  import Tarjeta from '../../diseno/Tarjeta.svelte';
   import { ALGO_SALIO_PANEL, esDeRed, SIN_CONEXION } from '../../lib/errores';
   import type { Sucursal } from '../../lib/gerente';
   import { supabase } from '../../lib/supabase';
@@ -51,13 +52,16 @@
   onMount(leer);
 </script>
 
-<Vidrio como="header" class="arriba-acceso" radio={18} sombra={false}>
-  <button type="button" class="volver" onclick={alVolver}><Icono nombre="anterior" tamano={16} />Inicio</button>
-  <h1 class="titulo">{que === 'pos' ? 'Punto de venta' : que === 'caja' ? 'Caja' : 'Cocina'}</h1>
-  <span class="chip"><span class="punto"></span>Con tu sesión de gerente</span>
-</Vidrio>
+<BarraArriba
+  titulo={que === 'pos' ? 'Punto de venta' : que === 'caja' ? 'Caja' : 'Cocina'}
+  estado={{ texto: 'Con tu sesión de gerente', vivo: true }}
+>
+  {#snippet antes()}
+    <button type="button" class="volver" onclick={alVolver}><Icono nombre="anterior" tamano={16} />Inicio</button>
+  {/snippet}
+</BarraArriba>
 
-<Vidrio como="section" class="tarjeta-acceso" radio={26}>
+<Tarjeta como="section" class="tarjeta-acceso">
   {#if yo.estado === 'error'}
     <div class="medio">
       <CajaError mensaje={yo.mensaje} />
@@ -81,35 +85,16 @@
   {:else if yo.estado === 'listo'}
     <Cocina cliente={supabase} restauranteId={sucursal.id} enPanel />
   {/if}
-</Vidrio>
+</Tarjeta>
 
 <style>
-  :global(.arriba-acceso) {
-    position: absolute;
-    left: 276px;
-    right: 16px;
-    top: 16px;
-    height: 60px;
-    z-index: 3;
-    padding: 0 12px 0 14px;
-    display: flex;
-    align-items: center;
-    gap: 14px;
-  }
-
-  .titulo {
-    margin: 0;
-    font-size: 15px;
-    font-weight: 700;
-  }
-
   .volver {
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    height: 36px;
+    height: 34px;
     padding: 0 12px 0 8px;
-    border-radius: 12px;
+    border-radius: 9px;
     border: 1px solid var(--linea);
     background: transparent;
     color: var(--texto);
@@ -118,34 +103,12 @@
     flex: none;
   }
 
-  .chip {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    height: 28px;
-    padding: 0 12px;
-    border-radius: 14px;
-    background: var(--chip);
-    font-size: 12px;
-    font-weight: 500;
-    color: var(--suave);
-    white-space: nowrap;
-  }
-
-  .punto {
-    width: 7px;
-    height: 7px;
-    flex: none;
-    border-radius: 4px;
-    background: var(--verde);
-  }
-
   :global(.tarjeta-acceso) {
     position: absolute;
-    left: 276px;
-    right: 16px;
-    top: 92px;
-    bottom: 16px;
+    left: var(--vista-izquierda);
+    right: var(--vista-derecha);
+    top: var(--vista-arriba);
+    bottom: var(--vista-abajo);
     overflow: hidden;
   }
 

@@ -170,6 +170,7 @@ LOS NÚMEROS (la regla más importante):
 LAS FECHAS:
 - Las fechas que mandas son días de negocio, en AAAA-MM-DD. El día de negocio empieza a la hora de corte del restaurante, no a medianoche: una cuenta de la 1 de la madrugada del sábado es del viernes, porque es la misma noche de trabajo.
 - "Hoy" es el día de negocio de hoy; "ayer" es hoy menos 1; la semana va de lunes a domingo; el mes, del 1 al último día.
+- Si la pregunta no dice de qué periodo habla, toma hoy. Una pregunta que ya lo dice o que va en general, como "¿qué se vende más los viernes?", no se vuelve de hoy.
 - Una venta es de la fecha en que se abrió la cuenta.
 
 LO QUE CUENTA COMO VENTA:
@@ -191,15 +192,6 @@ ${JSON.stringify(contexto)}`;
 
 export const ULTIMA_RONDA =
   'Ya no puedes pedir más herramientas: contesta con lo que ya tienes, y si te falta algo, dilo.';
-
-// El aviso del periodo de la caja (Hoy · Semana · Mes), solo para cuando la pregunta no trae el
-// suyo, como en Flet: «Hoy» no convierte «¿qué se vende más los viernes?» en una pregunta de hoy.
-export const PERIODOS: Record<string, string> = { hoy: 'HOY', semana: 'ESTA SEMANA', mes: 'ESTE MES' };
-
-export function conPeriodo(pregunta: string, periodo: string | undefined): string {
-  const nombre = periodo ? PERIODOS[periodo] : undefined;
-  return nombre ? `${pregunta}\n\n(Si mi pregunta no dice de qué periodo hablo, toma ${nombre}.)` : pregunta;
-}
 
 // ─── El saludo ────────────────────────────────────────────────────────────────
 // La IA escribe el segundo renglón de la bienvenida («¿Cómo va el sábado?»), debajo del saludo

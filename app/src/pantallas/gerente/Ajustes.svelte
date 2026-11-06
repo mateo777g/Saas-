@@ -18,7 +18,7 @@
   import CajaError from '../../diseno/CajaError.svelte';
   import Icono from '../../diseno/Icono.svelte';
   import Selector from '../../diseno/Selector.svelte';
-  import Vidrio from '../../diseno/Vidrio.svelte';
+  import Tarjeta from '../../diseno/Tarjeta.svelte';
   import { ALGO_SALIO_PANEL, esDeRed, Fallo, SIN_CONEXION } from '../../lib/errores';
   import type { Sucursal } from '../../lib/gerente';
   import { fijarHoraCorte, leerHoraCorte } from '../../lib/reportes';
@@ -85,7 +85,7 @@
   }
 </script>
 
-<Vidrio como="section" class="ajustes" radio={26} aria-label="Tus ajustes">
+<Tarjeta como="section" class="ajustes" aria-label="Tus ajustes">
   <div class="cabeza">
     <span class="etiqueta">TUS AJUSTES</span>
     <p class="nota">
@@ -146,7 +146,7 @@
       </div>
     {/if}
   </div>
-</Vidrio>
+</Tarjeta>
 
 <style>
   :global(.ajustes) {

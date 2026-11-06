@@ -59,17 +59,20 @@ export async function leerTusMeseros(restauranteId: string): Promise<TusMeseros>
 
 // ─── Las cuatro cifras de Inicio ────────────────────────────────────────────────────────────
 
-// cifras_de_inicio (migración agente; libreta 1): lo vendido hoy contra lo que ayer ya estaba
-// cerrado a esta misma hora, con su % ya redondeado (vacío si ayer a esta hora no había ventas);
-// la semana de lunes a domingo (los días que faltan, vacíos); los 3 productos con más piezas de
-// la semana; y el mes día por día con su acumulado y «Va para» (vacío en la primera semana de
-// ventas). Salen de las mismas funciones que el agente.
+// cifras_de_inicio (migraciones agente y cifras_graficas; libreta 1): lo vendido hoy contra lo que ayer
+// ya estaba cerrado a esta misma hora, con su % ya redondeado (vacío si ayer a esta hora no había ventas);
+// lo acumulado a cada hora en punto, hoy y ayer; la semana de lunes a domingo (los días que faltan,
+// vacíos); los 3 productos con más piezas de la semana y las piezas del primero cada día; y el mes día
+// por día con su acumulado y «Va para» (vacío en la primera semana de ventas). Salen de las mismas
+// funciones que el agente.
 export type CifrasDeInicio = {
   hoy: string;
   hora: string;
   vendido_hoy: { hoy: number; ayer_a_esta_hora: number; porcentaje: number | null };
+  horas: { hora: string; hoy: number; ayer: number }[];
   semana: { vendido: number; dias: { dia: string; importe: number | null }[] };
   lo_mas_vendido: { nombre: string; unidades: number; importe: number }[];
+  lo_mas_vendido_dias: { dia: string; unidades: number | null }[];
   mes: { vendido: number; dias: { dia: string; importe: number; acumulado: number }[]; va_para: number | null };
 };
 
@@ -85,8 +88,10 @@ export async function leerCifrasDeInicio(restauranteId: string): Promise<CifrasD
       ayer_a_esta_hora: n(r.vendido_hoy.ayer_a_esta_hora),
       porcentaje: o(r.vendido_hoy.porcentaje),
     },
+    horas: r.horas.map((h) => ({ hora: h.hora, hoy: n(h.hoy), ayer: n(h.ayer) })),
     semana: { vendido: n(r.semana.vendido), dias: r.semana.dias.map((d) => ({ dia: d.dia, importe: o(d.importe) })) },
     lo_mas_vendido: r.lo_mas_vendido.map((p) => ({ nombre: p.nombre, unidades: n(p.unidades), importe: n(p.importe) })),
+    lo_mas_vendido_dias: r.lo_mas_vendido_dias.map((d) => ({ dia: d.dia, unidades: o(d.unidades) })),
     mes: {
       vendido: n(r.mes.vendido),
       dias: r.mes.dias.map((d) => ({ dia: d.dia, importe: n(d.importe), acumulado: n(d.acumulado) })),

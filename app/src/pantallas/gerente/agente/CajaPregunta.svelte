@@ -1,55 +1,70 @@
 <!--
-  La caja de la pregunta del Agente IA (maqueta Agente IA KznKZdgQbLTZGs1EwVMvga): el texto, el
-  selector Hoy · Semana · Mes, «Enter envía · Shift+Enter salto» y el botón de mandar. En la
-  bienvenida abre con dos renglones y en la conversación con uno; crece mientras se escribe, hasta
-  seis. El periodo solo se le dice al modelo cuando la pregunta no trae el suyo (lo pone el
-  Worker, como en Flet).
+  La caja de la pregunta del Agente IA (rediseño del 5 de noviembre de 2026; maqueta V64Pv4gmANPRZuJW5hTe5D):
+  el texto, el «+» con «Reporte en PDF», «Enter envía · Shift+Enter salto» y el botón de mandar, que se
+  prende en el acento cuando hay texto. En la bienvenida abre con dos renglones y en la conversación con
+  uno; crece mientras se escribe, hasta seis.
 
-  Sin tope (`aviso`), en su lugar va el aviso de la libreta de Seguridad, con el icono de info.
+  Sin tope (`aviso`), en su lugar va el aviso de la libreta de Seguridad, con el icono de info y el «+» a
+  su lado: el reporte no usa IA (planes/trabajo/rediseno/encuestas-agente.md).
 
   Mientras piensa la pregunta de esta conversación (`alDetener`), el botón de mandar es «Detener»
   (maqueta AyS4xUfa5XmDaPJG1iqSgw). Si piensa la de otra (`ocupado`), la flecha se apaga.
 -->
 <script lang="ts">
   import Icono from '../../../diseno/Icono.svelte';
-  import Selector from '../../../diseno/Selector.svelte';
-  import type { Periodo } from '../../../lib/agente';
+  import { PERIODOS_REPORTE, type PeriodoReporte } from '../../../lib/reporte';
 
   let {
     modo,
     valor = $bindable(''),
-    periodo = $bindable<Periodo>('hoy'),
     placeholder,
     ocupado = false,
     aviso = null,
     alEnviar,
     alDetener = null,
+    alReporte,
   }: {
     modo: 'bienvenida' | 'chat';
     valor?: string;
-    periodo?: Periodo;
     placeholder: string;
     ocupado?: boolean;
     aviso?: string | null;
     alEnviar: () => void;
     alDetener?: (() => void) | null;
+    alReporte: (periodo: PeriodoReporte) => void;
   } = $props();
 
-  const PERIODOS: { valor: Periodo; texto: string }[] = [
-    { valor: 'hoy', texto: 'Hoy' },
-    { valor: 'semana', texto: 'Semana' },
-    { valor: 'mes', texto: 'Mes' },
-  ];
   const id = $props.id();
-  let campo = $state<HTMLTextAreaElement | null>(null);
+  // Seis renglones de 22.5 px.
+  const ALTO_MAXIMO = 135;
 
-  // Crece con lo escrito, de su alto inicial hasta seis renglones (24 px cada uno).
+  let campo = $state<HTMLTextAreaElement | null>(null);
+  let envoltura = $state<HTMLDivElement | null>(null);
+  let menuAbierto = $state(false);
+
+  // Crece con lo escrito, de su alto inicial hasta seis renglones.
   $effect(() => {
     void valor;
     const c = campo;
     if (!c) return;
     c.style.height = 'auto';
-    c.style.height = `${Math.min(c.scrollHeight, 24 * 6)}px`;
+    c.style.height = `${Math.min(c.scrollHeight, ALTO_MAXIMO)}px`;
+  });
+
+  $effect(() => {
+    if (!menuAbierto) return;
+    const alClic = (e: MouseEvent) => {
+      if (!envoltura?.contains(e.target as Node)) menuAbierto = false;
+    };
+    const alTecla = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') menuAbierto = false;
+    };
+    document.addEventListener('mousedown', alClic);
+    document.addEventListener('keydown', alTecla);
+    return () => {
+      document.removeEventListener('mousedown', alClic);
+      document.removeEventListener('keydown', alTecla);
+    };
   });
 
   function alTeclear(e: KeyboardEvent) {
@@ -57,6 +72,11 @@
       e.preventDefault();
       if (!ocupado) alEnviar();
     }
+  }
+
+  function elegir(periodo: PeriodoReporte) {
+    menuAbierto = false;
+    alReporte(periodo);
   }
 
   export function enfocar() {
@@ -69,13 +89,37 @@
   }
 </script>
 
+{#snippet mas()}
+  <div class="mas-envoltura" bind:this={envoltura}>
+    <button
+      type="button"
+      class="mas"
+      aria-label="Más"
+      aria-expanded={menuAbierto}
+      disabled={ocupado}
+      onclick={() => (menuAbierto = !menuAbierto)}
+    >
+      <Icono nombre="r-mas" tamano={18} />
+    </button>
+    {#if menuAbierto}
+      <div class="menu-mas" class:arriba={modo === 'chat'} class:a-la-derecha={!!aviso}>
+        <div class="titulo-menu"><Icono nombre="r-hoy" tamano={16} />Reporte en PDF</div>
+        {#each PERIODOS_REPORTE as p (p.valor)}
+          <button type="button" class="opcion" onclick={() => elegir(p.valor)}>{p.boton}</button>
+        {/each}
+      </div>
+    {/if}
+  </div>
+{/snippet}
+
 {#if aviso}
-  <div class="caja tope" role="status">
+  <div class="caja-pregunta tope" role="status">
     <span class="cuadro-icono"><Icono nombre="info" tamano={18} /></span>
     <p>{aviso}</p>
+    {@render mas()}
   </div>
 {:else}
-  <div class="caja" class:en-chat={modo === 'chat'}>
+  <div class="caja-pregunta">
     <label for={id} class="solo-lector">Tu pregunta</label>
     <textarea
       {id}
@@ -85,52 +129,52 @@
       {placeholder}
       onkeydown={alTeclear}
     ></textarea>
-    <div class="fila">
-      <Selector opciones={PERIODOS} elegida={periodo} alElegir={(p) => (periodo = p)} etiqueta="Periodo" />
-      <span class="atajo">Enter envía · Shift+Enter salto</span>
-      <span class="crece"></span>
+    <div class="caja-pie">
+      {@render mas()}
+      <span class="hueco"></span>
+      <span class="pista">Enter envía · Shift+Enter salto</span>
       <button
         type="button"
-        class="enviar"
+        class="mandar"
         class:parando={!!alDetener}
-        aria-label={alDetener ? 'Detener' : 'Enviar'}
-        disabled={ocupado && !alDetener}
+        aria-label={alDetener ? 'Detener' : 'Mandar la pregunta'}
+        disabled={alDetener ? false : ocupado || !valor.trim()}
         onclick={alDetener ?? alEnviar}
       >
-        <span class="capa mandar"><Icono nombre="flecha" tamano={20} /></span>
-        <span class="capa parar"><Icono nombre="detener" tamano={20} /></span>
+        <span class="capa flecha"><Icono nombre="r-arriba" tamano={17} /></span>
+        <span class="capa parar"><Icono nombre="detener" tamano={17} /></span>
       </button>
     </div>
   </div>
 {/if}
 
 <style>
-  .caja {
+  .caja-pregunta {
     position: relative;
     display: flex;
     flex-direction: column;
-    gap: 18px;
-    padding: 16px 16px 12px 20px;
-    border-radius: 22px;
-    border: 1px solid var(--linea);
+    gap: 10px;
+    padding: 14px 14px 12px 18px;
+    border: 1px solid var(--linea-fuerte);
+    border-radius: 18px;
     background: var(--solido);
-    box-shadow: 0 10px 30px var(--sombra-caja);
   }
 
-  .caja.en-chat {
-    gap: 10px;
+  .caja-pregunta:focus-within {
+    border-color: var(--texto);
   }
 
   textarea {
     width: 100%;
-    padding: 0;
+    min-height: 48px;
+    padding: 2px;
     border: 0;
     outline: none;
     resize: none;
-    background: transparent;
+    background: none;
     color: var(--texto);
     font: inherit;
-    font-size: 16px;
+    font-size: 15px;
     line-height: 1.5;
   }
 
@@ -139,60 +183,56 @@
     opacity: 1;
   }
 
-  .fila {
+  .caja-pie {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 12px;
   }
 
-  .atajo {
+  .hueco {
+    flex: 1;
+  }
+
+  .pista {
     font-family: var(--mono);
-    font-size: 11px;
+    font-size: 10.5px;
     color: var(--tenue);
     white-space: nowrap;
   }
 
-  .crece {
-    flex-grow: 1;
-  }
-
-  .enviar {
+  .mandar {
     position: relative;
-    width: 44px;
-    height: 44px;
+    width: 36px;
+    height: 36px;
     flex: none;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    display: grid;
+    place-items: center;
+    padding: 0;
     border: 0;
-    border-radius: 14px;
+    border-radius: 10px;
     background: var(--acento);
     color: var(--sobre-acento);
-    transition: opacity 150ms;
+    transition: background 0.15s ease;
   }
 
-  .enviar:hover:not(:disabled) {
-    opacity: 0.86;
-  }
-
-  .enviar:disabled {
-    opacity: 0.4;
+  .mandar:disabled {
+    background: var(--chip);
+    color: var(--tenue);
     cursor: default;
   }
 
   .capa {
     position: absolute;
     inset: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    display: grid;
+    place-items: center;
     transition:
       opacity 200ms,
       transform 200ms;
   }
 
   .capa.parar,
-  .parando .capa.mandar {
+  .parando .capa.flecha {
     opacity: 0;
     transform: scale(0.75);
   }
@@ -202,33 +242,115 @@
     transform: none;
   }
 
-  .caja.tope {
+  .mas-envoltura {
+    position: relative;
+    flex: none;
+  }
+
+  .mas {
+    width: 34px;
+    height: 34px;
+    display: grid;
+    place-items: center;
+    padding: 0;
+    border: 1px solid var(--linea);
+    border-radius: 10px;
+    background: none;
+    color: var(--suave);
+  }
+
+  .mas:hover:not(:disabled),
+  .mas[aria-expanded='true'] {
+    border-color: var(--linea-fuerte);
+    color: var(--texto);
+  }
+
+  .mas:disabled {
+    opacity: 0.45;
+    cursor: default;
+  }
+
+  .menu-mas {
+    position: absolute;
+    left: 0;
+    top: calc(100% + 8px);
+    z-index: 30;
+    min-width: 220px;
+    padding: 6px;
+    border: 1px solid var(--linea-fuerte);
+    border-radius: 12px;
+    background: var(--solido);
+    box-shadow: 0 14px 34px var(--sombra-menu);
+    text-align: left;
+  }
+
+  .menu-mas.arriba {
+    top: auto;
+    bottom: calc(100% + 8px);
+  }
+
+  .menu-mas.a-la-derecha {
+    left: auto;
+    right: 0;
+  }
+
+  .titulo-menu {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding: 8px 10px 6px;
+    font-size: 13px;
+    font-weight: 700;
+  }
+
+  .titulo-menu :global(svg) {
+    color: var(--suave);
+  }
+
+  .opcion {
+    display: block;
+    width: 100%;
+    padding: 8px 10px 8px 35px;
+    border: 0;
+    border-radius: 8px;
+    background: none;
+    color: var(--texto);
+    font-size: 13.5px;
+    text-align: left;
+  }
+
+  .opcion:hover {
+    background: var(--chip);
+  }
+
+  .caja-pregunta.tope {
     flex-direction: row;
     align-items: center;
     gap: 14px;
-    padding: 18px 20px;
+    padding: 14px 14px 14px 18px;
   }
 
   .tope p {
+    flex: 1;
+    min-width: 0;
     margin: 0;
-    font-size: 15px;
+    font-size: 14.5px;
     font-weight: 500;
     line-height: 1.5;
   }
 
   .cuadro-icono {
-    width: 36px;
-    height: 36px;
+    width: 32px;
+    height: 32px;
     flex: none;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 11px;
+    display: grid;
+    place-items: center;
+    border-radius: 9px;
     background: var(--chip);
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .enviar,
+    .mandar,
     .capa {
       transition: none;
     }

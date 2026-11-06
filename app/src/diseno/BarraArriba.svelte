@@ -1,36 +1,32 @@
 <!--
-  La barra de arriba de cada vista ("ESTRUCTURA DE UNA VISTA" en plan panel.txt): vidrio sin
-  sombra, 60 de alto, radio 18, de la barra lateral hasta 16 del borde derecho. Lleva el título
-  de la vista, el chip de estado (punto verde mientras todo se lee bien; amarillo con `pausa`, los
-  pedidos en pausa de la parte 6b; hueco con `hueco`, cuando a ningún cliente le sale un estilo o
-  no se pudo leer Estilos) y, a la derecha, los
-  botones que le pase la vista. `junto` va pegado al título, antes del chip (el selector
-  Productos | Categorías de Mi menú, el día de Cortes y reportes), y `despues`, justo después del
-  chip («Actualizado 18:05» de Inicio).
+  La barra de arriba de cada vista (rediseño del 5 de noviembre de 2026; maqueta V64Pv4gmANPRZuJW5hTe5D):
+  pegada arriba, de la barra lateral al borde derecho, con su línea de 1 px a la altura de la de la marca.
+  Lleva el título de la vista, la pastilla de estado (punto verde mientras todo se lee bien; amarillo
+  con `pausa`, los pedidos en pausa de la parte 6b; hueco con `hueco`, cuando a ningún cliente le sale
+  un estilo o no se pudo leer Estilos) y, a la derecha, los botones que le pase la vista. `junto` va
+  pegado al título, antes del chip (el selector Productos | Categorías de Mi menú, el día de Cortes y
+  reportes). Los botones de aquí miden 34.
 -->
 <script lang="ts">
   import type { Snippet } from 'svelte';
-  import Vidrio from './Vidrio.svelte';
 
   let {
     titulo,
     estado = null,
     antes,
     junto,
-    despues,
     children,
   }: {
     titulo: string;
     estado?: { texto: string; vivo: boolean; pausa?: boolean; hueco?: boolean } | null;
-    // Antes del título: la flecha de volver (Tu menú en línea).
+    // Antes del título: la flecha de volver (el punto de venta abierto en el panel).
     antes?: Snippet;
     junto?: Snippet;
-    despues?: Snippet;
     children?: Snippet;
   } = $props();
 </script>
 
-<Vidrio como="header" class="barra-arriba{antes ? ' con-volver' : ''}" radio={18} sombra={false}>
+<header class="barra" class:con-volver={!!antes}>
   {@render antes?.()}
   <h1 class="titulo">{titulo}</h1>
   {@render junto?.()}
@@ -42,27 +38,28 @@
       <span>{estado.texto}</span>
     </span>
   {/if}
-  {@render despues?.()}
   <span class="crece"></span>
   {@render children?.()}
-</Vidrio>
+</header>
 
 <style>
-  :global(.barra-arriba) {
+  .barra {
     position: absolute;
-    left: 276px;
-    right: 16px;
-    top: 16px;
-    height: 60px;
+    left: 0;
+    right: 0;
+    top: 0;
+    height: 56px;
     z-index: 2;
-    padding: 0 12px 0 20px;
+    padding: 0 20px 0 24px;
     display: flex;
     align-items: center;
-    gap: 14px;
+    gap: 12px;
+    background: var(--solido);
+    border-bottom: 1px solid var(--linea);
   }
 
-  :global(.barra-arriba.con-volver) {
-    padding-left: 12px;
+  .barra.con-volver {
+    padding-left: 16px;
   }
 
   /* Un título largo (la primera pregunta de una conversación del agente) se corta con «…». */
@@ -72,20 +69,20 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    font-size: 15px;
+    font-size: 15.5px;
     font-weight: 700;
   }
 
   .chip {
-    height: 28px;
-    display: flex;
+    height: 26px;
+    display: inline-flex;
     align-items: center;
-    gap: 8px;
-    padding: 0 12px;
-    border-radius: 14px;
-    background: var(--chip);
+    gap: 7px;
+    padding: 0 10px;
+    border: 1px solid var(--linea);
+    border-radius: 999px;
     font-size: 12px;
-    font-weight: 500;
+    font-weight: 400;
     color: var(--suave);
     white-space: nowrap;
   }
@@ -94,7 +91,7 @@
     width: 7px;
     height: 7px;
     flex: none;
-    border-radius: 4px;
+    border-radius: 50%;
     background: var(--verde);
   }
 
@@ -109,5 +106,34 @@
 
   .crece {
     flex-grow: 1;
+  }
+
+  /* Los botones de la barra: 34 de alto, radio 9 e icono de 18, como en la maqueta. */
+  .barra :global(.boton) {
+    height: 34px;
+    padding: 0 13px;
+    border-radius: 9px;
+  }
+
+  .barra :global(.boton.tinta),
+  .barra :global(.boton.acento) {
+    padding: 0 14px;
+  }
+
+  .barra :global(.boton > svg) {
+    width: 18px;
+    height: 18px;
+  }
+
+  .barra :global(.cuadro) {
+    width: 34px;
+    height: 34px;
+    border-radius: 9px;
+    color: var(--suave);
+  }
+
+  .barra :global(.cuadro > svg) {
+    width: 18px;
+    height: 18px;
   }
 </style>

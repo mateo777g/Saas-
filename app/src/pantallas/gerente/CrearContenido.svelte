@@ -17,7 +17,7 @@
   import BotonCuadro from '../../diseno/BotonCuadro.svelte';
   import CajaError from '../../diseno/CajaError.svelte';
   import Icono from '../../diseno/Icono.svelte';
-  import Vidrio from '../../diseno/Vidrio.svelte';
+  import Tarjeta from '../../diseno/Tarjeta.svelte';
   import {
     anuncioVisto,
     datosQueVan,
@@ -432,7 +432,7 @@
 {#if errorLectura && !datos}
   <main class="cuerpo-error"><CajaError mensaje={errorLectura} /></main>
 {:else}
-  <Vidrio como="main" class="tarjeta-nuevo" radio={26}>
+  <Tarjeta como="main" class="tarjeta-nuevo">
     <!-- 1 Producto -->
     <div class="seccion">
       <div class="paso-cabeza">
@@ -582,7 +582,7 @@
         <Icono nombre="ia" tamano={16} />{haciendo ? 'Haciendo…' : 'Generar anuncio'}
       </button>
     </div>
-  </Vidrio>
+  </Tarjeta>
 
   <Resultado
     {se}
@@ -613,18 +613,18 @@
 <style>
   .cuerpo-error {
     position: absolute;
-    left: 276px;
-    right: 16px;
-    top: 92px;
+    left: var(--vista-izquierda);
+    right: var(--vista-derecha);
+    top: var(--vista-arriba);
   }
 
   /* El anuncio nuevo: de la barra lateral hasta «Resultado» (440 px y sus márgenes). */
   :global(.tarjeta-nuevo) {
     position: absolute;
-    left: 276px;
-    right: 472px;
-    top: 92px;
-    bottom: 16px;
+    left: var(--vista-izquierda);
+    right: calc(var(--vista-derecha) + 440px + 16px);
+    top: var(--vista-arriba);
+    bottom: var(--vista-abajo);
     padding: 20px;
     display: flex;
     flex-direction: column;

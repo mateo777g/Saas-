@@ -7,7 +7,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import BarraArriba from '../../diseno/BarraArriba.svelte';
-  import Vidrio from '../../diseno/Vidrio.svelte';
+  import Tarjeta from '../../diseno/Tarjeta.svelte';
   import { enZona } from '../../lib/formato';
   import type { Sucursal } from '../../lib/gerente';
   import type { VigiaPedidos } from '../../lib/pedidos.svelte';
@@ -44,19 +44,19 @@
   <CajaSucursales {sucursales} actual={sucursal} {alElegir} />
 </BarraArriba>
 
-<Vidrio como="main" class="tarjeta-pedidos" radio={26}>
+<Tarjeta como="main" class="tarjeta-pedidos">
   <div class="panel-cel">
     <Pedidos cliente={supabase} restauranteId={sucursal.id} restaurante={sucursal.nombre} {vigia} enPanel />
   </div>
-</Vidrio>
+</Tarjeta>
 
 <style>
   :global(.tarjeta-pedidos) {
     position: absolute;
-    left: 276px;
-    right: 16px;
-    top: 92px;
-    bottom: 16px;
+    left: var(--vista-izquierda);
+    right: var(--vista-derecha);
+    top: var(--vista-arriba);
+    bottom: var(--vista-abajo);
     overflow: hidden;
   }
 

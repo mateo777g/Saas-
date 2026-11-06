@@ -16,7 +16,7 @@
   import CajaError from '../../diseno/CajaError.svelte';
   import Campo from '../../diseno/Campo.svelte';
   import Icono from '../../diseno/Icono.svelte';
-  import Vidrio from '../../diseno/Vidrio.svelte';
+  import Tarjeta from '../../diseno/Tarjeta.svelte';
   import { ALGO_SALIO_PANEL, esDeRed, Fallo, SIN_CONEXION } from '../../lib/errores';
   import { borrarFoto, convertirLogo, revisarFoto, subirFoto, urlFoto } from '../../lib/fotos';
   import type { Sucursal } from '../../lib/gerente';
@@ -203,7 +203,7 @@
 </BarraArriba>
 
 <main class="cuerpo">
-  <Vidrio como="section" class="tu-restaurante" radio={26} aria-label="Tu restaurante">
+  <Tarjeta como="section" class="tu-restaurante" aria-label="Tu restaurante">
     <div class="cabeza">
       <span class="etiqueta">TU RESTAURANTE</span>
       <p class="nota">Tu logo, tus datos y tu horario. Los ven tus clientes en tu menú en línea, y van en tus anuncios.</p>
@@ -301,17 +301,16 @@
         />
       </div>
     {/if}
-  </Vidrio>
+  </Tarjeta>
 </main>
 
 <style>
-  /* Debajo de la barra de arriba (16 + 60 + 16) y a la derecha de la lateral (16 + 244 + 16). */
   .cuerpo {
     position: absolute;
-    left: 276px;
-    right: 16px;
-    top: 92px;
-    bottom: 16px;
+    left: var(--vista-izquierda);
+    right: var(--vista-derecha);
+    top: var(--vista-arriba);
+    bottom: var(--vista-abajo);
     display: flex;
     flex-direction: column;
   }

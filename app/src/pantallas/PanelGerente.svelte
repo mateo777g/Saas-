@@ -1,23 +1,11 @@
 <!--
-  El panel del gerente en el paso 1 (libreta 4), portado de la maqueta del Inicio del gerente
-  aprobada el 10 de octubre de 2026 (5SVLK2avzLCq5TaW6mrqq6, estado "Paso 1"): la barra lateral
-  de vidrio con Inicio, Ayuda, Ajustes y Cerrar sesión, la barra de arriba con la cajita de
-  sucursales y la tarjeta del saludo. Ajustes y la ventana Perfil (el pie de la barra) vienen de
-  Flet (libreta 4, decidido el 11 de octubre de 2026). Mi menú y Mesas, bajo GENERAL como en
-  Flet, vienen de sus maquetas (CC2rrjbgxC2yykNa33a3sA y 4TKmJzMwyWMCAVU2MwEDwc), y Empleados de
-  la suya (36iXMMqXCfVv4NuVR7vNSc); las tres traen su propia barra de arriba. Cortes y reportes,
-  Mesas ahora y Tus meseros en Inicio, y la hora de corte en Ajustes vienen de la pieza 5 (maqueta
-  7J6LvYWiktRnGxNugbuaoe); Inicio y Cortes también traen su barra. «Agente IA», al final de
-  GENERAL con su insignia IA como en Flet, viene de su maqueta (KznKZdgQbLTZGs1EwVMvga); al entrar
-  al panel se prepara su saludo, para que salga al instante. «Crear anuncios», después del agente
-  con su insignia IA, viene de su maqueta (JQBw2yGFSiky1x9twUyYbe), y «Mi biblioteca», justo después
-  y sin insignia, de la suya (SMeWoa5ypbcVQmvBGyyytt). «Abrir» en los
-  accesos de Inicio abre ahí mismo el punto de venta o la cocina, con su sesión (maqueta Mesero y
-  cocina TYq97pKacRCYBqcvRp1bZ2). «Tu restaurante», primero en GENERAL, y «Tu menú en línea», que abre
-  el «Abrir» de Menú digital con su flecha para volver, vienen de la maqueta de la 6a
-  (Qx4C5CbKJYpeAsJCfw4ghn). Si la
-  sucursal en la que está no funciona hoy (vencida o pausada, lo dice Postgres), en lugar de todo
-  eso sale la suscripción terminada.
+  El panel del gerente (rediseño del 5 de noviembre de 2026; maqueta V64Pv4gmANPRZuJW5hTe5D): el marco
+  liso con la barra lateral por grupos (Inicio; OPERACIÓN; TU NEGOCIO; IA Y CONTENIDO; abajo, Ayuda, Ajustes
+  y la persona, que abre su Perfil) y cada vista con su propia barra de arriba. Al entrar al panel se
+  prepara el saludo del agente, para que salga al instante. «Abrir» en Inicio abre ahí mismo el punto de
+  venta, la caja o la cocina, con su sesión (maqueta Mesero y cocina TYq97pKacRCYBqcvRp1bZ2). Ctrl K, desde
+  cualquier vista, lleva a Inicio y abre su búsqueda. Si la sucursal en la que está no funciona hoy
+  (vencida o pausada, lo dice Postgres), en lugar de todo eso sale la suscripción terminada.
 
   Vuelve a leer cada vez que Don Chuy regresa a la pestaña (decidido el 11 de octubre de 2026):
   así el saludo sigue la hora y una licencia que venció con el panel abierto se nota en cuanto
@@ -27,7 +15,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import BarraArriba from '../diseno/BarraArriba.svelte';
-  import BarraLateral from '../diseno/BarraLateral.svelte';
+  import Marco from '../diseno/Marco.svelte';
   import { haySaludo, prepararSaludo } from '../lib/agente';
   import { saludoPorHora } from '../lib/formato';
   import { WHATSAPP_FRAGMENTLESS } from '../lib/fragmentless';
@@ -41,6 +29,7 @@
   import { VigiaPedidos } from '../lib/pedidos.svelte';
   import { SIN_PANEL } from '../lib/sesion';
   import { supabase } from '../lib/supabase';
+  import { anotarReciente, type Destino, type NuevoAlEntrar } from '../lib/vistas';
   import CajaError from '../diseno/CajaError.svelte';
   import { esDeRed, SIN_CONEXION } from '../lib/errores';
   import AccesoAbierto from './gerente/AccesoAbierto.svelte';
@@ -93,6 +82,10 @@
     | 'menu-en-linea'
   >('inicio');
   let perfilAbierto = $state(false);
+  // Ctrl K o la búsqueda chica de la barra: Inicio abre la grande y lo toma una vez.
+  let busquedaPedida = $state(false);
+  // La ventana que se abre al llegar a una vista (Agregar producto en la búsqueda); la vista la toma una vez.
+  let nuevoAlEntrar: NuevoAlEntrar | null = null;
 
   // Si la que estaba ya no sale en su lista, se elige otra con la misma regla de al abrir.
   const actual = $derived(
@@ -172,12 +165,12 @@
   }
 
   function alPulsar(valor: string) {
-    if (valor === 'salir') alSalir();
-    else if (valor === 'ayuda') window.open(WHATSAPP_FRAGMENTLESS, '_blank', 'noopener');
+    if (valor === 'ayuda') window.open(WHATSAPP_FRAGMENTLESS, '_blank', 'noopener');
     else if (
       valor === 'inicio' ||
       valor === 'pedidos' ||
       valor === 'restaurante' ||
+      valor === 'menu-en-linea' ||
       valor === 'menu' ||
       valor === 'mesas' ||
       valor === 'equipo' ||
@@ -190,6 +183,44 @@
       vista = valor;
     }
   }
+
+  function irA(destino: Destino) {
+    if (destino.vista === 'ayuda') {
+      alPulsar('ayuda');
+      return;
+    }
+    nuevoAlEntrar = destino.nuevo ?? null;
+    vista = destino.vista;
+  }
+
+  function tomarNuevo(cual: NuevoAlEntrar) {
+    const es = nuevoAlEntrar === cual;
+    if (es) nuevoAlEntrar = null;
+    return es;
+  }
+
+  function abrirBusqueda() {
+    vista = 'inicio';
+    busquedaPedida = true;
+  }
+
+  function tomarBusqueda() {
+    const es = busquedaPedida;
+    if (es) busquedaPedida = false;
+    return es;
+  }
+
+  // Desde cualquier vista, menos con una ventana abierta: se perdería lo que lleva escrito.
+  function alTeclear(e: KeyboardEvent) {
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k' && !document.querySelector('dialog[open]')) {
+      e.preventDefault();
+      abrirBusqueda();
+    }
+  }
+
+  $effect(() => {
+    anotarReciente(actual.id, vista);
+  });
 
   onMount(() => {
     // El saludo del agente para esta sucursal, si no hay uno que sirva (sin tope, el Worker regresa
@@ -205,39 +236,43 @@
   });
 </script>
 
+<svelte:window onkeydown={actual.estado === 'funciona' ? alTeclear : undefined} />
+
 {#if actual.estado !== 'funciona'}
   <Suscripcion sucursal={actual} otras={otrasQueFuncionan} alIr={elegir} {alSalir} />
 {:else}
-  <div class="panel">
-    <BarraLateral
-      subtitulo={plan ? `Plan ${plan}` : ''}
-      opciones={[
-        { valor: 'inicio', texto: 'Inicio', icono: 'inicio' },
-        { valor: 'pedidos', texto: 'Pedidos', icono: 'bolsa', insignia: vigia?.insignia || undefined },
-        { grupo: 'GENERAL' },
-        { valor: 'restaurante', texto: 'Tu restaurante', icono: 'tienda' },
-        { valor: 'menu', texto: 'Mi menú', icono: 'menu' },
-        { valor: 'mesas', texto: 'Mesas', icono: 'mesas' },
-        { valor: 'equipo', texto: 'Empleados', icono: 'usuarios' },
-        { valor: 'cortes', texto: 'Cortes y reportes', icono: 'corte' },
-        { valor: 'agente', texto: 'Agente IA', icono: 'ia', insignia: 'IA' },
-        { valor: 'crear', texto: 'Crear anuncios', icono: 'crear', insignia: 'IA' },
-        { valor: 'biblioteca', texto: 'Mi biblioteca', icono: 'biblio' },
-      ]}
-      acciones={[
-        { valor: 'ayuda', texto: 'Ayuda', icono: 'ayuda' },
-        { valor: 'ajustes', texto: 'Ajustes', icono: 'ajustes' },
-        { valor: 'salir', texto: 'Cerrar sesión', icono: 'salir' },
-      ]}
-      activa={vista === 'pos' || vista === 'caja' || vista === 'cocina' || vista === 'menu-en-linea' ? 'inicio' : vista}
-      alElegir={alPulsar}
-      pie={{
-        inicial: nombre.charAt(0).toUpperCase(),
-        nombre,
-        linea: plan,
-        alPulsar: () => (perfilAbierto = true),
-      }}
-    />
+  <Marco
+    opciones={[
+      { valor: 'inicio', texto: 'Inicio', icono: 'r-inicio' },
+      { grupo: 'OPERACIÓN' },
+      { valor: 'pedidos', texto: 'Pedidos', icono: 'r-bolsa', insignia: vigia?.insignia || undefined },
+      { valor: 'mesas', texto: 'Mesas', icono: 'r-mesas' },
+      { valor: 'cortes', texto: 'Cortes y reportes', icono: 'r-corte' },
+      { grupo: 'TU NEGOCIO' },
+      { valor: 'restaurante', texto: 'Tu restaurante', icono: 'r-tienda' },
+      { valor: 'menu-en-linea', texto: 'Tu menú en línea', icono: 'r-celular' },
+      { valor: 'menu', texto: 'Mi menú', icono: 'r-menu' },
+      { valor: 'equipo', texto: 'Empleados', icono: 'r-usuarios' },
+      { grupo: 'IA Y CONTENIDO' },
+      { valor: 'agente', texto: 'Agente IA', icono: 'r-ia', insignia: 'IA' },
+      { valor: 'crear', texto: 'Crear anuncios', icono: 'r-crear', insignia: 'IA' },
+      { valor: 'biblioteca', texto: 'Mi biblioteca', icono: 'r-biblio' },
+    ]}
+    acciones={[
+      { valor: 'ayuda', texto: 'Ayuda', icono: 'r-ayuda' },
+      { valor: 'ajustes', texto: 'Ajustes', icono: 'r-ajustes' },
+    ]}
+    activa={vista === 'pos' || vista === 'caja' || vista === 'cocina' ? 'inicio' : vista}
+    alElegir={alPulsar}
+    alBuscar={abrirBusqueda}
+    {alSalir}
+    pie={{
+      inicial: nombre.charAt(0).toUpperCase(),
+      nombre,
+      linea: plan ? `Plan ${plan}` : '',
+      alPulsar: () => (perfilAbierto = true),
+    }}
+  >
 
     {#if vista === 'pedidos'}
       {#if vigia}
@@ -253,17 +288,17 @@
     {:else if vista === 'menu-en-linea'}
       <!-- Cada sucursal tiene su menú en línea: se vuelve a abrir desde cero. -->
       {#key actual.id}
-        <MenuEnLinea sucursal={actual} sucursales={datos.sucursales} alElegir={elegir} alVolver={() => (vista = 'inicio')} />
+        <MenuEnLinea sucursal={actual} sucursales={datos.sucursales} alElegir={elegir} />
       {/key}
     {:else if vista === 'menu'}
       <!-- Otra sucursal es otro menú: se vuelve a abrir desde cero. -->
       {#key actual.id}
-        <Menu sucursal={actual} />
+        <Menu sucursal={actual} abrirNuevo={() => tomarNuevo('producto')} />
       {/key}
     {:else if vista === 'mesas'}
       <!-- Otra sucursal son otras mesas: se vuelve a abrir desde cero. -->
       {#key actual.id}
-        <Mesas sucursal={actual} />
+        <Mesas sucursal={actual} abrirNueva={() => tomarNuevo('mesa')} />
       {/key}
     {:else if vista === 'pos' || vista === 'caja' || vista === 'cocina'}
       <!-- Otra sucursal es otro punto de venta: se vuelve a abrir desde cero. -->
@@ -273,7 +308,7 @@
     {:else if vista === 'equipo'}
       <!-- Otra sucursal es otro equipo: se vuelve a abrir desde cero. -->
       {#key actual.id}
-        <Empleados sucursal={actual} {usuarioId} />
+        <Empleados sucursal={actual} {usuarioId} abrirNuevo={() => tomarNuevo('empleado')} />
       {/key}
     {:else if vista === 'inicio'}
       <!-- Otra sucursal son otras mesas y otro equipo: se vuelve a abrir desde cero. -->
@@ -282,9 +317,10 @@
           sucursal={actual}
           sucursales={datos.sucursales}
           {nombre}
+          {tomarBusqueda}
           alElegir={elegir}
           alAbrir={(que) => (vista = que)}
-          alIr={(a) => (vista = a)}
+          alIr={irA}
         />
       {/key}
     {:else if vista === 'cortes'}
@@ -322,7 +358,7 @@
         {/key}
       </main>
     {/if}
-  </div>
+  </Marco>
 
   {#if perfilAbierto}
     <Perfil
@@ -335,20 +371,11 @@
 {/if}
 
 <style>
-  .panel {
-    position: relative;
-    height: 100vh;
-    height: 100dvh;
-    overflow: hidden;
-    background: var(--suelo);
-  }
-
-  /* Debajo de la barra de arriba (16 + 60 + 16) y a la derecha de la lateral (16 + 244 + 16). */
   .cuerpo {
     position: absolute;
-    left: 276px;
-    right: 16px;
-    top: 92px;
-    bottom: 16px;
+    left: var(--vista-izquierda);
+    right: var(--vista-derecha);
+    top: var(--vista-arriba);
+    bottom: var(--vista-abajo);
   }
 </style>

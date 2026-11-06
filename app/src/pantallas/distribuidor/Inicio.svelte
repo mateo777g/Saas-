@@ -12,7 +12,7 @@
   import Icono from '../../diseno/Icono.svelte';
   import NotaTabla from '../../diseno/NotaTabla.svelte';
   import Tabla from '../../diseno/Tabla.svelte';
-  import Vidrio from '../../diseno/Vidrio.svelte';
+  import Tarjeta from '../../diseno/Tarjeta.svelte';
   import type { DatosDistribuidor } from '../../lib/distribuidor';
   import { fecha, plural, vigencia } from '../../lib/formato';
   import { urgente } from '../../lib/panel';
@@ -64,14 +64,14 @@
 
 <div class="inicio">
   {#each ETIQUETAS_CIFRAS as etiqueta, i (etiqueta)}
-    <Vidrio como="section" class="tarjeta cifra">
+    <Tarjeta como="section" class="tarjeta cifra">
       <span class="etiqueta">{etiqueta}</span>
       <span class="valor">{cifras?.[i].valor ?? ''}</span>
       <span class="nota">{cifras?.[i].nota ?? ''}</span>
-    </Vidrio>
+    </Tarjeta>
   {/each}
 
-  <Vidrio como="section" class="tarjeta suyos" aria-label="Tus clientes">
+  <Tarjeta como="section" class="tarjeta suyos" aria-label="Tus clientes">
     <div class="fila-titulo">
       <div>
         <span class="titulo-tarjeta">Tus clientes</span>
@@ -120,9 +120,9 @@
     <div>
       <Boton tamano="chico" etiqueta="Ver clientes" icono="derecha" iconoAlFinal onclick={alVerClientes} />
     </div>
-  </Vidrio>
+  </Tarjeta>
 
-  <Vidrio como="section" class="tarjeta pronto" aria-label="Vencen pronto">
+  <Tarjeta como="section" class="tarjeta pronto" aria-label="Vencen pronto">
     <div class="titulos">
       <span class="titulo-tarjeta">Vencen pronto</span>
       <span class="nota-chica">Vencieron o vencen en los próximos 7 días.</span>
@@ -146,7 +146,7 @@
         {/each}
       {/if}
     </div>
-  </Vidrio>
+  </Tarjeta>
 </div>
 
 <style>

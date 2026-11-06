@@ -1,14 +1,12 @@
 <!--
-  «Tus meseros» de Inicio (maqueta de Inicio 5SVLK2avzLCq5TaW6mrqq6; decidido el 18 de octubre de
-  2026, maqueta Cortes y reportes 7J6LvYWiktRnGxNugbuaoe): los meseros activos, aunque hoy vayan en
-  $0, y cualquiera que hoy abrió cuentas, como Lupita o el gerente; debajo de cada nombre, su rol.
-  Mesas son las cuentas que trae abiertas ahora (con los para llevar); Ventas y Vendido, las
-  cerradas de hoy. Todo lo cuenta tus_meseros; aquí solo se pinta, en el orden que dio Postgres.
+  «Tus meseros» de Inicio (maqueta V64Pv4gmANPRZuJW5hTe5D; decidido el 18 de octubre de 2026): los meseros
+  activos, aunque hoy vayan en $0, y cualquiera que hoy abrió cuentas, como Lupita o el gerente; debajo de
+  cada nombre, su rol. Mesas son las cuentas que trae abiertas ahora (con los para llevar); Ventas y
+  Vendido, las cerradas de hoy. Todo lo cuenta tus_meseros; aquí solo se pinta, en el orden que dio Postgres.
 -->
 <script lang="ts">
-  import Boton from '../../../diseno/Boton.svelte';
-  import Vidrio from '../../../diseno/Vidrio.svelte';
-  import { dinero, plural } from '../../../lib/formato';
+  import Icono from '../../../diseno/Icono.svelte';
+  import { pesos, plural } from '../../../lib/formato';
   import type { TusMeseros } from '../../../lib/reportes';
   import { NOMBRE_ROL } from '../../../lib/roles';
 
@@ -24,7 +22,7 @@
       meseros ? plural(meseros, 'mesero', 'meseros') : '',
       caja ? `${caja} en caja` : '',
       cocina ? `${cocina} en cocina` : '',
-    ].filter(Boolean).join(' · ').toUpperCase();
+    ].filter(Boolean).join(' · ');
   });
 
   const ORDEN_ROLES = ['gerente', 'mesero', 'caja', 'cocina'];
@@ -32,202 +30,176 @@
     [...roles].sort((a, b) => ORDEN_ROLES.indexOf(a) - ORDEN_ROLES.indexOf(b)).map((r) => NOMBRE_ROL[r] ?? r).join(' · ');
 </script>
 
-<Vidrio como="section" class="tarjeta-meseros" aria-label="Tus meseros">
-  <div class="fila-titulo">
+<section class="tarjeta" aria-label="Tus meseros">
+  <div class="cabeza">
     <div>
-      <span class="titulo-tarjeta">Tus meseros</span>
+      <b>Tus meseros</b>
       <span class="nota">Las mesas y las ventas de hoy de cada uno.</span>
     </div>
     <span class="etiqueta resumen">{equipo}</span>
   </div>
 
-  <div class="tabla">
-    <div class="fila cabecera">
-      <span class="etiqueta">MESERO</span>
-      <span class="etiqueta derecha">MESAS</span>
-      <span class="etiqueta derecha">VENTAS</span>
-      <span class="etiqueta derecha">VENDIDO</span>
-    </div>
-    <div class="cuerpo">
-      {#if lectura.estado === 'leyendo'}
-        <p class="mensaje">Cargando tu equipo…</p>
-      {:else if lectura.estado === 'error'}
-        <p class="mensaje">No se pudieron leer las ventas de hoy.</p>
-      {:else if !lectura.datos.personas.length}
-        <p class="mensaje">Todavía no tienes meseros. Dalos de alta en Empleados.</p>
-      {:else}
+  {#if lectura.estado === 'leyendo'}
+    <p class="mensaje">Cargando tu equipo…</p>
+  {:else if lectura.estado === 'error'}
+    <p class="mensaje">No se pudieron leer las ventas de hoy.</p>
+  {:else if !lectura.datos.personas.length}
+    <p class="mensaje">Todavía no tienes meseros. Dalos de alta en Empleados.</p>
+  {:else}
+    <table>
+      <thead>
+        <tr>
+          <th class="etiqueta">Mesero</th>
+          <th class="etiqueta der">Mesas</th>
+          <th class="etiqueta der">Ventas</th>
+          <th class="etiqueta der">Vendido</th>
+        </tr>
+      </thead>
+      <tbody>
         {#each lectura.datos.personas as p (p.miembro_id)}
-          <div class="fila">
-            <span class="persona">
-              <span class="inicial">{p.nombre.charAt(0).toUpperCase()}</span>
-              <span class="nombres">
-                <span class="nombre">{p.nombre}</span>
-                <span class="rol">{rol(p.roles)}</span>
+          <tr>
+            <td>
+              <span class="persona">
+                <span class="inicial">{p.nombre.charAt(0).toUpperCase()}</span>
+                <span>{p.nombre}<span class="rol">{rol(p.roles)}</span></span>
               </span>
-            </span>
-            <span class="celda" class:cero={!p.abiertas}>{p.abiertas}</span>
-            <span class="celda" class:cero={!p.ventas}>{p.ventas}</span>
-            <span class="celda numero" class:cero={!p.vendido}>{dinero(p.vendido)}</span>
-          </div>
+            </td>
+            <td class="der" class:cero={!p.abiertas}>{p.abiertas}</td>
+            <td class="der" class:cero={!p.ventas}>{p.ventas}</td>
+            <td class="der" class:cero={!p.vendido}>{pesos(p.vendido)}</td>
+          </tr>
         {/each}
-      {/if}
-    </div>
-  </div>
+      </tbody>
+    </table>
+  {/if}
 
-  <div>
-    <Boton etiqueta="Ver empleados" icono="derecha" iconoAlFinal tamano="chico" onclick={alVerEmpleados} />
+  <div class="pie">
+    <button type="button" class="boton-chico" onclick={alVerEmpleados}>Ver empleados <Icono nombre="r-derecha" tamano={14} /></button>
   </div>
-</Vidrio>
+</section>
 
 <style>
-  :global(.tarjeta-meseros) {
-    flex: 1;
+  .tarjeta {
     min-width: 0;
-    min-height: 0;
-    padding: 20px;
     display: flex;
     flex-direction: column;
-    gap: 14px;
+    gap: 12px;
+    padding: 18px;
+    background: var(--solido);
+    border: 1px solid var(--borde-tarjeta);
+    border-radius: 14px;
   }
 
-  .fila-titulo {
-    flex: none;
+  .cabeza {
     display: flex;
-    align-items: flex-end;
+    align-items: flex-start;
     justify-content: space-between;
-    gap: 16px;
+    gap: 12px;
   }
 
-  .fila-titulo > div {
-    min-width: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-  }
-
-  .titulo-tarjeta {
-    font-size: 14.5px;
+  b {
+    display: block;
+    font-size: 15px;
     font-weight: 700;
   }
 
+  /* Su renglón mide lo de la letra de 16 px de la maqueta, aunque la nota sea más chica. */
+  .cabeza > div {
+    font-size: 16px;
+  }
+
   .nota {
-    font-size: 12px;
-    font-weight: 500;
-    line-height: 1.45;
-    color: var(--tenue);
+    font-size: 12.5px;
+    font-weight: 400;
+    color: var(--suave);
   }
 
   .resumen {
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
     white-space: nowrap;
-  }
-
-  .tabla {
-    flex: 1;
-    min-height: 0;
-    display: flex;
-    flex-direction: column;
-    background: var(--solido);
-    border: 1px solid var(--linea);
-    border-radius: 18px;
-    overflow: hidden;
-  }
-
-  .cuerpo {
-    flex: 1;
-    min-height: 0;
-    overflow-y: auto;
-  }
-
-  .fila {
-    display: grid;
-    grid-template-columns: 2fr 1fr 1fr 1.1fr;
-    gap: 16px;
-    align-items: center;
-    padding: 9px 16px;
-    border-bottom: 1px solid var(--linea);
-  }
-
-  .cuerpo .fila:last-child {
-    border-bottom: 0;
-  }
-
-  .fila.cabecera {
-    flex: none;
-    height: 40px;
-    padding-block: 0;
-  }
-
-  .derecha {
-    text-align: right;
   }
 
   .mensaje {
     margin: 0;
-    padding: 14px;
     font-size: 13px;
-    font-weight: 500;
+    font-weight: 400;
     line-height: 1.45;
     color: var(--suave);
   }
 
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13.5px;
+    font-weight: 400;
+  }
+
+  th {
+    padding: 0 0 8px;
+    text-align: left;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  td {
+    padding: 9px 0;
+    border-top: 1px solid var(--linea);
+    font-variant-numeric: tabular-nums;
+  }
+
+  th.der,
+  td.der {
+    text-align: right;
+  }
+
+  td.cero {
+    color: var(--tenue);
+  }
+
   .persona {
-    min-width: 0;
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 10px;
   }
 
   .inicial {
-    width: 30px;
-    height: 30px;
+    width: 28px;
+    height: 28px;
     flex: none;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 15px;
+    display: grid;
+    place-items: center;
+    border-radius: 50%;
     background: var(--chip);
-    border: 1px solid var(--linea);
     font-size: 12px;
     font-weight: 700;
   }
 
-  .nombres {
-    min-width: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-  }
-
-  .nombre {
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    font-size: 13.5px;
-    font-weight: 700;
-  }
-
   .rol {
-    font-family: var(--mono);
-    font-size: 10.5px;
+    display: block;
+    font-size: 11.5px;
     color: var(--tenue);
   }
 
-  .celda {
-    text-align: right;
-    white-space: nowrap;
-    font-size: 12.5px;
-    font-weight: 500;
-    font-variant-numeric: tabular-nums;
-    color: var(--suave);
+  .pie {
+    margin-top: auto;
   }
 
-  .celda.numero {
-    font-family: var(--mono);
-    font-size: 13px;
+  .boton-chico {
+    height: 30px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 0 11px;
+    border: 1px solid var(--linea);
+    border-radius: 8px;
+    background: transparent;
     color: var(--texto);
+    font-size: 12.5px;
+    font-weight: 600;
   }
 
-  .celda.cero {
-    color: var(--tenue);
+  .boton-chico:hover {
+    border-color: var(--linea-fuerte);
   }
 </style>

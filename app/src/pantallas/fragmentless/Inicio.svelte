@@ -1,65 +1,74 @@
 <!--
-  Inicio de tu panel, portado de la maqueta aprobada el 10 de octubre de 2026
-  (Tbt7H3G1QRXykzNKe1GXHh). Arriba, las 3 cifras de panel_resumen y tu insignia; en medio, Altas
-  por mes; abajo, Tus distribuidores (panel_distribuidores), con «Ver distribuidores →», y Vencen
-  pronto (las filas de panel_clientes que vencieron o vencen en los próximos 7 días), con Sumar
-  meses y «Ver clientes →».
+  Inicio de Fragmentless (rediseño del 5 de noviembre de 2026; maqueta 4Ryyf9E7u4vsDs57PdkAnz): el mismo del
+  gerente, para que quepa lo que venga (barberías y lo demás). Arriba, el saludo con la fecha y «I'm CEO,
+  B*tch.»; debajo, la búsqueda grande (Ctrl K), Abrir · Atajos · Recientes y, al bajar, el Resumen: las
+  estadísticas, Tus distribuidores (panel_distribuidores) y Vencen pronto (las filas de panel_clientes que
+  vencieron o vencen en los próximos 7 días), con Sumar meses.
 
-  Sin distribuidores, la tarjeta dice «Da de alta el primero en Distribuidores.» (decidido el 12
-  de octubre de 2026; en el paso 1 decía que llegaban con el paso 2).
+  La fecha y la hora las da Postgres, nunca el reloj del aparato. Sin distribuidores, la tarjeta dice «Da de
+  alta el primero en Distribuidores.» (decidido el 12 de octubre de 2026).
 -->
 <script lang="ts">
   import BotonCuadro from '../../diseno/BotonCuadro.svelte';
-  import Boton from '../../diseno/Boton.svelte';
-  import EstadoPunto from '../../diseno/EstadoPunto.svelte';
+  import Buscador, { type RenglonBusqueda } from '../../diseno/Buscador.svelte';
+  import Columnas, { type ItemColumna } from '../../diseno/Columnas.svelte';
   import Icono from '../../diseno/Icono.svelte';
-  import NotaTabla from '../../diseno/NotaTabla.svelte';
-  import Tabla from '../../diseno/Tabla.svelte';
-  import Vidrio from '../../diseno/Vidrio.svelte';
-  import { fecha, plural, vigencia } from '../../lib/formato';
+  import { diaConNombre, fecha, saludoPorHora, vigencia } from '../../lib/formato';
   import { urgente, type Cliente, type DatosPanel } from '../../lib/panel';
-  import GraficaAltas from './GraficaAltas.svelte';
-  import Insignia from './Insignia.svelte';
+  import { ACCIONES, leerRecientes, MI_NOMBRE, VISTAS, type DestinoPanel, type VistaPanel } from '../../lib/vistasFragmentless';
+  import Estadisticas from './inicio/Estadisticas.svelte';
 
   let {
     datos,
+    tomarBusqueda,
+    alIr,
     alSumar,
-    alVerClientes,
-    alVerDistribuidores,
   }: {
     datos: DatosPanel | null;
+    // Si pidieron la búsqueda (Ctrl K o la búsqueda chica); se toma una vez.
+    tomarBusqueda: () => boolean;
+    alIr: (destino: DestinoPanel) => void;
     alSumar: (cliente: Cliente) => void;
-    alVerClientes: () => void;
-    alVerDistribuidores: () => void;
   } = $props();
 
-  const NO_SE_PUDO = 'No se pudo cargar.';
-
   let busqueda = $state('');
+  let buscador = $state<{ enfocar: () => void } | null>(null);
 
-  // Las 3 cifras: el valor y su nota. Mientras se lee la primera vez, vacías.
-  const cifras = $derived.by(() => {
-    const r = datos?.resumen;
-    if (!r) return null;
-    if (!r.ok) return [{ valor: '—', nota: NO_SE_PUDO }, { valor: '—', nota: NO_SE_PUDO }, { valor: '—', nota: NO_SE_PUDO }];
-    const c = r.datos;
-    return [
-      { valor: String(c.funcionan), nota: `de ${plural(c.total, 'restaurante', 'restaurantes')}` },
-      {
-        valor: String(c.vencen_pronto),
-        nota: c.vencen_pronto === 0 ? 'Nada por vencer esta semana' : plural(c.vencen_hoy, 'vence hoy', 'vencen hoy'),
-      },
-      {
-        valor: String(c.sin_funcionar),
-        nota:
-          c.sin_funcionar === 0
-            ? 'Ninguno pausado ni vencido'
-            : `${plural(c.vencidos, 'vencido', 'vencidos')} · ${plural(c.pausados, 'pausado', 'pausados')}`,
-      },
-    ];
+  $effect(() => {
+    if (buscador && tomarBusqueda()) buscador.enfocar();
   });
 
-  const ETIQUETAS_CIFRAS = ['FUNCIONAN HOY', 'VENCEN EN 7 DÍAS', 'SIN FUNCIONAR'];
+  const recientes = leerRecientes();
+
+  const deVista = (v: VistaPanel): RenglonBusqueda => ({
+    clave: v,
+    texto: VISTAS[v].texto,
+    icono: VISTAS[v].icono,
+    alPicar: () => alIr({ vista: v }),
+  });
+  const acciones: RenglonBusqueda[] = ACCIONES.map((a) => ({
+    clave: a.texto,
+    texto: a.texto,
+    de: a.de,
+    icono: a.icono,
+    alPicar: () => alIr(a.destino),
+  }));
+  const vistas = (Object.keys(VISTAS) as VistaPanel[]).map(deVista);
+
+  const abrir: ItemColumna[] = (['clientes', 'distribuidores', 'estilos'] as const).map(deVista);
+  const atajos: ItemColumna[] = acciones.map((a) => ({ ...a, de: undefined }));
+  const deRecientes: ItemColumna[] = recientes.map((v) => ({ ...deVista(v), icono: 'r-reloj' }));
+
+  const estadisticas = $derived(datos?.estadisticas.ok ? datos.estadisticas.datos : null);
+  const hora = $derived(estadisticas?.hora ?? null);
+  // Como en el Agente IA: el saludo y la fecha en una sola línea. Sin esa lectura, sin hora ni fecha.
+  const linea = $derived.by(() => {
+    if (!datos) return '';
+    if (!estadisticas) return `Hola, ${MI_NOMBRE}`;
+    const dia = diaConNombre(estadisticas.hoy);
+    const saludo = saludoPorHora(Number(estadisticas.hora.slice(0, 2)));
+    return `${saludo}, ${MI_NOMBRE} · ${dia.charAt(0).toLowerCase()}${dia.slice(1)}`;
+  });
 
   // Vencen pronto: lo que Postgres marcó como vencida o vence_pronto (los pausados no).
   const pronto = $derived(
@@ -77,339 +86,388 @@
   });
 </script>
 
-<div class="inicio">
-  {#each ETIQUETAS_CIFRAS as etiqueta, i (etiqueta)}
-    <Vidrio como="section" class="tarjeta cifra">
-      <span class="etiqueta">{etiqueta}</span>
-      <span class="valor">{cifras?.[i].valor ?? ''}</span>
-      <span class="nota">{cifras?.[i].nota ?? ''}</span>
-    </Vidrio>
-  {/each}
-
-  <Vidrio como="section" class="tarjeta premio" aria-label="Insignia">
-    <Insignia />
-  </Vidrio>
-
-  <Vidrio como="section" class="tarjeta grafica" aria-label="Altas por mes">
-    <div class="fila-titulo">
-      <div>
-        <span class="titulo-tarjeta">Altas por mes</span>
-        <span class="nota-chica">Restaurantes que diste de alta en los últimos 6 meses.</span>
-      </div>
-      {#if datos?.altas.ok && datos.altas.datos.length}
-        <span class="etiqueta">{datos.altas.datos[0].total_6_meses} EN 6 MESES</span>
-      {/if}
+<main class="vista">
+  <div class="inicio">
+    <div class="saludo">
+      <span class="linea">{linea}</span>
+      <h1>I'm CEO, B*tch.</h1>
     </div>
-    {#if datos?.altas.ok}
-      <GraficaAltas altas={datos.altas.datos} />
-    {:else if datos}
-      <div class="sin-grafica">{NO_SE_PUDO}</div>
-    {:else}
-      <div class="sin-grafica"></div>
-    {/if}
-  </Vidrio>
 
-  <Vidrio como="section" class="tarjeta dist" aria-label="Tus distribuidores">
-    <div class="fila-titulo">
-      <div>
-        <span class="titulo-tarjeta">Tus distribuidores</span>
-        <span class="nota-chica">Quienes venden Fragmentless en persona y cuántos clientes tiene cada uno.</span>
-      </div>
-      <label class="buscador">
-        <Icono nombre="buscar" tamano={16} />
-        <span class="solo-lector">Buscar distribuidor</span>
-        <input type="search" placeholder="Buscar distribuidor" autocomplete="off" bind:value={busqueda} />
-      </label>
+    <Buscador bind:this={buscador} {vistas} {acciones} recientes={recientes.map(deVista)} />
+    <Columnas {abrir} {atajos} recientes={deRecientes} />
+
+    <div class="resumen-titulo">
+      <h2>Resumen</h2>
+      {#if hora}<span class="hora">Actualizado {hora}</span>{/if}
     </div>
-    <Tabla
-      columnas="22fr 11fr 22fr 14fr 9fr"
-      encabezados={[
-        { texto: 'NOMBRE' },
-        { texto: 'ESTADO' },
-        { texto: 'CORREO' },
-        { texto: 'TELÉFONO' },
-        { texto: 'CLIENTES', derecha: true },
-      ]}
-    >
-      {#if !datos}
-        <!-- leyendo la primera vez -->
-      {:else if !datos.distribuidores.ok}
-        <NotaTabla titulo="No se pudieron leer tus distribuidores." texto={datos.distribuidores.mensaje} />
-      {:else if datos.distribuidores.datos.length === 0}
-        <NotaTabla titulo="Todavía no hay distribuidores." texto="Da de alta el primero en Distribuidores." />
-      {:else if distribuidores.length === 0}
-        <NotaTabla titulo="Ningún distribuidor se llama así." texto="Prueba con otro nombre o correo." />
-      {:else}
-        {#each distribuidores as d (d.id)}
-          <div class="fila">
-            <div class="persona">
-              <span class="inicial">{d.nombre.charAt(0)}</span>
-              <span class="nombre">{d.nombre}</span>
-            </div>
-            <EstadoPunto prendido={d.activo} texto={d.activo ? 'Activo' : 'De baja'} />
-            <span class="celda" class:tenue={!d.correo}>{d.correo ?? '—'}</span>
-            <span class="celda" class:tenue={!d.telefono}>{d.telefono ?? '—'}</span>
-            <span class="celda numero">{d.clientes}</span>
+    <Estadisticas {datos} />
+
+    <div class="fila">
+      <section class="tarjeta" aria-label="Tus distribuidores">
+        <div class="cabeza">
+          <div>
+            <b>Tus distribuidores</b>
+            <span class="nota">Quienes venden Fragmentless en persona y cuántos clientes tiene cada uno.</span>
           </div>
-        {/each}
-      {/if}
-    </Tabla>
-    <div>
-      <Boton tamano="chico" etiqueta="Ver distribuidores" icono="derecha" iconoAlFinal onclick={alVerDistribuidores} />
-    </div>
-  </Vidrio>
+          <label class="buscar">
+            <Icono nombre="r-buscar" tamano={18} />
+            <input type="search" placeholder="Buscar distribuidor" aria-label="Buscar distribuidor" autocomplete="off" bind:value={busqueda} />
+          </label>
+        </div>
 
-  <Vidrio como="section" class="tarjeta pronto" aria-label="Vencen pronto">
-    <div class="titulos">
-      <span class="titulo-tarjeta">Vencen pronto</span>
-      <span class="nota-chica">Vencieron o vencen en los próximos 7 días.</span>
-    </div>
-    <div class="lista">
-      {#if !datos}
-        <!-- leyendo la primera vez -->
-      {:else if !datos.clientes.ok}
-        <div class="vacia">{NO_SE_PUDO}</div>
-      {:else if pronto.length === 0}
-        <div class="vacia">Nada por revisar esta semana.</div>
-      {:else}
-        {#each pronto as c (c.id)}
-          <div class="item">
-            <div class="item-texto">
-              <span class="nombre">{c.nombre}</span>
-              <span class="linea">
-                {#if urgente(c)}<b>{vigencia(c.dias_restantes)}</b>{:else}{vigencia(c.dias_restantes)}{/if}
-                · {fecha(c.licencia_fin)}
-              </span>
-            </div>
-            <BotonCuadro
-              icono="calendario-mas"
-              ayuda="Sumar meses"
-              etiqueta="Sumar meses a {c.nombre}"
-              onclick={() => alSumar(c)}
-            />
+        {#if !datos}
+          <!-- leyendo la primera vez -->
+        {:else if !datos.distribuidores.ok}
+          <p class="mensaje">No se pudieron leer tus distribuidores. {datos.distribuidores.mensaje}</p>
+        {:else if datos.distribuidores.datos.length === 0}
+          <p class="mensaje">Todavía no hay distribuidores. Da de alta el primero en Distribuidores.</p>
+        {:else if distribuidores.length === 0}
+          <p class="mensaje">Ningún distribuidor se llama así. Prueba con otro nombre o correo.</p>
+        {:else}
+          <table>
+            <thead>
+              <tr>
+                <th class="etiqueta">Nombre</th>
+                <th class="etiqueta">Estado</th>
+                <th class="etiqueta">Correo</th>
+                <th class="etiqueta">Teléfono</th>
+                <th class="etiqueta der">Clientes</th>
+              </tr>
+            </thead>
+            <tbody>
+              {#each distribuidores as d (d.id)}
+                <tr class:apagado={!d.activo}>
+                  <td><span class="persona"><span class="inicial">{d.nombre.charAt(0)}</span><span>{d.nombre}</span></span></td>
+                  <td><span class="estado"><i class:si={d.activo}></i>{d.activo ? 'Activo' : 'De baja'}</span></td>
+                  <td class="correo" title={d.correo ?? undefined}>{d.correo ?? '—'}</td>
+                  <td class="telefono">{d.telefono ?? '—'}</td>
+                  <td class="der">{d.clientes}</td>
+                </tr>
+              {/each}
+            </tbody>
+          </table>
+        {/if}
+
+        <div class="pie">
+          <button type="button" class="boton-chico" onclick={() => alIr({ vista: 'distribuidores' })}>Ver distribuidores <Icono nombre="r-derecha" tamano={14} /></button>
+        </div>
+      </section>
+
+      <section class="tarjeta" aria-label="Vencen pronto">
+        <div class="cabeza">
+          <div>
+            <b>Vencen pronto</b>
+            <span class="nota">Vencieron o vencen en los próximos 7 días.</span>
           </div>
-        {/each}
-      {/if}
+        </div>
+
+        <div>
+          {#if !datos}
+            <!-- leyendo la primera vez -->
+          {:else if !datos.clientes.ok}
+            <p class="mensaje">No se pudo cargar.</p>
+          {:else if pronto.length === 0}
+            <p class="mensaje">Nada por revisar esta semana.</p>
+          {:else}
+            {#each pronto as c (c.id)}
+              <div class="por-vencer">
+                <div class="por-vencer-texto">
+                  <b>{c.nombre}</b>
+                  <span>{#if urgente(c)}<em>{vigencia(c.dias_restantes)}</em>{:else}{vigencia(c.dias_restantes)}{/if} · {fecha(c.licencia_fin)}</span>
+                </div>
+                <BotonCuadro icono="calendario-mas" ayuda="Sumar meses" etiqueta="Sumar meses a {c.nombre}" onclick={() => alSumar(c)} />
+              </div>
+            {/each}
+          {/if}
+        </div>
+
+        <div class="pie">
+          <button type="button" class="boton-chico" onclick={() => alIr({ vista: 'clientes' })}>Ver clientes <Icono nombre="r-derecha" tamano={14} /></button>
+        </div>
+      </section>
     </div>
-    <div>
-      <Boton tamano="chico" etiqueta="Ver clientes" icono="derecha" iconoAlFinal onclick={alVerClientes} />
-    </div>
-  </Vidrio>
-</div>
+  </div>
+</main>
 
 <style>
+  .vista {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 56px;
+    bottom: 0;
+    overflow-y: auto;
+  }
+
   .inicio {
-    height: 100%;
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr)) minmax(0, 1.3fr);
-    grid-template-rows: 120px 200px minmax(0, 1fr);
-    gap: 16px;
-  }
-
-  .inicio > :global(.tarjeta) {
-    min-width: 0;
-    min-height: 0;
-    padding: 20px;
-  }
-
-  .inicio > :global(.cifra) {
+    max-width: 1060px;
+    margin: 0 auto;
+    padding: 52px 32px 56px;
     display: flex;
     flex-direction: column;
-    gap: 6px;
-    padding: 18px 20px;
   }
 
-  .inicio > :global(.premio) {
-    grid-column: 4;
-    grid-row: 1 / span 2;
-    padding: 10px;
-  }
-
-  .inicio > :global(.grafica) {
-    grid-column: 1 / span 3;
-    grid-row: 2;
+  .saludo {
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    align-items: center;
+    gap: 12px;
+    text-align: center;
   }
 
-  .inicio > :global(.dist) {
-    grid-column: 1 / span 3;
-    grid-row: 3;
-    display: flex;
-    flex-direction: column;
-    gap: 14px;
+  .linea {
+    min-height: 16px;
+    font-size: 13px;
+    font-weight: 400;
+    color: var(--suave);
   }
 
-  .inicio > :global(.pronto) {
-    grid-column: 4;
-    grid-row: 3;
-    display: flex;
-    flex-direction: column;
-    gap: 14px;
-  }
-
-  .valor {
-    font-size: 26px;
+  h1 {
+    margin: 0;
+    font-size: 40px;
     font-weight: 800;
-    letter-spacing: -0.5px;
-    line-height: 1.15;
-    min-height: 1.15em;
+    line-height: 1.08;
+    letter-spacing: -1px;
+    text-wrap: balance;
+  }
+
+  .hora {
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 400;
+    color: var(--tenue);
+    white-space: nowrap;
+  }
+
+  .resumen-titulo {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    margin: 56px 0 14px;
+  }
+
+  h2 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 700;
+  }
+
+  .fila {
+    display: grid;
+    grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
+    gap: 12px;
+    margin-top: 12px;
+  }
+
+  .tarjeta {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 18px;
+    background: var(--solido);
+    border: 1px solid var(--borde-tarjeta);
+    border-radius: 14px;
+  }
+
+  .cabeza {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .cabeza > div {
+    min-width: 0;
+    font-size: 14px;
+  }
+
+  .cabeza b {
+    display: block;
+    font-size: 15px;
+    font-weight: 700;
   }
 
   .nota {
     font-size: 12.5px;
-    font-weight: 500;
-    color: var(--suave);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  .titulo-tarjeta {
-    font-size: 14.5px;
-    font-weight: 700;
-  }
-
-  .nota-chica {
-    font-size: 12px;
-    font-weight: 500;
-    line-height: 1.45;
-    color: var(--tenue);
-  }
-
-  .fila-titulo {
-    display: flex;
-    align-items: flex-end;
-    justify-content: space-between;
-    gap: 16px;
-  }
-
-  .fila-titulo > div,
-  .titulos {
-    min-width: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-  }
-
-  .sin-grafica {
-    flex: 1;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 12.5px;
-    font-weight: 500;
+    font-weight: 400;
     color: var(--suave);
   }
 
-  .buscador {
-    width: 260px;
-    height: 40px;
-    flex: none;
+  .buscar {
+    flex: 0 0 190px;
+    height: 36px;
     display: flex;
     align-items: center;
-    gap: 10px;
-    padding: 0 14px;
-    border: 1px solid var(--linea);
-    border-radius: 12px;
-    color: var(--tenue);
+    gap: 8px;
+    padding: 0 12px;
+    border: 1px solid var(--borde-tarjeta);
+    border-radius: 10px;
+    color: var(--suave);
   }
 
-  .buscador:focus-within {
-    border-color: var(--suave);
+  .buscar:focus-within {
+    border-color: var(--linea-fuerte);
   }
 
-  .buscador input {
+  .buscar input {
     flex: 1;
     min-width: 0;
     border: 0;
-    outline: none;
+    outline: 0;
     background: transparent;
     color: var(--texto);
-    font-size: 13.5px;
-    font-weight: 500;
+    font-size: 13px;
+    font-weight: 400;
   }
 
-  .buscador input::placeholder {
-    color: var(--tenue);
+  .mensaje {
+    margin: 0;
+    font-size: 13px;
+    font-weight: 400;
+    line-height: 1.45;
+    color: var(--suave);
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13.5px;
+    font-weight: 400;
+  }
+
+  th {
+    padding: 0 0 8px;
+    text-align: left;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  td {
+    padding: 9px 0;
+    border-top: 1px solid var(--linea);
+    font-variant-numeric: tabular-nums;
+  }
+
+  th.der,
+  td.der {
+    text-align: right;
+  }
+
+  /* Con datos largos, las columnas no se pegan. */
+  th:not(:last-child),
+  td:not(:last-child) {
+    padding-right: 12px;
+  }
+
+  .correo {
+    max-width: 170px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .telefono {
+    white-space: nowrap;
+  }
+
+  tr.apagado td {
+    color: var(--suave);
   }
 
   .persona {
-    min-width: 0;
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 10px;
   }
 
   .inicial {
-    width: 34px;
-    height: 34px;
+    width: 28px;
+    height: 28px;
     flex: none;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 17px;
+    display: grid;
+    place-items: center;
+    border-radius: 50%;
     background: var(--chip);
-    border: 1px solid var(--linea);
-    font-size: 13px;
+    font-size: 12px;
     font-weight: 700;
   }
 
-  .nombre {
-    font-size: 13.5px;
-    font-weight: 700;
+  .estado {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
     white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
   }
 
-  .lista {
-    flex: 1;
-    min-height: 0;
-    overflow: auto;
-    display: flex;
-    flex-direction: column;
+  .estado i {
+    width: 8px;
+    height: 8px;
+    box-sizing: border-box;
+    border-radius: 50%;
+    border: 1.5px solid var(--tenue);
   }
 
-  .item {
+  .estado i.si {
+    background: var(--texto);
+    border-color: var(--texto);
+  }
+
+  .por-vencer {
     display: flex;
     align-items: center;
+    justify-content: space-between;
     gap: 12px;
     padding: 11px 0;
     border-bottom: 1px solid var(--linea);
   }
 
-  .item:first-child {
+  .por-vencer:first-child {
     border-top: 1px solid var(--linea);
   }
 
-  .item-texto {
-    flex: 1;
+  .por-vencer-texto {
     min-width: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 3px;
   }
 
-  .linea {
-    font-size: 12px;
-    font-weight: 500;
+  .por-vencer b {
+    display: block;
+    font-size: 13.5px;
+    font-weight: 700;
+  }
+
+  .por-vencer span {
+    font-size: 12.5px;
+    font-weight: 400;
     color: var(--suave);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
   }
 
-  .linea b {
+  .por-vencer em {
+    font-style: normal;
     font-weight: 600;
     color: var(--texto);
   }
 
-  .vacia {
-    padding: 24px 0;
+  /* Decidido el 5 de noviembre de 2026: los botones de las dos tarjetas, a la misma altura. */
+  .pie {
+    margin-top: auto;
+  }
+
+  .boton-chico {
+    height: 30px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 0 11px;
+    border: 1px solid var(--linea);
+    border-radius: 8px;
+    background: transparent;
+    color: var(--texto);
     font-size: 12.5px;
-    font-weight: 500;
-    color: var(--suave);
+    font-weight: 600;
+  }
+
+  .boton-chico:hover {
+    border-color: var(--linea-fuerte);
   }
 </style>

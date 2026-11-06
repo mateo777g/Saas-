@@ -13,10 +13,11 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import BarraArriba from '../diseno/BarraArriba.svelte';
-  import BarraLateral from '../diseno/BarraLateral.svelte';
   import Boton from '../diseno/Boton.svelte';
+  import Marco from '../diseno/Marco.svelte';
   import { plural } from '../lib/formato';
   import { leerPanel, type Cliente, type DatosPanel, type Distribuidor } from '../lib/panel';
+  import { anotarReciente, MI_NOMBRE, type DestinoPanel, type VistaPanel } from '../lib/vistasFragmentless';
   import AltaDistribuidor from './fragmentless/AltaDistribuidor.svelte';
   import AltaRestaurante from './fragmentless/AltaRestaurante.svelte';
   import BajaOReactivar from './fragmentless/BajaOReactivar.svelte';
@@ -33,7 +34,7 @@
   import TopeIa from './fragmentless/TopeIa.svelte';
   import Ajustes from './gerente/Ajustes.svelte';
 
-  type Vista = 'inicio' | 'clientes' | 'distribuidores' | 'estilos' | 'ajustes';
+  type Vista = VistaPanel;
   type VentanaAbierta =
     | { tipo: 'alta' | 'alta-distribuidor' }
     | { tipo: 'ligar' | 'sumar' | 'fijar' | 'tope'; cliente: Cliente }
@@ -52,6 +53,10 @@
   let datos = $state<DatosPanel | null>(null);
   let leyendo = $state(false);
   let ventana = $state<VentanaAbierta | null>(null);
+  // Ctrl K o la búsqueda chica de la barra: Inicio abre la grande y lo toma una vez.
+  let busquedaPedida = $state(false);
+  // «Nuevo estilo» en la búsqueda o en Atajos: Estilos abre su ventana al llegar y lo toma una vez.
+  let estiloPedido = false;
   // Si se pide leer otra vez antes de que termine la lectura anterior, gana la última.
   let turno = 0;
 
@@ -79,9 +84,43 @@
   });
 
   function elegir(valor: string) {
-    if (valor === 'salir') alSalir();
-    else vista = valor as Vista;
+    vista = valor as Vista;
   }
+
+  function ir(destino: DestinoPanel) {
+    vista = destino.vista;
+    if (destino.nuevo === 'estilo') estiloPedido = true;
+    else if (destino.nuevo) ventana = { tipo: destino.nuevo };
+  }
+
+  function abrirBusqueda() {
+    vista = 'inicio';
+    busquedaPedida = true;
+  }
+
+  function tomarBusqueda() {
+    const es = busquedaPedida;
+    if (es) busquedaPedida = false;
+    return es;
+  }
+
+  function tomarEstilo() {
+    const es = estiloPedido;
+    estiloPedido = false;
+    return es;
+  }
+
+  // Desde cualquier vista, menos con una ventana abierta: se perdería lo que lleva escrito.
+  function alTeclear(e: KeyboardEvent) {
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k' && !document.querySelector('dialog[open]')) {
+      e.preventDefault();
+      abrirBusqueda();
+    }
+  }
+
+  $effect(() => {
+    anotarReciente(vista);
+  });
 
   const cerrarVentana = () => (ventana = null);
 
@@ -95,26 +134,25 @@
   onMount(leer);
 </script>
 
-<div class="panel">
-  <BarraLateral
-    subtitulo="Plataforma"
-    opciones={[
-      { valor: 'inicio', texto: 'Inicio', icono: 'inicio' },
-      { valor: 'clientes', texto: 'Clientes', icono: 'tienda' },
-      { valor: 'distribuidores', texto: 'Distribuidores', icono: 'usuarios' },
-      { valor: 'estilos', texto: 'Estilos', icono: 'biblio' },
-    ]}
-    acciones={[
-      { valor: 'ajustes', texto: 'Ajustes', icono: 'ajustes' },
-      { valor: 'salir', texto: 'Cerrar sesión', icono: 'salir' },
-    ]}
-    activa={vista}
-    alElegir={elegir}
-    pie={{ inicial: 'F', nombre: 'Fragmentless', linea: correo }}
-  />
+<svelte:window onkeydown={alTeclear} />
+
+<Marco
+  opciones={[
+    { valor: 'inicio', texto: 'Inicio', icono: 'r-inicio' },
+    { valor: 'clientes', texto: 'Clientes', icono: 'r-tienda' },
+    { valor: 'distribuidores', texto: 'Distribuidores', icono: 'r-usuarios' },
+    { valor: 'estilos', texto: 'Estilos', icono: 'r-biblio' },
+  ]}
+  acciones={[{ valor: 'ajustes', texto: 'Ajustes', icono: 'r-ajustes' }]}
+  activa={vista}
+  alElegir={elegir}
+  {alSalir}
+  alBuscar={abrirBusqueda}
+  pie={{ inicial: MI_NOMBRE.charAt(0), nombre: MI_NOMBRE, linea: correo }}
+>
 
   {#if vista === 'estilos'}
-    <Estilos />
+    <Estilos {tomarEstilo} />
   {:else}
     <BarraArriba titulo={TITULOS[vista]} {estado}>
       {#if vista !== 'ajustes'}
@@ -127,15 +165,11 @@
       {/if}
     </BarraArriba>
 
+    {#if vista === 'inicio'}
+      <Inicio {datos} {tomarBusqueda} alIr={ir} alSumar={(cliente) => (ventana = { tipo: 'sumar', cliente })} />
+    {:else}
     <main class="cuerpo">
-      {#if vista === 'inicio'}
-        <Inicio
-          {datos}
-          alSumar={(cliente) => (ventana = { tipo: 'sumar', cliente })}
-          alVerClientes={() => (vista = 'clientes')}
-          alVerDistribuidores={() => (vista = 'distribuidores')}
-        />
-      {:else if vista === 'clientes'}
+      {#if vista === 'clientes'}
         <Clientes
           clientes={datos?.clientes ?? null}
           alLigar={(cliente) => (ventana = { tipo: 'ligar', cliente })}
@@ -152,6 +186,7 @@
         <Ajustes />
       {/if}
     </main>
+    {/if}
   {/if}
 
   {#if ventana?.tipo === 'alta'}
@@ -182,25 +217,15 @@
       />
     {/if}
   {/if}
-</div>
+</Marco>
 
 <style>
-  .panel {
-    position: relative;
-    height: 100vh;
-    height: 100dvh;
-    overflow: hidden;
-    background: var(--suelo);
-  }
-
-  /* Debajo de la barra de arriba (16 + 60 + 16) y a la derecha de la lateral (16 + 244 + 16).
-     Sin desplazamiento propio, como en la maqueta: cortaría la sombra de las tarjetas. Lo que no
-     cabe se desplaza dentro de cada tabla. */
+  /* Sin desplazamiento propio, como en la maqueta: lo que no cabe se desplaza dentro de cada tabla. */
   .cuerpo {
     position: absolute;
-    left: 276px;
-    right: 16px;
-    top: 92px;
-    bottom: 16px;
+    left: var(--vista-izquierda);
+    right: var(--vista-derecha);
+    top: var(--vista-arriba);
+    bottom: var(--vista-abajo);
   }
 </style>

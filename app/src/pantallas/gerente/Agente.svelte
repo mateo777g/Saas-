@@ -1,13 +1,15 @@
 <!--
-  El Agente IA del gerente (libreta 1; maqueta Agente IA KznKZdgQbLTZGs1EwVMvga, copiada de la
-  vista de Flet del 28 de septiembre). Sobre su fondo de manchas, que es solo de esta vista:
-  - la bienvenida: la fecha y la hora del restaurante (las da Postgres, nunca el reloj del
-    aparato), el saludo por la hora con su nombre y, debajo, el renglón que escribe la IA (el de
-    reserva, para que salga al instante; si no hay, el local, sin aviso), la caja, las 3 ideas y
-    el selector Hoy · Semana · Mes;
-  - la conversación: cada pregunta en su burbuja y cada respuesta en Markdown, renglón por
-    renglón; a la derecha, «Lo que leí para responder» de la última respuesta, en palabras, como
-    lo mandó cada herramienta de Postgres.
+  El Agente IA del gerente (libreta 1; rediseño del 5 de noviembre de 2026, encuestas 17 a 22; maqueta
+  V64Pv4gmANPRZuJW5hTe5D). Tranquilo, como Claude: la vista entra en blanco y al picarle a un espacio vacío
+  del fondo sale la ondita.
+  - la bienvenida, al centro de la pantalla: el saludo por la hora con su nombre y la fecha (las da Postgres,
+    nunca el reloj del aparato), en grande el renglón que escribe la IA (el de reserva, para que salga al
+    instante; si no hay, el local, sin aviso) con su última palabra subrayada, la caja, las 3 ideas y el
+    candado. Al pasar sobre una idea cambia el texto de la caja; al picarla, se escribe. Lo que se le manda
+    al agente es su prompt largo, no lo que se ve;
+  - la conversación: cada pregunta en su globo gris y cada respuesta en Markdown, renglón por renglón, con
+    «Lo que leí» debajo de cada una, en palabras, como lo mandó cada herramienta de Postgres. La caja se
+    queda fija abajo.
   Cada número de una respuesta sale de una herramienta de Postgres: aquí no se cuenta nada.
 
   Mientras piensa (maqueta AyS4xUfa5XmDaPJG1iqSgw): la pregunta vuela de la caja a su lugar, salen los
@@ -15,6 +17,9 @@
   «Pensé 6 s ›». El botón de mandar es «Detener»: la pregunta se queda con «La detuviste» y vuelve a
   la caja; nunca se le manda al agente y, lo ya gastado, el Worker lo anota. Lo que decidí yo sobre
   todo esto, en planes/trabajo/estrella/vista.md.
+
+  El «+» de la caja pide un «Reporte en PDF» (lib/reporte.ts): lo arma el sistema, sin IA y sin costo, y
+  llega como respuesta del agente. Por eso sigue ahí aunque no haya tope.
 
   Historial guarda las conversaciones en este navegador, por sucursal (las últimas 30), y «Cerrar
   sesión» las borra. Sin tope (estado_ia), la caja dice el aviso y las ideas se apagan; el
@@ -26,12 +31,8 @@
   import BarraArriba from '../../diseno/BarraArriba.svelte';
   import Boton from '../../diseno/Boton.svelte';
   import CajaError from '../../diseno/CajaError.svelte';
-  import Estrella from '../../diseno/Estrella.svelte';
-  import FondoDithering from '../../diseno/FondoDithering.svelte';
   import Icono from '../../diseno/Icono.svelte';
-  import { ICONOS } from '../../diseno/iconos';
   import Pensando from '../../diseno/Pensando.svelte';
-  import Vidrio from '../../diseno/Vidrio.svelte';
   import {
     guardarConversacion,
     IDEAS,
@@ -46,16 +47,17 @@
     type Conversacion,
     type EstadoIa,
     type PasoAgente,
-    type Periodo,
     type Turno,
   } from '../../lib/agente';
-  import { SIN_CONEXION } from '../../lib/errores';
-  import { fechaLarga, saludoPorHora } from '../../lib/formato';
+  import { esDeRed, SIN_CONEXION } from '../../lib/errores';
+  import { diaConNombre, saludoPorHora } from '../../lib/formato';
   import type { Sucursal } from '../../lib/gerente';
+  import { prepararReporte, tituloDelPedido, type PeriodoReporte } from '../../lib/reporte';
   import CajaSucursales from './CajaSucursales.svelte';
+  import ArchivoReporte from './agente/ArchivoReporte.svelte';
   import CajaPregunta from './agente/CajaPregunta.svelte';
   import Historial from './agente/Historial.svelte';
-  import Pildora from '../../diseno/Pildora.svelte';
+  import Ondita from './agente/Ondita.svelte';
   import Respuesta from './agente/Respuesta.svelte';
 
   let {
@@ -90,6 +92,8 @@
   let pasos = $state<PasoAgente[]>([]);
   let segundos = $state(0);
   let llamada: AbortController | null = null;
+  // El reporte que se está pidiendo: es un momento, lo que tarda Postgres en dar las fechas.
+  let reporteEnCamino = $state<{ id: string; visible: string } | null>(null);
   // La que no se pudo contestar: su burbuja se queda con el aviso y vuelve a la caja.
   let fallo = $state<(Pedido & { id: string; mensaje: string }) | null>(null);
   // La que se acaba de detener: qué turno es y si su pregunta volvió a la caja.
@@ -97,21 +101,26 @@
   // La respuesta que acaba de llegar sale renglón por renglón; las demás, enteras.
   let nueva = $state<{ id: string; turno: number } | null>(null);
   let valor = $state('');
-  let periodo = $state<Periodo>('hoy');
   let placeholder = $state(PH_BIENVENIDA);
-  let mensajes = $state<HTMLDivElement | null>(null);
+  let vista = $state<HTMLElement | null>(null);
+  let abajo = $state<HTMLDivElement | null>(null);
   let caja = $state<{ enfocar: () => void; medir: () => DOMRect | null } | null>(null);
+  let ondita = $state<{ picar: (e: MouseEvent) => void } | null>(null);
 
   const sinTope = $derived(estado && !estado.puede ? estado : null);
-  const ocupado = $derived(pendiente !== null);
+  const ocupado = $derived(pendiente !== null || reporteEnCamino !== null);
   const pensandoAqui = $derived(pendiente !== null && pendiente.id === actual?.id);
-  const enChat = $derived(actual !== null);
-  const titulo = $derived(actual?.titulo ?? 'Agente IA');
 
-  // Lo que leyó para la última respuesta de la conversación abierta, si no hay otra esperando.
-  const leido = $derived.by(() => {
-    if (!actual || (pendiente && pendiente.id === actual.id) || (fallo && fallo.id === actual.id)) return null;
-    return actual.turnos.at(-1)?.leido ?? null;
+  // La fecha va en minúscula después del nombre: «Buenas tardes, Don Chuy · jueves 5 de noviembre».
+  const linea1 = $derived.by(() => {
+    const dia = diaConNombre(sucursal.hoy);
+    return `${saludoPorHora(sucursal.hora)}, ${nombre} · ${dia.charAt(0).toLowerCase()}${dia.slice(1)}`;
+  });
+
+  // Siempre la última palabra, porque la frase la escribe la IA y cambia.
+  const frase = $derived.by(() => {
+    const i = segundo.lastIndexOf(' ');
+    return { inicio: segundo.slice(0, i + 1), ultima: segundo.slice(i + 1) };
   });
 
   // Sin la hora de corte, la nota no dice de qué hora a qué hora va el día.
@@ -121,29 +130,37 @@
       : `Siempre tengo a la mano tu menú, tus mesas y las cuentas abiertas ahora. Tu día se cuenta de ${corte}:00 a ${corte}:00, y las sumas las hace el panel, no la IA.`,
   );
 
+  // La ondita sale solo en lo vacío del fondo.
+  function alPicar(e: MouseEvent) {
+    if ((e.target as Element).closest('button, textarea, input, a, .caja-pregunta, .idea, .burbuja, .respuesta, .piensa, .error, .abajo')) return;
+    ondita?.picar(e);
+  }
+
   // La pregunta queda hasta arriba: la respuesta se lee desde su principio (como en Flet).
   async function irALaPregunta() {
     await tick();
-    const burbujas = mensajes?.querySelectorAll('.burbuja');
+    const burbujas = vista?.querySelectorAll('.burbuja');
     const ultima = burbujas?.[burbujas.length - 1] as HTMLElement | undefined;
-    if (mensajes && ultima) mensajes.scrollTo({ top: ultima.offsetTop - 32, behavior: 'smooth' });
+    if (!vista || !ultima) return;
+    const top = vista.scrollTop + ultima.getBoundingClientRect().top - vista.getBoundingClientRect().top - 32;
+    vista.scrollTo({ top, behavior: 'smooth' });
   }
 
-  // Si los pasos ya no caben abajo, baja lo justo para verlos.
+  // Si los pasos ya no caben arriba de la caja, baja lo justo para verlos.
   $effect(() => {
     void pasos.length;
     tick().then(() => {
-      const piensa = mensajes?.querySelector('.piensa');
-      if (!mensajes || !piensa) return;
-      const falta = piensa.getBoundingClientRect().bottom - mensajes.getBoundingClientRect().bottom + 16;
-      if (falta > 0) mensajes.scrollBy({ top: falta, behavior: 'smooth' });
+      const piensa = vista?.querySelector('.piensa');
+      if (!vista || !piensa || !abajo) return;
+      const falta = piensa.getBoundingClientRect().bottom - abajo.getBoundingClientRect().top + 16;
+      if (falta > 0) vista.scrollBy({ top: falta, behavior: 'smooth' });
     });
   });
 
   // La burbuja de la pregunta vuela desde la caja hasta su lugar (la referencia de los pasos: 560 ms, su curva).
   async function volarDesde(desde: DOMRect | null) {
     await tick();
-    const burbujas = mensajes?.querySelectorAll('.burbuja');
+    const burbujas = vista?.querySelectorAll('.burbuja');
     const burbuja = burbujas?.[burbujas.length - 1] as HTMLElement | undefined;
     if (!desde || !burbuja || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
     const lugar = burbuja.getBoundingClientRect();
@@ -185,7 +202,7 @@
   }
 
   async function enviar(p: Pedido) {
-    if (pendiente || sinTope) return;
+    if (ocupado || sinTope) return;
     const desde = caja?.medir() ?? null;
     const base: Conversacion = actual ?? { id: crypto.randomUUID(), titulo: p.visible, fecha: '', hora: '', turnos: [] };
     actual = base;
@@ -205,7 +222,7 @@
     volarDesde(desde);
 
     try {
-      const r = await preguntar(sucursal.id, p.pregunta, base.turnos, periodo, {
+      const r = await preguntar(sucursal.id, p.pregunta, base.turnos, {
         senal: esta.signal,
         alPasos: (lista) => (pasos = lista),
         alLlegar: () => {
@@ -280,19 +297,63 @@
     llamada?.abort();
   }
 
+  // El «+»: entra a la plática como una pregunta, sin llamar a OpenAI. Si la conversación es nueva, se llama
+  // como el reporte y lleva la fecha y la hora de ahora.
+  async function pedirReporte(periodo: PeriodoReporte) {
+    if (ocupado) return;
+    const visible = tituloDelPedido(periodo);
+    const base: Conversacion = actual ?? { id: crypto.randomUUID(), titulo: visible, fecha: '', hora: '', turnos: [] };
+    actual = base;
+    fallo = null;
+    detenida = null;
+    nueva = null;
+    reporteEnCamino = { id: base.id, visible };
+    irALaPregunta();
+    try {
+      const { reporte, ahora } = await prepararReporte(sucursal.id, periodo);
+      const antes = conversaciones.find((c) => c.id === base.id) ?? base;
+      const turno: Turno = { visible, pregunta: '', respuesta: '', leido: [], idea: null, reporte };
+      const conversacion: Conversacion = {
+        ...antes,
+        fecha: antes.fecha || ahora.fecha,
+        hora: antes.hora || ahora.hora,
+        turnos: [...antes.turnos, turno],
+      };
+      conversaciones = guardarConversacion(sucursal.id, conversacion);
+      if (actual?.id === base.id) actual = conversacion;
+    } catch (error) {
+      console.error('[agente] no se pudo pedir el reporte:', error);
+      fallo = {
+        visible,
+        pregunta: '',
+        idea: null,
+        id: base.id,
+        mensaje: `${esDeRed(error) ? SIN_CONEXION : 'No se pudo armar el reporte.'} Pídelo otra vez desde el «+».`,
+      };
+    } finally {
+      reporteEnCamino = null;
+      await tick();
+      irALaPregunta();
+      caja?.enfocar();
+    }
+  }
+
   // Lo escrito en la caja. Si es la que no se pudo contestar o la que se detuvo, se manda igual que
-  // la primera vez.
+  // la primera vez; si es la frase de una idea, se manda su prompt.
   function enviarLoEscrito() {
     const texto = valor.trim();
     if (!texto) return;
     const otraVez = [fallo, detenida].find((x) => x && x.id === actual?.id && x.visible === texto);
+    const idea = IDEAS.findIndex((x) => x.frase === texto);
     valor = '';
-    enviar(otraVez ?? { visible: texto, pregunta: texto, idea: null });
+    if (otraVez) enviar(otraVez);
+    else if (idea >= 0) enviar({ visible: texto, pregunta: IDEAS[idea].prompt, idea });
+    else enviar({ visible: texto, pregunta: texto, idea: null });
   }
 
   function usarIdea(i: number) {
-    const idea = IDEAS[i];
-    enviar({ visible: idea.titulo, pregunta: idea.prompt, idea: i });
+    valor = IDEAS[i].frase;
+    caja?.enfocar();
   }
 
   function nuevaConversacion() {
@@ -302,6 +363,7 @@
     nueva = null;
     valor = '';
     placeholder = PH_BIENVENIDA;
+    vista?.scrollTo({ top: 0 });
   }
 
   async function abrirConversacion(c: Conversacion) {
@@ -311,7 +373,7 @@
     nueva = null;
     valor = '';
     await tick();
-    mensajes?.scrollTo({ top: mensajes.scrollHeight });
+    vista?.scrollTo({ top: vista.scrollHeight });
   }
 
   onMount(() => {
@@ -331,39 +393,35 @@
   });
 </script>
 
-<FondoDithering />
-
-<BarraArriba {titulo} estado={{ texto: 'Leyendo tus ventas en vivo', vivo: true }}>
+<BarraArriba titulo="Agente IA" estado={{ texto: 'Leyendo tus ventas en vivo', vivo: true }}>
   <Historial {conversaciones} actual={actual?.id ?? null} hoy={sucursal.hoy} alAbrir={abrirConversacion} />
-  <Boton etiqueta="Nueva conversación" icono="mas" tono="tinta" onclick={nuevaConversacion} />
+  <Boton etiqueta="Nueva conversación" icono="r-mas" tono="tinta" onclick={nuevaConversacion} />
   <CajaSucursales {sucursales} actual={sucursal} {alElegir} />
 </BarraArriba>
 
-{#if !enChat}
-  <main class="centro">
-    {#if listo}
-      <Vidrio como="section" class="bienvenida" radio={30} aria-label="Bienvenida">
-        <div class="cabeza">
-          <div class="fecha">
-            <span class="logo"><Estrella fondo="panel" tamano={22} /></span>
-            <span class="etiqueta">{fechaLarga(sucursal.hoy)}</span>
-          </div>
-          <h1 class="saludo">{saludoPorHora(sucursal.hora)}, {nombre}.<span>{segundo}</span></h1>
-        </div>
+<main class="vista" bind:this={vista}>
+  <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_noninteractive_element_interactions -->
+  <section class="agente" aria-label="Agente IA" onclick={alPicar}>
+    <Ondita bind:this={ondita} />
 
-        <CajaPregunta
-          bind:this={caja}
-          modo="bienvenida"
-          bind:valor
-          bind:periodo
-          {placeholder}
-          {ocupado}
-          aviso={sinTope ? textoSinTope(sinTope) : null}
-          alEnviar={enviarLoEscrito}
-        />
+    {#if !actual}
+      {#if listo}
+        <div class="bienvenida">
+          <div class="linea1">{linea1}</div>
+          <h1>{frase.inicio}<span class="subrayada">{frase.ultima}</span></h1>
 
-        <div class="ideas-caja">
-          <span class="etiqueta">IDEAS PARA TI</span>
+          <CajaPregunta
+            bind:this={caja}
+            modo="bienvenida"
+            bind:valor
+            {placeholder}
+            {ocupado}
+            aviso={sinTope ? textoSinTope(sinTope) : null}
+            alEnviar={enviarLoEscrito}
+            alReporte={pedirReporte}
+          />
+
+          <div class="etiqueta ideas-titulo">Ideas para ti</div>
           <div class="ideas">
             {#each IDEAS as idea, i (idea.titulo)}
               <button
@@ -371,187 +429,219 @@
                 class="idea"
                 disabled={!!sinTope || ocupado}
                 onclick={() => usarIdea(i)}
-                onmouseenter={() => (placeholder = idea.prompt)}
+                onmouseenter={() => (placeholder = idea.frase)}
                 onmouseleave={() => (placeholder = PH_BIENVENIDA)}
               >
                 <span class="idea-cabeza">
                   <span class="cuadro-icono"><Icono nombre={idea.icono} tamano={18} /></span>
-                  <span class="flecha"><Icono nombre="derecha" tamano={16} /></span>
+                  <Icono nombre="r-derecha" tamano={14} />
                 </span>
-                <span class="idea-textos">
-                  <span class="idea-titulo">{idea.titulo}</span>
+                <span>
+                  <b>{idea.titulo}</b>
                   <span class="idea-texto">{idea.texto}</span>
                 </span>
               </button>
             {/each}
           </div>
-        </div>
 
-        <div class="pie">
-          <Icono nombre="candado" tamano={14} />
-          Solo responde sobre tu negocio. Las cifras salen de tus ventas cerradas.
+          <div class="candado">
+            <Icono nombre="r-candado" tamano={14} />
+            Solo responde sobre tu negocio. Las cifras salen de tus ventas cerradas.
+          </div>
         </div>
-      </Vidrio>
-    {/if}
-  </main>
-{:else if actual}
-  <Vidrio como="main" class="chat-agente" radio={26} aria-label="Conversación">
-    <div class="mensajes" bind:this={mensajes}>
-      {#each actual.turnos as t, i (i)}
-        <div class="burbuja">{t.visible}</div>
-        {#if t.detenida}
-          <div class="la-detuviste">
-            {#if t.segundos && t.pasos?.length}<Pildora texto="Pensé {t.segundos} s" pasos={t.pasos} />{/if}
-            <p>
-              {detenida?.volvio && detenida.id === actual.id && detenida.turno === i
+      {/if}
+    {:else}
+      <div class="chat" aria-label="Conversación">
+        {#each actual.turnos as t, i (i)}
+          <div class="burbuja">{t.visible}</div>
+          {#if t.reporte}
+            <ArchivoReporte reporte={t.reporte} restauranteId={sucursal.id} restaurante={sucursal.nombre} />
+          {:else if t.detenida}
+            <Respuesta
+              texto=""
+              aviso={detenida?.volvio && detenida.id === actual.id && detenida.turno === i
                 ? 'La detuviste. Tu pregunta volvió a la caja por si quieres cambiarla.'
                 : 'La detuviste.'}
-            </p>
-          </div>
-        {:else}
-          <Respuesta
-            texto={t.respuesta}
-            nueva={nueva?.id === actual.id && nueva.turno === i}
-            segundos={t.segundos}
-            pasos={t.pasos}
-            seguimiento={t.idea !== null ? (IDEAS[t.idea]?.seguimiento ?? []) : []}
-            apagado={ocupado || !!sinTope}
-            alSeguir={(s) => enviar({ visible: s.etiqueta, pregunta: s.pregunta, idea: null })}
-          />
+              segundos={t.segundos}
+              pasos={t.pasos}
+              leido={t.leido}
+              nota={notaLeido}
+              alSeguir={() => {}}
+            />
+          {:else}
+            <Respuesta
+              texto={t.respuesta}
+              nueva={nueva?.id === actual.id && nueva.turno === i}
+              segundos={t.segundos}
+              pasos={t.pasos}
+              leido={t.leido}
+              nota={notaLeido}
+              seguimiento={t.idea !== null ? (IDEAS[t.idea]?.seguimiento ?? []) : []}
+              apagado={ocupado || !!sinTope}
+              alSeguir={(s) => enviar({ visible: s.etiqueta, pregunta: s.pregunta, idea: null })}
+            />
+          {/if}
+        {/each}
+        {#if pendiente && pendiente.id === actual.id}
+          <div class="burbuja">{pendiente.visible}</div>
+          <Pensando texto="Pensando…" {pasos} {segundos} color="var(--punto-panel)" />
+        {:else if reporteEnCamino && reporteEnCamino.id === actual.id}
+          <div class="burbuja">{reporteEnCamino.visible}</div>
+          <Pensando texto="Armando tu reporte…" pasos={[]} color="var(--punto-panel)" />
+        {:else if fallo && fallo.id === actual.id}
+          <div class="burbuja">{fallo.visible}</div>
+          <div class="error"><CajaError mensaje={fallo.mensaje} /></div>
         {/if}
-      {/each}
-      {#if pendiente && pendiente.id === actual.id}
-        <div class="burbuja">{pendiente.visible}</div>
-        <Pensando texto="Pensando…" {pasos} {segundos} color="var(--punto-panel)" />
-      {:else if fallo && fallo.id === actual.id}
-        <div class="burbuja">{fallo.visible}</div>
-        <div class="error"><CajaError mensaje={fallo.mensaje} /></div>
-      {/if}
-    </div>
-    <div class="chat-caja">
-      <CajaPregunta
-        bind:this={caja}
-        modo="chat"
-        bind:valor
-        bind:periodo
-        placeholder={PH_CHAT}
-        {ocupado}
-        aviso={sinTope ? textoSinTope(sinTope) : null}
-        alEnviar={enviarLoEscrito}
-        alDetener={pensandoAqui ? detener : null}
-      />
-    </div>
-  </Vidrio>
-
-  <Vidrio como="section" class="leido-agente" radio={22} aria-label="Lo que leí para responder">
-    <span class="etiqueta">LO QUE LEÍ PARA RESPONDER</span>
-    {#if leido === null}
-      <p class="leido-vacio">Aquí verás lo que calculé para responderte.</p>
-    {:else if !leido.length}
-      <p class="leido-vacio">Para esta respuesta no hice cálculos.</p>
-    {:else}
-      {#each leido as l (l.texto)}
-        <div class="leido-fila">
-          <span class="leido-icono"><Icono nombre={l.icono in ICONOS ? l.icono : 'datos'} tamano={16} /></span>
-          <span>{l.texto}</span>
+      </div>
+      <div class="abajo" bind:this={abajo}>
+        <div class="ancho">
+          <CajaPregunta
+            bind:this={caja}
+            modo="chat"
+            bind:valor
+            placeholder={PH_CHAT}
+            {ocupado}
+            aviso={sinTope ? textoSinTope(sinTope) : null}
+            alEnviar={enviarLoEscrito}
+            alDetener={pensandoAqui ? detener : null}
+            alReporte={pedirReporte}
+          />
+          <div class="candado">
+            <Icono nombre="r-candado" tamano={14} />
+            Solo responde sobre tu negocio. Las cifras salen de tus ventas cerradas.
+          </div>
         </div>
-      {/each}
+      </div>
     {/if}
-    <div class="raya"></div>
-    <p class="leido-nota">{notaLeido}</p>
-  </Vidrio>
-{/if}
+  </section>
+</main>
 
 <style>
-  /* Debajo de la barra de arriba (16 + 60 + 16) y a la derecha de la lateral (16 + 244 + 16). */
-  .centro {
+  .vista {
     position: absolute;
-    left: 276px;
-    right: 16px;
-    top: 92px;
-    bottom: 16px;
-    z-index: 1;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    left: 0;
+    right: 0;
+    top: 56px;
+    bottom: 0;
     overflow-y: auto;
   }
 
-  .centro > :global(.bienvenida) {
-    width: 780px;
-    flex: none;
-    margin: auto 0;
-    padding: 40px 40px 28px;
+  .agente {
+    position: relative;
+    min-height: 100%;
     display: flex;
     flex-direction: column;
-    gap: 28px;
+    font-weight: 400;
   }
 
-  .cabeza {
+  .bienvenida,
+  .chat {
+    position: relative;
+    z-index: 1;
+  }
+
+  .bienvenida {
+    width: 100%;
+    max-width: 720px;
+    margin: auto;
+    padding: 40px 32px 56px;
     display: flex;
     flex-direction: column;
-    gap: 14px;
+    gap: 22px;
   }
 
-  .fecha {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-  }
-
-  .logo {
-    width: 30px;
-    height: 30px;
-    flex: none;
+  .linea1 {
     display: flex;
     align-items: center;
     justify-content: center;
+    gap: 9px;
+    font-size: 13px;
+    color: var(--suave);
   }
 
-  .fecha .etiqueta {
-    font-size: 11.5px;
+  h1 {
+    margin: -10px 0 0;
+    text-align: center;
+    text-wrap: balance;
+    font-size: 34px;
+    font-weight: 700;
+    letter-spacing: -0.7px;
+    line-height: 1.15;
   }
 
-  .saludo {
-    margin: 0;
-    font-size: 50px;
-    font-weight: 800;
-    line-height: 1.04;
-    letter-spacing: -1.25px;
+  /* La última palabra: una raya gris por la que pasa dos veces un brillo con la parte viva del degradado
+     de la estrella; luego la raya se borra. */
+  .subrayada {
+    position: relative;
+    display: inline-block;
   }
 
-  .saludo span {
-    display: block;
-    color: var(--tenue);
+  .subrayada::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: -5px;
+    height: 2.5px;
+    border-radius: 2px;
+    background:
+      linear-gradient(90deg, transparent, var(--estrella-2) 18%, var(--estrella-3) 48%, var(--estrella-4) 76%, transparent) no-repeat,
+      var(--linea-fuerte);
+    background-size:
+      45% 100%,
+      100% 100%;
+    background-position:
+      -85% 0,
+      0 0;
+    animation:
+      brillo 1.3s ease-in-out 0.35s 2,
+      apagar 0.5s ease 2.95s forwards;
   }
 
-  .ideas-caja {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
+  @keyframes brillo {
+    from {
+      background-position:
+        -85% 0,
+        0 0;
+    }
+    to {
+      background-position:
+        185% 0,
+        0 0;
+    }
+  }
+
+  @keyframes apagar {
+    to {
+      opacity: 0;
+    }
+  }
+
+  .ideas-titulo {
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
   }
 
   .ideas {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 12px;
+    gap: 10px;
   }
 
   .idea {
     display: flex;
     flex-direction: column;
-    gap: 14px;
-    padding: 16px;
-    border-radius: 18px;
-    border: 1px solid var(--linea);
+    gap: 10px;
+    padding: 14px;
+    border: 1px solid var(--borde-tarjeta);
+    border-radius: 14px;
     background: var(--solido);
     color: var(--texto);
     text-align: left;
-    transition: border-color 150ms;
   }
 
   .idea:hover:not(:disabled) {
-    border-color: var(--tenue);
+    border-color: var(--linea-fuerte);
   }
 
   .idea:disabled {
@@ -560,41 +650,25 @@
   }
 
   .idea-cabeza {
-    width: 100%;
     display: flex;
     align-items: center;
     justify-content: space-between;
+    color: var(--suave);
   }
 
   .cuadro-icono {
-    width: 36px;
-    height: 36px;
-    flex: none;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 11px;
+    width: 32px;
+    height: 32px;
+    display: grid;
+    place-items: center;
+    border-radius: 9px;
     background: var(--chip);
+    color: var(--texto);
   }
 
-  .flecha {
-    color: var(--tenue);
-    opacity: 0;
-    transition: opacity 150ms;
-  }
-
-  .idea:hover:not(:disabled) .flecha {
-    opacity: 1;
-  }
-
-  .idea-textos {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-  }
-
-  .idea-titulo {
-    font-size: 14.5px;
+  .idea b {
+    display: block;
+    font-size: 13.5px;
     font-weight: 700;
   }
 
@@ -604,125 +678,64 @@
     color: var(--suave);
   }
 
-  .pie {
+  .candado {
     display: flex;
     align-items: center;
-    gap: 8px;
+    justify-content: center;
+    gap: 7px;
     font-size: 12px;
     color: var(--tenue);
   }
 
-  :global(.chat-agente) {
-    position: absolute;
-    left: 276px;
-    top: 92px;
-    bottom: 16px;
-    z-index: 1;
-    width: 812px;
-    display: flex;
-    flex-direction: column;
-  }
-
-  .mensajes {
+  .chat {
     flex: 1;
-    min-height: 0;
-    overflow-y: auto;
-    padding: 32px 40px 16px;
+    width: 100%;
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 40px 32px 24px;
     display: flex;
     flex-direction: column;
-    gap: 26px;
-    scrollbar-width: thin;
+    gap: 22px;
   }
 
   .burbuja {
     flex: none;
     align-self: flex-end;
-    max-width: 460px;
-    padding: 12px 18px;
-    border-radius: 18px 18px 6px 18px;
-    background: var(--tinta);
-    color: var(--sobre-tinta);
+    max-width: 80%;
+    padding: 10px 16px;
+    border-radius: 18px;
+    background: var(--chip);
     font-size: 14.5px;
     line-height: 1.5;
     white-space: pre-wrap;
     overflow-wrap: anywhere;
   }
 
-  .la-detuviste {
-    flex: none;
-    display: flex;
-    flex-direction: column;
-    gap: 14px;
-    padding-top: 2px;
-  }
-
-  .la-detuviste p {
-    margin: 0;
-    font-size: 14.5px;
-    line-height: 1.55;
-    color: var(--suave);
-  }
-
   .error {
     flex: none;
     min-width: 0;
-    padding-top: 2px;
   }
 
-  .chat-caja {
-    flex: none;
-    padding: 0 24px 24px;
-  }
-
-  :global(.leido-agente) {
-    position: absolute;
-    left: 1104px;
-    right: 16px;
-    top: 92px;
+  .abajo {
+    position: sticky;
+    bottom: 0;
     z-index: 1;
-    padding: 20px;
+    padding: 12px 32px 16px;
+    background: var(--solido);
+  }
+
+  .ancho {
+    max-width: 656px;
+    margin: 0 auto;
     display: flex;
     flex-direction: column;
-    gap: 14px;
-  }
-
-  .leido-fila {
-    display: flex;
-    align-items: flex-start;
     gap: 10px;
-    font-size: 13px;
-    line-height: 1.45;
-  }
-
-  .leido-icono {
-    margin-top: 1px;
-    color: var(--tenue);
-  }
-
-  .raya {
-    height: 1px;
-    flex: none;
-    background: var(--linea);
-  }
-
-  .leido-nota {
-    margin: 0;
-    font-size: 12.5px;
-    line-height: 1.5;
-    color: var(--suave);
-  }
-
-  .leido-vacio {
-    margin: 0;
-    font-size: 13px;
-    line-height: 1.45;
-    color: var(--tenue);
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .idea,
-    .flecha {
-      transition: none;
+    .subrayada::after {
+      animation: none;
+      opacity: 0;
     }
   }
 </style>

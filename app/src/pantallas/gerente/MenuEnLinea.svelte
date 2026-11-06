@@ -20,7 +20,7 @@
   import Icono from '../../diseno/Icono.svelte';
   import Interruptor from '../../diseno/Interruptor.svelte';
   import Selector from '../../diseno/Selector.svelte';
-  import Vidrio from '../../diseno/Vidrio.svelte';
+  import Tarjeta from '../../diseno/Tarjeta.svelte';
   import { casiNoSeVe, type TemaMenu } from '../../lib/color';
   import { ALGO_SALIO_PANEL, esDeRed, Fallo, SIN_CONEXION } from '../../lib/errores';
   import { diaYMes } from '../../lib/formato';
@@ -47,8 +47,7 @@
     sucursal,
     sucursales,
     alElegir,
-    alVolver,
-  }: { sucursal: Sucursal; sucursales: Sucursal[]; alElegir: (s: Sucursal) => void; alVolver: () => void } = $props();
+  }: { sucursal: Sucursal; sucursales: Sucursal[]; alElegir: (s: Sucursal) => void } = $props();
 
   const TEMAS: { valor: TemaMenu; texto: string; icono: string }[] = [
     { valor: 'claro', texto: 'Claro', icono: 'sol' },
@@ -204,14 +203,11 @@
 </script>
 
 <BarraArriba titulo="Tu menú en línea" estado={chip}>
-  {#snippet antes()}
-    <BotonCuadro icono="regresar" ayuda="Volver a Inicio" grande tamanoIcono={18} onclick={alVolver} />
-  {/snippet}
   <CajaSucursales {sucursales} actual={sucursal} {alElegir} />
 </BarraArriba>
 
 <main class="cuerpo">
-  <Vidrio como="section" class="menu-en-linea" radio={26} aria-label="Tu menú en línea">
+  <Tarjeta como="section" class="menu-en-linea" aria-label="Tu menú en línea">
     <div class="cabeza">
       <span class="etiqueta">TU MENÚ EN LÍNEA</span>
       <p class="nota">
@@ -345,7 +341,7 @@
         </div>
       </div>
     {/if}
-  </Vidrio>
+  </Tarjeta>
 </main>
 
 {#if eligiendoColor && guardado}
@@ -363,13 +359,12 @@
 {/if}
 
 <style>
-  /* Debajo de la barra de arriba (16 + 60 + 16) y a la derecha de la lateral (16 + 244 + 16). */
   .cuerpo {
     position: absolute;
-    left: 276px;
-    right: 16px;
-    top: 92px;
-    bottom: 16px;
+    left: var(--vista-izquierda);
+    right: var(--vista-derecha);
+    top: var(--vista-arriba);
+    bottom: var(--vista-abajo);
     display: flex;
     flex-direction: column;
   }

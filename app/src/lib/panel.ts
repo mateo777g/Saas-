@@ -45,6 +45,16 @@ export type Distribuidor = {
   clientes: number;
 };
 
+// Lo que dibuja el Inicio (panel_estadisticas): el gasto de IA de los últimos 6 meses, las fotos de los
+// últimos 30 días (la de hoy, en vivo) y lo que vence de hoy a dentro de 7 días. hoy y hora son los de México.
+export type Estadisticas = {
+  hoy: string;
+  hora: string;
+  gasto: { mes: string; gastado: number }[];
+  fotos: { dia: string; funcionan: number; sin_funcionar: number }[];
+  vencen: { dia: string; cuantos: number }[];
+};
+
 // Cada parte del panel se lee por separado: si una falla, las demás se ven igual.
 export type Lectura<T> = { ok: true; datos: T } | { ok: false; mensaje: string; deRed: boolean };
 
@@ -53,6 +63,7 @@ export type DatosPanel = {
   altas: Lectura<AltaMes[]>;
   clientes: Lectura<Cliente[]>;
   distribuidores: Lectura<Distribuidor[]>;
+  estadisticas: Lectura<Estadisticas>;
 };
 
 async function leer<T>(funcion: string): Promise<Lectura<T>> {
@@ -67,17 +78,19 @@ async function leer<T>(funcion: string): Promise<Lectura<T>> {
 // Todo lo que muestran Inicio y Clientes, de una vez: al abrir, con Actualizar y después de
 // cada cambio.
 export async function leerPanel(): Promise<DatosPanel> {
-  const [resumen, altas, clientes, distribuidores] = await Promise.all([
+  const [resumen, altas, clientes, distribuidores, estadisticas] = await Promise.all([
     leer<Resumen[]>('panel_resumen'),
     leer<AltaMes[]>('panel_altas_por_mes'),
     leer<Cliente[]>('panel_clientes'),
     leer<Distribuidor[]>('panel_distribuidores'),
+    leer<Estadisticas>('panel_estadisticas'),
   ]);
   return {
     resumen: resumen.ok ? { ok: true, datos: resumen.datos[0] } : resumen,
     altas,
     clientes,
     distribuidores,
+    estadisticas,
   };
 }
 

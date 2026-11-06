@@ -1,25 +1,22 @@
 <!--
-  Inicio del gerente (maqueta de Inicio 5SVLK2avzLCq5TaW6mrqq6; pieza 5, maqueta Cortes y reportes
-  7J6LvYWiktRnGxNugbuaoe). Arriba, la tarjeta de vidrio con la fecha y el saludo, lo no negociable
-  de Inicio: la fecha y la hora son las del restaurante y las da Postgres (mis_sucursales), nunca el
-  reloj del aparato (libreta 4, decidido el 11 de octubre de 2026). Abajo del saludo, las cuatro
-  cifras (maqueta Agente IA KznKZdgQbLTZGs1EwVMvga), que hacen crecer la fila de 372 a 390 px. A su
-  lado, Mesas ahora; abajo, Tus meseros y los accesos para el equipo.
+  Inicio del gerente (rediseño del 5 de noviembre de 2026; maqueta V64Pv4gmANPRZuJW5hTe5D): centrado como
+  el inicio de Cloudflare. Arriba, la fecha y el saludo, lo no negociable de Inicio: la fecha y la hora son
+  las del restaurante y las da Postgres (mis_sucursales), nunca el reloj del aparato (libreta 4, decidido
+  el 11 de octubre de 2026). Debajo, la búsqueda grande (Ctrl K), las tres columnas Abrir · Atajos ·
+  Recientes y, al bajar, «Resumen de hoy»: las cuatro cifras, Mesas ahora y Tus meseros.
 
-  Las cifras, Mesas ahora y Tus meseros salen de cifras_de_inicio (migración agente), mesas_ahora y
-  tus_meseros (migración reportes): la app no suma nada. Se leen al abrir, con «Actualizar», al
-  regresar a la pestaña y cada vez que cambia una cuenta
-  (el tiempo real de ventas: abrir, cobrar, cancelar). «Actualizado 18:05» es la hora del restaurante
-  que dio Postgres en la última lectura. Cada tarjeta lee y falla por su cuenta.
+  Las cifras, Mesas ahora y Tus meseros salen de cifras_de_inicio (migraciones agente y cifras_graficas),
+  mesas_ahora y tus_meseros (migración reportes): la app no suma nada. Se leen al abrir, con «Actualizar»,
+  al regresar a la pestaña y cada vez que cambia una cuenta (el tiempo real de ventas: abrir, cobrar,
+  cancelar). «Actualizado 18:05» es la hora del restaurante que dio Postgres en la última lectura. Cada
+  tarjeta lee y falla por su cuenta.
 -->
 <script lang="ts">
   import { onMount } from 'svelte';
   import BarraArriba from '../../diseno/BarraArriba.svelte';
   import BotonCuadro from '../../diseno/BotonCuadro.svelte';
-  import Estrella from '../../diseno/Estrella.svelte';
-  import Vidrio from '../../diseno/Vidrio.svelte';
   import { esDeRed } from '../../lib/errores';
-  import { fechaLarga, saludoPorHora } from '../../lib/formato';
+  import { diaConNombre, saludoPorHora } from '../../lib/formato';
   import type { Sucursal } from '../../lib/gerente';
   import { escuchar } from '../../lib/pos';
   import {
@@ -31,9 +28,11 @@
     type TusMeseros as DatosMeseros,
   } from '../../lib/reportes';
   import { supabase } from '../../lib/supabase';
-  import Accesos from './Accesos.svelte';
+  import { leerRecientes, type Destino } from '../../lib/vistas';
   import CajaSucursales from './CajaSucursales.svelte';
+  import Buscador from './inicio/Buscador.svelte';
   import Cifras from './inicio/Cifras.svelte';
+  import Columnas from './inicio/Columnas.svelte';
   import MesasAhora from './inicio/MesasAhora.svelte';
   import TusMeseros from './inicio/TusMeseros.svelte';
 
@@ -41,6 +40,7 @@
     sucursal,
     sucursales,
     nombre,
+    tomarBusqueda,
     alElegir,
     alAbrir,
     alIr,
@@ -48,9 +48,12 @@
     sucursal: Sucursal;
     sucursales: Sucursal[];
     nombre: string;
+    // Si pidieron la búsqueda (Ctrl K o la búsqueda chica de la barra); se toma una vez, para que no se
+    // abra sola cada vez que se regresa a Inicio.
+    tomarBusqueda: () => boolean;
     alElegir: (sucursal: Sucursal) => void;
-    alAbrir: (que: 'pos' | 'caja' | 'cocina' | 'menu-en-linea') => void;
-    alIr: (vista: 'mesas' | 'equipo') => void;
+    alAbrir: (que: 'pos' | 'caja' | 'cocina') => void;
+    alIr: (destino: Destino) => void;
   } = $props();
 
   type Lectura<T> = { estado: 'leyendo' } | { estado: 'listo'; datos: T } | { estado: 'error'; deRed: boolean };
@@ -60,6 +63,9 @@
   let meseros = $state<Lectura<DatosMeseros>>({ estado: 'leyendo' });
   let hora = $state<string | null>(null);
   let leyendo = $state(false);
+  let buscador = $state<{ enfocar: () => void } | null>(null);
+  // svelte-ignore state_referenced_locally
+  const recientes = leerRecientes(sucursal.id);
 
   const chip = $derived.by(() => {
     const fallas = [cifras, mesas, meseros].filter((l) => l.estado === 'error');
@@ -67,6 +73,10 @@
     return fallas.some((l) => l.estado === 'error' && l.deRed)
       ? { texto: 'Sin conexión', vivo: false }
       : { texto: 'No se pudo leer', vivo: false };
+  });
+
+  $effect(() => {
+    if (buscador && tomarBusqueda()) buscador.enfocar();
   });
 
   // Solo cuenta la lectura más reciente: si dos se cruzan, la vieja no pisa a la nueva.
@@ -128,106 +138,103 @@
 </script>
 
 <BarraArriba titulo="Inicio" estado={chip}>
-  {#snippet despues()}
-    {#if hora}<span class="hora">Actualizado {hora}</span>{/if}
-  {/snippet}
-  <BotonCuadro icono="actualizar" ayuda="Actualizar" apagado={leyendo} onclick={leer} />
+  {#if hora}<span class="hora">Actualizado {hora}</span>{/if}
+  <BotonCuadro icono="r-actualizar" ayuda="Actualizar" apagado={leyendo} onclick={leer} />
   <CajaSucursales {sucursales} actual={sucursal} {alElegir} />
 </BarraArriba>
 
-<main class="cuerpo">
-  <div class="fila-arriba">
-    <Vidrio como="section" class="saludo" radio={30} aria-label="Saludo">
-      <div>
-        <div class="fecha">
-          <span class="logo"><Estrella fondo="panel" tamano={22} /></span>
-          <span class="etiqueta">{fechaLarga(sucursal.hoy)}</span>
-        </div>
-        <p class="texto">
-          {saludoPorHora(sucursal.hora)}, {nombre}.<span>Así va tu negocio hoy.</span>
-        </p>
-      </div>
-      <Cifras lectura={cifras} />
-    </Vidrio>
-    <MesasAhora lectura={mesas} alAdministrar={() => alIr('mesas')} />
-  </div>
-  <div class="fila-abajo">
-    <TusMeseros lectura={meseros} alVerEmpleados={() => alIr('equipo')} />
-    <Accesos {alAbrir} />
+<main class="vista">
+  <div class="inicio">
+    <div class="saludo">
+      <span class="etiqueta fecha">{diaConNombre(sucursal.hoy)}</span>
+      <h1>{saludoPorHora(sucursal.hora)}, {nombre}.<span>Así va tu negocio hoy.</span></h1>
+    </div>
+
+    <Buscador bind:this={buscador} {recientes} {alIr} />
+    <Columnas {recientes} {alAbrir} {alIr} />
+
+    <div class="resumen-titulo">
+      <h2>Resumen de hoy</h2>
+      {#if hora}<span class="hora">Actualizado {hora}</span>{/if}
+    </div>
+    <Cifras lectura={cifras} />
+    <div class="fila">
+      <MesasAhora lectura={mesas} alAdministrar={() => alIr({ vista: 'mesas' })} />
+      <TusMeseros lectura={meseros} alVerEmpleados={() => alIr({ vista: 'equipo' })} />
+    </div>
   </div>
 </main>
 
 <style>
-  /* Debajo de la barra de arriba (16 + 60 + 16) y a la derecha de la lateral (16 + 244 + 16). */
-  .cuerpo {
+  .vista {
     position: absolute;
-    left: 276px;
-    right: 16px;
-    top: 92px;
-    bottom: 16px;
+    left: 0;
+    right: 0;
+    top: 56px;
+    bottom: 0;
+    overflow-y: auto;
+  }
+
+  .inicio {
+    max-width: 1060px;
+    margin: 0 auto;
+    padding: 52px 32px 56px;
     display: flex;
     flex-direction: column;
-    gap: 16px;
+  }
+
+  .saludo {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    text-align: center;
+  }
+
+  .fecha {
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  h1 {
+    margin: 0;
+    font-size: 40px;
+    font-weight: 800;
+    line-height: 1.08;
+    letter-spacing: -1px;
+    text-wrap: balance;
+  }
+
+  h1 span {
+    display: block;
+    color: var(--tenue);
   }
 
   .hora {
     font-family: var(--mono);
     font-size: 11px;
+    font-weight: 400;
     color: var(--tenue);
     white-space: nowrap;
   }
 
-  .fila-arriba {
-    flex: none;
-    height: 390px;
+  .resumen-titulo {
     display: flex;
-    gap: 16px;
+    align-items: baseline;
+    gap: 12px;
+    margin: 56px 0 14px;
   }
 
-  .fila-abajo {
-    flex: 1;
-    min-height: 0;
-    display: flex;
-    gap: 16px;
+  h2 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 700;
   }
 
-  .fila-arriba > :global(.saludo) {
-    flex: 1;
-    min-width: 0;
-    padding: 34px 36px 28px;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-  }
-
-  .fecha {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-  }
-
-  .logo {
-    width: 30px;
-    height: 30px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  .fecha .etiqueta {
-    font-size: 11.5px;
-  }
-
-  .texto {
-    margin: 14px 0 0;
-    font-size: 50px;
-    font-weight: 800;
-    line-height: 1.04;
-    letter-spacing: -1.25px;
-  }
-
-  .texto span {
-    display: block;
-    color: var(--tenue);
+  .fila {
+    display: grid;
+    grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+    gap: 12px;
+    margin-top: 12px;
   }
 </style>

@@ -20,7 +20,7 @@
   import NotaTabla from '../../diseno/NotaTabla.svelte';
   import Selector from '../../diseno/Selector.svelte';
   import Tabla from '../../diseno/Tabla.svelte';
-  import Vidrio from '../../diseno/Vidrio.svelte';
+  import Tarjeta from '../../diseno/Tarjeta.svelte';
   import { esDeRed, SIN_CONEXION } from '../../lib/errores';
   import { plural } from '../../lib/formato';
   import type { Sucursal } from '../../lib/gerente';
@@ -47,7 +47,7 @@
 
   type Seccion = 'productos' | 'categorias' | 'opciones' | 'areas';
 
-  let { sucursal }: { sucursal: Sucursal } = $props();
+  let { sucursal, abrirNuevo }: { sucursal: Sucursal; abrirNuevo?: () => boolean } = $props();
 
   type Lectura =
     | { estado: 'leyendo' }
@@ -99,7 +99,14 @@
     }
   }
 
-  onMount(leer);
+  // «Agregar producto» de la búsqueda de Inicio: al terminar de leer, su ventana.
+  onMount(async () => {
+    const abrir = abrirNuevo?.() ?? false;
+    await leer();
+    if (!abrir || lectura.estado !== 'listo') return;
+    if (lectura.menu.categorias.length) ventana = { tipo: 'producto', producto: null };
+    else aviso = 'Primero crea una categoría.';
+  });
 
   // La tabla vacía de cada sección, mientras lee o si no pudo leer.
   const VACIA: Record<Seccion, { columnas: string; encabezados: string[] }> = {
@@ -256,7 +263,7 @@
 </BarraArriba>
 
 <main class="cuerpo" bind:this={tarjeta}>
-  <Vidrio como="section" class="tarjeta-menu" radio={26} aria-label="Mi menú">
+  <Tarjeta como="section" class="tarjeta-menu" aria-label="Mi menú">
     {#if menu}
       {#if seccion === 'productos'}
         <Productos
@@ -300,7 +307,7 @@
         {/if}
       </Tabla>
     {/if}
-  </Vidrio>
+  </Tarjeta>
 </main>
 
 {#if menu && ventana?.tipo === 'producto'}
@@ -346,13 +353,12 @@
 {/if}
 
 <style>
-  /* Debajo de la barra de arriba (16 + 60 + 16) y a la derecha de la lateral (16 + 244 + 16). */
   .cuerpo {
     position: absolute;
-    left: 276px;
-    right: 16px;
-    top: 92px;
-    bottom: 16px;
+    left: var(--vista-izquierda);
+    right: var(--vista-derecha);
+    top: var(--vista-arriba);
+    bottom: var(--vista-abajo);
   }
 
   .cuerpo > :global(.tarjeta-menu) {

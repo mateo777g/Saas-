@@ -1,6 +1,6 @@
 <!--
   El marco de los tres paneles (rediseño del 5 de noviembre de 2026; maqueta V64Pv4gmANPRZuJW5hTe5D): la
-  barra lateral pegada al borde y, a su derecha, el lugar de la vista, todo del mismo color. Cada vista
+  barra lateral pegada al borde y, a su derecha, el lugar de la vista, sobre --fondo. Cada vista
   pone su barra de arriba y se acomoda contra ese lugar con --vista-arriba y compañía (colores.css).
 
   Lo plegado de la barra se recuerda en este navegador. --ancho-lateral es para lo que se acomoda contra
@@ -52,7 +52,7 @@
     overflow: hidden;
     display: grid;
     grid-template-columns: var(--ancho-lateral) minmax(0, 1fr);
-    background: var(--solido);
+    background: var(--fondo);
     transition: grid-template-columns 200ms ease;
   }
 

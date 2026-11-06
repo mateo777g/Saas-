@@ -5,7 +5,9 @@
   (o distribuidores) hay, Actualizar y Dar de alta (Nuevo distribuidor en Distribuidores), y
   debajo la vista elegida. Ajustes es el mismo del gerente, solo con el tema, y arriba solo lleva
   su chip (decidido el 12 de octubre de 2026). Estilos (parte 7a, maqueta H2yFVjosPvSV56DJD1Un71)
-  va después de Distribuidores y trae su propia barra de arriba, sus lecturas y sus ventanas.
+  va después de Distribuidores y trae su propia barra de arriba, sus lecturas y sus ventanas. En Inicio,
+  la hora de la última lectura va junto al botón cuadrado, como en el gerente (decidido el 6 de noviembre
+  de 2026).
 
   Lee todo de una vez al abrir, con Actualizar y después de cada cambio (lib/panel.ts). Las
   ventanas escriben en Saas-Restaurantes de verdad.
@@ -14,6 +16,7 @@
   import { onMount } from 'svelte';
   import BarraArriba from '../diseno/BarraArriba.svelte';
   import Boton from '../diseno/Boton.svelte';
+  import BotonCuadro from '../diseno/BotonCuadro.svelte';
   import Marco from '../diseno/Marco.svelte';
   import { plural } from '../lib/formato';
   import { leerPanel, type Cliente, type DatosPanel, type Distribuidor } from '../lib/panel';
@@ -82,6 +85,9 @@
     if (datos.resumen.ok) return { texto: plural(datos.resumen.datos.total, 'restaurante', 'restaurantes'), vivo: true };
     return { texto: datos.resumen.deRed ? 'Sin conexión' : 'No se pudo leer', vivo: false };
   });
+
+  // La hora la da Postgres. Sin esa lectura, no sale.
+  const hora = $derived(datos?.estadisticas.ok ? datos.estadisticas.datos.hora : null);
 
   function elegir(valor: string) {
     vista = valor as Vista;
@@ -155,7 +161,10 @@
     <Estilos {tomarEstilo} />
   {:else}
     <BarraArriba titulo={TITULOS[vista]} {estado}>
-      {#if vista !== 'ajustes'}
+      {#if vista === 'inicio'}
+        {#if hora}<span class="hora">Actualizado {hora}</span>{/if}
+        <BotonCuadro icono="r-actualizar" ayuda="Actualizar" apagado={leyendo} onclick={leer} />
+      {:else if vista !== 'ajustes'}
         <Boton etiqueta="Actualizar" icono="actualizar" apagado={leyendo} onclick={leer} />
       {/if}
       {#if vista === 'distribuidores'}
@@ -220,6 +229,14 @@
 </Marco>
 
 <style>
+  .hora {
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 400;
+    color: var(--tenue);
+    white-space: nowrap;
+  }
+
   /* Sin desplazamiento propio, como en la maqueta: lo que no cabe se desplaza dentro de cada tabla. */
   .cuerpo {
     position: absolute;

@@ -89,7 +89,7 @@
 <main class="vista">
   <div class="inicio">
     <div class="saludo">
-      <span class="linea">{linea}</span>
+      <span class="etiqueta linea">{linea}</span>
       <h1>I'm CEO, B*tch.</h1>
     </div>
 
@@ -215,11 +215,11 @@
     text-align: center;
   }
 
+  /* En la letra de la fecha del gerente (decidido el 6 de noviembre de 2026). */
   .linea {
-    min-height: 16px;
-    font-size: 13px;
-    font-weight: 400;
-    color: var(--suave);
+    min-height: 14px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
   }
 
   h1 {
@@ -409,8 +409,8 @@
   }
 
   .estado i.si {
-    background: var(--texto);
-    border-color: var(--texto);
+    background: var(--verde);
+    border-color: var(--verde);
   }
 
   .por-vencer {

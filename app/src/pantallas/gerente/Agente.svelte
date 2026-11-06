@@ -721,7 +721,7 @@
     bottom: 0;
     z-index: 1;
     padding: 12px 32px 16px;
-    background: var(--solido);
+    background: var(--fondo);
   }
 
   .ancho {

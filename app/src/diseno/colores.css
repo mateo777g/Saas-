@@ -2,12 +2,14 @@
    que ES; las pantallas y las piezas nunca escriben un color a mano, lo piden aquí: var(--texto),
    var(--linea)... El tema lo pone public/tema-inicial.js en <html data-tema="claro|oscuro"> antes de
    pintar, y Ajustes lo cambia (src/lib/tema.ts). Desde el rediseño del 5 de noviembre de 2026 el panel
-   es liso (planes/trabajo/rediseno/reglas-diseno.md): su fondo es --solido y sus tarjetas llevan
-   --borde-tarjeta. --vidrio se queda solo para el aparato del equipo y lo que flota sobre un anuncio. */
+   es liso (planes/trabajo/rediseno/reglas-diseno.md): sus barras y tarjetas son --solido, sus tarjetas
+   llevan --borde-tarjeta y, desde el 6 de noviembre, sus vistas van en --fondo. --vidrio se queda solo
+   para el aparato del equipo y lo que flota sobre un anuncio. */
 
 :root[data-tema='claro'] {
   color-scheme: light;
   --suelo: #fafaf8;                    /* el fondo del login y del aparato del equipo */
+  --fondo: #f5f5f7;                    /* el fondo de las vistas del panel */
   --borde-tarjeta: rgba(0, 0, 0, 0.13); /* el borde de las tarjetas del panel */
   --grafica: #1355e8;                  /* las gráficas de Inicio: azul en claro */
   --azul: #1355e8;
@@ -40,6 +42,7 @@
 :root[data-tema='oscuro'] {
   color-scheme: dark;
   --suelo: #161616;
+  --fondo: #0f0f0f;
   --borde-tarjeta: rgba(255, 255, 255, 0.15);
   --grafica: #3f9b5a;                  /* y verde en oscuro */
   --azul: #4f86f7;

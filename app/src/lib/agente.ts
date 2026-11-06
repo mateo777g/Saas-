@@ -251,8 +251,9 @@ export async function leerZonaYCorte(restauranteId: string): Promise<{ zona: str
 // ─── El Historial, en este navegador ────────────────────────────────────────────────────────
 
 // Cada conversación se llama como su primera pregunta (o su idea), con el día y la hora del
-// restaurante en que empezó (los dio el Worker). La más nueva va primero.
-export type Conversacion = { id: string; titulo: string; fecha: string; hora: string; turnos: Turno[] };
+// restaurante en que empezó (los dio el Worker). La más nueva va primero. Las guardadas antes del
+// 6 de noviembre de 2026 no traen `fijada`.
+export type Conversacion = { id: string; titulo: string; fecha: string; hora: string; turnos: Turno[]; fijada?: boolean };
 
 const llaveConversaciones = (restauranteId: string) => `${PREFIJO}conversaciones-${restauranteId}`;
 
@@ -276,6 +277,7 @@ export function leerConversaciones(restauranteId: string): Conversacion[] {
     if (!Array.isArray(lista)) throw new Error('no es una lista');
     return lista.filter(esConversacion).map((c) => ({
       ...c,
+      fijada: c.fijada === true,
       turnos: c.turnos.map((t) => ({ ...t, leido: Array.isArray(t.leido) ? t.leido : [], idea: t.idea ?? null })),
     }));
   } catch (error) {
@@ -284,13 +286,9 @@ export function leerConversaciones(restauranteId: string): Conversacion[] {
   }
 }
 
-// Pone (o reemplaza) la conversación hasta arriba y deja las últimas 30. Si el navegador ya no
-// tiene lugar, suelta las más viejas hasta que quepa. Regresa la lista como quedó.
-export function guardarConversacion(restauranteId: string, conversacion: Conversacion): Conversacion[] {
-  let lista = [conversacion, ...leerConversaciones(restauranteId).filter((c) => c.id !== conversacion.id)].slice(
-    0,
-    MAX_CONVERSACIONES,
-  );
+// Si el navegador ya no tiene lugar, suelta las más viejas hasta que quepa: primero las que no
+// están fijadas. Regresa la lista como quedó.
+function escribirConversaciones(restauranteId: string, lista: Conversacion[]): Conversacion[] {
   for (;;) {
     try {
       localStorage.setItem(llaveConversaciones(restauranteId), JSON.stringify(lista));
@@ -301,8 +299,59 @@ export function guardarConversacion(restauranteId: string, conversacion: Convers
         return lista;
       }
       console.error('[agente] el navegador no tiene lugar; se suelta la conversación más vieja:', error);
-      lista = lista.slice(0, -1);
+      const sinFijar = lista.map((c) => !c.fijada).lastIndexOf(true);
+      const sale = sinFijar >= 0 ? sinFijar : lista.length - 1;
+      lista = lista.filter((_, i) => i !== sale);
     }
+  }
+}
+
+// Pone (o reemplaza) la conversación hasta arriba y deja las últimas 30. Las fijadas no se cuentan:
+// no se caen por más conversaciones que lleguen.
+export function guardarConversacion(restauranteId: string, conversacion: Conversacion): Conversacion[] {
+  let sueltas = 0;
+  const lista = [conversacion, ...leerConversaciones(restauranteId).filter((c) => c.id !== conversacion.id)].filter(
+    (c) => c.fijada || ++sueltas <= MAX_CONVERSACIONES,
+  );
+  return escribirConversaciones(restauranteId, lista);
+}
+
+// Fijar y cambiar el nombre no la mueven de su lugar: al desfijarla, regresa adonde estaba.
+export function cambiarConversacion(
+  restauranteId: string,
+  id: string,
+  cambios: Partial<Pick<Conversacion, 'titulo' | 'fijada'>>,
+): Conversacion[] {
+  const lista = leerConversaciones(restauranteId).map((c) => (c.id === id ? { ...c, ...cambios } : c));
+  return escribirConversaciones(restauranteId, lista);
+}
+
+export function eliminarConversacion(restauranteId: string, id: string): Conversacion[] {
+  return escribirConversaciones(
+    restauranteId,
+    leerConversaciones(restauranteId).filter((c) => c.id !== id),
+  );
+}
+
+// Si la barra de chats se cerró a mano, no se vuelve a abrir sola. Como el resto de lo que el agente
+// guarda aquí, «Cerrar sesión» lo borra.
+const LLAVE_BARRA_CERRADA = `${PREFIJO}barra-cerrada`;
+
+export function leerBarraCerrada(): boolean {
+  try {
+    return localStorage.getItem(LLAVE_BARRA_CERRADA) === '1';
+  } catch (error) {
+    console.error('[agente] no se pudo leer si la barra de chats iba cerrada; se abre:', error);
+    return false;
+  }
+}
+
+export function guardarBarraCerrada(cerrada: boolean) {
+  try {
+    if (cerrada) localStorage.setItem(LLAVE_BARRA_CERRADA, '1');
+    else localStorage.removeItem(LLAVE_BARRA_CERRADA);
+  } catch (error) {
+    console.error('[agente] no se pudo recordar la barra de chats cerrada:', error);
   }
 }
 

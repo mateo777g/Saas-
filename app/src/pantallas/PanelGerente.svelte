@@ -159,6 +159,18 @@
     return vistaAgente;
   }
 
+  // Al entrar al Agente IA, a los 250 ms la barra de la izquierda se pliega sola y sale la de chats
+  // (barra-ia.md). Vive aquí y no en la vista para que cambiar de sucursal, que la vuelve a montar, no la mueva.
+  let barraDelAgente = $state(false);
+  $effect(() => {
+    if (vista !== 'agente') {
+      barraDelAgente = false;
+      return;
+    }
+    const reloj = setTimeout(() => (barraDelAgente = true), 250);
+    return () => clearTimeout(reloj);
+  });
+
   function elegir(sucursal: Sucursal) {
     actualId = sucursal.id;
     recordarSucursal(sucursal.id);
@@ -242,6 +254,7 @@
   <Suscripcion sucursal={actual} otras={otrasQueFuncionan} alIr={elegir} {alSalir} />
 {:else}
   <Marco
+    plegarSola={barraDelAgente}
     opciones={[
       { valor: 'inicio', texto: 'Inicio', icono: 'r-inicio' },
       { grupo: 'OPERACIÓN' },
@@ -328,10 +341,10 @@
         <Cortes sucursal={actual} sucursales={datos.sucursales} alElegir={elegir} />
       {/key}
     {:else if vista === 'agente'}
-      <!-- El Historial y las ventas son de cada sucursal: cambiar de sucursal abre su bienvenida. -->
+      <!-- Las conversaciones y las ventas son de cada sucursal: cambiar de sucursal abre su bienvenida. -->
       {#key actual.id}
         {#await cargarAgente() then { default: Agente }}
-          <Agente sucursal={actual} sucursales={datos.sucursales} alElegir={elegir} />
+          <Agente sucursal={actual} sucursales={datos.sucursales} alElegir={elegir} barraLista={barraDelAgente} />
         {:catch error}
           <BarraArriba titulo="Agente IA" estado={{ texto: 'No se pudo abrir', vivo: false }} />
           <main class="cuerpo">

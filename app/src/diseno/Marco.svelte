@@ -5,6 +5,10 @@
 
   Lo plegado de la barra se recuerda en este navegador. --ancho-lateral es para lo que se acomoda contra
   la ventana y no contra el lugar de la vista (el aviso flotante).
+
+  `plegarSola` (el Agente IA) la pliega mientras dure, sin tocar lo que la persona eligió: eso solo lo
+  escribe el botón. Si la abre a mano ya no se vuelve a plegar en esa visita, y al salir se queda como
+  la dejó; si no la tocó, regresa como estaba.
 -->
 <script lang="ts">
   import type { Snippet } from 'svelte';
@@ -13,7 +17,7 @@
 
   type Barra = Omit<ComponentProps<typeof BarraLateral>, 'plegada' | 'alPlegar'>;
 
-  let { children, ...barra }: Barra & { children: Snippet } = $props();
+  let { children, plegarSola = false, ...barra }: Barra & { children: Snippet; plegarSola?: boolean } = $props();
 
   const LLAVE = 'fragmentless-barra-plegada';
 
@@ -26,12 +30,20 @@
     }
   }
 
-  let plegada = $state(leerPlegada());
+  let elegida = $state(leerPlegada());
+  let sola = $state(false);
+  const plegada = $derived(elegida || sola);
+
+  // Solo corre cuando cambia plegarSola: abrirla a mano no la vuelve a plegar.
+  $effect(() => {
+    sola = plegarSola;
+  });
 
   function alternar() {
-    plegada = !plegada;
+    elegida = !plegada;
+    sola = false;
     try {
-      localStorage.setItem(LLAVE, plegada ? '1' : '0');
+      localStorage.setItem(LLAVE, elegida ? '1' : '0');
     } catch (error) {
       console.error('[marco] no se pudo recordar la barra plegada:', error);
     }
@@ -60,5 +72,11 @@
     position: relative;
     min-width: 0;
     min-height: 0;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .marco {
+      transition: none;
+    }
   }
 </style>

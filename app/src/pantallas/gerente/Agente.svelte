@@ -22,21 +22,28 @@
   El «+» de la caja pide un «Reporte en PDF» (lib/reporte.ts): lo arma el sistema, sin IA y sin costo, y
   llega como respuesta del agente. Por eso sigue ahí aunque no haya tope.
 
-  Historial guarda las conversaciones en este navegador, por sucursal (las últimas 30), y «Cerrar
-  sesión» las borra. Sin tope (estado_ia), la caja dice el aviso y las ideas se apagan; el
-  Historial y el resto del panel siguen igual. Si se acaba a media conversación, la caja de abajo
-  dice lo mismo. Si una pregunta no se pudo contestar, vuelve a la caja para mandarla otra vez.
+  La barra de chats de la derecha (agente/Historial, planes/trabajo/rediseno/barra-ia.md) guarda las
+  conversaciones en este navegador, por sucursal (las últimas 30 y las fijadas), y «Cerrar sesión» las
+  borra. Sale cuando PanelGerente avisa (`barraLista`, 250 ms después de entrar, junto con el plegado de
+  la barra izquierda) y, si se cerró a mano, ya no se abre sola. Abierta, se lleva la sucursal.
+  Sin tope (estado_ia), la caja dice el aviso y las ideas se apagan; la barra de chats y el resto del
+  panel siguen igual. Si se acaba a media conversación, la caja de abajo dice lo mismo. Si una pregunta
+  no se pudo contestar, vuelve a la caja para mandarla otra vez.
 -->
 <script lang="ts">
   import { onMount, tick } from 'svelte';
   import BarraArriba from '../../diseno/BarraArriba.svelte';
-  import Boton from '../../diseno/Boton.svelte';
+  import BotonCuadro from '../../diseno/BotonCuadro.svelte';
   import CajaError from '../../diseno/CajaError.svelte';
   import Icono from '../../diseno/Icono.svelte';
   import Pensando from '../../diseno/Pensando.svelte';
   import {
+    cambiarConversacion,
+    eliminarConversacion,
+    guardarBarraCerrada,
     guardarConversacion,
     IDEAS,
+    leerBarraCerrada,
     leerConversaciones,
     leerEstadoIa,
     leerZonaYCorte,
@@ -64,10 +71,12 @@
     sucursal,
     sucursales,
     alElegir,
+    barraLista,
   }: {
     sucursal: Sucursal;
     sucursales: Sucursal[];
     alElegir: (sucursal: Sucursal) => void;
+    barraLista: boolean;
   } = $props();
 
   const PH_BIENVENIDA = 'Pregunta lo que quieras de tu negocio…';
@@ -106,6 +115,25 @@
   // La caja de la bienvenida: abierta, salen las ideas. En la conversación, la caja lleva la suya.
   let cajaAbierta = $state(false);
   let bienvenida = $state<HTMLDivElement | null>(null);
+  let barraCerrada = $state(leerBarraCerrada());
+  const barraAbierta = $derived(barraLista && !barraCerrada);
+  // Las que se eliminaron con su respuesta en camino: cuando llegue, ya no se guarda.
+  const eliminadas = new Set<string>();
+
+  // La lista de la barra: lo guardado, y arriba la que todavía no se guarda (se guarda con su primera respuesta).
+  const lista = $derived.by(() => {
+    const vacia = (id: string, titulo: string): Conversacion => ({ id, titulo, fecha: '', hora: '', turnos: [] });
+    const candidatas = [
+      actual,
+      pendiente && vacia(pendiente.id, pendiente.visible),
+      reporteEnCamino && vacia(reporteEnCamino.id, reporteEnCamino.visible),
+    ];
+    const sinGuardar: Conversacion[] = [];
+    for (const c of candidatas) {
+      if (c && ![...conversaciones, ...sinGuardar].some((x) => x.id === c.id)) sinGuardar.push(c);
+    }
+    return [...sinGuardar, ...conversaciones];
+  });
 
   const sinTope = $derived(estado && !estado.puede ? estado : null);
   const ocupado = $derived(pendiente !== null || reporteEnCamino !== null);
@@ -168,6 +196,7 @@
   // Se queda en la conversación con lo que alcanzó a hacer. Solo se guarda en el Historial si la
   // conversación ya tiene alguna respuesta: la fecha y la hora del restaurante llegan con ellas.
   function quedoDetenida(p: Pedido, base: Conversacion, tardo: number) {
+    if (eliminadas.has(base.id)) return;
     const hechos = pasos.filter((x) => x.hecho);
     const turno: Turno = {
       visible: p.visible,
@@ -225,6 +254,7 @@
         if (actual?.id === base.id && !base.turnos.length) actual = null;
         return;
       }
+      if (eliminadas.has(base.id)) return;
       // La conversación como está guardada (pudo cambiar de vista mientras tanto).
       const antes = conversaciones.find((c) => c.id === base.id) ?? base;
       const turno: Turno = {
@@ -299,6 +329,7 @@
     irALaPregunta();
     try {
       const { reporte, ahora } = await prepararReporte(sucursal.id, periodo);
+      if (eliminadas.has(base.id)) return;
       const antes = conversaciones.find((c) => c.id === base.id) ?? base;
       const turno: Turno = { visible, pregunta: '', respuesta: '', leido: [], idea: null, reporte };
       const conversacion: Conversacion = {
@@ -365,6 +396,24 @@
     vista?.scrollTo({ top: vista.scrollHeight });
   }
 
+  function cerrarBarra(si: boolean) {
+    barraCerrada = si;
+    guardarBarraCerrada(si);
+  }
+
+  function fijar(id: string) {
+    const c = conversaciones.find((x) => x.id === id);
+    if (c) conversaciones = cambiarConversacion(sucursal.id, id, { fijada: !c.fijada });
+  }
+
+  // Si era la abierta, regresa a la bienvenida. Si su respuesta venía en camino, se corta: lo ya gastado lo anota el Worker.
+  function eliminar(id: string) {
+    eliminadas.add(id);
+    if (pendiente?.id === id) llamada?.abort();
+    conversaciones = eliminarConversacion(sucursal.id, id);
+    if (actual?.id === id) nuevaConversacion();
+  }
+
   onMount(() => {
     const momento = saludoPorHora(sucursal.hora);
     Promise.allSettled([leerEstadoIa(sucursal.id), leerZonaYCorte(sucursal.id)]).then(([e, z]) => {
@@ -382,10 +431,13 @@
   });
 </script>
 
+<div class="con-barra" class:abierta={barraAbierta}>
+<div class="lado">
 <BarraArriba titulo="Agente IA" estado={{ texto: 'Leyendo tus ventas en vivo', vivo: true }}>
-  <Historial {conversaciones} actual={actual?.id ?? null} hoy={sucursal.hoy} alAbrir={abrirConversacion} />
-  <Boton etiqueta="Nueva conversación" icono="r-mas" tono="tinta" onclick={nuevaConversacion} />
-  <CajaSucursales {sucursales} actual={sucursal} {alElegir} />
+  {#if !barraAbierta}<CajaSucursales {sucursales} actual={sucursal} {alElegir} />{/if}
+  {#if barraCerrada}
+    <BotonCuadro icono="r-reloj" ayuda="Abrir las conversaciones" tamanoIcono={18} onclick={() => cerrarBarra(false)} />
+  {/if}
 </BarraArriba>
 
 <main class="vista" bind:this={vista}>
@@ -520,8 +572,49 @@
     {/if}
   </section>
 </main>
+</div>
+<Historial
+  abierta={barraAbierta}
+  conversaciones={lista}
+  actual={actual?.id ?? null}
+  {sucursal}
+  {sucursales}
+  {alElegir}
+  alAbrir={abrirConversacion}
+  alNueva={nuevaConversacion}
+  alCerrar={() => cerrarBarra(true)}
+  alFijar={fijar}
+  alRenombrar={(id, titulo) => (conversaciones = cambiarConversacion(sucursal.id, id, { titulo }))}
+  alEliminar={eliminar}
+/>
+</div>
 
 <style>
+  /* La barra de chats abre de 0 a 288, con el mismo paso que la de la izquierda (Marco). */
+  .con-barra {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 0px;
+    transition: grid-template-columns 200ms ease;
+  }
+
+  .con-barra.abierta {
+    grid-template-columns: minmax(0, 1fr) 288px;
+  }
+
+  .lado {
+    position: relative;
+    min-width: 0;
+    min-height: 0;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .con-barra {
+      transition: none;
+    }
+  }
+
   .vista {
     position: absolute;
     left: 0;

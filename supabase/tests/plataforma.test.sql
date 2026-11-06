@@ -232,12 +232,12 @@ select is_empty(
   $$ select c.relname
      from pg_class c join pg_namespace n on n.oid = c.relnamespace
      where n.nspname = 'public' and c.relkind in ('r', 'p')
-       and c.relname not in ('restaurantes', 'plataforma_admins', 'distribuidores', 'perfiles', 'precios_ia', 'estilos')
+       and c.relname not in ('restaurantes', 'plataforma_admins', 'distribuidores', 'perfiles', 'precios_ia', 'estilos', 'fotos_licencias')
        and not exists (
          select 1 from pg_attribute a
          where a.attrelid = c.oid and a.attname = 'restaurante_id' and not a.attisdropped
        ) $$,
-  '1 · Todas las tablas, salvo restaurantes, plataforma_admins, distribuidores, perfiles, precios_ia y estilos, llevan restaurante_id'
+  '1 · Todas las tablas, salvo restaurantes, plataforma_admins, distribuidores, perfiles, precios_ia, estilos y fotos_licencias, llevan restaurante_id'
 );
 
 select is_empty(

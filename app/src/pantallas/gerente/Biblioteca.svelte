@@ -17,6 +17,7 @@
   import CajaError from '../../diseno/CajaError.svelte';
   import Confirmar from '../../diseno/Confirmar.svelte';
   import Icono from '../../diseno/Icono.svelte';
+  import { pista } from '../../diseno/pista';
   import Tarjeta from '../../diseno/Tarjeta.svelte';
   import {
     anuncios as cuantosAnuncios,
@@ -349,7 +350,7 @@
                           <button
                             type="button"
                             class="blanco"
-                            title="Descargar"
+                            use:pista={'Descargar'}
                             aria-label="Descargar"
                             disabled={bajando === a.id}
                             onclick={(e) => {
@@ -364,7 +365,7 @@
                           <button
                             type="button"
                             class="blanco"
-                            title="Eliminar"
+                            use:pista={'Eliminar'}
                             aria-label="Eliminar"
                             onclick={(e) => {
                               e.stopPropagation();
@@ -410,6 +411,7 @@
 
 {#if confirmar}
   <Confirmar
+    peligro
     miniatura={{ src: urlFoto(confirmar.anuncio.ruta), alto: Math.round(72 * FORMA[confirmar.anuncio.formato].alto) }}
     titulo="¿Eliminar este anuncio?"
     texto="Se borra de tu biblioteca y no se puede deshacer. Si ya lo descargaste o lo pusiste en tu menú, eso se queda. No te regresa a tus anuncios del mes."

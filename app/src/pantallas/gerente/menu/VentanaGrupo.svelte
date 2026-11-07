@@ -6,9 +6,17 @@
   categoría, con «Todos». Todo se guarda junto con Agregar grupo o Guardar cambios (guardar_grupo):
   el ojito también. Al editar, abajo a la izquierda, Eliminar grupo pide confirmar y dice en
   cuántos productos está.
+
+  Desde Mi menú (maqueta U9YqpsSb2PeB5pFXTPvh1C, versiones 24 a 26) va como la de producto: 984 y el
+  título al centro; la izquierda se queda con lo que sobra y los productos miden 420, en tarjetas con
+  foto como las de Crear anuncios, 2 por fila, que se deslizan por dentro sin estirar la ventana.
+  «Agregar opción» sube junto a Mínimo y Máximo, con su etiqueta «NUEVA OPCIÓN». «Ver inglés» no se
+  abre: cambia el nombre y cada opción a inglés hasta volver a picarlo («Ver español»), con su marquita
+  «EN»; lo que no cambia con el idioma se apaga y no responde. Lo escrito en cada idioma se queda al ir
+  y venir; un inglés vacío enseña en gris el español, y la IA lo traduce al guardar.
 -->
 <script lang="ts">
-  import { tick } from 'svelte';
+  import { onDestroy, tick } from 'svelte';
   import { SvelteSet } from 'svelte/reactivity';
   import Boton from '../../../diseno/Boton.svelte';
   import BotonCuadro from '../../../diseno/BotonCuadro.svelte';
@@ -19,10 +27,10 @@
   import IconoCategoria from '../../../diseno/IconoCategoria.svelte';
   import Ventana from '../../../diseno/Ventana.svelte';
   import { ALGO_SALIO_PANEL, Fallo } from '../../../lib/errores';
-  import { plural } from '../../../lib/formato';
+  import { pesos, plural } from '../../../lib/formato';
+  import { urlFoto } from '../../../lib/fotos';
   import { eliminarGrupo, guardarGrupo, type Grupo, type Menu } from '../../../lib/menu';
   import { frase } from '../../../lib/opciones';
-  import EnIngles from './EnIngles.svelte';
 
   let {
     restauranteId,
@@ -73,6 +81,12 @@
   let paso = $state<null | 'guardando' | 'listo'>(null);
   let confirmando = $state(false);
   let listaOpciones = $state<HTMLElement>();
+  let columnaIzquierda = $state<HTMLElement>();
+  let pistaIdioma = $state<HTMLSpanElement>();
+  // «Ver inglés» del grupo: los mismos campos pasan a inglés hasta volver a picarlo.
+  let ingles = $state(false);
+  const esperas = new Set<ReturnType<typeof setTimeout>>();
+  onDestroy(() => esperas.forEach(clearTimeout));
 
   const cuantas = $derived(opciones.length);
   // Por categoría, en el orden del menú; las que no tienen productos no salen. Un envío no lleva
@@ -81,6 +95,16 @@
     menu.categorias
       .map((c) => ({ categoria: c, productos: menu.productos.filter((p) => p.categoria_id === c.id && !p.es_envio) }))
       .filter((x) => x.productos.length),
+  );
+  const traducido = $derived(!!nombreEn.trim() && opciones.every((o) => !!o.ingles.trim()));
+  const pistaTexto = $derived(
+    ingles
+      ? traducido
+        ? 'Lo tradujo la IA. Si corriges algo, se respeta.'
+        : 'La IA lo traduce sola. Si prefieres, escríbelo tú.'
+      : traducido
+        ? ''
+        : 'La IA lo traduce sola.',
   );
 
   // A medio guardar no se cierra (como _cerrar() de Flet).
@@ -119,17 +143,38 @@
     [opciones[i], opciones[j]] = [opciones[j], opciones[i]];
   }
 
+  // «Todos» las elige una tras otra, 45 ms entre cada una, como la lista; «Quitar todos», igual.
   function alternarCategoria(lista: { id: number }[]) {
     const todos = lista.every((p) => productos.has(p.id));
-    for (const p of lista) {
-      if (todos) productos.delete(p.id);
-      else productos.add(p.id);
-    }
+    lista.forEach((p, i) => {
+      const espera = setTimeout(() => {
+        esperas.delete(espera);
+        if (todos) productos.delete(p.id);
+        else productos.add(p.id);
+      }, i * 45);
+      esperas.add(espera);
+    });
   }
 
   function alternarProducto(id: number) {
     if (productos.has(id)) productos.delete(id);
     else productos.add(id);
+  }
+
+  const quieto = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  // El texto de cada campo entra subiendo con el rebote de la caja del agente.
+  async function cambiarIdioma() {
+    ingles = !ingles;
+    if (quieto()) return;
+    await tick();
+    for (const c of columnaIzquierda?.querySelectorAll<HTMLInputElement>('#grupo-nombre, .op-nombre') ?? [])
+      c.animate([{ opacity: 0, transform: 'translateY(8px)' }, { opacity: 1, transform: 'none' }], {
+        duration: 300,
+        easing: 'cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+      });
+    if (pistaTexto)
+      pistaIdioma?.animate([{ opacity: 0, transform: 'translateY(4px)' }, { opacity: 1, transform: 'none' }], { duration: 300, easing: 'ease-out' });
   }
 
   // Lo de antes de mandar nada: lo mismo que revisa guardar_grupo, con las palabras de la maqueta.
@@ -203,8 +248,13 @@
   </div>
 {/snippet}
 
+{#snippet marcaEn()}
+  <span class="marca-en" aria-hidden="true">EN</span>
+{/snippet}
+
 {#if confirmando && inicial}
   <Confirmar
+    peligro
     icono="eliminar"
     titulo="¿Eliminar este grupo?"
     texto={inicial.productos.length
@@ -220,10 +270,12 @@
   <Ventana
     etiqueta={paso === 'guardando' ? 'GUARDANDO…' : inicial ? 'EDITAR GRUPO' : 'NUEVO GRUPO'}
     titulo={inicial ? inicial.nombre : 'Agrega un grupo'}
-    ancho={880}
+    ancho={984}
+    centrado
     alCerrar={cerrar}
   >
     <Formulario
+      verde
       boton={inicial ? { etiqueta: 'Guardar cambios', icono: 'check' } : { etiqueta: 'Agregar grupo', icono: 'mas' }}
       {guardar}
       alTerminar={alCerrar}
@@ -231,17 +283,31 @@
       espacio={0}
       antesDelBoton={28}
     >
-      <div class="dos-columnas">
-        <div class="columna">
-          <Campo id="grupo-nombre" etiqueta="NOMBRE" bind:valor={nombre} placeholder="Ej. Salsa" />
+      <div class="dos-columnas" class:en-ingles-modo={ingles}>
+        <div class="columna" bind:this={columnaIzquierda}>
+          <div class="con-marca-en">
+            <Campo
+              id="grupo-nombre"
+              etiqueta="NOMBRE"
+              bind:valor={() => (ingles ? nombreEn : nombre), (v) => (ingles ? (nombreEn = v) : (nombre = v))}
+              placeholder={ingles ? nombre.trim() || 'Ej. Salsa' : 'Ej. Salsa'}
+              marca={marcaEn}
+            />
+          </div>
 
-          <div class="campo">
+          <div class="campo cuantas-con-agregar">
             <span class="etiqueta">CUÁNTAS SE ELIGEN</span>
-            <div class="pasos">
+            <div class="pasos se-apaga" inert={ingles}>
               {@render contador('Mínimo', minimo, () => cambiarMinimo(-1), () => cambiarMinimo(1), minimo <= 0, minimo >= cuantas)}
               {@render contador('Máximo', maximo, () => cambiarMaximo(-1), () => cambiarMaximo(1), maximo <= 1, maximo >= Math.max(cuantas, 1))}
             </div>
             <p class="frase">{frase(minimo, maximo)}</p>
+            <div class="nueva-opcion">
+              <span class="etiqueta">NUEVA OPCIÓN</span>
+              <div class="se-apaga" inert={ingles}>
+                <Boton etiqueta="Agregar" aria-label="Agregar opción" icono="mas" tamano="chico" apagado={paso !== null} onclick={agregarOpcion} />
+              </div>
+            </div>
           </div>
 
           <div class="campo">
@@ -249,18 +315,19 @@
             <div class="opciones" bind:this={listaOpciones}>
               {#each opciones as o, i (o.clave)}
                 <div class="opcion" class:agotada={!o.visible}>
-                  <span class="opcion-nombre">
+                  <span class="opcion-nombre con-marca-en">
                     <input
                       class="op-nombre"
-                      bind:value={o.nombre}
-                      placeholder="Ej. Verde"
-                      aria-label="Nombre de la opción {i + 1}"
+                      bind:value={() => (ingles ? o.ingles : o.nombre), (v) => (ingles ? (o.ingles = v) : (o.nombre = v))}
+                      placeholder={ingles ? o.nombre.trim() || 'Ej. Green' : 'Ej. Verde'}
+                      aria-label={ingles ? `${o.nombre.trim() || `Opción ${i + 1}`} en inglés` : `Nombre de la opción ${i + 1}`}
                       autocomplete="off"
                       disabled={paso !== null}
                     />
+                    {@render marcaEn()}
                     {#if !o.visible}<span class="marca-agotada">AGOTADA</span>{/if}
                   </span>
-                  <span class="precio">
+                  <span class="precio se-apaga" inert={ingles}>
                     <span class="prefijo">+$</span>
                     <input
                       bind:value={o.precio}
@@ -271,55 +338,41 @@
                       disabled={paso !== null}
                     />
                   </span>
-                  <BotonCuadro
-                    icono={o.visible ? 'oculto' : 'ojo'}
-                    ayuda={o.visible ? 'Marcar agotada' : 'Ya hay: mostrarla'}
-                    apagado={paso !== null}
-                    onclick={() => (o.visible = !o.visible)}
-                  />
-                  <BotonCuadro icono="arriba" ayuda="Subir" etiqueta="Subir opción" apagado={i === 0 || paso !== null} onclick={() => moverOpcion(i, -1)} />
-                  <BotonCuadro
-                    icono="abajo"
-                    ayuda="Bajar"
-                    etiqueta="Bajar opción"
-                    apagado={i === opciones.length - 1 || paso !== null}
-                    onclick={() => moverOpcion(i, 1)}
-                  />
-                  <BotonCuadro icono="cerrar" ayuda="Quitar opción" apagado={paso !== null} onclick={() => quitarOpcion(i)} />
+                  <span class="acciones se-apaga" inert={ingles}>
+                    <BotonCuadro
+                      icono={o.visible ? 'oculto' : 'ojo'}
+                      ayuda={o.visible ? 'Marcar agotada' : 'Ya hay: mostrarla'}
+                      apagado={paso !== null}
+                      onclick={() => (o.visible = !o.visible)}
+                    />
+                    <BotonCuadro icono="arriba" ayuda="Subir" etiqueta="Subir opción" apagado={i === 0 || paso !== null} onclick={() => moverOpcion(i, -1)} />
+                    <BotonCuadro
+                      icono="abajo"
+                      ayuda="Bajar"
+                      etiqueta="Bajar opción"
+                      apagado={i === opciones.length - 1 || paso !== null}
+                      onclick={() => moverOpcion(i, 1)}
+                    />
+                    <BotonCuadro icono="cerrar" ayuda="Quitar opción" apagado={paso !== null} onclick={() => quitarOpcion(i)} />
+                  </span>
                 </div>
               {/each}
             </div>
-            <div><Boton etiqueta="Agregar opción" icono="mas" tamano="chico" apagado={paso !== null} onclick={agregarOpcion} /></div>
             <p class="pista">El precio extra se suma al del producto; vacío es $0. El ojito marca una opción agotada.</p>
           </div>
 
-          <EnIngles>
-            <div class="en-op">
-              <span>{nombre.trim() || 'Grupo'}</span>
-              <input
-                bind:value={nombreEn}
-                placeholder={nombre.trim()}
-                aria-label="{nombre.trim() || 'El grupo'} en inglés"
-                autocomplete="off"
-                disabled={paso !== null}
-              />
-            </div>
-            {#each opciones as o, i (o.clave)}
-              <div class="en-op">
-                <span>{o.nombre.trim() || `Opción ${i + 1}`}</span>
-                <input
-                  bind:value={o.ingles}
-                  placeholder={o.nombre.trim()}
-                  aria-label="{o.nombre.trim() || `Opción ${i + 1}`} en inglés"
-                  autocomplete="off"
-                  disabled={paso !== null}
-                />
-              </div>
-            {/each}
-          </EnIngles>
+          <div class="ver-ingles">
+            <button type="button" class="ver-ingles-fila" aria-pressed={ingles} onclick={cambiarIdioma}>
+              <span class="vi-titulo">{ingles ? 'Ver español' : 'Ver inglés'}</span>
+              <span class="vi-pista" bind:this={pistaIdioma}>{pistaTexto}</span>
+              <svg class="vi-cambio" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"
+                ><path d="M17 3l4 4-4 4"></path><path d="M3 7h18"></path><path d="M7 21l-4-4 4-4"></path><path d="M21 17H3"></path></svg
+              >
+            </button>
+          </div>
         </div>
 
-        <div class="columna">
+        <div class="columna derecha">
           <div class="campo">
             <div class="etiquetas">
               <span class="etiqueta">PRODUCTOS QUE LO LLEVAN</span>
@@ -330,7 +383,7 @@
                 <p class="pista">Todavía no tienes productos. Cuando los tengas, aquí eliges cuáles lo llevan.</p>
               </div>
             {:else}
-              <div class="productos">
+              <div class="productos tarjetas se-apaga" inert={ingles}>
                 {#each porCategoria as { categoria, productos: suyos } (categoria.id)}
                   <div class="categoria">
                     <span class="categoria-nombre"><IconoCategoria id={categoria.icono} tamano={14} />{categoria.nombre}</span>
@@ -338,20 +391,29 @@
                       {suyos.every((p) => productos.has(p.id)) ? 'Quitar todos' : 'Todos'}
                     </button>
                   </div>
-                  {#each suyos as p (p.id)}
-                    {@const elegido = productos.has(p.id)}
-                    <button
-                      type="button"
-                      class="producto"
-                      role="checkbox"
-                      aria-checked={elegido}
-                      disabled={paso !== null}
-                      onclick={() => alternarProducto(p.id)}
-                    >
-                      <span class="cajita">{#if elegido}<Icono nombre="check" tamano={11} />{/if}</span>
-                      <span>{p.nombre}{#if !p.visible}{' '}<span class="oculto">· oculto</span>{/if}</span>
-                    </button>
-                  {/each}
+                  <div class="pt-rejilla">
+                    {#each suyos as p (p.id)}
+                      <button
+                        type="button"
+                        class="pt"
+                        role="checkbox"
+                        aria-checked={productos.has(p.id)}
+                        disabled={paso !== null}
+                        onclick={() => alternarProducto(p.id)}
+                      >
+                        <span class="pt-foto" style:background-image={p.imagen_ruta ? `url(${urlFoto(p.imagen_ruta)})` : undefined}></span>
+                        <span class="pt-textos">
+                          <span class="pt-nombre">{p.nombre}</span>
+                          <span class="pt-precio">{pesos(p.precio)}{p.visible ? '' : ' · oculto'}</span>
+                        </span>
+                        <span class="pt-marca" aria-hidden="true"
+                          ><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"
+                            ><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg
+                          ></span
+                        >
+                      </button>
+                    {/each}
+                  </div>
                 {/each}
               </div>
             {/if}
@@ -365,6 +427,7 @@
           <Boton
             etiqueta="Eliminar grupo"
             icono="eliminar"
+            tono="peligro"
             apagado={paso !== null}
             onclick={() => {
               error = null;
@@ -378,11 +441,12 @@
 {/if}
 
 <style>
+  /* La izquierda se queda con lo que sobra (480 px, casi lo de antes) y los productos miden 420. */
   .dos-columnas {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) 320px;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 420px);
     gap: 28px;
-    align-items: start;
+    align-items: stretch;
   }
 
   .columna {
@@ -390,6 +454,18 @@
     display: flex;
     flex-direction: column;
     gap: 18px;
+  }
+
+  /* La columna de los productos no estira la ventana: mide lo que la izquierda (al menos 420 px) y sus
+     tarjetas se deslizan por dentro. */
+  .derecha {
+    contain: size;
+    min-height: 420px;
+  }
+
+  .derecha > .campo {
+    flex: 1;
+    min-height: 0;
   }
 
   .campo {
@@ -404,6 +480,39 @@
     justify-content: space-between;
     align-items: baseline;
     gap: 12px;
+  }
+
+  /* «Cuántas se eligen» con «Nueva opción» a la derecha: las dos etiquetas en un renglón, los contadores
+     y el botón en el siguiente, y la frase abajo. */
+  .cuantas-con-agregar {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-rows: auto auto auto;
+    column-gap: 20px;
+  }
+
+  .cuantas-con-agregar > .etiqueta {
+    grid-area: 1 / 1;
+  }
+
+  .cuantas-con-agregar > .pasos {
+    grid-area: 2 / 1;
+  }
+
+  .cuantas-con-agregar > .frase {
+    grid-area: 3 / 1 / 4 / 3;
+  }
+
+  .nueva-opcion {
+    grid-area: 1 / 2 / 3 / 3;
+    display: grid;
+    grid-template-rows: subgrid;
+    row-gap: 8px;
+    justify-items: end;
+  }
+
+  .nueva-opcion > :last-child {
+    align-self: center;
   }
 
   .pasos {
@@ -481,6 +590,13 @@
     gap: 8px;
   }
 
+  .acciones {
+    flex: none;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
   .opcion input {
     width: 100%;
     height: 40px;
@@ -521,12 +637,14 @@
     transform: translateY(-50%);
     padding: 3px 6px;
     border-radius: 6px;
-    background: var(--chip);
+    background: var(--amarillo-fondo);
     font-family: var(--mono);
     font-size: 9.5px;
+    font-weight: 500;
     letter-spacing: 0.1em;
-    color: var(--suave);
+    color: var(--amarillo-texto);
     pointer-events: none;
+    transition: right 0.2s ease;
   }
 
   .precio {
@@ -572,6 +690,14 @@
     border-radius: 14px;
   }
 
+  .productos.tarjetas {
+    flex: 1;
+    min-height: 0;
+    max-height: none;
+    padding: 0 12px 12px;
+    gap: 0;
+  }
+
   .productos.vacia {
     padding: 18px 14px;
   }
@@ -611,89 +737,228 @@
     background: var(--chip);
   }
 
-  .producto {
-    width: 100%;
-    min-height: 36px;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 6px 8px;
-    border: 0;
-    border-radius: 10px;
-    background: transparent;
-    color: var(--texto);
-    font-size: 13px;
-    font-weight: 600;
-    text-align: left;
-    transition: background-color 150ms;
-  }
-
-  .producto:hover:not(:disabled) {
-    background: var(--chip);
-  }
-
-  .cajita {
-    width: 18px;
-    height: 18px;
-    flex: none;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border: 1.5px solid var(--tenue);
-    border-radius: 5px;
-    background: var(--solido);
-  }
-
-  .producto[aria-checked='true'] .cajita {
-    border: 0;
-    background: var(--tinta);
-    color: var(--sobre-tinta);
-  }
-
-  .oculto {
-    font-weight: 500;
-    color: var(--tenue);
-  }
-
-  /* El inglés: el nombre en español a la izquierda y su campo a la derecha, uno por renglón. */
-  .en-op {
+  /* Las tarjetas, las de Crear anuncios (.prod): foto, nombre y precio; la elegida con su orilla de tinta.
+     La palomita entra con el rebote de la caja del agente y la tarjeta se aprieta un poco al picarle. */
+  .pt-rejilla {
     display: grid;
-    grid-template-columns: 110px 1fr;
-    align-items: center;
-    gap: 12px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+    padding: 4px 0 6px;
   }
 
-  .en-op span {
-    font-size: 13px;
+  .pt {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 6px 6px 10px;
+    border: 1px solid var(--linea);
+    border-radius: 14px;
+    background: var(--solido);
+    color: var(--texto);
+    font: inherit;
+    text-align: left;
+    min-width: 0;
+    cursor: pointer;
+    transition:
+      box-shadow 0.15s ease,
+      border-color 0.15s ease,
+      scale 0.15s ease;
+  }
+
+  .pt:active {
+    scale: 0.97;
+  }
+
+  .pt[aria-checked='true'] {
+    box-shadow: 0 0 0 2px var(--tinta);
+    border-color: transparent;
+  }
+
+  .pt:focus-visible {
+    outline: 2px solid var(--acento);
+    outline-offset: 3px;
+  }
+
+  .pt-foto {
+    height: 104px;
+    border-radius: 10px;
+    background: #000000 center / cover no-repeat;
+  }
+
+  .pt-textos {
+    padding: 0 4px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+  }
+
+  .pt-nombre {
+    font-size: 12.5px;
     font-weight: 600;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
   }
 
-  .en-op input {
-    height: 40px;
-    width: 100%;
-    padding: 0 12px;
-    border: 1px solid var(--linea);
-    border-radius: 10px;
-    font-size: 13px;
-    font-weight: 400;
-    color: var(--texto);
-    outline: none;
-  }
-
-  .en-op input:focus {
-    border-color: var(--suave);
-  }
-
-  .en-op input::placeholder {
+  .pt-precio {
+    font-family: var(--mono);
+    font-size: 11px;
     color: var(--tenue);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .pt-marca {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    width: 22px;
+    height: 22px;
+    border-radius: 11px;
+    display: grid;
+    place-items: center;
+    background: var(--tinta);
+    color: var(--sobre-tinta);
+    box-shadow: 0 0 0 2px var(--solido);
+    opacity: 0;
+    scale: 0.4;
+    transition:
+      opacity 0.15s ease,
+      scale 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  }
+
+  .pt-marca svg {
+    width: 12px;
+    height: 12px;
+  }
+
+  .pt[aria-checked='true'] .pt-marca {
+    opacity: 1;
+    scale: 1;
+  }
+
+  /* El inglés del grupo: la marquita «EN» de cada campo (como «AGOTADA», en tinta), lo que no cambia con el
+     idioma se apaga, y el botón gira sus flechas. */
+  .con-marca-en {
+    position: relative;
+  }
+
+  .marca-en {
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    translate: 0 -50%;
+    padding: 3px 6px;
+    border-radius: 6px;
+    background: var(--tinta);
+    color: var(--sobre-tinta);
+    font-family: var(--mono);
+    font-size: 9.5px;
+    line-height: 1.2;
+    letter-spacing: 0.1em;
+    pointer-events: none;
+    opacity: 0;
+    scale: 0.6;
+    transition:
+      opacity 0.15s ease,
+      scale 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  }
+
+  .en-ingles-modo .marca-en {
+    opacity: 1;
+    scale: 1;
+  }
+
+  .en-ingles-modo .con-marca-en :global(input) {
+    padding-right: 44px;
+  }
+
+  .en-ingles-modo .agotada .op-nombre {
+    padding-right: 112px;
+  }
+
+  .en-ingles-modo .marca-agotada {
+    right: 42px;
+  }
+
+  .se-apaga {
+    transition: opacity 0.2s ease;
+  }
+
+  .en-ingles-modo .se-apaga {
+    opacity: 0.35;
+  }
+
+  /* «Ver inglés»: la píldora de las ventanas de producto y de categoría, sin abrirse. */
+  .ver-ingles {
+    margin-top: 4px;
+    height: 48px;
+    overflow: hidden;
+    border-radius: 24px;
+    background: var(--chip);
+  }
+
+  .ver-ingles-fila {
+    width: 100%;
+    min-height: 48px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 0 16px;
+    border: 0;
+    border-radius: 24px;
+    background: transparent;
+    color: var(--texto);
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+  }
+
+  .ver-ingles-fila:hover {
+    background: var(--chip);
+  }
+
+  .ver-ingles-fila:focus-visible {
+    outline: 2px solid var(--acento);
+    outline-offset: -2px;
+  }
+
+  .vi-titulo {
+    font-size: 13px;
+    font-weight: 700;
+    flex: none;
+  }
+
+  .vi-pista {
+    flex: 1;
+    min-width: 0;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--tenue);
+    text-align: right;
+  }
+
+  .vi-cambio {
+    flex: none;
+    color: var(--suave);
+    transition: rotate 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  }
+
+  [aria-pressed='true'] .vi-cambio {
+    rotate: 180deg;
   }
 
   @media (prefers-reduced-motion: reduce) {
     .paso-boton,
-    .producto {
+    .pt,
+    .pt-marca,
+    .marca-en,
+    .se-apaga,
+    .vi-cambio,
+    .marca-agotada {
       transition: none;
     }
   }

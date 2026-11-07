@@ -63,7 +63,7 @@
     <p class="pista">Va tal cual al anuncio. No gasta nada más.</p>
   </div>
   <div class="pie">
-    <Boton etiqueta="Cancelar" icono="cerrar" onclick={alCerrar} />
+    <Boton etiqueta="Cancelar" icono="cerrar" tono="alarga" onclick={alCerrar} />
     <span class="crece"></span>
     <Boton etiqueta="Usar esta palabra" icono="check-fino" tono="tinta" apagado={!lista} onclick={usar} />
   </div>

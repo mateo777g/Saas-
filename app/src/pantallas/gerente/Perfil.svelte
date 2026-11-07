@@ -49,6 +49,7 @@
   {alCerrar}
 >
   <Formulario
+    verde
     boton={{ etiqueta: 'Guardar cambios', icono: 'check' }}
     {guardar}
     alTerminar={alCerrar}

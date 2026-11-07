@@ -260,6 +260,7 @@
 {:else if ventana?.tipo === 'eliminar'}
   {@const m = ventana.mesa}
   <Confirmar
+    peligro
     icono="eliminar"
     titulo="¿Eliminar esta mesa?"
     texto="«{m.nombre}» se quita de tus mesas. Si ya tuvo cuentas, tus reportes las siguen contando."

@@ -47,7 +47,7 @@
   ancho={440}
   alCerrar={cerrar}
 >
-  <Formulario boton={{ etiqueta: 'Guardar PIN', icono: 'check' }} {guardar} alTerminar={alCerrar} antesDelBoton={28}>
+  <Formulario verde boton={{ etiqueta: 'Guardar PIN', icono: 'check' }} {guardar} alTerminar={alCerrar} antesDelBoton={28}>
     <CampoPin
       id="pin-nuevo"
       etiqueta={p.yo && p.tienePin ? 'PIN NUEVO' : 'PIN'}

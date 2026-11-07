@@ -11,7 +11,8 @@
   panel de Fragmentless, 18 y 24 en Perfil. Quien necesite quitar el error desde otro control (un Selector) enlaza
   `error` con bind:error. `izquierda` va abajo a la izquierda, frente al botón principal
   («Eliminar producto»). `textoCargando` cambia el «Guardando…» («Creando…»). `arriba` es lo que hay
-  entre la cabeza de la ventana y el primer campo (22; 18 en la de un estilo).
+  entre la cabeza de la ventana y el primer campo (22; 18 en la de un estilo). `verde` pone el botón verde
+  (Boton verde, Mi menú versión 8): solo lo pasan las ventanas del panel del gerente.
 -->
 <script lang="ts">
   import { onDestroy, type Snippet } from 'svelte';
@@ -31,6 +32,7 @@
     arriba = 22,
     textoCargando = 'Guardando…',
     izquierda,
+    verde = false,
     children,
   }: {
     boton: { etiqueta: string; icono: string };
@@ -43,6 +45,7 @@
     arriba?: number;
     textoCargando?: string;
     izquierda?: Snippet;
+    verde?: boolean;
     children: Snippet;
   } = $props();
 
@@ -91,7 +94,7 @@
     {/if}
     <Boton
       tipo="submit"
-      tono="tinta"
+      tono={verde ? 'verde' : 'tinta'}
       icono={boton.icono}
       etiqueta={estado === 'guardando' ? textoCargando : estado === 'listo' ? textoListo : boton.etiqueta}
       cargando={estado === 'guardando'}

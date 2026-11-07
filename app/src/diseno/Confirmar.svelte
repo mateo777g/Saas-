@@ -10,9 +10,16 @@
   las dos), va en `alTerminar`; `textoCargando` cambia el «Guardando…» («Eliminando…»).
   `miniatura` pone la imagen en lugar del icono: 72 de ancho y su alto (Eliminar un anuncio de Mi
   biblioteca).
+
+  `peligro` es lo que borra, en el panel del gerente (Mi menú, versiones 1, 9 a 13; maqueta
+  U9YqpsSb2PeB5pFXTPvh1C): el botón lleno en rojo (Boton peligro-lleno), «Cancelar» que se alarga hasta la
+  orilla izquierda y, en lugar del icono, el bote de basura 3D (Bote.svelte), con el bote y los textos al
+  centro; su tapa se abre solo sobre el botón rojo (mouse, foco o dedo) y se cierra al irse de ahí. Con
+  `miniatura`, la imagen se queda en su lugar. Fragmentless y los distribuidores no lo pasan: se quedan igual.
 -->
 <script lang="ts">
   import { onDestroy, onMount } from 'svelte';
+  import Bote from './Bote.svelte';
   import Boton from './Boton.svelte';
   import CajaError from './CajaError.svelte';
   import Icono from './Icono.svelte';
@@ -29,6 +36,7 @@
     alCerrar,
     alTerminar,
     textoCargando = 'Guardando…',
+    peligro = false,
   }: {
     icono?: string;
     miniatura?: { src: string; alto: number };
@@ -39,6 +47,7 @@
     alCerrar: () => void;
     alTerminar?: () => void;
     textoCargando?: string;
+    peligro?: boolean;
   } = $props();
 
   let dialogo: HTMLDialogElement;
@@ -75,6 +84,23 @@
     e.preventDefault();
     cancelar();
   }
+
+  // La tapa del bote: se abre con el mouse o el foco sobre el botón rojo, o mientras lo toca el dedo (y
+  // 450 ms después); en cuanto se va de ahí, a donde sea, se cierra.
+  let tapaAbierta = $state(false);
+  let soltar: ReturnType<typeof setTimeout> | undefined;
+  onDestroy(() => clearTimeout(soltar));
+  function sobreElRojo(e: Event, abrir: boolean) {
+    const destino = (e as MouseEvent | FocusEvent).relatedTarget as Node | null;
+    if (destino && (e.currentTarget as Node).contains(destino)) return;
+    tapaAbierta = abrir;
+  }
+  function alTocar(e: PointerEvent, abrir: boolean) {
+    if (e.pointerType === 'mouse') return;
+    clearTimeout(soltar);
+    if (abrir) tapaAbierta = true;
+    else soltar = setTimeout(() => (tapaAbierta = false), 450);
+  }
 </script>
 
 <!-- El clic en el velo es un atajo del ratón; con el teclado se cierra con Escape (oncancel). -->
@@ -88,9 +114,11 @@
     if (e.target === dialogo) cancelar();
   }}
 >
-  <div class="ventana">
+  <div class="ventana" class:centrada={peligro && !miniatura}>
     {#if miniatura}
       <img class="mini" src={miniatura.src} alt="" style:height="{miniatura.alto}px" />
+    {:else if peligro}
+      <div class="figura"><Bote abierta={tapaAbierta} /></div>
     {:else if icono}
       <div class="icono"><Icono nombre={icono} tamano={20} /></div>
     {/if}
@@ -103,16 +131,41 @@
       </div>
     {/if}
 
-    <div class="pie">
-      <Boton etiqueta="Cancelar" icono="cerrar" apagado={estado !== 'reposo'} onclick={cancelar} />
-      <Boton
-        tono="tinta"
-        icono={boton.icono}
-        etiqueta={estado === 'guardando' ? textoCargando : estado === 'listo' ? textoListo : boton.etiqueta}
-        cargando={estado === 'guardando'}
-        exito={estado === 'listo'}
-        onclick={enviar}
-      />
+    <div class="pie" class:separado={peligro}>
+      {#if peligro}
+        <Boton tono="alarga" etiqueta="Cancelar" icono="cerrar" apagado={estado !== 'reposo'} onclick={cancelar} />
+        <!-- Solo para saber si el mouse, el foco o el dedo están sobre el botón rojo (abre la tapa). -->
+        <!-- svelte-ignore a11y_no_static_element_interactions, a11y_mouse_events_have_key_events -->
+        <span
+          class="rojo"
+          onmouseover={(e) => sobreElRojo(e, true)}
+          onmouseout={(e) => sobreElRojo(e, false)}
+          onfocusin={(e) => sobreElRojo(e, true)}
+          onfocusout={(e) => sobreElRojo(e, false)}
+          onpointerdown={(e) => alTocar(e, true)}
+          onpointerup={(e) => alTocar(e, false)}
+          onpointercancel={(e) => alTocar(e, false)}
+        >
+          <Boton
+            tono="peligro-lleno"
+            icono={boton.icono}
+            etiqueta={estado === 'guardando' ? textoCargando : estado === 'listo' ? textoListo : boton.etiqueta}
+            cargando={estado === 'guardando'}
+            exito={estado === 'listo'}
+            onclick={enviar}
+          />
+        </span>
+      {:else}
+        <Boton etiqueta="Cancelar" icono="cerrar" apagado={estado !== 'reposo'} onclick={cancelar} />
+        <Boton
+          tono="tinta"
+          icono={boton.icono}
+          etiqueta={estado === 'guardando' ? textoCargando : estado === 'listo' ? textoListo : boton.etiqueta}
+          cargando={estado === 'guardando'}
+          exito={estado === 'listo'}
+          onclick={enviar}
+        />
+      {/if}
     </div>
   </div>
 </dialog>
@@ -194,5 +247,22 @@
     display: flex;
     justify-content: flex-end;
     gap: 10px;
+  }
+
+  .pie.separado {
+    justify-content: space-between;
+  }
+
+  .rojo {
+    display: contents;
+  }
+
+  /* El bote y los textos, al centro; los botones se quedan a los lados. */
+  .centrada {
+    text-align: center;
+  }
+
+  .figura {
+    margin: -6px auto 4px;
   }
 </style>

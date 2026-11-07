@@ -64,6 +64,7 @@
   alCerrar={cerrar}
 >
   <Formulario
+    verde
     boton={inicial ? { etiqueta: 'Guardar cambios', icono: 'check' } : { etiqueta: 'Agregar mesa', icono: 'mas' }}
     {guardar}
     alTerminar={alCerrar}

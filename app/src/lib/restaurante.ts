@@ -17,7 +17,6 @@ export type Restaurante = {
   logo_ruta: string | null;
   menu_tema: TemaMenu;
   menu_color: string | null;
-  tipo_cambio_usd: number | null;
   hace_envios: boolean; // «Hago envíos» (parte 6b): sus clientes también piden a domicilio
   horario: Horario[];
 };
@@ -34,7 +33,7 @@ export async function leerRestaurante(restauranteId: string): Promise<Restaurant
   const [fila, dias] = await Promise.all([
     supabase
       .from('restaurantes')
-      .select('nombre, slug, telefono, direccion, logo_ruta, menu_tema, menu_color, tipo_cambio_usd, hace_envios')
+      .select('nombre, slug, telefono, direccion, logo_ruta, menu_tema, menu_color, hace_envios')
       .eq('id', restauranteId)
       .single(),
     supabase.from('horarios').select('dia, abre, cierra').eq('restaurante_id', restauranteId).order('dia'),
@@ -44,7 +43,6 @@ export async function leerRestaurante(restauranteId: string): Promise<Restaurant
   return {
     ...fila.data,
     menu_tema: fila.data.menu_tema as TemaMenu,
-    tipo_cambio_usd: fila.data.tipo_cambio_usd === null ? null : Number(fila.data.tipo_cambio_usd),
     horario: dias.data.map((d) => ({ dia: d.dia, abre: hora(d.abre), cierra: hora(d.cierra) })),
   };
 }
@@ -82,20 +80,18 @@ export async function guardarRestaurante(restauranteId: string, datos: DatosRest
 
 // ─── Tu menú en línea ───────────────────────────────────────────────────────
 
-// «Guardar» de Cómo se ve: el tema, el color (vacío = el neutro), el tipo de cambio (vacío = solo
-// pesos) y «Hago envíos».
+// «Guardar» de Cómo se ve: el tema, el color (vacío = el neutro) y «Hago envíos». El dólar ya no lo
+// escribe nadie: es uno para todos y lo pone el Worker cada día (Mi menú, 6 de noviembre de 2026).
 export async function guardarMenuEnLinea(
   restauranteId: string,
   tema: TemaMenu,
   color: string | null,
-  tipoCambio: number | null,
   haceEnvios: boolean,
 ): Promise<void> {
   const { error } = await supabase.rpc('guardar_menu_en_linea', {
     p_restaurante_id: restauranteId,
     p_tema: tema,
     p_color: color,
-    p_tipo_cambio_usd: tipoCambio,
     p_hace_envios: haceEnvios,
   });
   if (error) throw fallo('guardar_menu_en_linea no se pudo', error);

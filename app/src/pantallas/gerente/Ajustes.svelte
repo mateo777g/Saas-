@@ -17,6 +17,7 @@
   import Boton from '../../diseno/Boton.svelte';
   import CajaError from '../../diseno/CajaError.svelte';
   import Icono from '../../diseno/Icono.svelte';
+  import Lista from '../../diseno/Lista.svelte';
   import Selector from '../../diseno/Selector.svelte';
   import Tarjeta from '../../diseno/Tarjeta.svelte';
   import { ALGO_SALIO_PANEL, esDeRed, Fallo, SIN_CONEXION } from '../../lib/errores';
@@ -124,9 +125,7 @@
         <div class="raya"></div>
         <label class="etiqueta" for="hora-corte">EL DÍA EMPIEZA A LAS</label>
         <div class="hora-fila">
-          <select id="hora-corte" bind:value={hora} disabled={hora === null || paso !== null}>
-            {#each HORAS as h (h)}<option value={h}>{h}:00</option>{/each}
-          </select>
+          <Lista id="hora-corte" bind:valor={hora} apagado={hora === null || paso !== null} opciones={HORAS.map((h) => ({ valor: h, texto: `${h}:00` }))} />
           <Boton
             etiqueta={paso === 'guardando' ? 'Guardando…' : paso === 'listo' ? 'Guardado' : 'Guardar'}
             icono="guardar"
@@ -249,23 +248,7 @@
     gap: 10px;
   }
 
-  .hora-fila select {
-    flex: 1;
-    min-width: 0;
-    height: 44px;
-    padding: 0 12px;
-    border: 1px solid var(--linea);
-    border-radius: 12px;
-    background: var(--solido);
-    color: var(--texto);
-    font-family: var(--mono);
-    font-size: 14px;
-    outline: none;
-  }
 
-  .hora-fila select:focus {
-    border-color: var(--suave);
-  }
 
   .ejemplo {
     margin: 14px 0 0;

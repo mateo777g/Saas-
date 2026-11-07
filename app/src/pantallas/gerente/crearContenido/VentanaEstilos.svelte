@@ -79,7 +79,7 @@
     </div>
   </div>
   <div class="pie">
-    <Boton etiqueta="Cancelar" icono="cerrar" onclick={alCerrar} />
+    <Boton etiqueta="Cancelar" icono="cerrar" tono="alarga" onclick={alCerrar} />
     <span class="crece"></span>
     <Boton etiqueta="Usar este estilo" icono="check-fino" tono="tinta" onclick={() => alUsar(estilo)} />
   </div>

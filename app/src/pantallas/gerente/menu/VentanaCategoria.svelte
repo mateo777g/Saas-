@@ -9,12 +9,13 @@
 <script lang="ts">
   import Boton from '../../../diseno/Boton.svelte';
   import Campo from '../../../diseno/Campo.svelte';
-  import CampoLista from '../../../diseno/CampoLista.svelte';
+  import Lista from '../../../diseno/Lista.svelte';
   import Confirmar from '../../../diseno/Confirmar.svelte';
   import Formulario from '../../../diseno/Formulario.svelte';
   import IconoCategoria from '../../../diseno/IconoCategoria.svelte';
   import { ICONOS_CATEGORIAS } from '../../../diseno/iconosCategorias';
   import Ventana from '../../../diseno/Ventana.svelte';
+  import { pista } from '../../../diseno/pista';
   import { ALGO_SALIO_PANEL, Fallo } from '../../../lib/errores';
   import { plural } from '../../../lib/formato';
   import EnIngles from './EnIngles.svelte';
@@ -127,6 +128,7 @@
 
 {#if confirmando && inicial}
   <Confirmar
+    peligro
     icono="eliminar"
     titulo="¿Eliminar esta categoría?"
     texto="«{inicial.nombre}» deja de salir en tu menú y en tus categorías."
@@ -140,10 +142,12 @@
   <Ventana
     etiqueta={paso === 'guardando' ? 'GUARDANDO…' : inicial ? 'EDITAR CATEGORÍA' : 'NUEVA CATEGORÍA'}
     titulo={inicial ? inicial.nombre : 'Agrega una categoría'}
-    ancho={520}
+    ancho={984}
+    centrado
     alCerrar={cerrar}
   >
     <Formulario
+    verde
       boton={inicial ? { etiqueta: 'Guardar cambios', icono: 'check' } : { etiqueta: 'Agregar categoría', icono: 'mas' }}
       {guardar}
       alTerminar={alCerrar}
@@ -151,61 +155,61 @@
       espacio={16}
       antesDelBoton={28}
     >
-      <Campo id="categoria-nombre" etiqueta="NOMBRE" bind:valor={nombre} placeholder="Ej. Tacos" />
+      <!-- Como la de producto: Nombre, Área, la muestra y «Ver inglés» a la izquierda; los 28 íconos a la
+           derecha, en el lugar de la foto (maqueta de Mi menú, versiones 17 y 18). -->
+      <div class="dos-columnas">
+        <div class="col-campos">
+          <Campo id="categoria-nombre" etiqueta="NOMBRE" bind:valor={nombre} placeholder="Ej. Tacos" />
 
-      <div class="campo">
-        <span class="etiqueta" id="categoria-icono">ÍCONO</span>
-        <div class="iconos" role="radiogroup" aria-labelledby="categoria-icono">
-          {#each ICONOS_CATEGORIAS as opcion (opcion.id)}
-            <button
-              type="button"
-              class="icono"
-              role="radio"
-              aria-checked={icono === opcion.id}
-              aria-label={opcion.nombre}
-              title={opcion.nombre}
-              onclick={(e) => elegirIcono(opcion.id, e.currentTarget)}
-            >
-              <IconoCategoria id={opcion.id} tamano={22} />
-            </button>
-          {/each}
+          <Lista
+            id="categoria-area"
+            etiqueta="ÁREA"
+            bind:valor={area}
+            placeholder="Elige un área"
+            opciones={[...menu.areas.map((a) => ({ valor: String(a.id), texto: a.nombre })), { valor: 'mesero', texto: 'Lo sirve el mesero' }]}
+            pista="Ahí llegan sus productos al mandar a cocina. Lo que sirve el mesero no llega a ninguna pantalla."
+          />
+
+          <div class="muestra">
+            <span class="cuadro-icono">{#if icono}<IconoCategoria id={icono} tamano={18} />{/if}</span>
+            <span class="nombre" class:vacia={!nombre.trim()}>{nombre.trim() || 'Así sale en tu menú'}</span>
+          </div>
+
+          <EnIngles traducido={!!nombreEn.trim()} columnas="minmax(0, 420px)">
+            <Campo
+              id="categoria-nombre-en"
+              etiqueta="NOMBRE EN INGLÉS"
+              bind:valor={nombreEn}
+              placeholder={nombre.trim() || 'Ej. Combos'}
+            />
+          </EnIngles>
+        </div>
+
+        <div class="col-icono">
+          <div class="campo">
+            <span class="etiqueta" id="categoria-icono">ÍCONO</span>
+            <div class="iconos" role="radiogroup" aria-labelledby="categoria-icono">
+              {#each ICONOS_CATEGORIAS as opcion (opcion.id)}
+                <button
+                  type="button"
+                  class="icono"
+                  role="radio"
+                  aria-checked={icono === opcion.id}
+                  aria-label={opcion.nombre}
+                  use:pista={opcion.nombre}
+                  onclick={(e) => elegirIcono(opcion.id, e.currentTarget)}
+                >
+                  <IconoCategoria id={opcion.id} tamano={22} />
+                </button>
+              {/each}
+            </div>
+          </div>
         </div>
       </div>
 
-      <div class="muestra">
-        <span class="cuadro-icono">{#if icono}<IconoCategoria id={icono} tamano={18} />{/if}</span>
-        <span class="nombre" class:vacia={!nombre.trim()}>{nombre.trim() || 'Así sale en tu menú'}</span>
-      </div>
-
-      <CampoLista
-        id="categoria-area"
-        etiqueta="ÁREA"
-        bind:valor={area}
-        placeholder="Elige un área"
-        grupos={[
-          {
-            etiqueta: '',
-            opciones: [
-              ...menu.areas.map((a) => ({ valor: String(a.id), texto: a.nombre })),
-              { valor: 'mesero', texto: 'Lo sirve el mesero' },
-            ],
-          },
-        ]}
-        pista="Ahí llegan sus productos al mandar a cocina. Lo que sirve el mesero no llega a ninguna pantalla."
-      />
-
-      <EnIngles>
-        <Campo
-          id="categoria-nombre-en"
-          etiqueta="NOMBRE EN INGLÉS"
-          bind:valor={nombreEn}
-          placeholder={nombre.trim() || 'Ej. Combos'}
-        />
-      </EnIngles>
-
       {#snippet izquierda()}
         {#if inicial}
-          <Boton etiqueta="Eliminar categoría" icono="eliminar" apagado={paso !== null} onclick={pedirEliminar} />
+          <Boton etiqueta="Eliminar categoría" icono="eliminar" tono="peligro" apagado={paso !== null} onclick={pedirEliminar} />
         {/if}
       {/snippet}
     </Formulario>
@@ -213,6 +217,20 @@
 {/if}
 
 <style>
+  .dos-columnas {
+    display: grid;
+    grid-template-columns: minmax(0, 420px) minmax(0, 1fr);
+    gap: 28px;
+  }
+
+  .col-campos,
+  .col-icono {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    min-width: 0;
+  }
+
   .campo {
     min-width: 0;
     display: flex;
@@ -244,10 +262,12 @@
     background: var(--chip);
   }
 
+  /* El ícono elegido, en el azul claro de la estrella (lo eligió el developer en la maqueta, versión 21), con el
+     ícono en blanco, en los dos temas. */
   .icono[aria-checked='true'] {
-    border-color: var(--tinta);
-    background: var(--tinta);
-    color: var(--sobre-tinta);
+    border-color: #4fa3ff;
+    background: #4fa3ff;
+    color: #ffffff;
   }
 
   .muestra {

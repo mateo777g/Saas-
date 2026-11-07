@@ -20,7 +20,7 @@ export function linkDeMuestra(slug: string, como: 'menu' | 'barra'): string {
   return `${MENU_URL}/${slug}?muestra=${como}`;
 }
 
-export type Muestra = { tema: TemaMenu; color: string | null; tipo_cambio_usd: number | null };
+export type Muestra = { tema: TemaMenu; color: string | null };
 
 export function mandarMuestra(marco: HTMLIFrameElement | undefined, muestra: Muestra) {
   marco?.contentWindow?.postMessage({ fragmentless: 'muestra', ...muestra }, ORIGEN_MENU);

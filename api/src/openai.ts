@@ -30,6 +30,11 @@ export function modeloPalabras(env: Env): string {
   return env.OPENAI_MODEL_PALABRAS || 'gpt-5.6-luna';
 }
 
+// El inglés de Mi menú: el modelo del asistente, porque su gasto entra a su sobre.
+export function modeloTraduccion(env: Env): string {
+  return env.OPENAI_MODEL_TRADUCIR || modeloAsistente(env);
+}
+
 // OpenAI cobra al doble la entrada de una llamada que pasa de aquí, y precios_ia no lo sabe.
 const ENTRADA_PRECIO_NORMAL = 272_000;
 
@@ -419,6 +424,91 @@ export async function palabrasDeLaIa(
     // Abajo se registra igual que un JSON que no es objeto.
   }
   console.error('[anuncios] OpenAI no regresó el JSON de las palabras', texto ? `(${texto.length} letras)` : '(vacío)');
+  return { salida: null, tokens: t };
+}
+
+// ─── El inglés de Mi menú: Responses API con salida estructurada ──────────────
+
+// Lo que regresa el modelo: cada renglón con su tipo y su número, como llegó, y su inglés.
+const SALIDA_TRADUCCION = {
+  type: 'json_schema',
+  name: 'traducciones_del_menu',
+  strict: true,
+  schema: {
+    type: 'object',
+    additionalProperties: false,
+    required: ['traducciones'],
+    properties: {
+      traducciones: {
+        type: 'array',
+        items: {
+          type: 'object',
+          additionalProperties: false,
+          required: ['tipo', 'id', 'nombre_en', 'descripcion_en'],
+          properties: {
+            tipo: { type: 'string', enum: ['categoria', 'producto', 'grupo', 'opcion'] },
+            id: { type: 'integer' },
+            nombre_en: { type: 'string' },
+            descripcion_en: { type: ['string', 'null'] },
+          },
+        },
+      },
+    },
+  },
+} as const;
+
+export type Traduccion = { tipo: string; id: number; nombre_en: string; descripcion_en: string | null };
+
+// Una llamada por tanda (hasta 20 renglones), con razonamiento bajo y 30 segundos de espera, como el
+// paso de texto de los anuncios. Regresa lo que tradujo o null si no lo terminó, se negó o no trajo el
+// JSON, con lo que cobró. El menú de Don Chuy no pasa al registro: solo cuántas letras llegaron.
+export async function traduccionDeLaIa(
+  env: Env,
+  peticion: { instrucciones: string; renglones: string },
+): Promise<{ salida: Traduccion[] | null; tokens: Tokens }> {
+  const modelo = modeloTraduccion(env);
+  const r = await pedir(
+    env,
+    'responses',
+    {
+      model: modelo,
+      instructions: peticion.instrucciones,
+      input: [{ role: 'user', content: peticion.renglones }],
+      text: { format: SALIDA_TRADUCCION },
+      reasoning: { effort: 'low' },
+      store: false,
+      max_output_tokens: 6_000,
+    },
+    { soloCodigo: true, espera: 30_000 },
+  );
+
+  const uso = (r.usage ?? {}) as Record<string, Record<string, unknown> | unknown>;
+  const detalle = (uso.input_tokens_details ?? {}) as Record<string, unknown>;
+  const t = tokens(modelo, uso.input_tokens, detalle.cached_tokens, detalle.cache_write_tokens, uso.output_tokens, r.usage);
+
+  if (r.status !== 'completed') {
+    const incompleta = (r.incomplete_details ?? {}) as { reason?: unknown };
+    console.error('[traducir] OpenAI no terminó la traducción', r.status, incompleta.reason ?? null);
+    return { salida: null, tokens: t };
+  }
+  let texto = '';
+  for (const item of Array.isArray(r.output) ? (r.output as Item[]) : []) {
+    if (item.type !== 'message' || !Array.isArray(item.content)) continue;
+    for (const parte of item.content as Record<string, unknown>[]) {
+      if (parte.type === 'refusal') {
+        console.warn('[traducir] OpenAI se negó a traducir');
+        return { salida: null, tokens: t };
+      }
+      if (parte.type === 'output_text' && typeof parte.text === 'string') texto += parte.text;
+    }
+  }
+  try {
+    const salida = JSON.parse(texto) as { traducciones?: unknown };
+    if (Array.isArray(salida.traducciones)) return { salida: salida.traducciones as Traduccion[], tokens: t };
+  } catch {
+    // Abajo se registra igual que un JSON sin traducciones.
+  }
+  console.error('[traducir] OpenAI no regresó el JSON de las traducciones', texto ? `(${texto.length} letras)` : '(vacío)');
   return { salida: null, tokens: t };
 }
 

@@ -1,10 +1,11 @@
-// El Worker de Fragmentless (libreta 3, Seguridad). Hoy hace nueve cosas: subir y borrar las
+// El Worker de Fragmentless (libreta 3, Seguridad). Hoy hace diez cosas: subir y borrar las
 // fotos del menú en R2 (fotos.ts), las cuentas, los PIN y los aparatos del equipo (equipo.ts), lo
 // que pide el PIN de otra persona en el punto de venta (pos.ts), el agente IA con su saludo
 // (agente.ts), el pedido del menú en línea por WhatsApp (pedidos.ts), el asistente del menú
 // (asistente.ts), las muestras de los estilos de los anuncios (estilos.ts), Crear contenido
 // (crearContenido.ts, con su trabajo en segundo plano en hacerAnuncio.ts) y Mi biblioteca
-// (biblioteca.ts: Eliminar y, cada día a las 9:00 UTC, el borrado de los 30 días). Nunca decide
+// (biblioteca.ts: Eliminar y, cada día a las 9:00 UTC, el borrado de los 30 días) y Mi menú
+// (traducir.ts: el inglés que traduce la IA y, en el mismo Cron, el dólar del día). Nunca decide
 // solo: antes de cada trabajo le pregunta a Postgres si se puede.
 import { agente } from './agente';
 import { preguntaDelMenu } from './asistente';
@@ -16,6 +17,7 @@ import { fotoDelMenu } from './fotos';
 import { pedidoDelMenu } from './pedidos';
 import { pos } from './pos';
 import { conCors, error, origenPermitido, preflight, Rechazo } from './respuestas';
+import { dolarDelDia, traducirMenu } from './traducir';
 import type { Parametros } from './hacerAnuncio';
 
 // El trabajo en segundo plano de los anuncios: Cloudflare lo encuentra aquí por su nombre.
@@ -42,6 +44,7 @@ export interface Env {
   OPENAI_MODEL_MENU?: string;
   OPENAI_MODEL_IMAGEN?: string;
   OPENAI_MODEL_PALABRAS?: string;
+  OPENAI_MODEL_TRADUCIR?: string;
 }
 
 export default {
@@ -59,6 +62,7 @@ export default {
       if (url.pathname === '/menu/foto') respuesta = await fotoDelMenu(request, env, url);
       else if (url.pathname === '/menu/pedido') respuesta = await pedidoDelMenu(request, env, url);
       else if (url.pathname === '/menu/pregunta') respuesta = await preguntaDelMenu(request, env, url, ctx);
+      else if (url.pathname === '/menu/traducir') respuesta = await traducirMenu(request, env, url);
       else if (url.pathname === '/estilos/muestra') respuesta = await muestraDeEstilo(request, env, url);
       else if (url.pathname === '/estilos') respuesta = await listaDeEstilos(request, env);
       else if (url.pathname === '/anuncios' || url.pathname.startsWith('/anuncios/')) respuesta = await crearContenido(request, env, url);
@@ -77,8 +81,10 @@ export default {
     return conCors(respuesta, origen);
   },
 
-  // El Cron Trigger diario (wrangler.jsonc): si falla, la corrida sale como fallida en Cloudflare.
+  // El Cron Trigger diario (wrangler.jsonc): el borrado de los 30 días y el dólar del día, cada uno por
+  // su lado. Si el borrado falla, la corrida sale como fallida en Cloudflare; el dólar nunca la tumba.
   async scheduled(_controlador, env): Promise<void> {
-    await borrarVencidos(env);
+    const [vencidos] = await Promise.allSettled([borrarVencidos(env), dolarDelDia(env)]);
+    if (vencidos.status === 'rejected') throw vencidos.reason;
   },
 } satisfies ExportedHandler<Env>;

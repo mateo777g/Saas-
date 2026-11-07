@@ -11,6 +11,7 @@
   import BotonCuadro from '../../../diseno/BotonCuadro.svelte';
   import CajaError from '../../../diseno/CajaError.svelte';
   import Icono from '../../../diseno/Icono.svelte';
+  import { pista } from '../../../diseno/pista';
   import { creado, FORMA, listaDe, seBorra, type AnuncioListo } from '../../../lib/biblioteca';
   import { urlFoto } from '../../../lib/fotos';
 
@@ -92,10 +93,10 @@
         <img src={urlFoto(anuncio.ruta)} alt="Tu anuncio de {anuncio.estilo}" />
       {/key}
       {#if total > 1}
-        <button type="button" class="flecha izq" aria-label="Anterior" title="Anterior" onclick={() => alMover(-1)}
+        <button type="button" class="flecha izq" aria-label="Anterior" use:pista={'Anterior'} onclick={() => alMover(-1)}
           ><Icono nombre="anterior" tamano={18} /></button
         >
-        <button type="button" class="flecha der" aria-label="Siguiente" title="Siguiente" onclick={() => alMover(1)}
+        <button type="button" class="flecha der" aria-label="Siguiente" use:pista={'Siguiente'} onclick={() => alMover(1)}
           ><Icono nombre="siguiente" tamano={18} /></button
         >
       {/if}
@@ -138,7 +139,7 @@
             onclick={alPoner}
           />
         {/if}
-        <Boton etiqueta="Eliminar" icono="eliminar" onclick={alEliminar} />
+        <Boton etiqueta="Eliminar" icono="eliminar" tono="peligro" onclick={alEliminar} />
       </div>
     </div>
   </div>

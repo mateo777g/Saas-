@@ -16,14 +16,12 @@
     inicial,
     tema,
     slug,
-    tipoCambio,
     alUsar,
     alCerrar,
   }: {
     inicial: string | null;
     tema: TemaMenu;
     slug: string;
-    tipoCambio: number | null;
     alUsar: (color: string | null) => void;
     alCerrar: () => void;
   } = $props();
@@ -80,7 +78,7 @@
     <span class="nota">Escríbelo si ya lo tienes, como el de tu logo.</span>
   </div>
   <div class="probar">
-    <Muestra {slug} como="barra" muestra={{ tema, color: hex, tipo_cambio_usd: tipoCambio }} />
+    <Muestra {slug} como="barra" muestra={{ tema, color: hex }} />
   </div>
   {#if claro}
     <p class="aviso"><Icono nombre="info" tamano={16} /><span>Sobre este color las letras van <b>oscuras</b>, para que se lean.</span></p>

@@ -72,6 +72,7 @@
   alCerrar={cerrar}
 >
   <Formulario
+    verde
     boton={inicial ? { etiqueta: 'Guardar cambios', icono: 'check' } : { etiqueta: 'Agregar empleado', icono: 'mas' }}
     {guardar}
     alTerminar={alCerrar}

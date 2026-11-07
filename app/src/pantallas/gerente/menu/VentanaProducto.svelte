@@ -9,6 +9,11 @@
   así que esas partes se esconden; si tenía foto, se borra de R2 después de guardar. Mientras guarda, la etiqueta de arriba dice en qué paso va
   (SUBIENDO FOTO…, GUARDANDO…), como en Flet.
 
+  Desde Mi menú (maqueta U9YqpsSb2PeB5pFXTPvh1C, versiones 2, 3 y 13) va en dos columnas, de 984 y con el
+  título al centro: los campos a la izquierda y a la derecha el cuadro «Foto de tu menú» (CajaFoto), para
+  arrastrar la foto o picarle. El inglés va plegado en «Ver inglés», a todo lo ancho, con sus dos campos
+  lado a lado: la IA lo traduce sola al guardar (lib/traduccion.ts).
+
   Las fotos siguen el orden de siempre: subir antes de guardar; si el guardado falla, se borra la
   foto que se acababa de subir; al cambiarla, la vieja se borra solo después de guardar. Eliminar
   pide confirmar en su propia ventana; Cancelar regresa aquí con lo que ya se había escrito.
@@ -17,7 +22,7 @@
   import { onDestroy } from 'svelte';
   import Boton from '../../../diseno/Boton.svelte';
   import Campo from '../../../diseno/Campo.svelte';
-  import CampoLista from '../../../diseno/CampoLista.svelte';
+  import Lista from '../../../diseno/Lista.svelte';
   import Confirmar from '../../../diseno/Confirmar.svelte';
   import Formulario from '../../../diseno/Formulario.svelte';
   import Interruptor from '../../../diseno/Interruptor.svelte';
@@ -32,8 +37,8 @@
     type Grupo,
     type Producto,
   } from '../../../lib/menu';
+  import CajaFoto from './CajaFoto.svelte';
   import EnIngles from './EnIngles.svelte';
-  import Foto from './Foto.svelte';
   import GruposProducto from './GruposProducto.svelte';
 
   let {
@@ -77,12 +82,13 @@
   let error = $state<string | null>(null);
   let paso = $state<null | 'foto' | 'guardando' | 'listo'>(null);
   let confirmando = $state(false);
-  let elegirArchivo = $state<HTMLInputElement>();
 
   const etiqueta = $derived(
     paso === 'foto' ? 'SUBIENDO FOTO…' : paso === 'guardando' ? 'GUARDANDO…' : inicial ? 'EDITAR PRODUCTO' : 'NUEVO PRODUCTO',
   );
   const foto = $derived(vistaPrevia ?? (inicial?.imagen_ruta ? urlFoto(inicial.imagen_ruta) : null));
+  // Traducido: con su nombre en inglés y, si tiene descripción, también la suya (sin descripción no hay inglés).
+  const traducido = $derived(!!nombreEn.trim() && (!descripcion.trim() || !!descripcionEn.trim()));
 
   onDestroy(() => {
     if (vistaPrevia) URL.revokeObjectURL(vistaPrevia);
@@ -93,10 +99,9 @@
     if (!paso) alCerrar();
   }
 
-  async function alElegirFoto(e: Event & { currentTarget: HTMLInputElement }) {
-    const elegido = e.currentTarget.files?.[0];
-    e.currentTarget.value = '';
-    if (!elegido || paso) return;
+  // Del cuadro de la foto: elegida con el botón o arrastrada encima.
+  async function alElegirFoto(elegido: File) {
+    if (paso) return;
     const problema = await revisarFoto(elegido);
     if (problema) {
       error = problema;
@@ -173,6 +178,7 @@
 
 {#if confirmando && inicial}
   <Confirmar
+    peligro
     icono="eliminar"
     titulo="¿Eliminar este producto?"
     texto="«{inicial.nombre}» se quita de tu menú. Si ya lo vendiste, tus reportes lo siguen contando. Si solo se acabó, mejor ocúltalo con el ojito."
@@ -183,8 +189,9 @@
     alTerminar={alCerrar}
   />
 {:else}
-  <Ventana {etiqueta} titulo={inicial ? inicial.nombre : 'Agrega un producto'} ancho={520} alCerrar={cerrar}>
+  <Ventana {etiqueta} titulo={inicial ? inicial.nombre : 'Agrega un producto'} ancho={984} centrado alCerrar={cerrar}>
     <Formulario
+    verde
       boton={inicial ? { etiqueta: 'Guardar cambios', icono: 'check' } : { etiqueta: 'Agregar producto', icono: 'mas' }}
       {guardar}
       alTerminar={alCerrar}
@@ -192,80 +199,73 @@
       espacio={16}
       antesDelBoton={28}
     >
-      {#if !envio}<div class="fila-foto">
-        <Foto src={foto} tamano={72} radio={14} />
-        <div class="foto-texto">
-          <Boton
-            etiqueta={foto ? 'Cambiar foto' : 'Agregar foto'}
-            icono="biblio"
-            apagado={paso !== null}
-            onclick={() => elegirArchivo?.click()}
-          />
-          <span class="pista">JPG o PNG · se optimiza automáticamente</span>
-        </div>
-        <input bind:this={elegirArchivo} type="file" accept="image/*" hidden onchange={alElegirFoto} />
-      </div>{/if}
-
-      <Campo id="producto-nombre" etiqueta="NOMBRE" bind:valor={nombre} placeholder="Ej. Tacos al pastor" />
-      <Campo
-        id="producto-descripcion"
-        etiqueta="DESCRIPCIÓN"
-        bind:valor={descripcion}
-        placeholder="Qué lleva, cómo se sirve… (opcional)"
-        multilinea
-      />
-      <div class="dos">
-        <CampoLista
-          id="producto-categoria"
-          etiqueta="CATEGORÍA"
-          bind:valor={categoria}
-          placeholder="Elige una categoría"
-          grupos={[{ etiqueta: '', opciones: categorias.map((c) => ({ valor: String(c.id), texto: c.nombre })) }]}
-        />
-        <div class="precio">
+      <div class="dos-columnas">
+        <div class="col-campos">
+          <Campo id="producto-nombre" etiqueta="NOMBRE" bind:valor={nombre} placeholder="Ej. Tacos al pastor" />
           <Campo
-            id="producto-precio"
-            etiqueta="PRECIO"
-            bind:valor={precio}
-            placeholder="0"
-            prefijo="$"
-            modoTeclado="decimal"
+            id="producto-descripcion"
+            etiqueta="DESCRIPCIÓN"
+            bind:valor={descripcion}
+            placeholder="Qué lleva, cómo se sirve… (opcional)"
+            multilinea
           />
+          <div class="dos">
+            <Lista
+              id="producto-categoria"
+              etiqueta="CATEGORÍA"
+              bind:valor={categoria}
+              placeholder="Elige una categoría"
+              opciones={categorias.map((c) => ({ valor: String(c.id), texto: c.nombre, icono: c.icono }))}
+            />
+            <div class="precio">
+              <Campo
+                id="producto-precio"
+                etiqueta="PRECIO"
+                bind:valor={precio}
+                placeholder="0"
+                prefijo="$"
+                modoTeclado="decimal"
+              />
+            </div>
+          </div>
+
+          <div class="fila-switch">
+            <Interruptor prendido={envio} ayuda="Es un costo de envío" apagado={paso !== null} alCambiar={(v) => (envio = v)} />
+            <span class="t">
+              <b>Es un costo de envío</b>
+              <span class="pista">
+                {envio
+                  ? 'No sale en tu menú en línea ni llega a la cocina. Sale como botón al confirmar un pedido a domicilio, y en el punto de venta como cualquier producto.'
+                  : 'Prende esto solo para lo que cobras por llevar un pedido a domicilio.'}
+              </span>
+            </span>
+          </div>
+
+          {#if envio}
+            <p class="pista">Un envío no lleva opciones ni foto, ni su parte en inglés, porque tus clientes no lo ven.</p>
+          {:else}
+            <GruposProducto {grupos} bind:elegidos apagado={paso !== null} />
+          {/if}
         </div>
+        <CajaFoto src={foto} {envio} apagado={paso !== null} alElegir={alElegirFoto} />
       </div>
 
-      <div class="fila-switch">
-        <Interruptor prendido={envio} ayuda="Es un costo de envío" apagado={paso !== null} alCambiar={(v) => (envio = v)} />
-        <span class="t">
-          <b>Es un costo de envío</b>
-          <span class="pista">
-            {envio
-              ? 'No sale en tu menú en línea ni llega a la cocina. Sale como botón al confirmar un pedido a domicilio, y en el punto de venta como cualquier producto.'
-              : 'Prende esto solo para lo que cobras por llevar un pedido a domicilio.'}
-          </span>
-        </span>
-      </div>
-
-      {#if envio}
-        <p class="pista">Un envío no lleva opciones ni foto, ni su parte en inglés, porque tus clientes no lo ven.</p>
-      {:else}
-      <GruposProducto {grupos} bind:elegidos apagado={paso !== null} />
-
-      <EnIngles>
-        <Campo
-          id="producto-nombre-en"
-          etiqueta="NOMBRE EN INGLÉS"
-          bind:valor={nombreEn}
-          placeholder={nombre.trim() || 'Ej. Pastor taco'}
-        />
-        <Campo
-          id="producto-descripcion-en"
-          etiqueta="DESCRIPCIÓN EN INGLÉS"
-          bind:valor={descripcionEn}
-          placeholder={descripcion.trim()}
-          multilinea
-        />
-      </EnIngles>
+      {#if !envio}
+        <EnIngles {traducido} columnas="1fr 1fr">
+          <Campo
+            id="producto-nombre-en"
+            etiqueta="NOMBRE EN INGLÉS"
+            bind:valor={nombreEn}
+            placeholder={nombre.trim() || 'Ej. Pastor taco'}
+          />
+          <Campo
+            id="producto-descripcion-en"
+            etiqueta="DESCRIPCIÓN EN INGLÉS"
+            bind:valor={descripcionEn}
+            placeholder={descripcion.trim()}
+            multilinea
+          />
+        </EnIngles>
       {/if}
 
       {#snippet izquierda()}
@@ -273,6 +273,7 @@
           <Boton
             etiqueta="Eliminar producto"
             icono="eliminar"
+            tono="peligro"
             apagado={paso !== null}
             onclick={() => {
               error = null;
@@ -286,18 +287,17 @@
 {/if}
 
 <style>
-  .fila-foto {
-    margin-bottom: 4px;
-    display: flex;
-    align-items: center;
-    gap: 16px;
+  .dos-columnas {
+    display: grid;
+    grid-template-columns: minmax(0, 420px) minmax(0, 1fr);
+    gap: 28px;
   }
 
-  .foto-texto {
+  .col-campos {
     display: flex;
     flex-direction: column;
-    align-items: flex-start;
-    gap: 8px;
+    gap: 16px;
+    min-width: 0;
   }
 
   .pista {

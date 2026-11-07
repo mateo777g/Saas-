@@ -34,7 +34,6 @@ const REGLAS: Record<string, string> = {
   restaurantes_logo_ruta_formato: 'No se pudo guardar el logo. Vuelve a subirlo.',
   restaurantes_menu_tema_lista: 'El menú se ve claro u oscuro.',
   restaurantes_menu_color_formato: 'Ese color no se entiende; escríbelo como #B3261E.',
-  restaurantes_tipo_cambio_positivo: 'Escribe a cuánto tomas el dólar, como 18.50.',
   horarios_abre_distinto_de_cierra: 'Un día de tu horario abre y cierra a la misma hora.',
   carteles_imagen_ruta_formato: 'No se pudo guardar el cartel. Vuelve a subirlo.',
   miembros_nombre_check: 'Escribe su nombre completo.',

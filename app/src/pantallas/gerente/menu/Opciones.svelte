@@ -156,7 +156,8 @@
   }
 
   .agotada {
-    color: var(--tenue);
+    color: var(--amarillo-texto);
+    font-weight: 600;
   }
 
   .cuenta {

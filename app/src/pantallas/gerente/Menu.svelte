@@ -10,20 +10,27 @@
   Lee el menú de la sucursal al abrir y después de cada cambio. El ojito, Ocultar varios y las
   flechas cambian la tabla en cuanto Postgres dice que sí; si falla, sale el aviso de abajo
   (aviso() de Flet).
+
+  Desde Mi menú (maqueta U9YqpsSb2PeB5pFXTPvh1C): las secciones van en el dock, al centro de la barra, y la
+  pastilla pegada al título. El inglés lo traduce la IA sola (lib/traduccion.ts): al abrir la vista y
+  después de guardar un producto, una categoría o un grupo, sin esperarlo; si escribió algo, se vuelve a
+  leer el menú. Se para al salir de la vista.
 -->
 <script lang="ts">
-  import { onMount, tick } from 'svelte';
+  import { onDestroy, onMount, tick } from 'svelte';
   import { SvelteSet } from 'svelte/reactivity';
   import AvisoFlotante from '../../diseno/AvisoFlotante.svelte';
   import BarraArriba from '../../diseno/BarraArriba.svelte';
   import Boton from '../../diseno/Boton.svelte';
+  import Dock from '../../diseno/Dock.svelte';
+  import { trazosCategoria } from '../../diseno/iconosCategorias';
   import NotaTabla from '../../diseno/NotaTabla.svelte';
-  import Selector from '../../diseno/Selector.svelte';
   import Tabla from '../../diseno/Tabla.svelte';
   import Tarjeta from '../../diseno/Tarjeta.svelte';
   import { esDeRed, SIN_CONEXION } from '../../lib/errores';
   import { plural } from '../../lib/formato';
   import type { Sucursal } from '../../lib/gerente';
+  import { traductor } from '../../lib/traduccion';
   import {
     cambiarVisibilidad,
     leerMenu,
@@ -99,10 +106,21 @@
     }
   }
 
+  // svelte-ignore state_referenced_locally
+  const traduce = traductor(sucursal.id, () => void leer());
+  onDestroy(() => traduce.parar());
+
+  // Después de guardar en una ventana: se vuelve a leer y lo nuevo se traduce, sin esperarlo.
+  function alGuardar() {
+    void leer();
+    traduce.correr();
+  }
+
   // «Agregar producto» de la búsqueda de Inicio: al terminar de leer, su ventana.
   onMount(async () => {
     const abrir = abrirNuevo?.() ?? false;
     await leer();
+    if (lectura.estado === 'listo') traduce.correr();
     if (!abrir || lectura.estado !== 'listo') return;
     if (lectura.menu.categorias.length) ventana = { tipo: 'producto', producto: null };
     else aviso = 'Primero crea una categoría.';
@@ -199,15 +217,15 @@
   }
 </script>
 
-<BarraArriba titulo="Mi menú" {estado}>
+<BarraArriba titulo="Mi menú" {estado} chipAntes>
   {#snippet junto()}
-    <Selector
+    <Dock
       etiqueta="Sección de Mi menú"
       opciones={[
-        { valor: 'productos', texto: 'Productos' },
-        { valor: 'categorias', texto: 'Categorías' },
-        { valor: 'opciones', texto: 'Opciones' },
-        { valor: 'areas', texto: 'Áreas' },
+        { valor: 'productos', texto: 'Productos', icono: 'comida', trazos: trazosCategoria('comida') },
+        { valor: 'categorias', texto: 'Categorías', icono: 'carpeta' },
+        { valor: 'opciones', texto: 'Opciones', icono: 'menu' },
+        { valor: 'areas', texto: 'Áreas', icono: 'cocina' },
       ]}
       elegida={seccion}
       alElegir={cambiarSeccion}
@@ -215,7 +233,7 @@
   {/snippet}
   {#if seccion === 'productos'}
     {#if eligiendo}
-      <Boton etiqueta="Cancelar" icono="cerrar" chip apagado={ocultando} onclick={salirDeEleccion} />
+      <Boton etiqueta="Cancelar" icono="cerrar" tono="alarga" apagado={ocultando} onclick={salirDeEleccion} />
     {:else}
       <Boton
         etiqueta="Ocultar varios"
@@ -317,7 +335,7 @@
     categorias={menu.categorias}
     grupos={menu.grupos}
     categoriaInicial={filtro}
-    alCambiar={leer}
+    alCambiar={alGuardar}
     alCerrar={() => (ventana = null)}
   />
 {:else if menu && ventana?.tipo === 'categoria'}
@@ -325,7 +343,7 @@
     restauranteId={sucursal.id}
     categoria={ventana.categoria}
     {menu}
-    alCambiar={leer}
+    alCambiar={alGuardar}
     alCerrar={() => (ventana = null)}
   />
 {:else if menu && ventana?.tipo === 'grupo'}
@@ -333,7 +351,7 @@
     restauranteId={sucursal.id}
     grupo={ventana.grupo}
     {menu}
-    alCambiar={leer}
+    alCambiar={alGuardar}
     alCerrar={() => (ventana = null)}
   />
 {:else if menu && ventana?.tipo === 'area'}

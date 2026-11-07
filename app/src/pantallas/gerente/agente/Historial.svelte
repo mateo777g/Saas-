@@ -15,6 +15,7 @@
   import { tick } from 'svelte';
   import Confirmar from '../../../diseno/Confirmar.svelte';
   import Icono from '../../../diseno/Icono.svelte';
+  import { pista } from '../../../diseno/pista';
   import type { Conversacion } from '../../../lib/agente';
   import { diaConNombre } from '../../../lib/formato';
   import type { Sucursal } from '../../../lib/gerente';
@@ -169,7 +170,7 @@
           type="button"
           class="conv-mas"
           aria-label="Más opciones"
-          title="Más opciones"
+          use:pista={'Más opciones'}
           aria-haspopup="menu"
           aria-expanded={menuDe?.id === c.id}
           onclick={(e) => abrirMenu(c, e.currentTarget)}
@@ -185,7 +186,7 @@
   <div class="dentro">
     <div class="cabeza">
       <CajaSucursales {sucursales} actual={sucursal} {alElegir} />
-      <button type="button" class="cuadro" aria-label="Cerrar las conversaciones" title="Cerrar las conversaciones" onclick={alCerrar}>
+      <button type="button" class="cuadro" aria-label="Cerrar las conversaciones" use:pista={'Cerrar las conversaciones'} onclick={alCerrar}>
         <Icono nombre="r-reloj" tamano={18} />
       </button>
     </div>
@@ -245,6 +246,7 @@
 {#if porEliminar}
   {@const id = porEliminar}
   <Confirmar
+    peligro
     icono="eliminar"
     titulo="¿Eliminar esta conversación?"
     texto="Se borra de este navegador y no se puede deshacer."

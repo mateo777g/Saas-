@@ -6,10 +6,14 @@
   la tiene y las opciones, por grupos ({ grupo: 'OPERACIÓN' }), con la activa en tinta. Abajo, las
   acciones (Ayuda, Ajustes) y la persona: su inicial, su nombre con una línea debajo y Cerrar sesión. Si
   el pie trae alPulsar, el nombre es un botón (el gerente abre ahí su Perfil).
+
+  La cajita de cada botón (diseno/pista.ts, regla del 7 de noviembre de 2026) sale a su derecha y, en las
+  opciones, la búsqueda y la persona, solo plegada: abierta ya se lee cada nombre.
 -->
 <script lang="ts">
   import Estrella from './Estrella.svelte';
   import Icono from './Icono.svelte';
+  import { pista } from './pista';
 
   // `insignia` es la etiqueta del acento al final de la opción («IA» del Agente IA, «2» de Pedidos).
   type Opcion = { valor: string; texto: string; icono: string; insignia?: string };
@@ -37,6 +41,8 @@
     plegada: boolean;
     alPlegar: () => void;
   } = $props();
+
+  const deLado = (texto: string, siempre = false) => ({ texto: siempre || plegada ? texto : null, lado: 'derecha' as const });
 </script>
 
 {#snippet opcion(o: Opcion)}
@@ -44,7 +50,8 @@
     type="button"
     class="opcion"
     aria-current={o.valor === activa ? 'page' : undefined}
-    title={o.texto}
+    aria-label={plegada ? o.texto : undefined}
+    use:pista={deLado(o.texto)}
     onclick={() => alElegir(o.valor)}
   >
     <Icono nombre={o.icono} tamano={18} />
@@ -75,7 +82,7 @@
       type="button"
       class="cuadro"
       aria-label={plegada ? 'Abrir la barra lateral' : 'Plegar la barra lateral'}
-      title={plegada ? 'Abrir la barra lateral' : 'Plegar la barra lateral'}
+      use:pista={deLado(plegada ? 'Abrir la barra lateral' : 'Plegar la barra lateral', true)}
       onclick={alPlegar}
     >
       <Icono nombre="r-plegar" tamano={18} />
@@ -84,7 +91,7 @@
 
   <div class="cuerpo">
     {#if alBuscar}
-      <button type="button" class="buscar-mini" aria-label="Buscar" title="Buscar" onclick={alBuscar}>
+      <button type="button" class="buscar-mini" aria-label="Buscar" use:pista={deLado('Buscar')} onclick={alBuscar}>
         <Icono nombre="r-buscar" tamano={18} />
         {#if !plegada}
           <span class="texto">Busca algo…</span>
@@ -111,14 +118,14 @@
     {/each}
     <div class="persona">
       {#if pie.alPulsar}
-        <button type="button" class="persona-boton" title={pie.nombre} onclick={pie.alPulsar}>
+        <button type="button" class="persona-boton" use:pista={deLado(pie.nombre)} onclick={pie.alPulsar}>
           {@render persona()}
         </button>
       {:else}
         <div class="persona-boton">{@render persona()}</div>
       {/if}
       {#if !plegada}
-        <button type="button" class="cuadro" aria-label="Cerrar sesión" title="Cerrar sesión" onclick={alSalir}>
+        <button type="button" class="cuadro" aria-label="Cerrar sesión" use:pista={deLado('Cerrar sesión', true)} onclick={alSalir}>
           <Icono nombre="r-salir" tamano={18} />
         </button>
       {/if}

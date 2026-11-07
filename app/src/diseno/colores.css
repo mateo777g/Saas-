@@ -8,6 +8,8 @@
 
 :root[data-tema='claro'] {
   color-scheme: light;
+  --amarillo-texto: #8a6500;           /* «agotada» de Mi menú, en letra y en su marca */
+  --amarillo-fondo: rgba(233, 181, 25, 0.22);
   --suelo: #fafaf8;                    /* el fondo del login y del aparato del equipo */
   --fondo: #f5f5f7;                    /* el fondo de las vistas del panel */
   --borde-tarjeta: rgba(0, 0, 0, 0.13); /* el borde de las tarjetas del panel */
@@ -60,6 +62,8 @@
 
 :root[data-tema='oscuro'] {
   color-scheme: dark;
+  --amarillo-texto: #e9b519;
+  --amarillo-fondo: rgba(233, 181, 25, 0.16);
   --suelo: #161616;
   --fondo: #0f0f0f;
   --borde-tarjeta: rgba(255, 255, 255, 0.15);

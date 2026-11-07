@@ -10,6 +10,8 @@
 </script>
 
 <script lang="ts">
+  import Lista from '../../../diseno/Lista.svelte';
+
   let {
     dias = $bindable(),
     hoy,
@@ -53,13 +55,9 @@
       </button>
       <span class="horas">
         {#if d}
-          <select aria-label="Abre el {nombre}" bind:value={d.abre} disabled={apagado}>
-            {#each horasCon(d.abre) as h (h)}<option value={h}>{h}</option>{/each}
-          </select>
+          <Lista aria-label="Abre el {nombre}" bind:valor={d.abre} {apagado} opciones={horasCon(d.abre).map((h) => ({ valor: h, texto: h }))} />
           <span class="a">a</span>
-          <select aria-label="Cierra el {nombre}" bind:value={d.cierra} disabled={apagado}>
-            {#each horasCon(d.cierra) as h (h)}<option value={h}>{h}</option>{/each}
-          </select>
+          <Lista aria-label="Cierra el {nombre}" bind:valor={d.cierra} {apagado} opciones={horasCon(d.cierra).map((h) => ({ valor: h, texto: h }))} />
           {#if minutos(d.cierra) < minutos(d.abre)}
             <span class="siguiente">del {NOMBRES[(i + 1) % 7].toLowerCase()}</span>
           {/if}
@@ -158,21 +156,7 @@
     min-width: 0;
   }
 
-  select {
-    height: 36px;
-    padding: 0 8px;
-    border: 1px solid var(--linea);
-    border-radius: 10px;
-    background: var(--solido);
-    color: var(--texto);
-    font-family: var(--mono);
-    font-size: 13px;
-    outline: none;
-  }
 
-  select:focus {
-    border-color: var(--suave);
-  }
 
   .a {
     font-size: 12.5px;

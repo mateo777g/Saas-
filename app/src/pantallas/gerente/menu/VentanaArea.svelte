@@ -92,6 +92,7 @@
 
 {#if confirmando && inicial}
   <Confirmar
+    peligro
     icono="eliminar"
     titulo="¿Eliminar esta área?"
     texto="«{inicial.nombre}» se quita de tus áreas."
@@ -109,6 +110,7 @@
     alCerrar={cerrar}
   >
     <Formulario
+    verde
       boton={inicial ? { etiqueta: 'Guardar cambios', icono: 'check' } : { etiqueta: 'Agregar área', icono: 'mas' }}
       {guardar}
       alTerminar={alCerrar}
@@ -128,7 +130,7 @@
 
       {#snippet izquierda()}
         {#if inicial}
-          <Boton etiqueta="Eliminar área" icono="eliminar" apagado={paso !== null} onclick={pedirEliminar} />
+          <Boton etiqueta="Eliminar área" icono="eliminar" tono="peligro" apagado={paso !== null} onclick={pedirEliminar} />
         {/if}
       {/snippet}
     </Formulario>

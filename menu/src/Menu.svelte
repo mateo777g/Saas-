@@ -73,8 +73,9 @@
 
   const tema = $derived(pintura?.tema ?? menu?.restaurante.tema ?? 'claro');
   const color = $derived(pintura ? pintura.color : (menu?.restaurante.color ?? null));
-  // MXN / USD solo sale si Don Chuy puso a cuánto toma el dólar.
-  const conDolares = $derived((pintura ? pintura.tipo_cambio_usd : (menu?.restaurante.tipo_cambio_usd ?? null)) !== null);
+  // MXN / USD siempre sale: el dólar es uno para todos y lo pone el Worker cada día (Mi menú). Si un día
+  // faltara, el menú solo enseña pesos.
+  const conDolares = $derived((menu?.restaurante.tipo_cambio_usd ?? null) !== null);
   const moneda = $derived<Moneda>(conDolares ? monedaElegida : 'mxn');
   const t = $derived(TEXTOS[lengua]);
 

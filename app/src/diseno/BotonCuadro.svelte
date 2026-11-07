@@ -1,12 +1,13 @@
 <!--
   boton_cuadro() de diseno.py: el botón de solo icono (los de cada fila, la X de una ventana).
   Cuadro de 36 con borde fino, radio 10, icono 16; con el cursor encima se rellena de chip.
-  `ayuda` es la etiqueta que sale al dejar el cursor encima; `etiqueta`, lo que lee un lector de
+  `ayuda` es la cajita que sale al dejar el cursor encima (diseno/pista.ts, la del dock: ya no la del navegador); `etiqueta`, lo que lee un lector de
   pantalla cuando hace falta decir más ("Sumar meses a La fonda de Don Chuy"). `apagado` lo deja
   al 35 % y sin clic (la flecha de subir de la primera categoría).
 -->
 <script lang="ts">
   import Icono from './Icono.svelte';
+  import { pista } from './pista';
 
   let {
     icono,
@@ -34,7 +35,7 @@
   type="button"
   class="cuadro"
   class:grande
-  title={ayuda}
+  use:pista={ayuda}
   aria-label={etiqueta ?? ayuda}
   disabled={apagado}
   {onclick}

@@ -17,6 +17,7 @@
   import BotonCuadro from '../../diseno/BotonCuadro.svelte';
   import CajaError from '../../diseno/CajaError.svelte';
   import Icono from '../../diseno/Icono.svelte';
+  import { pista } from '../../diseno/pista';
   import Tarjeta from '../../diseno/Tarjeta.svelte';
   import {
     anuncioVisto,
@@ -503,7 +504,7 @@
       {#if estilo && !estilo.color}
         <span class="sin-color">{estilo.nombre} sale con sus colores.</span>
       {:else}
-        <button type="button" class="boton-opcion" title="Elegir el color de este anuncio" disabled={!estilo} onclick={() => (ventana = { tipo: 'color' })}>
+        <button type="button" class="boton-opcion" use:pista={'Elegir el color de este anuncio'} disabled={!estilo} onclick={() => (ventana = { tipo: 'color' })}>
           {#if colorDelAnuncio}
             <span class="gota-chica" style:background={colorDelAnuncio}></span>Color<span class="valor">{colorDelAnuncio}</span>
           {:else}
@@ -519,7 +520,7 @@
         />
       {/if}
       <span class="separador"></span>
-      <button type="button" class="boton-opcion" title="Elegir el estilo del anuncio" disabled={!estilos?.length} onclick={() => (ventana = { tipo: 'estilos' })}>
+      <button type="button" class="boton-opcion" use:pista={'Elegir el estilo del anuncio'} disabled={!estilos?.length} onclick={() => (ventana = { tipo: 'estilos' })}>
         <span class="estilo-mini" style:background-image={estilo ? `url(${urlFoto(estilo.muestras.post)})` : undefined}></span>Estilo<span class="valor"
           >{estilo?.nombre ?? (sinEstilos ? 'Ninguno' : '…')}</span
         >

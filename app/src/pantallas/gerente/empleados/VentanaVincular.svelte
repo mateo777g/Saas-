@@ -11,6 +11,7 @@
   import CajaError from '../../../diseno/CajaError.svelte';
   import Campo from '../../../diseno/Campo.svelte';
   import Formulario from '../../../diseno/Formulario.svelte';
+  import Lista from '../../../diseno/Lista.svelte';
   import Ventana from '../../../diseno/Ventana.svelte';
   import { crearCodigo, type Aparato, type Persona } from '../../../lib/equipo';
   import { ALGO_SALIO_PANEL, Fallo } from '../../../lib/errores';
@@ -114,6 +115,7 @@
 >
   {#if !codigo}
     <Formulario
+    verde
       boton={{ etiqueta: 'Crear código', icono: 'derecha' }}
       {guardar}
       alTerminar={() => {}}
@@ -130,12 +132,11 @@
       />
       <div class="campo">
         <label class="etiqueta" for="aparato-de">¿DE QUIÉN ES?</label>
-        <select id="aparato-de" bind:value={de}>
-          <option value="">Compartido: sale todo el equipo</option>
-          {#each equipo as p (p.id)}
-            <option value={String(p.id)}>{p.nombre}</option>
-          {/each}
-        </select>
+        <Lista
+          id="aparato-de"
+          bind:valor={de}
+          opciones={[{ valor: '', texto: 'Compartido: sale todo el equipo' }, ...equipo.map((p) => ({ valor: String(p.id), texto: p.nombre }))]}
+        />
         <p class="pista">
           Compartido es para la tableta de la caja o de la cocina: cada quien toca su nombre y pone su PIN. Si es el
           celular de alguien, solo esa persona puede entrar.
@@ -190,22 +191,7 @@
     gap: 8px;
   }
 
-  select {
-    width: 100%;
-    height: 44px;
-    padding: 0 10px;
-    border: 1px solid var(--linea);
-    border-radius: 12px;
-    background: var(--solido);
-    color: var(--texto);
-    font-size: 13.5px;
-    font-weight: 500;
-    outline: none;
-  }
 
-  select:focus {
-    border-color: var(--suave);
-  }
 
   .pista {
     margin: 0;

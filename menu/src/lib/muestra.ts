@@ -1,13 +1,13 @@
 // La vista previa del panel (app/src/lib/vistaMenu.ts): «Así lo ven tus clientes» y la tira de la
 // ventana del color son este mismo menú dentro de un marco, con ?muestra=menu|barra. El panel le
-// manda lo que Don Chuy todavía no guarda (el tema, el color y el tipo de cambio) para pintarlo sin
+// manda lo que Don Chuy todavía no guarda (el tema y el color) para pintarlo sin
 // guardarlo, y le pide volver a leer tras cambiar un cartel. El menú solo hace caso en modo
 // muestra, y solo a los orígenes de la app.
 import type { TemaMenu } from '@app/lib/color';
 
 export type ModoMuestra = 'menu' | 'barra' | null;
 
-export type Pintura = { tema: TemaMenu; color: string | null; tipo_cambio_usd: number | null };
+export type Pintura = { tema: TemaMenu; color: string | null };
 
 const ORIGENES = (import.meta.env.VITE_ORIGENES_APP ?? '')
   .split(',')
@@ -35,8 +35,7 @@ export function escucharPanel(alPintar: (p: Pintura) => void, alRecargar: () => 
     if (d.fragmentless !== 'muestra') return;
     const tema = d.tema === 'oscuro' ? 'oscuro' : 'claro';
     const color = typeof d.color === 'string' && /^#[0-9A-F]{6}$/i.test(d.color) ? d.color.toUpperCase() : null;
-    const cambio = typeof d.tipo_cambio_usd === 'number' && d.tipo_cambio_usd > 0 ? d.tipo_cambio_usd : null;
-    alPintar({ tema, color, tipo_cambio_usd: cambio });
+    alPintar({ tema, color });
   };
   window.addEventListener('message', escuchar);
   return () => window.removeEventListener('message', escuchar);

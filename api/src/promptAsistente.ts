@@ -145,7 +145,8 @@ function estado(e: Estado): string {
 // La parte que cambia: va en un mensaje aparte, después de las reglas.
 export function ahoraParaElPrompt(menu: MenuPublico, lengua: 'es' | 'en', moneda: 'mxn' | 'usd'): string {
   const [anio, mes, dia] = menu.ahora.fecha.split('-').map(Number);
-  // Sin tipo de cambio no hay dólares, y el menú enseña pesos aunque la barra diga USD.
+  // Desde Mi menú siempre hay dólares (el tipo de cambio de todos); si un día faltara, el menú enseña
+  // pesos aunque la barra diga USD.
   const hayDolares = menu.categorias.some((c) => c.productos.some((p) => p.precio_usd !== null));
   const enDolares = moneda === 'usd' && hayDolares;
   return `AHORA (cambia en cada pregunta):

@@ -89,3 +89,33 @@ button {
     animation-duration: 0s !important;
   }
 }
+
+/* La cajita de los botones (diseno/pista.ts; regla de diseño del 7 de noviembre de 2026): la misma del
+   dock, una sola para toda la app, encima de todo. */
+.pista-flotante {
+  position: fixed;
+  z-index: 1000;
+  left: 0;
+  top: 0;
+  padding: 4px 8px;
+  border: 1px solid var(--borde-tarjeta);
+  border-radius: 4px;
+  background: var(--solido);
+  color: var(--texto);
+  font: 500 12px/16px var(--jakarta);
+  white-space: nowrap;
+  pointer-events: none;
+  box-shadow: 0 4px 12px var(--sombra-menu, rgba(0, 0, 0, 0.12));
+  opacity: 0;
+  transition: opacity 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.pista-flotante.visible {
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pista-flotante {
+    transition: none;
+  }
+}

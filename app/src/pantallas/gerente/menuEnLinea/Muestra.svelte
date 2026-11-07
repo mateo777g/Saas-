@@ -16,7 +16,7 @@
 
   // Lo que no se ha guardado le llega al menú en cuanto cambia, y otra vez cuando avisa que ya pintó.
   $effect(() => {
-    mandarMuestra(marco, { tema: muestra.tema, color: muestra.color, tipo_cambio_usd: muestra.tipo_cambio_usd });
+    mandarMuestra(marco, { tema: muestra.tema, color: muestra.color });
   });
 
   onMount(() => {

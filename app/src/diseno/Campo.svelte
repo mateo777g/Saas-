@@ -5,9 +5,12 @@
   `valor` siempre es texto, también en las fechas ('aaaa-mm-dd') y los números: quien guarda lo
   convierte. Como en Flet, puede llevar un `prefijo` adentro, a la izquierda ("$" en el precio), o
   ser `multilinea` (la descripción de un producto: 72 de alto). Con `contador`, a la derecha de la etiqueta
-  va cuántas letras lleva de `largoMaximo` («23 / 80», lo que dice el cuadro de un estilo).
+  va cuántas letras lleva de `largoMaximo` («23 / 80», lo que dice el cuadro de un estilo). `marca` va adentro de la
+  caja, después del campo (la marquita «EN» del grupo en inglés de Mi menú).
 -->
 <script lang="ts">
+  import type { Snippet } from 'svelte';
+
   let {
     id,
     etiqueta,
@@ -26,6 +29,7 @@
     mal = false,
     mono = false,
     contador = false,
+    marca,
   }: {
     id: string;
     etiqueta: string;
@@ -45,6 +49,7 @@
     mal?: boolean;
     mono?: boolean;
     contador?: boolean;
+    marca?: Snippet;
   } = $props();
 </script>
 
@@ -84,6 +89,7 @@
         class:mono
         aria-invalid={mal || undefined}
       />
+      {@render marca?.()}
     </div>
   {/if}
   {#if pista}

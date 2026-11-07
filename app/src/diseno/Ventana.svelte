@@ -7,6 +7,9 @@
   Es un <dialog> del navegador: mientras está abierta, lo de atrás no se puede tocar ni recibe
   el foco. Se cierra con la X, con Escape o con un clic en el velo, como en la maqueta
   (Tbt7H3G1QRXykzNKe1GXHh); el panel decide qué pasa al cerrar (alCerrar).
+
+  `centrado` pone la etiqueta y el título al centro, con la X en su esquina (las ventanas de producto,
+  categoría y grupo de Mi menú, maqueta U9YqpsSb2PeB5pFXTPvh1C).
 -->
 <script lang="ts">
   import { onMount, type Snippet } from 'svelte';
@@ -21,6 +24,7 @@
     alto,
     relleno = '28px',
     tamanoTexto = 13,
+    centrado = false,
     alCerrar,
     children,
   }: {
@@ -35,6 +39,7 @@
     alto?: number;
     relleno?: string;
     tamanoTexto?: number;
+    centrado?: boolean;
     alCerrar: () => void;
     children: Snippet;
   } = $props();
@@ -69,7 +74,7 @@
   }}
 >
   <div class="ventana" style:width="{ancho}px" style:height={alto ? `${alto}px` : undefined} style:padding={relleno}>
-    <div class="cabeza">
+    <div class="cabeza" class:centrado>
       <div class="titulos">
         {#if etiqueta}<span class="etiqueta">{etiqueta}</span>{/if}
         <h2 class="titulo" id={idTitulo}>{titulo}</h2>
@@ -130,6 +135,22 @@
     display: flex;
     flex-direction: column;
     gap: 6px;
+  }
+
+  .cabeza.centrado {
+    position: relative;
+  }
+
+  .centrado .titulos {
+    align-items: center;
+    text-align: center;
+    padding: 0 52px;
+  }
+
+  .centrado > :global(:last-child) {
+    position: absolute;
+    top: 0;
+    right: 0;
   }
 
   .titulo {

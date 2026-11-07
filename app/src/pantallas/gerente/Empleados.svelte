@@ -340,6 +340,7 @@
 {:else if ventana?.tipo === 'baja'}
   {@const p = ventana.persona}
   <Confirmar
+    peligro
     icono="baja"
     titulo="¿Dar de baja a {p.nombre}?"
     texto="Ya no podrá entrar, y su celular se desliga. Sus ventas siguen a su nombre en tus reportes. Si regresa, se da de alta otra vez."
@@ -351,6 +352,7 @@
 {:else if ventana?.tipo === 'desligar'}
   {@const a = ventana.aparato}
   <Confirmar
+    peligro
     icono="desligar"
     titulo="¿Desligar «{a.nombre}»?"
     texto="Ese aparato ya no entra, y quien esté adentro sale al instante. Para volver a usarlo, vincúlalo otra vez."

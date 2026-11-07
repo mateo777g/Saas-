@@ -61,7 +61,6 @@
 
   let tema = $state<TemaMenu>('claro');
   let color = $state<string | null>(null);
-  let cambio = $state('');
   let envios = $state(false);
   let productosEnvio = $state<Envio[] | null>(null);
   let eligiendoColor = $state(false);
@@ -73,25 +72,10 @@
   // svelte-ignore state_referenced_locally
   const link = linkDelMenu(sucursal.slug);
 
-  function textoCambio(n: number | null) {
-    return n === null ? '' : n.toFixed(2);
-  }
-
-  // El tipo de cambio escrito: vacío = sin dólares; si no es un número mayor que cero, no sirve.
-  function leerCambio(texto: string): number | null | undefined {
-    const t = texto.trim().replace(/,/g, '');
-    if (!t) return null;
-    if (!/^(\d+\.?\d*|\.\d+)$/.test(t)) return undefined;
-    const n = Math.round(Number(t) * 100) / 100;
-    return n > 0 && n < 1000000 ? n : undefined;
-  }
-
-  const cambioLeido = $derived(leerCambio(cambio));
   const sinGuardar = $derived(
     !!guardado &&
       (tema !== guardado.menu_tema ||
         color !== guardado.menu_color ||
-        cambioLeido !== guardado.tipo_cambio_usd ||
         envios !== guardado.hace_envios),
   );
   const casi = $derived(casiNoSeVe(color, tema));
@@ -110,7 +94,6 @@
       productosEnvio = pe;
       tema = r.menu_tema;
       color = r.menu_color;
-      cambio = textoCambio(r.tipo_cambio_usd);
       envios = r.hace_envios;
       errorLectura = null;
     } catch (falla) {
@@ -154,22 +137,17 @@
 
   async function guardar() {
     if (!guardado || paso) return;
-    if (cambioLeido === undefined) {
-      error = 'Escribe a cuánto tomas el dólar, como 18.50';
-      return;
-    }
     error = null;
     paso = 'guardando';
     try {
-      await guardarMenuEnLinea(sucursal.id, tema, color, cambioLeido, envios);
+      await guardarMenuEnLinea(sucursal.id, tema, color, envios);
     } catch (falla) {
       if (!(falla instanceof Fallo)) console.error('[menu en linea] no se pudo guardar:', falla);
       error = falla instanceof Fallo ? falla.message : ALGO_SALIO_PANEL;
       paso = null;
       return;
     }
-    guardado = { ...guardado, menu_tema: tema, menu_color: color, tipo_cambio_usd: cambioLeido, hace_envios: envios };
-    cambio = textoCambio(cambioLeido);
+    guardado = { ...guardado, menu_tema: tema, menu_color: color, hace_envios: envios };
     paso = 'listo';
     setTimeout(() => (paso = null), 1600);
   }
@@ -288,15 +266,6 @@
           {/if}
           <p class="pista arriba">Pinta la barra de arriba, la raya de la categoría, el «+» y los botones del pedido.</p>
           <div class="raya"></div>
-          <label class="etiqueta" for="tipo-cambio">DÓLARES</label>
-          <div class="dolar-fila">
-            <div class="con-prefijo">
-              <span>$</span>
-              <input id="tipo-cambio" bind:value={cambio} inputmode="decimal" placeholder="Ej. 18.50" autocomplete="off" />
-            </div>
-            <span class="pista crece">A cuánto tomas el dólar. Así tus clientes ven «US$1.19 aprox.»; vacío, tu menú solo enseña pesos.</span>
-          </div>
-          <div class="raya"></div>
           <span class="etiqueta">PEDIDOS</span>
           <div class="envios-fila">
             <Interruptor prendido={envios} texto="Hago envíos" alCambiar={(v) => (envios = v)} />
@@ -335,7 +304,7 @@
               bind:this={muestra}
               slug={sucursal.slug}
               como="menu"
-              muestra={{ tema, color, tipo_cambio_usd: cambioLeido ?? null }}
+              muestra={{ tema, color }}
             />
           </div>
         </div>
@@ -349,7 +318,6 @@
     inicial={color}
     {tema}
     slug={sucursal.slug}
-    tipoCambio={cambioLeido ?? null}
     alUsar={(c) => {
       color = c;
       eligiendoColor = false;
@@ -636,55 +604,6 @@
   .envios-fila b {
     color: var(--texto);
     font-weight: 600;
-  }
-
-  .dolar-fila {
-    margin-top: 8px;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-  }
-
-  .con-prefijo {
-    position: relative;
-    display: flex;
-    width: 160px;
-    flex: none;
-  }
-
-  .con-prefijo span {
-    position: absolute;
-    left: 14px;
-    top: 0;
-    height: 44px;
-    display: flex;
-    align-items: center;
-    font-size: 13.5px;
-    color: var(--suave);
-    pointer-events: none;
-  }
-
-  .con-prefijo input {
-    height: 44px;
-    width: 100%;
-    padding: 0 14px 0 28px;
-    border: 1px solid var(--linea);
-    border-radius: 12px;
-    background: transparent;
-    color: var(--texto);
-    font-family: var(--mono);
-    font-size: 13.5px;
-    font-weight: 500;
-    font-variant-numeric: tabular-nums;
-    outline: none;
-  }
-
-  .con-prefijo input:focus {
-    border-color: var(--suave);
-  }
-
-  .con-prefijo input::placeholder {
-    color: var(--tenue);
   }
 
   .error {

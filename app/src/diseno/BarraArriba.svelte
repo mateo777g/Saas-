@@ -5,7 +5,8 @@
   con `pausa`, los pedidos en pausa de la parte 6b; hueco con `hueco`, cuando a ningún cliente le sale
   un estilo o no se pudo leer Estilos) y, a la derecha, los botones que le pase la vista. `junto` va
   pegado al título, antes del chip (el selector Productos | Categorías de Mi menú, el día de Cortes y
-  reportes). Los botones de aquí miden 34.
+  reportes). Con `chipAntes` la pastilla va pegada al título, antes de `junto` (Mi menú, con el dock al
+  centro; maqueta U9YqpsSb2PeB5pFXTPvh1C, versión 14). Los botones de aquí miden 34.
 -->
 <script lang="ts">
   import type { Snippet } from 'svelte';
@@ -15,6 +16,7 @@
     estado = null,
     antes,
     junto,
+    chipAntes = false,
     children,
   }: {
     titulo: string;
@@ -22,6 +24,7 @@
     // Antes del título: la flecha de volver (el punto de venta abierto en el panel).
     antes?: Snippet;
     junto?: Snippet;
+    chipAntes?: boolean;
     children?: Snippet;
   } = $props();
 </script>
@@ -29,7 +32,14 @@
 <header class="barra" class:con-volver={!!antes}>
   {@render antes?.()}
   <h1 class="titulo">{titulo}</h1>
+  {#if chipAntes}{@render chip()}{/if}
   {@render junto?.()}
+  {#if !chipAntes}{@render chip()}{/if}
+  <span class="crece"></span>
+  {@render children?.()}
+</header>
+
+{#snippet chip()}
   {#if estado}
     <span class="chip">
       {#if estado.vivo || estado.pausa || estado.hueco}
@@ -38,9 +48,7 @@
       <span>{estado.texto}</span>
     </span>
   {/if}
-  <span class="crece"></span>
-  {@render children?.()}
-</header>
+{/snippet}
 
 <style>
   .barra {

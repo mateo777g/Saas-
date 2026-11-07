@@ -328,7 +328,7 @@
     height: 8px;
     flex: none;
     border-radius: 4px;
-    background: var(--tinta);
+    background: var(--verde);
   }
 
   .visibilidad.no {

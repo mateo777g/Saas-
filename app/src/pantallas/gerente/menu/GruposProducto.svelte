@@ -7,6 +7,7 @@
 -->
 <script lang="ts">
   import Icono from '../../../diseno/Icono.svelte';
+  import { pista } from '../../../diseno/pista';
   import { dinero } from '../../../lib/formato';
   import type { Grupo } from '../../../lib/menu';
   import { reglaCorta } from '../../../lib/opciones';
@@ -29,11 +30,13 @@
   const puestos = $derived(grupos.filter((g) => elegidos.includes(g.id)));
   const libres = $derived(grupos.filter((g) => !elegidos.includes(g.id)));
 
-  // «Verde · Roja · Habanero (agotada)», con el precio extra cuando suma.
+  // «Verde · Roja · Habanero (agotada)», con el precio extra cuando suma; las agotadas, en amarillo.
   function previa(g: Grupo) {
-    return g.opciones
-      .map((o) => (o.visible ? o.nombre + (o.precio_extra > 0 ? ` +${dinero(o.precio_extra)}` : '') : `${o.nombre} (agotada)`))
-      .join(' · ');
+    return g.opciones.map((o) => ({
+      id: o.id,
+      agotada: !o.visible,
+      texto: o.visible ? o.nombre + (o.precio_extra > 0 ? ` +${dinero(o.precio_extra)}` : '') : `${o.nombre} (agotada)`,
+    }));
   }
 
   function poner(id: number) {
@@ -75,7 +78,7 @@
             type="button"
             class="quitar"
             aria-label="Quitar {g.nombre}"
-            title="Quitar"
+            use:pista={'Quitar'}
             disabled={apagado}
             onclick={() => quitar(g.id)}
           >
@@ -111,7 +114,10 @@
           <button type="button" class="opcion" onclick={() => poner(g.id)}>
             <span class="textos">
               <span class="nombre">{g.nombre}</span>
-              <span class="sub">{previa(g)}</span>
+              <span class="sub"
+                >{#each previa(g) as o, j (o.id)}{#if j > 0}{' · '}{/if}{#if o.agotada}<span class="agotada-texto">{o.texto}</span
+                    >{:else}{o.texto}{/if}{/each}</span
+              >
             </span>
             <span class="cuenta">{reglaCorta(g.minimo, g.maximo)}</span>
           </button>
@@ -275,6 +281,11 @@
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+  }
+
+  .agotada-texto {
+    color: var(--amarillo-texto);
+    font-weight: 600;
   }
 
   .cuenta {

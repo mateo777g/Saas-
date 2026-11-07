@@ -1,0 +1,500 @@
+/*
+  El brillo de las cajas de búsqueda (Inicio de los dos paneles y Mi menú): el de border-beam 1.4.1, «line»,
+  naranja («sunset», tema claro) en claro y azul («ocean», tema oscuro, llevado todo al azul y sin giro) en oscuro.
+  Maqueta aprobada 4B6Qhre6dkK3pJgXtryyEV v3; lo decidido, en planes/trabajo/rediseno/cajas-busqueda.md.
+  NO SE EDITA A MANO: lo escribe planes/trabajo/rediseno/maqueta-cajas/haz_para_app.py desde el CSS del paquete.
+
+  Viene de border-beam (https://www.npmjs.com/package/border-beam), con licencia MIT:
+  Copyright (c) 2026 Jakub Antalik. Se pasó a CSS sin React; lo usa diseno/Haz.svelte.
+*/
+@property --haz-x {
+  syntax: "<number>";
+  initial-value: 0;
+  inherits: true;
+}
+
+@property --haz-w {
+  syntax: "<number>";
+  initial-value: 1;
+  inherits: true;
+}
+
+@property --haz-h {
+  syntax: "<number>";
+  initial-value: 1;
+  inherits: true;
+}
+
+@property --haz-spike {
+  syntax: "<number>";
+  initial-value: 1;
+  inherits: true;
+}
+
+@property --haz-spike2 {
+  syntax: "<number>";
+  initial-value: 1;
+  inherits: true;
+}
+
+@property --haz-edge {
+  syntax: "<number>";
+  initial-value: 1;
+  inherits: true;
+}
+
+@property --haz-opacity {
+  syntax: "<number>";
+  initial-value: 0;
+  inherits: true;
+}
+
+
+:root[data-tema='claro'] .haz {
+  position: relative;
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+:root[data-tema='claro'] .haz.activo {
+  animation:
+    haz-travel-claro 3.1s linear infinite,
+    haz-edge-fade-claro 3.1s linear infinite,
+    haz-breathe-claro 4.0s ease-in-out infinite,
+    haz-spike-claro 4.1s ease-in-out infinite,
+    haz-spike2-claro 5.3s ease-in-out infinite,
+    haz-fade-in-claro 0.6s ease forwards;
+}
+
+:root[data-tema='claro'] .haz.apagando {
+  animation:
+    haz-travel-claro 3.1s linear infinite,
+    haz-edge-fade-claro 3.1s linear infinite,
+    haz-breathe-claro 4.0s ease-in-out infinite,
+    haz-spike-claro 4.1s ease-in-out infinite,
+    haz-spike2-claro 5.3s ease-in-out infinite,
+    haz-fade-out-claro 0.5s ease forwards;
+}
+
+:root[data-tema='claro'] .haz.activo::after,
+:root[data-tema='claro'] .haz.apagando::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 998px;
+  padding: 1px;
+  clip-path: inset(0 round 999px);
+  background: radial-gradient(
+        ellipse calc(35px * var(--haz-w)) calc(28px * var(--haz-h)) at calc(var(--haz-x) * 100%) calc(100% + 2px),
+        rgba(0, 0, 0, 0.6) 0%,
+        rgba(0, 0, 0, 0.25) 35%,
+        transparent 70%
+      ), radial-gradient(ellipse calc(45px * var(--haz-w)) calc(36px * var(--haz-h)) at calc(var(--haz-x) * 100%) calc(100% + 2px), rgb(220, 80, 40), transparent),
+       radial-gradient(ellipse calc(35px * var(--haz-w)) calc(32px * var(--haz-h)) at calc(var(--haz-x) * 100% + 65px) calc(100%), rgb(230, 150, 30), transparent),
+       radial-gradient(ellipse calc(40px * var(--haz-w)) calc(28px * var(--haz-h)) at calc(var(--haz-x) * 100% - 60px) calc(100% + 2px), rgb(210, 110, 50), transparent),
+       radial-gradient(ellipse calc(35px * var(--haz-w)) calc(34px * var(--haz-h)) at calc(var(--haz-x) * 100% - 90px) calc(100%), rgb(200, 60, 60), transparent),
+       radial-gradient(ellipse calc(38px * var(--haz-w)) calc(30px * var(--haz-h)) at calc(var(--haz-x) * 100% + 85px) calc(100% - 1px), rgb(220, 170, 40), transparent),
+       radial-gradient(ellipse calc(50px * var(--haz-w)) calc(24px * var(--haz-h)) at calc(var(--haz-x) * 100% + 35px) calc(100% + 1px), rgb(210, 100, 30), transparent),
+       radial-gradient(ellipse calc(40px * var(--haz-w)) calc(22px * var(--haz-h)) at calc(var(--haz-x) * 100% - 35px) calc(100%), rgb(230, 130, 60), transparent),
+       radial-gradient(ellipse calc(35px * var(--haz-w)) calc(28px * var(--haz-h)) at calc(var(--haz-x) * 100% + 110px) calc(100% + 1px), rgb(190, 70, 50), transparent),
+       radial-gradient(ellipse calc(30px * var(--haz-w)) calc(30px * var(--haz-h)) at calc(var(--haz-x) * 100% - 110px) calc(100% - 1px), rgb(180, 50, 50), transparent);
+  -webkit-mask:
+    radial-gradient(
+      ellipse calc(78px * var(--haz-w)) calc(60px * var(--haz-h)) at calc(var(--haz-x) * 100%) 100%,
+      white 0%, rgba(255, 255, 255, 0.5) 45%, transparent 100%
+    ),
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: source-in, xor;
+  mask:
+    radial-gradient(
+      ellipse calc(78px * var(--haz-w)) calc(60px * var(--haz-h)) at calc(var(--haz-x) * 100%) 100%,
+      white 0%, rgba(255, 255, 255, 0.5) 45%, transparent 100%
+    ),
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  mask-composite: intersect, exclude;
+  pointer-events: none;
+  z-index: 2;
+  opacity: calc(var(--haz-opacity) * var(--haz-edge) * 0.16 * var(--haz-stroke-opacity, 1) * var(--haz-strength, 1));
+  animation: haz-hue-shift-claro 12s ease-in-out infinite;
+}
+
+:root[data-tema='claro'] .haz.activo::before,
+:root[data-tema='claro'] .haz.apagando::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 999px;
+  background: radial-gradient(ellipse calc(33px * var(--haz-w)) calc(30px * var(--haz-h)) at calc(var(--haz-x) * 100%) calc(100%), rgba(255, 100, 60, 0.48), transparent),
+    radial-gradient(ellipse calc(24px * var(--haz-w)) calc(26px * var(--haz-h)) at calc(var(--haz-x) * 100% + 39px) calc(100% - 3px), rgba(255, 180, 50, 0.42), transparent),
+    radial-gradient(ellipse calc(27px * var(--haz-w)) calc(24px * var(--haz-h)) at calc(var(--haz-x) * 100% - 36px) calc(100%), rgba(255, 140, 70, 0.48), transparent),
+    radial-gradient(ellipse calc(23px * var(--haz-w)) calc(28px * var(--haz-h)) at calc(var(--haz-x) * 100% - 54px) calc(100% - 2px), rgba(255, 80, 80, 0.42), transparent),
+    radial-gradient(ellipse calc(24px * var(--haz-w)) calc(24px * var(--haz-h)) at calc(var(--haz-x) * 100% + 51px) calc(100% - 1px), rgba(255, 200, 60, 0.50), transparent),
+    radial-gradient(ellipse calc(30px * var(--haz-w)) calc(20px * var(--haz-h)) at calc(var(--haz-x) * 100% + 21px) calc(100%), rgba(255, 120, 50, 0.45), transparent),
+    radial-gradient(ellipse calc(25px * var(--haz-w)) calc(18px * var(--haz-h)) at calc(var(--haz-x) * 100% - 21px) calc(100% - 2px), rgba(255, 160, 80, 0.40), transparent),
+    radial-gradient(ellipse calc(21px * var(--haz-w)) calc(24px * var(--haz-h)) at calc(var(--haz-x) * 100% + 66px) calc(100%), rgba(255, 90, 60, 0.45), transparent),
+    radial-gradient(ellipse calc(18px * var(--haz-w)) calc(26px * var(--haz-h)) at calc(var(--haz-x) * 100% - 66px) calc(100% - 1px), rgba(255, 70, 70, 0.52), transparent);
+  box-shadow: inset 0 0 9px 1px rgba(0, 0, 0, 0.14);
+  -webkit-mask-image:
+    radial-gradient(
+      ellipse calc(78px * var(--haz-w)) calc(60px * var(--haz-h)) at calc(var(--haz-x) * 100%) 100%,
+      white 0%, rgba(255, 255, 255, 0.5) 45%, transparent 100%
+    ),
+    linear-gradient(white, transparent 28px, transparent calc(100% - 28px), white),
+    linear-gradient(to right, white, transparent 28px, transparent calc(100% - 28px), white);
+  -webkit-mask-composite: source-in, source-over;
+  mask-image:
+    radial-gradient(
+      ellipse calc(78px * var(--haz-w)) calc(60px * var(--haz-h)) at calc(var(--haz-x) * 100%) 100%,
+      white 0%, rgba(255, 255, 255, 0.5) 45%, transparent 100%
+    ),
+    linear-gradient(white, transparent 28px, transparent calc(100% - 28px), white),
+    linear-gradient(to right, white, transparent 28px, transparent calc(100% - 28px), white);
+  mask-composite: intersect, add;
+  pointer-events: none;
+  z-index: 1;
+  opacity: calc(var(--haz-opacity) * var(--haz-edge) * 0.32 * var(--haz-inner-opacity, 1) * var(--haz-strength, 1));
+  clip-path: inset(0 round 999px);
+  animation: haz-hue-shift-claro 12s ease-in-out infinite;
+}
+
+:root[data-tema='claro'] .haz .haz-flor {
+  display: none;
+  position: absolute;
+  inset: 0;
+  border-radius: 998px;
+  clip-path: inset(0 round 999px);
+  padding: 0;
+  -webkit-mask: radial-gradient(
+    ellipse calc(84px * var(--haz-w)) calc(110px * var(--haz-h)) at calc(var(--haz-x) * 100%) 100%,
+    white 0%, rgba(255, 255, 255, 0.5) 35%, transparent 100%
+  );
+  -webkit-mask-composite: source-over;
+  mask: radial-gradient(
+    ellipse calc(84px * var(--haz-w)) calc(110px * var(--haz-h)) at calc(var(--haz-x) * 100%) 100%,
+    white 0%, rgba(255, 255, 255, 0.5) 35%, transparent 100%
+  );
+  mask-composite: add;
+  background: radial-gradient(ellipse calc(0.8px * var(--haz-spike) * var(--haz-spike-mul, 1)) calc(92px * var(--haz-h) * var(--haz-spike-mul, 1)) at 8% calc(100% - 2px), rgb(200, 80, 40), rgba(200, 80, 40, 0.85) 30%, transparent 88%),
+       radial-gradient(ellipse calc(10px * var(--haz-spike2) * var(--haz-spike-mul, 1)) calc(35px * var(--haz-h) * var(--haz-spike-mul, 1)) at 22% calc(100% - 4px), rgb(220, 120, 30), rgba(220, 120, 30, 0.7) 50%, transparent 95%),
+       radial-gradient(ellipse calc(2px * (2 - var(--haz-spike)) * var(--haz-spike-mul, 1)) calc(72px * var(--haz-h) * var(--haz-spike-mul, 1)) at 36% calc(100% - 3px), rgb(200, 60, 30), rgba(200, 60, 30, 0.8) 40%, transparent 90%),
+       radial-gradient(ellipse calc(14px * var(--haz-spike2) * var(--haz-spike-mul, 1)) calc(28px * var(--haz-h) * var(--haz-spike-mul, 1)) at 50% calc(100% - 2px), rgba(220, 100, 20, 0.7), rgba(220, 100, 20, 0.46) 55%, transparent 96%),
+       radial-gradient(ellipse calc(1.2px * (2 - var(--haz-spike2)) * var(--haz-spike-mul, 1)) calc(85px * var(--haz-h) * var(--haz-spike-mul, 1)) at 64% calc(100% - 4px), rgb(180, 40, 20), rgba(180, 40, 20, 0.82) 35%, transparent 89%),
+       radial-gradient(ellipse calc(7px * var(--haz-spike) * var(--haz-spike-mul, 1)) calc(45px * var(--haz-h) * var(--haz-spike-mul, 1)) at 78% calc(100% - 2px), rgb(210, 80, 10), rgba(210, 80, 10, 0.7) 48%, transparent 94%),
+       radial-gradient(ellipse calc(1px * (2 - var(--haz-spike)) * var(--haz-spike-mul, 1)) calc(60px * var(--haz-h) * var(--haz-spike-mul, 1)) at 92% calc(100% - 3px), rgb(190, 70, 30), rgba(190, 70, 30, 0.78) 42%, transparent 91%),
+       radial-gradient(ellipse calc(50px * var(--haz-w)) calc(32px * var(--haz-h)) at calc(var(--haz-x) * 100%) calc(100%), rgba(0, 0, 0, 0.5) 0%, rgba(0, 0, 0, 0.18) 30%, rgba(0, 0, 0, 0.03) 60%, transparent 85%);
+
+  pointer-events: none;
+  z-index: 3;
+  opacity: 0;
+}
+
+:root[data-tema='claro'] .haz.activo .haz-flor,
+:root[data-tema='claro'] .haz.apagando .haz-flor {
+  display: block;
+  opacity: calc(var(--haz-opacity) * var(--haz-edge) * 0.3 * var(--haz-bloom-opacity, 1) * var(--haz-strength, 1));
+  animation: haz-hue-shift-bloom-claro 8s ease-in-out infinite;
+}
+
+@keyframes haz-travel-claro {
+  0%   { --haz-x: 0.06;  --haz-w: 0.5; }
+  10%  { --haz-x: 0.15;  --haz-w: 0.8; }
+  20%  { --haz-x: 0.25;  --haz-w: 1.1; }
+  30%  { --haz-x: 0.35;  --haz-w: 1.3; }
+  40%  { --haz-x: 0.44;  --haz-w: 1.45; }
+  50%  { --haz-x: 0.5;   --haz-w: 1.5; }
+  60%  { --haz-x: 0.56;  --haz-w: 1.45; }
+  70%  { --haz-x: 0.65;  --haz-w: 1.3; }
+  80%  { --haz-x: 0.75;  --haz-w: 1.1; }
+  90%  { --haz-x: 0.85;  --haz-w: 0.8; }
+  100% { --haz-x: 0.94;  --haz-w: 0.5; }
+}
+
+@keyframes haz-edge-fade-claro {
+  0%    { --haz-edge: 0; }
+  12.5% { --haz-edge: 0; }
+  32.5% { --haz-edge: 1; }
+  67.5% { --haz-edge: 1; }
+  87.5% { --haz-edge: 0; }
+  100%  { --haz-edge: 0; }
+}
+
+@keyframes haz-breathe-claro {
+  0%, 100% { --haz-h: 0.8; }
+  25%      { --haz-h: 1.25; }
+  55%      { --haz-h: 0.85; }
+  80%      { --haz-h: 1.3; }
+}
+
+@keyframes haz-spike-claro {
+  0%   { --haz-spike: 0.8; }
+  25%  { --haz-spike: 1.3; }
+  50%  { --haz-spike: 0.9; }
+  75%  { --haz-spike: 1.4; }
+  100% { --haz-spike: 0.8; }
+}
+
+@keyframes haz-spike2-claro {
+  0%   { --haz-spike2: 1.2; }
+  25%  { --haz-spike2: 0.7; }
+  50%  { --haz-spike2: 1.4; }
+  75%  { --haz-spike2: 0.8; }
+  100% { --haz-spike2: 1.2; }
+}
+
+@keyframes haz-fade-in-claro {
+  to { --haz-opacity: 1; }
+}
+
+@keyframes haz-fade-out-claro {
+  from { --haz-opacity: 1; }
+  to { --haz-opacity: 0; }
+}
+
+@keyframes haz-hue-shift-claro {
+  0% { filter: hue-rotate(calc(var(--haz-hue-base, 0deg) - 13deg)) brightness(1.30) saturate(1.95); }
+  50% { filter: hue-rotate(calc(var(--haz-hue-base, 0deg) + 13deg)) brightness(1.30) saturate(1.95); }
+  100% { filter: hue-rotate(calc(var(--haz-hue-base, 0deg) - 13deg)) brightness(1.30) saturate(1.95); }
+}
+
+@keyframes haz-hue-shift-bloom-claro {
+  0% { filter: blur(8px) hue-rotate(calc(var(--haz-hue-base, 0deg) - 23deg)) brightness(1.30) saturate(1.95); }
+  50% { filter: blur(8px) hue-rotate(calc(var(--haz-hue-base, 0deg) + 23deg)) brightness(1.30) saturate(1.95); }
+  100% { filter: blur(8px) hue-rotate(calc(var(--haz-hue-base, 0deg) - 23deg)) brightness(1.30) saturate(1.95); }
+}
+
+:root[data-tema='claro'] .haz.pausado,
+:root[data-tema='claro'] .haz.pausado::after,
+:root[data-tema='claro'] .haz.pausado::before,
+:root[data-tema='claro'] .haz.pausado .haz-flor {
+  animation-play-state: paused !important;
+}
+
+:root[data-tema='oscuro'] .haz {
+  position: relative;
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+:root[data-tema='oscuro'] .haz.activo {
+  animation:
+    haz-travel-oscuro 3.1s linear infinite,
+    haz-edge-fade-oscuro 3.1s linear infinite,
+    haz-breathe-oscuro 4.0s ease-in-out infinite,
+    haz-spike-oscuro 4.1s ease-in-out infinite,
+    haz-spike2-oscuro 5.3s ease-in-out infinite,
+    haz-fade-in-oscuro 0.6s ease forwards;
+}
+
+:root[data-tema='oscuro'] .haz.apagando {
+  animation:
+    haz-travel-oscuro 3.1s linear infinite,
+    haz-edge-fade-oscuro 3.1s linear infinite,
+    haz-breathe-oscuro 4.0s ease-in-out infinite,
+    haz-spike-oscuro 4.1s ease-in-out infinite,
+    haz-spike2-oscuro 5.3s ease-in-out infinite,
+    haz-fade-out-oscuro 0.5s ease forwards;
+}
+
+:root[data-tema='oscuro'] .haz.activo::after,
+:root[data-tema='oscuro'] .haz.apagando::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 998px;
+  padding: 1px;
+  clip-path: inset(0 round 999px);
+  background: radial-gradient(
+        ellipse calc(24px * var(--haz-w)) calc(28px * var(--haz-h)) at calc(var(--haz-x) * 100%) calc(100% + 2px),
+        rgba(255, 255, 255, 0.38) 0%,
+        rgba(255, 255, 255, 0.12) 30%,
+        transparent 65%
+      ), radial-gradient(ellipse calc(36px * var(--haz-w)) calc(36px * var(--haz-h)) at calc(var(--haz-x) * 100%) calc(100% + 2px), rgb(80, 127, 220), transparent),
+       radial-gradient(ellipse calc(30px * var(--haz-w)) calc(32px * var(--haz-h)) at calc(var(--haz-x) * 100% + 39px) calc(100%), rgb(60, 140, 255), transparent),
+       radial-gradient(ellipse calc(33px * var(--haz-w)) calc(28px * var(--haz-h)) at calc(var(--haz-x) * 100% - 36px) calc(100% + 2px), rgb(80, 126, 200), transparent),
+       radial-gradient(ellipse calc(29px * var(--haz-w)) calc(34px * var(--haz-h)) at calc(var(--haz-x) * 100% - 54px) calc(100%), rgb(70, 127, 255), transparent),
+       radial-gradient(ellipse calc(27px * var(--haz-w)) calc(30px * var(--haz-h)) at calc(var(--haz-x) * 100% + 51px) calc(100% - 1px), rgb(70, 146, 255), transparent),
+       radial-gradient(ellipse calc(36px * var(--haz-w)) calc(24px * var(--haz-h)) at calc(var(--haz-x) * 100% + 21px) calc(100% + 1px), rgb(80, 136, 255), transparent),
+       radial-gradient(ellipse calc(30px * var(--haz-w)) calc(22px * var(--haz-h)) at calc(var(--haz-x) * 100% - 21px) calc(100%), rgb(90, 143, 230), transparent),
+       radial-gradient(ellipse calc(25px * var(--haz-w)) calc(28px * var(--haz-h)) at calc(var(--haz-x) * 100% + 66px) calc(100% + 1px), rgb(90, 140, 240), transparent),
+       radial-gradient(ellipse calc(23px * var(--haz-w)) calc(30px * var(--haz-h)) at calc(var(--haz-x) * 100% - 66px) calc(100% - 1px), rgb(100, 149, 255), transparent);
+  -webkit-mask:
+    radial-gradient(
+      ellipse calc(78px * var(--haz-w)) calc(60px * var(--haz-h)) at calc(var(--haz-x) * 100%) 100%,
+      white 0%, rgba(255, 255, 255, 0.5) 45%, transparent 100%
+    ),
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: source-in, xor;
+  mask:
+    radial-gradient(
+      ellipse calc(78px * var(--haz-w)) calc(60px * var(--haz-h)) at calc(var(--haz-x) * 100%) 100%,
+      white 0%, rgba(255, 255, 255, 0.5) 45%, transparent 100%
+    ),
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  mask-composite: intersect, exclude;
+  pointer-events: none;
+  z-index: 2;
+  opacity: calc(var(--haz-opacity) * var(--haz-edge) * 1.14 * var(--haz-stroke-opacity, 1) * var(--haz-strength, 1));
+  animation: haz-hue-shift-oscuro 12s ease-in-out infinite;
+}
+
+:root[data-tema='oscuro'] .haz.activo::before,
+:root[data-tema='oscuro'] .haz.apagando::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 999px;
+  background: radial-gradient(ellipse calc(33px * var(--haz-w)) calc(30px * var(--haz-h)) at calc(var(--haz-x) * 100%) calc(100%), rgba(80, 127, 220, 0.48), transparent),
+    radial-gradient(ellipse calc(24px * var(--haz-w)) calc(26px * var(--haz-h)) at calc(var(--haz-x) * 100% + 39px) calc(100% - 3px), rgba(60, 140, 255, 0.42), transparent),
+    radial-gradient(ellipse calc(27px * var(--haz-w)) calc(24px * var(--haz-h)) at calc(var(--haz-x) * 100% - 36px) calc(100%), rgba(80, 126, 200, 0.48), transparent),
+    radial-gradient(ellipse calc(23px * var(--haz-w)) calc(28px * var(--haz-h)) at calc(var(--haz-x) * 100% - 54px) calc(100% - 2px), rgba(70, 127, 255, 0.42), transparent),
+    radial-gradient(ellipse calc(24px * var(--haz-w)) calc(24px * var(--haz-h)) at calc(var(--haz-x) * 100% + 51px) calc(100% - 1px), rgba(70, 146, 255, 0.50), transparent),
+    radial-gradient(ellipse calc(30px * var(--haz-w)) calc(20px * var(--haz-h)) at calc(var(--haz-x) * 100% + 21px) calc(100%), rgba(80, 136, 255, 0.45), transparent),
+    radial-gradient(ellipse calc(25px * var(--haz-w)) calc(18px * var(--haz-h)) at calc(var(--haz-x) * 100% - 21px) calc(100% - 2px), rgba(90, 143, 230, 0.40), transparent),
+    radial-gradient(ellipse calc(21px * var(--haz-w)) calc(24px * var(--haz-h)) at calc(var(--haz-x) * 100% + 66px) calc(100%), rgba(90, 140, 240, 0.45), transparent),
+    radial-gradient(ellipse calc(18px * var(--haz-w)) calc(26px * var(--haz-h)) at calc(var(--haz-x) * 100% - 66px) calc(100% - 1px), rgba(100, 149, 255, 0.52), transparent);
+  box-shadow: inset 0 0 9px 1px rgba(255, 255, 255, 0.1);
+  -webkit-mask-image:
+    radial-gradient(
+      ellipse calc(78px * var(--haz-w)) calc(60px * var(--haz-h)) at calc(var(--haz-x) * 100%) 100%,
+      white 0%, rgba(255, 255, 255, 0.5) 45%, transparent 100%
+    ),
+    linear-gradient(white, transparent 28px, transparent calc(100% - 28px), white),
+    linear-gradient(to right, white, transparent 28px, transparent calc(100% - 28px), white);
+  -webkit-mask-composite: source-in, source-over;
+  mask-image:
+    radial-gradient(
+      ellipse calc(78px * var(--haz-w)) calc(60px * var(--haz-h)) at calc(var(--haz-x) * 100%) 100%,
+      white 0%, rgba(255, 255, 255, 0.5) 45%, transparent 100%
+    ),
+    linear-gradient(white, transparent 28px, transparent calc(100% - 28px), white),
+    linear-gradient(to right, white, transparent 28px, transparent calc(100% - 28px), white);
+  mask-composite: intersect, add;
+  pointer-events: none;
+  z-index: 1;
+  opacity: calc(var(--haz-opacity) * var(--haz-edge) * 0.7 * var(--haz-inner-opacity, 1) * var(--haz-strength, 1));
+  clip-path: inset(0 round 999px);
+  animation: haz-hue-shift-oscuro 12s ease-in-out infinite;
+}
+
+:root[data-tema='oscuro'] .haz .haz-flor {
+  display: none;
+  position: absolute;
+  inset: 0;
+  border-radius: 998px;
+  clip-path: inset(0 round 999px);
+  padding: 0;
+  -webkit-mask: radial-gradient(
+    ellipse calc(84px * var(--haz-w)) calc(110px * var(--haz-h)) at calc(var(--haz-x) * 100%) 100%,
+    white 0%, rgba(255, 255, 255, 0.5) 35%, transparent 100%
+  );
+  -webkit-mask-composite: source-over;
+  mask: radial-gradient(
+    ellipse calc(84px * var(--haz-w)) calc(110px * var(--haz-h)) at calc(var(--haz-x) * 100%) 100%,
+    white 0%, rgba(255, 255, 255, 0.5) 35%, transparent 100%
+  );
+  mask-composite: add;
+  background: radial-gradient(ellipse calc(0.8px * var(--haz-spike) * var(--haz-spike-mul, 1)) calc(92px * var(--haz-h) * var(--haz-spike-mul, 1)) at 8% calc(100% - 2px), rgb(100, 159, 255), rgb(100, 159, 255) 30%, transparent 88%),
+       radial-gradient(ellipse calc(10px * var(--haz-spike2) * var(--haz-spike-mul, 1)) calc(35px * var(--haz-h) * var(--haz-spike-mul, 1)) at 22% calc(100% - 4px), rgba(100, 138, 220, 0.98), rgba(100, 138, 220, 0.49) 50%, transparent 95%),
+       radial-gradient(ellipse calc(2px * (2 - var(--haz-spike)) * var(--haz-spike-mul, 1)) calc(72px * var(--haz-h) * var(--haz-spike-mul, 1)) at 36% calc(100% - 3px), rgb(80, 139, 255), rgb(80, 139, 255) 40%, transparent 90%),
+       radial-gradient(ellipse calc(14px * var(--haz-spike2) * var(--haz-spike-mul, 1)) calc(28px * var(--haz-h) * var(--haz-spike-mul, 1)) at 50% calc(100% - 2px), rgba(80, 138, 220, 0.59), rgba(80, 138, 220, 0.29) 55%, transparent 96%),
+       radial-gradient(ellipse calc(1.2px * (2 - var(--haz-spike2)) * var(--haz-spike-mul, 1)) calc(85px * var(--haz-h) * var(--haz-spike-mul, 1)) at 64% calc(100% - 4px), rgb(60, 136, 255), rgb(60, 136, 255) 35%, transparent 89%),
+       radial-gradient(ellipse calc(7px * var(--haz-spike) * var(--haz-spike-mul, 1)) calc(45px * var(--haz-h) * var(--haz-spike-mul, 1)) at 78% calc(100% - 2px), rgba(90, 134, 200, 0.91), rgba(90, 134, 200, 0.45) 48%, transparent 94%),
+       radial-gradient(ellipse calc(0.6px * (2 - var(--haz-spike)) * var(--haz-spike-mul, 1)) calc(60px * var(--haz-h) * var(--haz-spike-mul, 1)) at 92% calc(100% - 3px), rgb(90, 144, 255), rgb(90, 144, 255) 42%, transparent 91%),
+       radial-gradient(ellipse calc(21px * var(--haz-spike)) calc(15px * var(--haz-spike2)) at calc(var(--haz-x) * 100%) calc(100% + 1px), rgba(255, 255, 255, 1) 0%, rgba(255, 255, 255, 0.9) 20%, rgba(255, 255, 255, 0.5) 50%, transparent 100%),
+       radial-gradient(ellipse calc(42px * var(--haz-w)) calc(40px * var(--haz-h)) at calc(var(--haz-x) * 100%) 100%, rgba(255, 255, 255, 0.3) 0%, rgba(255, 255, 255, 0.12) 25%, rgba(255, 255, 255, 0.03) 55%, transparent 80%);
+
+  pointer-events: none;
+  z-index: 3;
+  opacity: 0;
+}
+
+:root[data-tema='oscuro'] .haz.activo .haz-flor,
+:root[data-tema='oscuro'] .haz.apagando .haz-flor {
+  display: block;
+  opacity: calc(var(--haz-opacity) * var(--haz-edge) * 0.8 * var(--haz-bloom-opacity, 1) * var(--haz-strength, 1));
+  animation: haz-hue-shift-bloom-oscuro 8s ease-in-out infinite;
+}
+
+@keyframes haz-travel-oscuro {
+  0%   { --haz-x: 0.06;  --haz-w: 0.5; }
+  10%  { --haz-x: 0.15;  --haz-w: 0.8; }
+  20%  { --haz-x: 0.25;  --haz-w: 1.1; }
+  30%  { --haz-x: 0.35;  --haz-w: 1.3; }
+  40%  { --haz-x: 0.44;  --haz-w: 1.45; }
+  50%  { --haz-x: 0.5;   --haz-w: 1.5; }
+  60%  { --haz-x: 0.56;  --haz-w: 1.45; }
+  70%  { --haz-x: 0.65;  --haz-w: 1.3; }
+  80%  { --haz-x: 0.75;  --haz-w: 1.1; }
+  90%  { --haz-x: 0.85;  --haz-w: 0.8; }
+  100% { --haz-x: 0.94;  --haz-w: 0.5; }
+}
+
+@keyframes haz-edge-fade-oscuro {
+  0%    { --haz-edge: 0; }
+  12.5% { --haz-edge: 0; }
+  32.5% { --haz-edge: 1; }
+  67.5% { --haz-edge: 1; }
+  87.5% { --haz-edge: 0; }
+  100%  { --haz-edge: 0; }
+}
+
+@keyframes haz-breathe-oscuro {
+  0%, 100% { --haz-h: 0.8; }
+  25%      { --haz-h: 1.25; }
+  55%      { --haz-h: 0.85; }
+  80%      { --haz-h: 1.3; }
+}
+
+@keyframes haz-spike-oscuro {
+  0%   { --haz-spike: 0.8; }
+  25%  { --haz-spike: 1.3; }
+  50%  { --haz-spike: 0.9; }
+  75%  { --haz-spike: 1.4; }
+  100% { --haz-spike: 0.8; }
+}
+
+@keyframes haz-spike2-oscuro {
+  0%   { --haz-spike2: 1.2; }
+  25%  { --haz-spike2: 0.7; }
+  50%  { --haz-spike2: 1.4; }
+  75%  { --haz-spike2: 0.8; }
+  100% { --haz-spike2: 1.2; }
+}
+
+@keyframes haz-fade-in-oscuro {
+  to { --haz-opacity: 1; }
+}
+
+@keyframes haz-fade-out-oscuro {
+  from { --haz-opacity: 1; }
+  to { --haz-opacity: 0; }
+}
+
+@keyframes haz-hue-shift-oscuro {
+  0% { filter: hue-rotate(calc(var(--haz-hue-base, 0deg) - 0deg)) brightness(1.30) saturate(1.2); }
+  50% { filter: hue-rotate(calc(var(--haz-hue-base, 0deg) + 0deg)) brightness(1.30) saturate(1.2); }
+  100% { filter: hue-rotate(calc(var(--haz-hue-base, 0deg) - 0deg)) brightness(1.30) saturate(1.2); }
+}
+
+@keyframes haz-hue-shift-bloom-oscuro {
+  0% { filter: blur(8px) hue-rotate(calc(var(--haz-hue-base, 0deg) - 0deg)) brightness(1.30) saturate(1.2); }
+  50% { filter: blur(8px) hue-rotate(calc(var(--haz-hue-base, 0deg) + 0deg)) brightness(1.30) saturate(1.2); }
+  100% { filter: blur(8px) hue-rotate(calc(var(--haz-hue-base, 0deg) - 0deg)) brightness(1.30) saturate(1.2); }
+}
+
+:root[data-tema='oscuro'] .haz.pausado,
+:root[data-tema='oscuro'] .haz.pausado::after,
+:root[data-tema='oscuro'] .haz.pausado::before,
+:root[data-tema='oscuro'] .haz.pausado .haz-flor {
+  animation-play-state: paused !important;
+}
+
+/* Con «reducir movimiento» del sistema no hay brillo. */
+@media (prefers-reduced-motion: reduce) {
+  .haz.activo, .haz.apagando { animation: none !important; }
+  .haz::before, .haz::after, .haz .haz-flor { display: none !important; }
+}

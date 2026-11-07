@@ -2,7 +2,8 @@
   La búsqueda grande de Inicio (maqueta V64Pv4gmANPRZuJW5hTe5D; Ctrl K desde cualquier vista): encuentra
   vistas y acciones sin leer la base, sin que estorben los acentos ni las mayúsculas. Sin escribir, salen
   Recientes y las primeras 4 acciones. Se mueve con ↑ ↓, Enter abre y Esc cierra. Cada panel pone sus
-  renglones.
+  renglones. Desde el 7 de noviembre es una píldora con el brillo de Haz, y su ventanita sale como las ideas
+  del Agente IA: ella primero y luego, en fila, cada título y cada renglón (maqueta 4B6Qhre6dkK3pJgXtryyEV v3).
 -->
 <script lang="ts" module>
   export type RenglonBusqueda = { clave: string; texto: string; de?: string; icono: string; alPicar: () => void };
@@ -10,6 +11,7 @@
 
 <script lang="ts">
   import { tick } from 'svelte';
+  import Haz from './Haz.svelte';
   import Icono from './Icono.svelte';
 
   let {
@@ -26,6 +28,8 @@
 
   let texto = $state('');
   let abierta = $state(false);
+  // Ya se escribió desde que abrió: los resultados cambian sin esperar la fila.
+  let ya = $state(false);
   let marcado = $state(0);
   let campo: HTMLInputElement;
   let cuerpo = $state<HTMLDivElement | null>(null);
@@ -53,6 +57,16 @@
   });
   const todos = $derived(secciones.flatMap((s) => s.renglones));
 
+  // El lugar de cada título en la fila (la ventanita es el 0); sus renglones van justo después.
+  const lugares = $derived.by(() => {
+    let i = 1;
+    return secciones.map((s) => {
+      const lugar = i;
+      i += 1 + s.renglones.length;
+      return lugar;
+    });
+  });
+
   $effect(() => {
     void texto;
     marcado = 0;
@@ -67,6 +81,7 @@
     if (!r) return;
     texto = '';
     abierta = false;
+    ya = false;
     campo.blur();
     r.alPicar();
   }
@@ -93,60 +108,72 @@
   }
 </script>
 
-<div class="buscador">
-  <label class="campo">
-    <Icono nombre="r-buscar" tamano={18} />
-    <input
-      bind:this={campo}
-      bind:value={texto}
-      type="text"
-      autocomplete="off"
-      placeholder="Busca una vista o una acción…"
-      role="combobox"
-      aria-label="Busca una vista o una acción"
-      aria-controls="resultados-busqueda"
-      aria-expanded={abierta}
-      onfocus={() => (abierta = true)}
-      oninput={() => (abierta = true)}
-      onblur={() => setTimeout(() => (abierta = false), 120)}
-      onkeydown={alTeclear}
-    />
-    <kbd>Ctrl</kbd><kbd>K</kbd>
-  </label>
+<div class="buscador" class:abierta class:ya>
+  <Haz>
+    <label class="campo">
+      <Icono nombre="r-buscar" tamano={18} />
+      <input
+        bind:this={campo}
+        bind:value={texto}
+        type="text"
+        autocomplete="off"
+        placeholder="Busca una vista o una acción…"
+        role="combobox"
+        aria-label="Busca una vista o una acción"
+        aria-controls="resultados-busqueda"
+        aria-expanded={abierta}
+        onfocus={() => {
+          ya = false;
+          abierta = true;
+        }}
+        oninput={() => {
+          abierta = true;
+          ya = true;
+        }}
+        onblur={() =>
+          setTimeout(() => {
+            abierta = false;
+            ya = false;
+          }, 120)}
+        onkeydown={alTeclear}
+      />
+      <kbd>Ctrl</kbd><kbd>K</kbd>
+    </label>
+  </Haz>
 
-  {#if abierta}
-    <div class="lista">
-      <div class="lista-cuerpo" id="resultados-busqueda" bind:this={cuerpo} role="listbox" aria-label="Resultados">
-        {#if !todos.length}
-          <div class="vacia">No hay una vista ni una acción con «{texto.trim()}».</div>
-        {/if}
-        {#each secciones as s (s.titulo)}
-          <div class="etiqueta seccion">{s.titulo}</div>
-          {#each s.renglones as r (r.texto)}
-            {@const i = todos.indexOf(r)}
-            <button
-              type="button"
-              class="renglon"
-              class:marcado={i === marcado}
+  <!-- Siempre está puesta: cerrada no se ve ni se puede picar, y así puede salir en fila al abrir. -->
+  <div class="lista aparece" style:--i={0}>
+    <div class="lista-cuerpo" id="resultados-busqueda" bind:this={cuerpo} role="listbox" aria-label="Resultados">
+      {#if !todos.length}
+        <div class="vacia">No hay una vista ni una acción con «{texto.trim()}».</div>
+      {/if}
+      {#each secciones as s, si (s.titulo)}
+        <div class="etiqueta seccion aparece" style:--i={lugares[si]}>{s.titulo}</div>
+        {#each s.renglones as r, j (r.texto)}
+          {@const i = todos.indexOf(r)}
+          <button
+            type="button"
+            class="renglon aparece"
+            style:--i={lugares[si] + 1 + j}
+            class:marcado={i === marcado}
               role="option"
-              aria-selected={i === marcado}
-              onmousemove={() => (marcado = i)}
-              onmousedown={(e) => {
-                e.preventDefault();
-                elegir(r);
-              }}
-            >
-              <span class="icono"><Icono nombre={r.icono} tamano={18} /></span>
-              <span>{r.texto}</span>
-              {#if r.de}<span class="de">— {r.de}</span>{/if}
-              <span class="ir"><Icono nombre="r-derecha" tamano={14} /></span>
-            </button>
-          {/each}
+            aria-selected={i === marcado}
+            onmousemove={() => (marcado = i)}
+            onmousedown={(e) => {
+              e.preventDefault();
+              elegir(r);
+            }}
+          >
+            <span class="icono"><Icono nombre={r.icono} tamano={18} /></span>
+            <span>{r.texto}</span>
+            {#if r.de}<span class="de">— {r.de}</span>{/if}
+            <span class="ir"><Icono nombre="r-derecha" tamano={14} /></span>
+          </button>
         {/each}
-      </div>
-      <div class="lista-pie"><span>↑ ↓ para moverte</span><span>↵ para abrir</span><span>Esc para cerrar</span></div>
+      {/each}
     </div>
-  {/if}
+    <div class="lista-pie"><span>↑ ↓ para moverte</span><span>↵ para abrir</span><span>Esc para cerrar</span></div>
+  </div>
 </div>
 
 <style>
@@ -157,21 +184,21 @@
     margin: 30px auto 0;
   }
 
+  /* Como la píldora del Agente IA: 48 px, sin aro, el borde de las tarjetas y, con foco, el fuerte. */
   .campo {
-    height: 54px;
+    height: 48px;
     display: flex;
     align-items: center;
     gap: 10px;
     padding: 0 14px 0 18px;
-    border: 1px solid var(--linea-fuerte);
-    border-radius: 14px;
+    border: 1px solid var(--borde-tarjeta);
+    border-radius: 999px;
     background: var(--solido);
-    box-shadow: 0 0 0 5px var(--chip);
     color: var(--tenue);
   }
 
   .campo:focus-within {
-    border-color: var(--texto);
+    border-color: var(--linea-fuerte);
   }
 
   input {
@@ -282,5 +309,40 @@
     font-size: 13.5px;
     font-weight: 400;
     color: var(--suave);
+  }
+
+  /* La ventanita, como las ideas del Agente IA: sube 10 px desde 97 % con su resorte, a 220 ms + 80 ms × i.
+     Al cerrar se van juntos en 0.15 s. */
+  .buscador .aparece {
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(10px) scale(0.97);
+    transition:
+      opacity 0.15s ease,
+      transform 0.15s ease,
+      visibility 0s linear 0.15s;
+  }
+
+  .buscador.abierta .aparece {
+    --espera: calc(220ms + var(--i) * 80ms);
+    opacity: 1;
+    visibility: visible;
+    transform: none;
+    transition:
+      opacity 0.35s ease var(--espera),
+      transform 0.45s cubic-bezier(0.175, 0.885, 0.32, 1.275) var(--espera),
+      visibility 0s linear var(--espera);
+  }
+
+  /* Mientras escribes, los resultados cambian sin esperar. */
+  .buscador.abierta.ya .aparece {
+    transition: none;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .buscador .aparece,
+    .buscador.abierta .aparece {
+      transition: none !important;
+    }
   }
 </style>

@@ -12,6 +12,7 @@
   import type { SvelteSet } from 'svelte/reactivity';
   import Boton from '../../../diseno/Boton.svelte';
   import BotonCuadro from '../../../diseno/BotonCuadro.svelte';
+  import Haz from '../../../diseno/Haz.svelte';
   import Icono from '../../../diseno/Icono.svelte';
   import IconoCategoria from '../../../diseno/IconoCategoria.svelte';
   import NotaTabla from '../../../diseno/NotaTabla.svelte';
@@ -110,15 +111,17 @@
 {/snippet}
 
 <div class="herramientas">
-  <label class="buscador">
-    <Icono nombre="buscar" tamano={16} />
-    <input
-      type="search"
-      aria-label="Buscar productos"
-      placeholder="Busca por nombre, categoría o ingrediente..."
-      bind:value={busqueda}
-    />
-  </label>
+  <Haz>
+    <label class="buscador">
+      <Icono nombre="buscar" tamano={16} />
+      <input
+        type="search"
+        aria-label="Buscar productos"
+        placeholder="Busca por nombre, categoría o ingrediente..."
+        bind:value={busqueda}
+      />
+    </label>
+  </Haz>
   <FiltroCategorias categorias={menu.categorias} productos={menu.productos} {filtro} alElegir={alFiltrar} />
   <span class="crece"></span>
   <span class="etiqueta">{plural(mostrados.length, 'PRODUCTO', 'PRODUCTOS')}</span>
@@ -224,6 +227,8 @@
     gap: 12px;
   }
 
+  /* Píldora con el brillo de Haz, como la de Inicio (maqueta 4B6Qhre6dkK3pJgXtryyEV v3); se queda en 40 px,
+     al alto de «Todas las categorías». */
   .buscador {
     width: 380px;
     height: 40px;
@@ -231,10 +236,14 @@
     align-items: center;
     gap: 10px;
     padding: 0 14px;
-    border: 1px solid var(--linea);
-    border-radius: 12px;
+    border: 1px solid var(--borde-tarjeta);
+    border-radius: 999px;
     background: var(--solido);
     color: var(--tenue);
+  }
+
+  .buscador:focus-within {
+    border-color: var(--linea-fuerte);
   }
 
   .buscador input {

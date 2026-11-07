@@ -1334,7 +1334,7 @@ select is(
 -- ─── Tu menú en línea: «Hago envíos» ──────────────────────────────────────────
 
 select tests.authenticate_as('gerente_a');
-select public.guardar_menu_en_linea('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 'oscuro', '#B3261E', 18.50, false);
+select public.guardar_menu_en_linea('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 'oscuro', '#B3261E', false);
 reset role;
 
 select is(
@@ -1344,8 +1344,8 @@ select is(
 );
 
 select tests.authenticate_as('gerente_a');
-select public.guardar_menu_en_linea('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 'oscuro', '#B3261E', 18.50, true);
-select public.guardar_menu_en_linea('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 'claro', null, null);
+select public.guardar_menu_en_linea('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 'oscuro', '#B3261E', true);
+select public.guardar_menu_en_linea('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 'claro', null);
 reset role;
 
 select is(

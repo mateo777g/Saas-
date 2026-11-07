@@ -234,14 +234,17 @@ begin
 
   insert into public.restaurantes (
     id, nombre, slug, licencia_activa, licencia_inicio, licencia_fin,
-    telefono, direccion, logo_ruta, menu_color, tipo_cambio_usd
+    telefono, direccion, logo_ruta, menu_color
   ) values
     (a, 'Restaurante A', 'restaurante-a', true, hoy - 30, hoy + 30,
-     '2221234567', 'Av. Juárez 123, Centro', tests.ruta(a, 'logo', 1), '#B3261E', 18.50),
-    (b, 'Restaurante B', 'restaurante-b', true, hoy - 30, hoy + 30, null, null, null, null, null),
-    (c, 'Restaurante C', 'restaurante-c', false, hoy - 30, hoy + 30, null, null, null, null, null),
-    (d, 'Restaurante D', 'restaurante-d', true, hoy - 31, hoy - 1, null, null, null, null, null),
-    (e, 'Restaurante E', 'restaurante-e', true, hoy - 30, hoy, null, null, null, null, null);
+     '2221234567', 'Av. Juárez 123, Centro', tests.ruta(a, 'logo', 1), '#B3261E'),
+    (b, 'Restaurante B', 'restaurante-b', true, hoy - 30, hoy + 30, null, null, null, null),
+    (c, 'Restaurante C', 'restaurante-c', false, hoy - 30, hoy + 30, null, null, null, null),
+    (d, 'Restaurante D', 'restaurante-d', true, hoy - 31, hoy - 1, null, null, null, null),
+    (e, 'Restaurante E', 'restaurante-e', true, hoy - 30, hoy, null, null, null, null);
+
+  -- El dólar, el mismo para todos desde Mi menú (migración mi_menu): a 18.50, para las cuentas de abajo.
+  update public.tipo_de_cambio set pesos = 18.50;
 
   insert into public.miembros (restaurante_id, usuario_id, nombre, roles, activo) values
     (a, tests.get_supabase_uid('gerente_a'), 'Gerente A', '{gerente}', true),
@@ -381,17 +384,16 @@ select ok(
 select ok(
   has_column_privilege('authenticated', 'public.restaurantes', 'menu_tema', 'SELECT')
   and has_column_privilege('authenticated', 'public.restaurantes', 'menu_color', 'SELECT')
-  and has_column_privilege('authenticated', 'public.restaurantes', 'tipo_cambio_usd', 'SELECT')
   and not exists (
     select 1 from information_schema.columns
-    where table_schema = 'public' and table_name = 'restaurantes' and column_name = 'pagina_web'),
-  'El tema, el color y el tipo de cambio se leen; la página web ya no existe'
+    where table_schema = 'public' and table_name = 'restaurantes' and column_name in ('pagina_web', 'tipo_cambio_usd')),
+  'El tema y el color se leen; la página web y el tipo de cambio de cada restaurante (desde Mi menú) ya no existen'
 );
 
 select is_empty(
   $$ select f from unnest(array[
        'public.guardar_restaurante(uuid, text, text, text, text, jsonb)',
-       'public.guardar_menu_en_linea(uuid, text, text, numeric, boolean)',
+       'public.guardar_menu_en_linea(uuid, text, text, boolean)',
        'public.estado_menu_en_linea(uuid)',
        'public.agregar_cartel(uuid, text)',
        'public.cambiar_cartel(bigint, text)',
@@ -432,9 +434,9 @@ select throws_ok(
 );
 
 select throws_ok(
-  $$ update public.restaurantes set tipo_cambio_usd = 0 where slug = 'restaurante-b' $$,
+  $$ update public.tipo_de_cambio set pesos = 0 $$,
   '23514', null,
-  'El tipo de cambio es mayor que cero'
+  'El tipo de cambio de todos es mayor que cero'
 );
 
 select throws_ok(
@@ -689,11 +691,11 @@ select is(
 );
 
 select ok(
-  tests.producto('restaurante-b', 511) ->> 'precio_usd' is null
+  (tests.producto('restaurante-b', 511) ->> 'precio_usd')::numeric = 1.35
   and public.menu_publico('restaurante-b') ->> 'estado' is null
   and public.menu_publico('restaurante-b') -> 'horario' = '[]'
   and public.menu_publico('restaurante-e') -> 'carteles' = '[]',
-  'Sin tipo de cambio no hay dólares; sin horario, ni estado ni días; sin carteles, una lista vacía'
+  'B también trae dólares, con el tipo de cambio de todos (Mi menú); sin horario, ni estado ni días; sin carteles, una lista vacía'
 );
 
 select throws_ok(
@@ -903,47 +905,47 @@ select throws_ok(
 select tests.authenticate_as('gerente_a');
 
 select lives_ok(
-  $$ select public.guardar_menu_en_linea('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 'oscuro', ' #f2b705 ', 17.256) $$,
-  'Gerente A guarda el tema, el color y el tipo de cambio'
+  $$ select public.guardar_menu_en_linea('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 'oscuro', ' #f2b705 ') $$,
+  'Gerente A guarda el tema y el color'
 );
 
 select results_eq(
-  $$ select menu_tema, menu_color, tipo_cambio_usd from public.restaurantes $$,
-  $$ values ('oscuro'::text, '#F2B705'::text, 17.26::numeric) $$,
-  'El color se guarda en mayúsculas y el tipo de cambio al centavo'
+  $$ select menu_tema, menu_color from public.restaurantes $$,
+  $$ values ('oscuro'::text, '#F2B705'::text) $$,
+  'El color se guarda en mayúsculas'
 );
 
 select lives_ok(
-  $$ select public.guardar_menu_en_linea('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 'claro', '', null) $$,
-  'Y los puede quitar'
+  $$ select public.guardar_menu_en_linea('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 'claro', '') $$,
+  'Y lo puede quitar'
 );
 
 select results_eq(
-  $$ select menu_tema, menu_color, tipo_cambio_usd from public.restaurantes $$,
-  $$ values ('claro'::text, null::text, null::numeric) $$,
-  'Sin color, la barra neutra; sin tipo de cambio, solo pesos'
+  $$ select menu_tema, menu_color from public.restaurantes $$,
+  $$ values ('claro'::text, null::text) $$,
+  'Sin color, la barra neutra'
 );
 
 select throws_ok(
-  $$ select public.guardar_menu_en_linea('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 'gris', null, null) $$,
+  $$ select public.guardar_menu_en_linea('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 'gris', null) $$,
   '22023', 'El menú se ve claro u oscuro',
   'El tema es claro u oscuro'
 );
 
 select throws_ok(
-  $$ select public.guardar_menu_en_linea('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 'claro', 'rojo', null) $$,
+  $$ select public.guardar_menu_en_linea('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 'claro', 'rojo') $$,
   '22023', 'Ese color no se entiende; escríbelo como #B3261E',
   'Un color que no es #RRGGBB no se guarda'
 );
 
 select throws_ok(
-  $$ select public.guardar_menu_en_linea('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 'claro', null, 0) $$,
-  '22023', 'Escribe a cuánto tomas el dólar, como 18.50',
-  'Ni un tipo de cambio de cero'
+  $$ select public.guardar_menu_en_linea('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 'claro', null, 18.50, false) $$,
+  '42883', null,
+  'Ya no recibe el dólar (Mi menú): ese «Guardar» ya no existe'
 );
 
 select throws_ok(
-  $$ select public.guardar_menu_en_linea('bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb', 'claro', null, null) $$,
+  $$ select public.guardar_menu_en_linea('bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb', 'claro', null) $$,
   '42501', null,
   'Gerente A no cambia el menú de B'
 );
@@ -952,7 +954,7 @@ select tests.authenticate_as('mesero_a');
 select tests.en_aparato('5e5e5e5e-0000-4000-8000-00000000000a');
 
 select throws_ok(
-  $$ select public.guardar_menu_en_linea('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 'oscuro', null, null) $$,
+  $$ select public.guardar_menu_en_linea('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 'oscuro', null) $$,
   '42501', null,
   'Ni Mesero A'
 );
@@ -1162,8 +1164,8 @@ select ok(
 
 select results_eq(
   $$ select nombre_en, descripcion_en from public.productos where nombre = 'Taco de bistec' $$,
-  $$ values ('Steak taco'::text, 'Grilled'::text) $$,
-  'Y nace con él'
+  $$ values ('Steak taco'::text, null::text) $$,
+  'Y nace con él; sin descripción en español no lleva la de inglés (Mi menú)'
 );
 
 select is(

@@ -3,7 +3,7 @@
   V64Pv4gmANPRZuJW5hTe5D): pegada al borde izquierdo con una línea de 1 px, de 248 de ancho o de 64 con
   solo íconos (el botón junto al logo; lo recuerda el Marco). Arriba, la estrella con FRAGMENTLESS, cuya
   línea de abajo queda a la altura de la de la barra de arriba. En medio, la búsqueda chica si el panel
-  la tiene y las opciones, por grupos ({ grupo: 'OPERACIÓN' }), con la activa en tinta. Abajo, las
+  la tiene y las opciones, por grupos ({ grupo: 'OPERACIÓN' }), con la activa en gris. Abajo, las
   acciones (Ayuda, Ajustes) y la persona: su inicial, su nombre con una línea debajo y Cerrar sesión. Si
   el pie trae alPulsar, el nombre es un botón (el gerente abre ahí su Perfil).
 
@@ -254,9 +254,9 @@
     background: var(--chip);
   }
 
+  /* La activa, en el gris del dock de Mi menú (8 nov 2026; antes iba en tinta). */
   .opcion[aria-current='page'] {
-    background: var(--tinta);
-    color: var(--sobre-tinta);
+    background: var(--chip);
     font-weight: 600;
   }
 
@@ -366,5 +366,49 @@
 
   .plegada .persona-boton {
     flex: none;
+  }
+
+  /* Plegada, cada botón se mueve como los del dock de Mi menú (8 nov 2026): al pasar el mouse crece a
+     1.1 y sube 2 px con sus resortes (base.css), y se aprieta a 0.95 al picarle. Abierta, lo mismo pero
+     solo el ícono (y la inicial de la persona): el renglón se queda quieto. */
+  .plegada :is(.opcion, .buscar-mini, .cuadro, button.persona-boton) {
+    transition:
+      background-color 0.15s cubic-bezier(0.4, 0, 0.2, 1),
+      color 0.15s cubic-bezier(0.4, 0, 0.2, 1),
+      scale 0.548s var(--resorte-escala),
+      translate 0.65s var(--resorte-sube);
+  }
+
+  .plegada :is(.opcion, .buscar-mini, .cuadro, button.persona-boton):is(:hover, :focus-visible) {
+    scale: 1.1;
+    translate: 0 -2px;
+  }
+
+  .plegada :is(.opcion, .buscar-mini, .cuadro, button.persona-boton):active {
+    scale: 0.95;
+  }
+
+  .lateral:not(.plegada) :is(.opcion, .buscar-mini, .cuadro) > :global(svg),
+  .lateral:not(.plegada) .inicial {
+    transition:
+      scale 0.548s var(--resorte-escala),
+      translate 0.65s var(--resorte-sube);
+  }
+
+  .lateral:not(.plegada) :is(.opcion, .buscar-mini, .cuadro):is(:hover, :focus-visible) > :global(svg),
+  .lateral:not(.plegada) button.persona-boton:is(:hover, :focus-visible) .inicial {
+    scale: 1.1;
+    translate: 0 -2px;
+  }
+
+  .lateral:not(.plegada) :is(.opcion, .buscar-mini, .cuadro):active > :global(svg),
+  .lateral:not(.plegada) button.persona-boton:active .inicial {
+    scale: 0.95;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .lateral * {
+      transition: none !important;
+    }
   }
 </style>

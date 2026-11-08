@@ -1,9 +1,10 @@
 // Lo que lee el panel del distribuidor (libreta 8, paso 2). Su nombre y si está de baja salen de
 // su fila en distribuidores, la única que su RLS le deja leer; sus 3 cifras y su lista, de
-// distribuidor_resumen() y distribuidor_clientes() (migración distribuidor_lectura), que solo le
-// responden mientras esté activo. Nada cambia datos y la app no cuenta nada.
+// distribuidor_resumen() y distribuidor_clientes() (migración distribuidor_lectura), y sus gráficas,
+// de distribuidor_estadisticas() (migración estadisticas_distribuidor, 8 de noviembre de 2026), que
+// solo le responden mientras esté activo. Nada cambia datos y la app no cuenta nada.
 import { esDeRed, mensajeDeError } from './errores';
-import type { Cliente, Lectura, Resumen } from './panel';
+import type { AltaMes, Cliente, Estadisticas, Lectura, Resumen } from './panel';
 import { supabase } from './supabase';
 
 // Su fila en distribuidores: lo que sale al pie de su barra y si ve su panel o la pantalla de baja.
@@ -15,6 +16,9 @@ export type ClienteDistribuidor = Omit<Cliente, 'distribuidor_id' | 'distribuido
 export type DatosDistribuidor = {
   resumen: Lectura<Resumen>;
   clientes: Lectura<ClienteDistribuidor[]>;
+  // Las dos salen de la misma lectura, distribuidor_estadisticas: si falla, las dos dicen que no se pudo.
+  estadisticas: Lectura<Estadisticas>;
+  altas: Lectura<AltaMes[]>;
 };
 
 // Su fila, o nada si la cuenta no está ligada a ningún distribuidor. Si no se pudo leer, lanza el
@@ -37,9 +41,15 @@ async function leer<T>(funcion: string): Promise<Lectura<T>> {
 // Todo lo que muestran Inicio y Clientes, de una vez: al abrir, con Actualizar y cada vez que
 // regresa a la pestaña. Cada parte por separado: si una falla, la otra se ve igual.
 export async function leerPanelDistribuidor(): Promise<DatosDistribuidor> {
-  const [resumen, clientes] = await Promise.all([
+  const [resumen, clientes, todo] = await Promise.all([
     leer<Resumen[]>('distribuidor_resumen'),
     leer<ClienteDistribuidor[]>('distribuidor_clientes'),
+    leer<Estadisticas & { altas: AltaMes[] }>('distribuidor_estadisticas'),
   ]);
-  return { resumen: resumen.ok ? { ok: true, datos: resumen.datos[0] } : resumen, clientes };
+  return {
+    resumen: resumen.ok ? { ok: true, datos: resumen.datos[0] } : resumen,
+    clientes,
+    estadisticas: todo,
+    altas: todo.ok ? { ok: true, datos: todo.datos.altas } : todo,
+  };
 }

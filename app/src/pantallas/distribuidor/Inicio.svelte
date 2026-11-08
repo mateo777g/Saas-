@@ -8,22 +8,28 @@
 
   Desde el 8 de noviembre de 2026 (el developer: «todo, las animaciones, lo nuevo de los atajos, la barra de
   búsqueda, los esqueletos») arriba va lo del Inicio de Fragmentless: el saludo que sube, la búsqueda grande
-  (Ctrl K) y las columnas en fila, y lo de antes queda abajo, bajo «Resumen». Por encuesta: el saludo es «Hola,
-  Josué.» sin fecha ni «Buenos días» (los daría Postgres y su panel no los lee), y las columnas son solo Abrir y
-  Recientes, porque no tiene acciones. La primera vez que lee, las tarjetas llevan sus esqueletos.
+  (Ctrl K) y las columnas en fila, y lo de antes queda abajo, bajo «Resumen». Por encuesta, las columnas son solo
+  Abrir y Recientes, porque no tiene acciones. La primera vez que lee, las tarjetas llevan sus esqueletos.
+
+  El mismo día, «quiero que en el panel de mi distribuidor haya gráficas, como las mías»: sus 3 cifras se volvieron
+  las 5 gráficas del Inicio de Fragmentless (fragmentless/inicio/Estadisticas, con distribuidor_estadisticas), con
+  el gasto de IA de sus clientes (encuesta), y Tus clientes y Vencen pronto quedaron debajo, lado a lado. Esa
+  lectura trae la fecha y la hora de México: el saludo es «Buenas tardes, Josué.» con su fecha (encuesta); sale
+  cuando llega y, si no se pudo leer, dice «Hola, Josué.» sin fecha.
 -->
 <script lang="ts">
   import Boton from '../../diseno/Boton.svelte';
   import Buscador, { type RenglonBusqueda } from '../../diseno/Buscador.svelte';
   import Columnas, { type ItemColumna } from '../../diseno/Columnas.svelte';
   import Esqueleto from '../../diseno/Esqueleto.svelte';
+  import Estadisticas from '../fragmentless/inicio/Estadisticas.svelte';
   import EstadoPunto from '../../diseno/EstadoPunto.svelte';
   import Icono from '../../diseno/Icono.svelte';
   import NotaTabla from '../../diseno/NotaTabla.svelte';
   import Tabla from '../../diseno/Tabla.svelte';
   import Tarjeta from '../../diseno/Tarjeta.svelte';
   import type { DatosDistribuidor } from '../../lib/distribuidor';
-  import { fecha, plural, vigencia } from '../../lib/formato';
+  import { diaConNombre, fecha, saludoPorHora, vigencia } from '../../lib/formato';
   import { urgente } from '../../lib/panel';
   import { leerRecientes, VISTAS, type VistaDistribuidor } from '../../lib/vistasDistribuidor';
 
@@ -65,31 +71,10 @@
 
   let busqueda = $state('');
 
-  // Las 3 cifras: el valor y su nota. Mientras se lee la primera vez, vacías.
-  const cifras = $derived.by(() => {
-    const r = datos?.resumen;
-    if (!r) return null;
-    if (!r.ok) return [{ valor: '—', nota: NO_SE_PUDO }, { valor: '—', nota: NO_SE_PUDO }, { valor: '—', nota: NO_SE_PUDO }];
-    const c = r.datos;
-    return [
-      { valor: String(c.funcionan), nota: `de ${plural(c.total, 'cliente', 'clientes')}` },
-      {
-        valor: String(c.vencen_pronto),
-        nota: c.vencen_pronto === 0 ? 'Nada por vencer esta semana' : plural(c.vencen_hoy, 'vence hoy', 'vencen hoy'),
-      },
-      {
-        valor: String(c.sin_funcionar),
-        nota:
-          c.sin_funcionar === 0
-            ? 'Ninguno pausado ni vencido'
-            : `${plural(c.vencidos, 'vencido', 'vencidos')} · ${plural(c.pausados, 'pausado', 'pausados')}`,
-      },
-    ];
-  });
-
-  const ETIQUETAS_CIFRAS = ['FUNCIONAN HOY', 'VENCEN EN 7 DÍAS', 'SIN FUNCIONAR'];
-  // El largo de cada nota en su esqueleto.
-  const ANCHOS_NOTA = ['62%', '74%', '68%'];
+  // La fecha y la hora de México, de distribuidor_estadisticas: nunca el reloj del aparato.
+  const estadisticas = $derived(datos?.estadisticas.ok ? datos.estadisticas.datos : null);
+  const hora = $derived(estadisticas?.hora ?? null);
+  const saludo = $derived(estadisticas ? saludoPorHora(Number(estadisticas.hora.slice(0, 2))) : 'Hola');
 
   // Tus clientes, filtrados por nombre o slug.
   const suyos = $derived.by(() => {
@@ -108,24 +93,26 @@
 
 <main class="vista">
 <div class="inicio">
+  <!-- Guarda su lugar mientras lee, para que nada brinque; el saludo sube cuando llega. -->
   <div class="saludo">
-    <h1>Hola, {primerNombre}.<span class="debajo">Así van tus clientes.</span></h1>
+    {#if datos}
+      <div class="sube">
+        <span class="etiqueta fecha">{estadisticas ? diaConNombre(estadisticas.hoy) : ''}</span>
+        <h1>{saludo}, {primerNombre}.<span class="debajo">Así van tus clientes.</span></h1>
+      </div>
+    {/if}
   </div>
 
   <Buscador bind:this={buscador} {vistas} acciones={[]} recientes={recientes.map(deVista)} placeholder="Busca una vista…" />
   <Columnas {abrir} recientes={deRecientes} entra />
 
-  <div class="resumen-titulo"><h2>Resumen</h2></div>
-  {#if !datos}<span class="solo-lector">Leyendo tus clientes…</span>{/if}
+  <div class="resumen-titulo">
+    <h2>Resumen</h2>
+    {#if hora}<span class="hora">Actualizado {hora}</span>{/if}
+  </div>
+  <Estadisticas {datos} notaGasto="Lo que gastan tus clientes en IA; se descuenta de tu parte" quienes={['cliente', 'clientes']} />
 
 <div class="rejilla" aria-busy={!datos}>
-  {#each ETIQUETAS_CIFRAS as etiqueta, i (etiqueta)}
-    <Tarjeta como="section" class="tarjeta cifra">
-      <span class="etiqueta">{etiqueta}</span>
-      <span class="valor">{#if !datos}<Esqueleto ancho="44px" alto="24px" />{:else}{cifras?.[i].valor ?? ''}{/if}</span>
-      <span class="nota">{#if !datos}<Esqueleto ancho={ANCHOS_NOTA[i]} alto="10px" />{:else}{cifras?.[i].nota ?? ''}{/if}</span>
-    </Tarjeta>
-  {/each}
 
   <Tarjeta como="section" class="tarjeta suyos" aria-label="Tus clientes">
     <div class="fila-titulo">
@@ -240,13 +227,26 @@
     flex-direction: column;
   }
 
-  /* Sube como en el Inicio del gerente. */
+  /* El lugar del saludo, de su alto aunque todavía no llegue (la fecha, 12 px y las dos líneas). */
   .saludo {
+    min-height: 113px;
+  }
+
+  /* Sube como en el Inicio del gerente, en cuanto llega. */
+  .sube {
     display: flex;
     flex-direction: column;
     align-items: center;
+    gap: 12px;
     text-align: center;
     animation: saludo-sube 0.55s cubic-bezier(0.22, 1, 0.36, 1) 0.1s both;
+  }
+
+  /* En la letra de la fecha del gerente. */
+  .fecha {
+    min-height: 14px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
   }
 
   @keyframes saludo-sube {
@@ -257,7 +257,7 @@
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .saludo {
+    .sube {
       animation: none;
     }
   }
@@ -278,7 +278,18 @@
   }
 
   .resumen-titulo {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
     margin: 56px 0 14px;
+  }
+
+  .hora {
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 400;
+    color: var(--tenue);
+    white-space: nowrap;
   }
 
   h2 {
@@ -287,12 +298,13 @@
     font-weight: 700;
   }
 
-  /* Lo de antes: la rejilla de la maqueta del 12 de octubre, ahora del alto de lo que tiene. */
+  /* Debajo de las gráficas, Tus clientes y Vencen pronto lado a lado, como Tus distribuidores y Vencen pronto en
+     el Inicio de Fragmentless. Por dentro, como estaban. */
   .rejilla {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr)) minmax(0, 1.3fr);
-    grid-template-rows: 120px auto;
-    gap: 16px;
+    grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
+    gap: 12px;
+    margin-top: 12px;
   }
 
   .rejilla > :global(.tarjeta) {
@@ -301,44 +313,11 @@
     padding: 20px;
   }
 
-  .rejilla > :global(.cifra) {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    padding: 18px 20px;
-  }
-
-  .rejilla > :global(.suyos) {
-    grid-column: 1 / span 3;
-    grid-row: 2;
-    display: flex;
-    flex-direction: column;
-    gap: 14px;
-  }
-
+  .rejilla > :global(.suyos),
   .rejilla > :global(.pronto) {
-    grid-column: 4;
-    grid-row: 1 / span 2;
     display: flex;
     flex-direction: column;
     gap: 14px;
-  }
-
-  .valor {
-    font-size: 26px;
-    font-weight: 800;
-    letter-spacing: -0.5px;
-    line-height: 1.15;
-    min-height: 1.15em;
-  }
-
-  .nota {
-    font-size: 12.5px;
-    font-weight: 500;
-    color: var(--suave);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
   }
 
   .titulo-tarjeta {

@@ -4,7 +4,8 @@
   Funcionan hoy y Sin funcionar dibujan sus fotos de los últimos 30 días y, mientras no haya al menos dos
   días, «Aún sin historia». Vencen en 7 días mira hacia adelante. Sin funcionar va en rojo si hay alguno.
   Todo sale de Postgres ya contado (panel_estadisticas, panel_resumen, panel_altas_por_mes): aquí solo se
-  escribe y se dibuja. La primera vez que lee, cada tarjeta lleva su esqueleto (el valor, la gráfica y la
+  escribe y se dibuja. Desde el 8 de noviembre de 2026 también las dibuja el Inicio del distribuidor, con sus
+  clientes (distribuidor_estadisticas) y sus palabras. La primera vez que lee, cada tarjeta lleva su esqueleto (el valor, la gráfica y la
   nota; regla de diseño del 8 nov 2026); si no pudo, cada valor dice «—»: nunca un 0 inventado.
 -->
 <script lang="ts">
@@ -13,9 +14,21 @@
   import Esqueleto from '../../../diseno/Esqueleto.svelte';
   import { ejeEntero, escala, SIN_MARCAS } from '../../../lib/ejes';
   import { diaCorto, diasEntre, dolares, mesCorto, plural, sumarDias } from '../../../lib/formato';
-  import type { DatosPanel } from '../../../lib/panel';
+  import type { AltaMes, Estadisticas, Lectura, Resumen } from '../../../lib/panel';
 
-  let { datos }: { datos: DatosPanel | null } = $props();
+  // Lo que necesita, del panel de Fragmentless o del distribuidor; null mientras lee la primera vez.
+  type Datos = { estadisticas: Lectura<Estadisticas>; resumen: Lectura<Resumen>; altas: Lectura<AltaMes[]> };
+
+  let {
+    datos,
+    notaGasto = 'Lo que le pagas a OpenAI por todos tus clientes',
+    quienes = ['restaurante', 'restaurantes'],
+  }: {
+    datos: Datos | null;
+    // El distribuidor: «Lo que gastan tus clientes en IA» y «de 12 clientes».
+    notaGasto?: string;
+    quienes?: [string, string];
+  } = $props();
 
   const NO_SE_PUDO = 'No se pudo cargar.';
   const ANCHO_CHICA = 280;
@@ -94,7 +107,7 @@
 
   // Si no se pudieron leer las fotos, la nota no promete nada de ellas.
   const hasta = $derived(!e ? '' : conHistoria ? ' · últimos 30 días' : ' · se llena con una foto al día');
-  const notaFunciona = $derived(r ? `de ${plural(r.total, 'restaurante', 'restaurantes')}${hasta}` : datos ? NO_SE_PUDO : '');
+  const notaFunciona = $derived(r ? `de ${plural(r.total, quienes[0], quienes[1])}${hasta}` : datos ? NO_SE_PUDO : '');
   const notaVencen = $derived(
     !r
       ? datos
@@ -136,7 +149,7 @@
       ejeX={gasto?.ejeX ?? []}
     />
     {/if}
-    <span class="nota">{#if leyendo}<Esqueleto ancho="46%" alto="10px" />{:else}{gasto ? 'Lo que le pagas a OpenAI por todos tus clientes' : NO_SE_PUDO}{/if}</span>
+    <span class="nota">{#if leyendo}<Esqueleto ancho="46%" alto="10px" />{:else}{gasto ? notaGasto : NO_SE_PUDO}{/if}</span>
   </div>
 
   <div class="tarjeta">

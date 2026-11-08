@@ -17,6 +17,7 @@
   import { onMount } from 'svelte';
   import BarraArriba from '../diseno/BarraArriba.svelte';
   import Boton from '../diseno/Boton.svelte';
+  import BotonCuadro from '../diseno/BotonCuadro.svelte';
   import Marco from '../diseno/Marco.svelte';
   import { leerCuenta, leerPanelDistribuidor, type Cuenta, type DatosDistribuidor } from '../lib/distribuidor';
   import { plural } from '../lib/formato';
@@ -90,6 +91,10 @@
     return { texto: datos.resumen.deRed ? 'Sin conexión' : 'No se pudo leer', vivo: false };
   });
 
+  // La hora de la última lectura, junto al botón cuadrado de Inicio, como en el panel de Fragmentless. La da
+  // Postgres; sin esa lectura, no sale.
+  const hora = $derived(datos?.estadisticas.ok ? datos.estadisticas.datos.hora : null);
+
   function elegir(valor: string) {
     vista = valor as Vista;
   }
@@ -151,7 +156,11 @@
   >
 
     <BarraArriba titulo={TITULOS[vista]} {estado}>
-      {#if vista !== 'ajustes'}
+      <!-- En Inicio, el botón cuadrado chico, como en el Inicio del gerente y el de Fragmentless (8 nov 2026). -->
+      {#if vista === 'inicio'}
+        {#if hora}<span class="hora">Actualizado {hora}</span>{/if}
+        <BotonCuadro icono="r-actualizar" ayuda="Actualizar" apagado={leyendo} onclick={leer} />
+      {:else if vista !== 'ajustes'}
         <Boton etiqueta="Actualizar" icono="actualizar" apagado={leyendo} onclick={leer} />
       {/if}
     </BarraArriba>
@@ -171,6 +180,14 @@
 {/if}
 
 <style>
+  .hora {
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 400;
+    color: var(--tenue);
+    white-space: nowrap;
+  }
+
   /* Como en el panel de Fragmentless. */
   .cuerpo {
     position: absolute;

@@ -4,6 +4,10 @@
   las del restaurante y las da Postgres (mis_sucursales), nunca el reloj del aparato (libreta 4, decidido
   el 11 de octubre de 2026). Debajo, la búsqueda grande (Ctrl K), las tres columnas Abrir · Atajos ·
   Recientes y, al bajar, «Resumen de hoy»: las cuatro cifras, Mesas ahora y Tus meseros.
+  Desde el 7 de noviembre de 2026 el saludo sube con su fecha como la frase del Agente IA, su segunda línea va
+  del color del texto y no en gris (la fecha sí, gris), y luego salen las columnas en fila. El brillo detrás de la búsqueda se probó y el
+  developer lo quitó el 8 de noviembre de 2026; con él regresaron los grises de las columnas, y el saludo,
+  que esperaba al brillo (1.05 s), sale desde 0.1 s.
 
   Las cifras, Mesas ahora y Tus meseros salen de cifras_de_inicio (migraciones agente y cifras_graficas),
   mesas_ahora y tus_meseros (migración reportes): la app no suma nada. Se leen al abrir, con «Actualizar»,
@@ -147,7 +151,7 @@
   <div class="inicio">
     <div class="saludo">
       <span class="etiqueta fecha">{diaConNombre(sucursal.hoy)}</span>
-      <h1>{saludoPorHora(sucursal.hora)}, {nombre}.<span>Así va tu negocio hoy.</span></h1>
+      <h1>{saludoPorHora(sucursal.hora)}, {nombre}.<span class="debajo">Así va tu negocio hoy.</span></h1>
     </div>
 
     <Buscador bind:this={buscador} {recientes} {alIr} />
@@ -183,12 +187,27 @@
     flex-direction: column;
   }
 
+  /* Sube como la frase del Agente IA. */
   .saludo {
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: 12px;
     text-align: center;
+    animation: saludo-sube 0.55s cubic-bezier(0.22, 1, 0.36, 1) 0.1s both;
+  }
+
+  @keyframes saludo-sube {
+    from {
+      opacity: 0;
+      transform: translateY(18px);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .saludo {
+      animation: none;
+    }
   }
 
   .fecha {
@@ -205,9 +224,10 @@
     text-wrap: balance;
   }
 
-  h1 span {
+  /* Del color del texto, no en gris (el developer, 7 nov 2026, «C · Negro»). La fecha regresó al gris el 8 nov. */
+  .debajo {
     display: block;
-    color: var(--tenue);
+    color: var(--texto);
   }
 
   .hora {

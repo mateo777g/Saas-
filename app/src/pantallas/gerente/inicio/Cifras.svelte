@@ -3,7 +3,8 @@
   V64Pv4gmANPRZuJW5hTe5D; libreta 4, «El rediseño del panel»): Vendido hoy por hora contra ayer (punteada),
   Esta semana por día, Lo más vendido con las piezas de ese producto cada día y Este mes acumulado con su
   proyección punteada. Todo sale de cifras_de_inicio, ya contado, con las mismas funciones que el agente:
-  aquí solo se escribe y se dibuja. Mientras lee, o si no pudo, cada valor dice «—»: nunca un $0 inventado.
+  aquí solo se escribe y se dibuja. La primera vez que lee, cada tarjeta lleva su esqueleto (el valor, la
+  gráfica y la nota; decidido el 8 nov 2026); si no pudo, cada valor dice «—»: nunca un $0 inventado.
 -->
 <script lang="ts">
   import Icono from '../../../diseno/Icono.svelte';
@@ -11,6 +12,7 @@
   import type { CifrasDeInicio } from '../../../lib/reportes';
   import GraficaLinea, { type Marca } from '../../../diseno/GraficaLinea.svelte';
   import SinDatos from '../../../diseno/SinDatos.svelte';
+  import Esqueleto from '../../../diseno/Esqueleto.svelte';
   import { ejeEntero, escala, SIN_MARCAS } from '../../../lib/ejes';
 
   type Lectura = { estado: 'leyendo' } | { estado: 'listo'; datos: CifrasDeInicio } | { estado: 'error'; deRed: boolean };
@@ -18,6 +20,7 @@
   let { lectura }: { lectura: Lectura } = $props();
 
   const c = $derived(lectura.estado === 'listo' ? lectura.datos : null);
+  const leyendo = $derived(lectura.estado === 'leyendo');
   const sinLeer = $derived(lectura.estado === 'error' ? 'No se pudo leer' : '');
 
   const SIN_VENTAS = 'Aún sin ventas';
@@ -120,18 +123,22 @@
   );
 </script>
 
-<div class="cifras">
+<div class="cifras" aria-busy={leyendo}>
+  {#if leyendo}<span class="solo-lector">Leyendo las cifras de hoy…</span>{/if}
+
   <div class="tarjeta">
     <span class="etiqueta cabeza">Vendido hoy</span>
     <div class="valor-fila">
-      <span class="valor">{c ? pesos(c.vendido_hoy.hoy) : '—'}</span>
+      <span class="valor">{#if leyendo}<Esqueleto ancho="128px" alto="26px" />{:else}{c ? pesos(c.vendido_hoy.hoy) : '—'}{/if}</span>
       {#if cambio !== null && cambio !== 0}
         <span class="cambio" class:sube={cambio > 0}>
           <Icono nombre={cambio > 0 ? 'r-sube' : 'r-baja'} tamano={14} />{Math.abs(cambio)} %
         </span>
       {/if}
     </div>
-    {#if c && !hoy?.puntos.length}
+    {#if leyendo}
+      <Esqueleto proporcion="448 / 150" redondo="8px" />
+    {:else if c && !hoy?.puntos.length}
       <SinDatos texto={SIN_VENTAS} />
     {:else}
     <GraficaLinea
@@ -145,13 +152,15 @@
       ejeX={hoy?.ejeX ?? []}
     />
     {/if}
-    <span class="nota">{notaHoy}</span>
+    <span class="nota">{#if leyendo}<Esqueleto ancho="38%" alto="10px" />{:else}{notaHoy}{/if}</span>
   </div>
 
   <div class="tarjeta">
     <span class="etiqueta cabeza">Esta semana</span>
-    <div class="valor-fila"><span class="valor">{c ? pesos(c.semana.vendido) : '—'}</span></div>
-    {#if c && !semana?.puntos.length}
+    <div class="valor-fila"><span class="valor">{#if leyendo}<Esqueleto ancho="112px" alto="26px" />{:else}{c ? pesos(c.semana.vendido) : '—'}{/if}</span></div>
+    {#if leyendo}
+      <Esqueleto proporcion="448 / 150" redondo="8px" />
+    {:else if c && !semana?.puntos.length}
       <SinDatos texto={SIN_VENTAS} />
     {:else}
     <GraficaLinea
@@ -163,13 +172,15 @@
       ejeX={DIAS}
     />
     {/if}
-    <span class="nota">{!c ? sinLeer : c.semana.vendido === 0 ? 'Sin ventas esta semana' : 'De lunes a hoy'}</span>
+    <span class="nota">{#if leyendo}<Esqueleto ancho="30%" alto="10px" />{:else}{!c ? sinLeer : c.semana.vendido === 0 ? 'Sin ventas esta semana' : 'De lunes a hoy'}{/if}</span>
   </div>
 
   <div class="tarjeta">
     <span class="etiqueta cabeza">Lo más vendido</span>
-    <div class="valor-fila"><span class="valor largo">{primero?.nombre ?? '—'}</span></div>
-    {#if c && !primero}
+    <div class="valor-fila"><span class="valor largo">{#if leyendo}<Esqueleto ancho="176px" alto="26px" />{:else}{primero?.nombre ?? '—'}{/if}</span></div>
+    {#if leyendo}
+      <Esqueleto proporcion="448 / 150" redondo="8px" />
+    {:else if c && !primero}
       <SinDatos texto={SIN_VENTAS} />
     {:else}
     <GraficaLinea
@@ -182,14 +193,16 @@
     />
     {/if}
     <span class="nota">
-      {!c ? sinLeer : !primero ? 'Sin ventas esta semana' : `${plural(primero.unidades, 'pieza', 'piezas')} en la semana · por día`}
+      {#if leyendo}<Esqueleto ancho="44%" alto="10px" />{:else}{!c ? sinLeer : !primero ? 'Sin ventas esta semana' : `${plural(primero.unidades, 'pieza', 'piezas')} en la semana · por día`}{/if}
     </span>
   </div>
 
   <div class="tarjeta">
     <span class="etiqueta cabeza">Este mes</span>
-    <div class="valor-fila"><span class="valor">{c ? pesos(c.mes.vendido) : '—'}</span></div>
-    {#if c && !mes?.puntos.length}
+    <div class="valor-fila"><span class="valor">{#if leyendo}<Esqueleto ancho="120px" alto="26px" />{:else}{c ? pesos(c.mes.vendido) : '—'}{/if}</span></div>
+    {#if leyendo}
+      <Esqueleto proporcion="448 / 150" redondo="8px" />
+    {:else if c && !mes?.puntos.length}
       <SinDatos texto={SIN_VENTAS} />
     {:else}
     <GraficaLinea
@@ -202,7 +215,7 @@
       ejeX={mes?.ejeX ?? []}
     />
     {/if}
-    <span class="nota">{notaMes}</span>
+    <span class="nota">{#if leyendo}<Esqueleto ancho="26%" alto="10px" />{:else}{notaMes}{/if}</span>
   </div>
 </div>
 

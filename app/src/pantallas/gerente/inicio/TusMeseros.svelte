@@ -7,6 +7,7 @@
 <script lang="ts">
   import TablaDeslizable from '../../../diseno/TablaDeslizable.svelte';
   import Icono from '../../../diseno/Icono.svelte';
+  import Esqueleto from '../../../diseno/Esqueleto.svelte';
   import { pesos, plural } from '../../../lib/formato';
   import type { TusMeseros } from '../../../lib/reportes';
   import { NOMBRE_ROL } from '../../../lib/roles';
@@ -37,11 +38,25 @@
       <b>Tus meseros</b>
       <span class="nota">Las mesas y las ventas de hoy de cada uno.</span>
     </div>
-    <span class="etiqueta resumen">{equipo}</span>
+    <span class="etiqueta resumen">{#if lectura.estado === 'leyendo'}<Esqueleto ancho="104px" alto="10px" />{:else}{equipo}{/if}</span>
   </div>
 
   {#if lectura.estado === 'leyendo'}
-    <p class="mensaje">Cargando tu equipo…</p>
+    <!-- El esqueleto: tres renglones con la forma de una persona y sus números (8 nov 2026). -->
+    <span class="solo-lector">Cargando tu equipo…</span>
+    <div class="esqueletos" aria-hidden="true">
+      {#each ['112px', '84px', '98px'] as ancho, i (i)}
+        <div class="esqueleto-fila">
+          <span class="persona">
+            <Esqueleto ancho="28px" alto="28px" redondo="50%" />
+            <span class="lineas"><Esqueleto {ancho} alto="11px" /><Esqueleto ancho="52px" alto="9px" /></span>
+          </span>
+          <Esqueleto ancho="18px" alto="11px" />
+          <Esqueleto ancho="18px" alto="11px" />
+          <Esqueleto ancho="56px" alto="11px" />
+        </div>
+      {/each}
+    </div>
   {:else if lectura.estado === 'error'}
     <p class="mensaje">No se pudieron leer las ventas de hoy.</p>
   {:else if !lectura.datos.personas.length}
@@ -129,6 +144,26 @@
     font-weight: 400;
     line-height: 1.45;
     color: var(--suave);
+  }
+
+  /* Los renglones del esqueleto miden lo de la tabla: 9 px arriba y abajo, y su línea. */
+  .esqueleto-fila {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 56px 56px 84px;
+    align-items: center;
+    justify-items: end;
+    padding: 9px 0;
+    border-top: 1px solid var(--linea);
+  }
+
+  .esqueleto-fila .persona {
+    justify-self: start;
+  }
+
+  .lineas {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
   }
 
   table {

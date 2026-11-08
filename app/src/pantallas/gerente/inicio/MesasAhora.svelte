@@ -6,6 +6,7 @@
 -->
 <script lang="ts">
   import Icono from '../../../diseno/Icono.svelte';
+  import Esqueleto from '../../../diseno/Esqueleto.svelte';
   import { pesos, plural } from '../../../lib/formato';
   import type { MesasAhora } from '../../../lib/reportes';
 
@@ -32,11 +33,22 @@
 <section class="tarjeta" aria-label="Mesas ahora">
   <div class="cabeza">
     <b>Mesas ahora</b>
-    <span class="etiqueta resumen">{lectura.estado === 'error' ? '—' : (vista?.etiqueta ?? '')}</span>
+    <span class="etiqueta resumen">
+      {#if lectura.estado === 'leyendo'}<Esqueleto ancho="92px" alto="10px" />{:else}{lectura.estado === 'error' ? '—' : (vista?.etiqueta ?? '')}{/if}
+    </span>
   </div>
   <div class="lista">
     {#if lectura.estado === 'leyendo'}
-      <p class="mensaje">Cargando tus mesas…</p>
+      <!-- El esqueleto: tres renglones con la forma de una mesa (8 nov 2026). -->
+      <span class="solo-lector">Cargando tus mesas…</span>
+      {#each ['46%', '34%', '40%'] as ancho, i (i)}
+        <div class="mesa" aria-hidden="true">
+          <Esqueleto ancho="8px" alto="8px" redondo="50%" />
+          <Esqueleto {ancho} alto="11px" />
+          <Esqueleto ancho="52px" alto="10px" />
+          <span class="monto"><Esqueleto ancho="56px" alto="11px" /></span>
+        </div>
+      {/each}
     {:else if lectura.estado === 'error'}
       <p class="mensaje">
         {lectura.deRed ? 'No se pudieron leer tus mesas. Se vuelven a leer cuando regrese el internet.' : 'No se pudieron leer tus mesas.'}

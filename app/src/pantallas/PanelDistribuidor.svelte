@@ -6,6 +6,9 @@
   clientes tiene. Ajustes es el mismo del gerente, solo con el tema (decidido el 12 de octubre).
   Solo lee: no ve ventas ni gerentes, y no cambia nada.
 
+  Desde el 8 de noviembre de 2026 su Inicio es como el de Fragmentless (saludo, búsqueda grande con Ctrl K,
+  Abrir y Recientes, y debajo lo de antes) y anota sus vistas recientes en este navegador.
+
   Si Fragmentless lo da de baja, en lugar de todo eso sale la pantalla de baja. Vuelve a leer su
   fila y sus clientes con Actualizar y cada vez que regresa a la pestaña, como el panel del
   gerente: así, en cuanto Fragmentless lo reactiva, vuelve solo a su panel.
@@ -18,12 +21,13 @@
   import { leerCuenta, leerPanelDistribuidor, type Cuenta, type DatosDistribuidor } from '../lib/distribuidor';
   import { plural } from '../lib/formato';
   import { SIN_PANEL } from '../lib/sesion';
+  import { anotarReciente, type VistaDistribuidor } from '../lib/vistasDistribuidor';
   import Baja from './distribuidor/Baja.svelte';
   import Clientes from './distribuidor/Clientes.svelte';
   import Inicio from './distribuidor/Inicio.svelte';
   import Ajustes from './gerente/Ajustes.svelte';
 
-  type Vista = 'inicio' | 'clientes' | 'ajustes';
+  type Vista = VistaDistribuidor;
 
   let {
     usuarioId,
@@ -90,6 +94,33 @@
     vista = valor as Vista;
   }
 
+  // Ctrl K o la búsqueda chica de la barra: a Inicio, con la búsqueda grande abierta (como el panel de Fragmentless).
+  let busquedaPedida = $state(false);
+
+  function abrirBusqueda() {
+    vista = 'inicio';
+    busquedaPedida = true;
+  }
+
+  function tomarBusqueda() {
+    const es = busquedaPedida;
+    if (es) busquedaPedida = false;
+    return es;
+  }
+
+  // Desde cualquier vista, menos con una ventana abierta.
+  function alTeclear(e: KeyboardEvent) {
+    if (!cuenta.activo) return;
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k' && !document.querySelector('dialog[open]')) {
+      e.preventDefault();
+      abrirBusqueda();
+    }
+  }
+
+  $effect(() => {
+    anotarReciente(vista);
+  });
+
   onMount(() => {
     // Su fila ya se leyó al entrar; solo faltan sus clientes.
     if (cuenta.activo) leer();
@@ -100,6 +131,8 @@
     return () => document.removeEventListener('visibilitychange', alVolver);
   });
 </script>
+
+<svelte:window onkeydown={alTeclear} />
 
 {#if !cuenta.activo}
   <Baja {alSalir} />
@@ -113,6 +146,7 @@
     activa={vista}
     alElegir={elegir}
     {alSalir}
+    alBuscar={abrirBusqueda}
     pie={{ inicial: cuenta.nombre.charAt(0).toUpperCase(), nombre: cuenta.nombre, linea: correo }}
   >
 
@@ -122,15 +156,17 @@
       {/if}
     </BarraArriba>
 
-    <main class="cuerpo">
-      {#if vista === 'inicio'}
-        <Inicio {datos} alVerClientes={() => (vista = 'clientes')} />
-      {:else if vista === 'clientes'}
-        <Clientes clientes={datos?.clientes ?? null} />
-      {:else}
-        <Ajustes />
-      {/if}
-    </main>
+    {#if vista === 'inicio'}
+      <Inicio {datos} nombre={cuenta.nombre} {tomarBusqueda} alIr={(v) => (vista = v)} />
+    {:else}
+      <main class="cuerpo">
+        {#if vista === 'clientes'}
+          <Clientes clientes={datos?.clientes ?? null} />
+        {:else}
+          <Ajustes />
+        {/if}
+      </main>
+    {/if}
   </Marco>
 {/if}
 

@@ -4,11 +4,13 @@
   Funcionan hoy y Sin funcionar dibujan sus fotos de los últimos 30 días y, mientras no haya al menos dos
   días, «Aún sin historia». Vencen en 7 días mira hacia adelante. Sin funcionar va en rojo si hay alguno.
   Todo sale de Postgres ya contado (panel_estadisticas, panel_resumen, panel_altas_por_mes): aquí solo se
-  escribe y se dibuja. Mientras lee, o si no pudo, cada valor dice «—»: nunca un 0 inventado.
+  escribe y se dibuja. La primera vez que lee, cada tarjeta lleva su esqueleto (el valor, la gráfica y la
+  nota; regla de diseño del 8 nov 2026); si no pudo, cada valor dice «—»: nunca un 0 inventado.
 -->
 <script lang="ts">
   import GraficaLinea, { type EjeX, type Marca } from '../../../diseno/GraficaLinea.svelte';
   import SinDatos from '../../../diseno/SinDatos.svelte';
+  import Esqueleto from '../../../diseno/Esqueleto.svelte';
   import { ejeEntero, escala, SIN_MARCAS } from '../../../lib/ejes';
   import { diaCorto, diasEntre, dolares, mesCorto, plural, sumarDias } from '../../../lib/formato';
   import type { DatosPanel } from '../../../lib/panel';
@@ -19,6 +21,7 @@
   const ANCHO_CHICA = 280;
   const ALTO_CHICA = 110;
 
+  const leyendo = $derived(!datos);
   const e = $derived(datos?.estadisticas.ok ? datos.estadisticas.datos : null);
   const r = $derived(datos?.resumen.ok ? datos.resumen.datos : null);
   const altas = $derived(datos?.altas.ok ? datos.altas.datos : null);
@@ -112,13 +115,18 @@
   );
 </script>
 
-<div class="cifras">
+{#if leyendo}<span class="solo-lector">Leyendo el resumen…</span>{/if}
+
+<div class="cifras" aria-busy={leyendo}>
   <div class="tarjeta">
     <span class="etiqueta cabeza">Gasto de IA este mes</span>
     <div class="valor-fila">
-      <span class="valor">{gasto ? dolares(gasto.valor) : '—'}</span>
+      <span class="valor">{#if leyendo}<Esqueleto ancho="120px" alto="26px" />{:else}{gasto ? dolares(gasto.valor) : '—'}{/if}</span>
       {#if gasto}<span class="unidad">USD</span>{/if}
     </div>
+    {#if leyendo}
+      <Esqueleto proporcion="448 / 150" redondo="8px" />
+    {:else}
     <GraficaLinea
       etiqueta="Lo gastado en IA cada mes, últimos 6 meses"
       tramo={5}
@@ -127,12 +135,16 @@
       marcas={gasto?.marcas ?? SIN_MARCAS}
       ejeX={gasto?.ejeX ?? []}
     />
-    <span class="nota">{gasto ? 'Lo que le pagas a OpenAI por todos tus clientes' : datos ? NO_SE_PUDO : ''}</span>
+    {/if}
+    <span class="nota">{#if leyendo}<Esqueleto ancho="46%" alto="10px" />{:else}{gasto ? 'Lo que le pagas a OpenAI por todos tus clientes' : NO_SE_PUDO}{/if}</span>
   </div>
 
   <div class="tarjeta">
     <span class="etiqueta cabeza">Altas este mes</span>
-    <div class="valor-fila"><span class="valor">{deAltas ? deAltas.valor : '—'}</span></div>
+    <div class="valor-fila"><span class="valor">{#if leyendo}<Esqueleto ancho="44px" alto="26px" />{:else}{deAltas ? deAltas.valor : '—'}{/if}</span></div>
+    {#if leyendo}
+      <Esqueleto proporcion="448 / 150" redondo="8px" />
+    {:else}
     <GraficaLinea
       etiqueta="Restaurantes dados de alta cada mes, últimos 6 meses"
       tramo={5}
@@ -141,15 +153,18 @@
       marcas={deAltas?.marcas ?? SIN_MARCAS}
       ejeX={deAltas?.ejeX ?? []}
     />
-    <span class="nota">{deAltas ? `${deAltas.total} en 6 meses` : datos ? NO_SE_PUDO : ''}</span>
+    {/if}
+    <span class="nota">{#if leyendo}<Esqueleto ancho="22%" alto="10px" />{:else}{deAltas ? `${deAltas.total} en 6 meses` : NO_SE_PUDO}{/if}</span>
   </div>
 </div>
 
-<div class="cifras tres">
+<div class="cifras tres" aria-busy={leyendo}>
   <div class="tarjeta">
     <span class="etiqueta cabeza">Funcionan hoy</span>
-    <div class="valor-fila"><span class="valor">{r ? r.funcionan : '—'}</span></div>
-    {#if e && !conHistoria}
+    <div class="valor-fila"><span class="valor">{#if leyendo}<Esqueleto ancho="40px" alto="22px" />{:else}{r ? r.funcionan : '—'}{/if}</span></div>
+    {#if leyendo}
+      <Esqueleto proporcion="280 / 110" redondo="8px" />
+    {:else if e && !conHistoria}
       <SinDatos texto="Aún sin historia" ancho={ANCHO_CHICA} alto={ALTO_CHICA} />
     {:else}
       <GraficaLinea
@@ -164,12 +179,15 @@
         ejeX={ejeFotos}
       />
     {/if}
-    <span class="nota">{notaFunciona}</span>
+    <span class="nota">{#if leyendo}<Esqueleto ancho="62%" alto="10px" />{:else}{notaFunciona}{/if}</span>
   </div>
 
   <div class="tarjeta">
     <span class="etiqueta cabeza">Vencen en 7 días</span>
-    <div class="valor-fila"><span class="valor">{r ? r.vencen_pronto : '—'}</span></div>
+    <div class="valor-fila"><span class="valor">{#if leyendo}<Esqueleto ancho="40px" alto="22px" />{:else}{r ? r.vencen_pronto : '—'}{/if}</span></div>
+    {#if leyendo}
+      <Esqueleto proporcion="280 / 110" redondo="8px" />
+    {:else}
     <GraficaLinea
       etiqueta="Licencias que vencen en cada uno de los próximos 7 días"
       ancho={ANCHO_CHICA}
@@ -181,13 +199,16 @@
       ejeX={vencen?.ejeX ?? []}
       sinPunto
     />
-    <span class="nota">{notaVencen}</span>
+    {/if}
+    <span class="nota">{#if leyendo}<Esqueleto ancho="54%" alto="10px" />{:else}{notaVencen}{/if}</span>
   </div>
 
   <div class="tarjeta" class:mala={r && r.sin_funcionar > 0}>
     <span class="etiqueta cabeza">Sin funcionar</span>
-    <div class="valor-fila"><span class="valor">{r ? r.sin_funcionar : '—'}</span></div>
-    {#if e && !conHistoria}
+    <div class="valor-fila"><span class="valor">{#if leyendo}<Esqueleto ancho="40px" alto="22px" />{:else}{r ? r.sin_funcionar : '—'}{/if}</span></div>
+    {#if leyendo}
+      <Esqueleto proporcion="280 / 110" redondo="8px" />
+    {:else if e && !conHistoria}
       <SinDatos texto="Aún sin historia" ancho={ANCHO_CHICA} alto={ALTO_CHICA} />
     {:else}
       <GraficaLinea
@@ -202,7 +223,7 @@
         ejeX={ejeFotos}
       />
     {/if}
-    <span class="nota">{notaSin}</span>
+    <span class="nota">{#if leyendo}<Esqueleto ancho="66%" alto="10px" />{:else}{notaSin}{/if}</span>
   </div>
 </div>
 

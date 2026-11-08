@@ -5,9 +5,18 @@
   con su buscador y «Ver clientes →»), y a la derecha, de arriba abajo, Vencen pronto (sus
   clientes que vencieron o vencen en los próximos 7 días), sin Sumar meses: eso solo lo hace
   Fragmentless.
+
+  Desde el 8 de noviembre de 2026 (el developer: «todo, las animaciones, lo nuevo de los atajos, la barra de
+  búsqueda, los esqueletos») arriba va lo del Inicio de Fragmentless: el saludo que sube, la búsqueda grande
+  (Ctrl K) y las columnas en fila, y lo de antes queda abajo, bajo «Resumen». Por encuesta: el saludo es «Hola,
+  Josué.» sin fecha ni «Buenos días» (los daría Postgres y su panel no los lee), y las columnas son solo Abrir y
+  Recientes, porque no tiene acciones. La primera vez que lee, las tarjetas llevan sus esqueletos.
 -->
 <script lang="ts">
   import Boton from '../../diseno/Boton.svelte';
+  import Buscador, { type RenglonBusqueda } from '../../diseno/Buscador.svelte';
+  import Columnas, { type ItemColumna } from '../../diseno/Columnas.svelte';
+  import Esqueleto from '../../diseno/Esqueleto.svelte';
   import EstadoPunto from '../../diseno/EstadoPunto.svelte';
   import Icono from '../../diseno/Icono.svelte';
   import NotaTabla from '../../diseno/NotaTabla.svelte';
@@ -16,8 +25,41 @@
   import type { DatosDistribuidor } from '../../lib/distribuidor';
   import { fecha, plural, vigencia } from '../../lib/formato';
   import { urgente } from '../../lib/panel';
+  import { leerRecientes, VISTAS, type VistaDistribuidor } from '../../lib/vistasDistribuidor';
 
-  let { datos, alVerClientes }: { datos: DatosDistribuidor | null; alVerClientes: () => void } = $props();
+  let {
+    datos,
+    nombre,
+    tomarBusqueda,
+    alIr,
+  }: {
+    datos: DatosDistribuidor | null;
+    // Su nombre completo, de su fila en distribuidores: el saludo usa el primero.
+    nombre: string;
+    // Si pidieron la búsqueda (Ctrl K o la búsqueda chica); se toma una vez.
+    tomarBusqueda: () => boolean;
+    alIr: (vista: VistaDistribuidor) => void;
+  } = $props();
+
+  const primerNombre = $derived(nombre.trim().split(/\s+/)[0]);
+
+  let buscador = $state<{ enfocar: () => void } | null>(null);
+
+  $effect(() => {
+    if (buscador && tomarBusqueda()) buscador.enfocar();
+  });
+
+  const recientes = leerRecientes();
+
+  const deVista = (v: VistaDistribuidor): RenglonBusqueda => ({
+    clave: v,
+    texto: VISTAS[v].texto,
+    icono: VISTAS[v].icono,
+    alPicar: () => alIr(v),
+  });
+  const vistas = (['clientes', 'ajustes'] as const).map(deVista);
+  const abrir: ItemColumna[] = (['clientes', 'ajustes'] as const).map(deVista);
+  const deRecientes: ItemColumna[] = recientes.map((v) => ({ ...deVista(v), icono: 'r-reloj' }));
 
   const NO_SE_PUDO = 'No se pudo cargar.';
 
@@ -46,6 +88,8 @@
   });
 
   const ETIQUETAS_CIFRAS = ['FUNCIONAN HOY', 'VENCEN EN 7 DÍAS', 'SIN FUNCIONAR'];
+  // El largo de cada nota en su esqueleto.
+  const ANCHOS_NOTA = ['62%', '74%', '68%'];
 
   // Tus clientes, filtrados por nombre o slug.
   const suyos = $derived.by(() => {
@@ -62,12 +106,24 @@
   );
 </script>
 
+<main class="vista">
 <div class="inicio">
+  <div class="saludo">
+    <h1>Hola, {primerNombre}.<span class="debajo">Así van tus clientes.</span></h1>
+  </div>
+
+  <Buscador bind:this={buscador} {vistas} acciones={[]} recientes={recientes.map(deVista)} placeholder="Busca una vista…" />
+  <Columnas {abrir} recientes={deRecientes} entra />
+
+  <div class="resumen-titulo"><h2>Resumen</h2></div>
+  {#if !datos}<span class="solo-lector">Leyendo tus clientes…</span>{/if}
+
+<div class="rejilla" aria-busy={!datos}>
   {#each ETIQUETAS_CIFRAS as etiqueta, i (etiqueta)}
     <Tarjeta como="section" class="tarjeta cifra">
       <span class="etiqueta">{etiqueta}</span>
-      <span class="valor">{cifras?.[i].valor ?? ''}</span>
-      <span class="nota">{cifras?.[i].nota ?? ''}</span>
+      <span class="valor">{#if !datos}<Esqueleto ancho="44px" alto="24px" />{:else}{cifras?.[i].valor ?? ''}{/if}</span>
+      <span class="nota">{#if !datos}<Esqueleto ancho={ANCHOS_NOTA[i]} alto="10px" />{:else}{cifras?.[i].nota ?? ''}{/if}</span>
     </Tarjeta>
   {/each}
 
@@ -88,7 +144,18 @@
       encabezados={[{ texto: 'RESTAURANTE' }, { texto: 'LICENCIA' }, { texto: 'FIN' }, { texto: 'VIGENCIA' }]}
     >
       {#if !datos}
-        <!-- leyendo la primera vez -->
+        <!-- El esqueleto: tres renglones con la forma de un cliente (8 nov 2026). -->
+        {#each ['132px', '104px', '118px'] as ancho, i (i)}
+          <div class="fila" aria-hidden="true">
+            <div class="restaurante">
+              <Esqueleto ancho="36px" alto="36px" redondo="11px" />
+              <div class="nombres"><Esqueleto {ancho} alto="11px" /><Esqueleto ancho="64px" alto="9px" /></div>
+            </div>
+            <span class="lineas-una"><Esqueleto ancho="8px" alto="8px" redondo="50%" /><Esqueleto ancho="56px" alto="10px" /></span>
+            <Esqueleto ancho="64px" alto="10px" />
+            <Esqueleto ancho="72px" alto="10px" />
+          </div>
+        {/each}
       {:else if !datos.clientes.ok}
         <NotaTabla titulo="No se pudieron leer tus clientes." texto={datos.clientes.mensaje} />
       {:else if datos.clientes.datos.length === 0}
@@ -118,7 +185,7 @@
       {/if}
     </Tabla>
     <div>
-      <Boton tamano="chico" etiqueta="Ver clientes" icono="derecha" iconoAlFinal onclick={alVerClientes} />
+      <Boton tamano="chico" etiqueta="Ver clientes" icono="derecha" iconoAlFinal onclick={() => alIr('clientes')} />
     </div>
   </Tarjeta>
 
@@ -129,7 +196,10 @@
     </div>
     <div class="lista">
       {#if !datos}
-        <!-- leyendo la primera vez -->
+        <!-- El esqueleto: tres renglones con la forma de uno por vencer (8 nov 2026). -->
+        {#each ['64%', '48%', '56%'] as ancho, i (i)}
+          <div class="item" aria-hidden="true"><Esqueleto {ancho} alto="11px" /><Esqueleto ancho="44%" alto="9px" /></div>
+        {/each}
       {:else if !datos.clientes.ok}
         <div class="vacia">{NO_SE_PUDO}</div>
       {:else if pronto.length === 0}
@@ -148,30 +218,97 @@
     </div>
   </Tarjeta>
 </div>
+</div>
+</main>
 
 <style>
+  /* Lo de arriba, como el Inicio de Fragmentless. */
+  .vista {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 56px;
+    bottom: 0;
+    overflow-y: auto;
+  }
+
   .inicio {
-    height: 100%;
+    max-width: 1060px;
+    margin: 0 auto;
+    padding: 52px 32px 56px;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Sube como en el Inicio del gerente. */
+  .saludo {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    animation: saludo-sube 0.55s cubic-bezier(0.22, 1, 0.36, 1) 0.1s both;
+  }
+
+  @keyframes saludo-sube {
+    from {
+      opacity: 0;
+      transform: translateY(18px);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .saludo {
+      animation: none;
+    }
+  }
+
+  h1 {
+    margin: 0;
+    font-size: 40px;
+    font-weight: 800;
+    line-height: 1.08;
+    letter-spacing: -1px;
+    text-wrap: balance;
+  }
+
+  /* Del color del texto, como «Así va tu negocio hoy.» del gerente. */
+  .debajo {
+    display: block;
+    color: var(--texto);
+  }
+
+  .resumen-titulo {
+    margin: 56px 0 14px;
+  }
+
+  h2 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 700;
+  }
+
+  /* Lo de antes: la rejilla de la maqueta del 12 de octubre, ahora del alto de lo que tiene. */
+  .rejilla {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr)) minmax(0, 1.3fr);
-    grid-template-rows: 120px minmax(0, 1fr);
+    grid-template-rows: 120px auto;
     gap: 16px;
   }
 
-  .inicio > :global(.tarjeta) {
+  .rejilla > :global(.tarjeta) {
     min-width: 0;
     min-height: 0;
     padding: 20px;
   }
 
-  .inicio > :global(.cifra) {
+  .rejilla > :global(.cifra) {
     display: flex;
     flex-direction: column;
     gap: 6px;
     padding: 18px 20px;
   }
 
-  .inicio > :global(.suyos) {
+  .rejilla > :global(.suyos) {
     grid-column: 1 / span 3;
     grid-row: 2;
     display: flex;
@@ -179,7 +316,7 @@
     gap: 14px;
   }
 
-  .inicio > :global(.pronto) {
+  .rejilla > :global(.pronto) {
     grid-column: 4;
     grid-row: 1 / span 2;
     display: flex;
@@ -341,6 +478,12 @@
   .linea b {
     font-weight: 600;
     color: var(--texto);
+  }
+
+  .lineas-una {
+    display: flex;
+    align-items: center;
+    gap: 8px;
   }
 
   .vacia {

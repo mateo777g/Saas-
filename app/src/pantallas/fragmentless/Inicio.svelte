@@ -7,10 +7,14 @@
 
   La fecha y la hora las da Postgres, nunca el reloj del aparato. Sin distribuidores, la tarjeta dice «Da de
   alta el primero en Distribuidores.» (decidido el 12 de octubre de 2026).
+
+  Desde el 8 de noviembre de 2026 entra como el Inicio del gerente: el saludo sube desde 0.1 s, las columnas
+  salen en fila y, la primera vez que lee, las tarjetas llevan sus esqueletos.
 -->
 <script lang="ts">
   import TablaDeslizable from '../../diseno/TablaDeslizable.svelte';
   import BotonCuadro from '../../diseno/BotonCuadro.svelte';
+  import Esqueleto from '../../diseno/Esqueleto.svelte';
   import Buscador, { type RenglonBusqueda } from '../../diseno/Buscador.svelte';
   import Columnas, { type ItemColumna } from '../../diseno/Columnas.svelte';
   import Icono from '../../diseno/Icono.svelte';
@@ -95,7 +99,7 @@
     </div>
 
     <Buscador bind:this={buscador} {vistas} {acciones} recientes={recientes.map(deVista)} />
-    <Columnas {abrir} {atajos} recientes={deRecientes} />
+    <Columnas {abrir} {atajos} recientes={deRecientes} entra />
 
     <div class="resumen-titulo">
       <h2>Resumen</h2>
@@ -117,7 +121,19 @@
         </div>
 
         {#if !datos}
-          <!-- leyendo la primera vez -->
+          <!-- El esqueleto: tres renglones con la forma de un distribuidor (8 nov 2026). -->
+          <span class="solo-lector">Cargando tus distribuidores…</span>
+          <div aria-hidden="true">
+            {#each ['96px', '72px', '84px'] as ancho, i (i)}
+              <div class="esqueleto-fila">
+                <span class="persona"><Esqueleto ancho="28px" alto="28px" redondo="50%" /><Esqueleto {ancho} alto="11px" /></span>
+                <Esqueleto ancho="52px" alto="10px" />
+                <Esqueleto ancho="120px" alto="10px" />
+                <Esqueleto ancho="78px" alto="10px" />
+                <Esqueleto ancho="16px" alto="11px" />
+              </div>
+            {/each}
+          </div>
         {:else if !datos.distribuidores.ok}
           <p class="mensaje">No se pudieron leer tus distribuidores. {datos.distribuidores.mensaje}</p>
         {:else if datos.distribuidores.datos.length === 0}
@@ -166,7 +182,14 @@
 
         <div>
           {#if !datos}
-            <!-- leyendo la primera vez -->
+            <!-- El esqueleto: tres renglones con la forma de un cliente por vencer y su botón (8 nov 2026). -->
+            <span class="solo-lector">Cargando los que vencen pronto…</span>
+            {#each ['150px', '112px', '132px'] as ancho, i (i)}
+              <div class="por-vencer" aria-hidden="true">
+                <div class="por-vencer-texto lineas"><Esqueleto {ancho} alto="11px" /><Esqueleto ancho="96px" alto="9px" /></div>
+                <Esqueleto ancho="36px" alto="36px" redondo="10px" />
+              </div>
+            {/each}
           {:else if !datos.clientes.ok}
             <p class="mensaje">No se pudo cargar.</p>
           {:else if pronto.length === 0}
@@ -210,12 +233,27 @@
     flex-direction: column;
   }
 
+  /* Sube como en el Inicio del gerente. */
   .saludo {
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: 12px;
     text-align: center;
+    animation: saludo-sube 0.55s cubic-bezier(0.22, 1, 0.36, 1) 0.1s both;
+  }
+
+  @keyframes saludo-sube {
+    from {
+      opacity: 0;
+      transform: translateY(18px);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .saludo {
+      animation: none;
+    }
   }
 
   /* En la letra de la fecha del gerente (decidido el 6 de noviembre de 2026). */
@@ -330,6 +368,26 @@
     font-weight: 400;
     line-height: 1.45;
     color: var(--suave);
+  }
+
+  /* Los renglones del esqueleto miden lo de la tabla: 9 px arriba y abajo, y su línea. */
+  .esqueleto-fila {
+    display: grid;
+    grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr) minmax(0, 1.7fr) minmax(0, 1.3fr) 40px;
+    align-items: center;
+    gap: 12px;
+    padding: 9px 0;
+    border-top: 1px solid var(--linea);
+  }
+
+  .esqueleto-fila > :global(:last-child) {
+    justify-self: end;
+  }
+
+  .lineas {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
   }
 
   table {

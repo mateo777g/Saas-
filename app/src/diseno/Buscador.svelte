@@ -18,10 +18,13 @@
     vistas,
     acciones,
     recientes,
+    placeholder = 'Busca una vista o una acción…',
   }: {
     vistas: RenglonBusqueda[];
     acciones: RenglonBusqueda[];
     recientes: RenglonBusqueda[];
+    // El distribuidor no tiene acciones: «Busca una vista…» (8 nov 2026).
+    placeholder?: string;
   } = $props();
 
   type Seccion = { titulo: string; renglones: RenglonBusqueda[] };
@@ -43,10 +46,12 @@
   const secciones = $derived.by((): Seccion[] => {
     const q = limpio(texto.trim());
     if (!q) {
-      return [
+      const hay = [
         { titulo: 'Recientes', renglones: recientes },
         { titulo: 'Acciones', renglones: acciones.slice(0, 4) },
       ].filter((s) => s.renglones.length);
+      // Sin recientes ni acciones (el distribuidor la primera vez), salen sus vistas y no un «no hay».
+      return hay.length ? hay : [{ titulo: 'Vistas', renglones: vistas }];
     }
     const hallados = vistas.filter((v) => limpio(v.texto).includes(q));
     const hechos = acciones.filter((a) => limpio(`${a.texto} ${a.de ?? ''}`).includes(q));
@@ -117,7 +122,7 @@
         bind:value={texto}
         type="text"
         autocomplete="off"
-        placeholder="Busca una vista o una acción…"
+        {placeholder}
         role="combobox"
         aria-label="Busca una vista o una acción"
         aria-controls="resultados-busqueda"

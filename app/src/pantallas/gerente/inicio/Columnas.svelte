@@ -53,4 +53,4 @@
   );
 </script>
 
-<ColumnasBase {abrir} {atajos} recientes={deRecientes} />
+<ColumnasBase {abrir} {atajos} recientes={deRecientes} entra />

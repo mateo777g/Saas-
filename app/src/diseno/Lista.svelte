@@ -342,6 +342,12 @@
     overflow-y: auto;
   }
 
+  /* Cerrada no lleva barra de scroll: sus opciones se esconden, pero la caja no, y con las barras de Windows la
+     barra se quedaba pintada debajo del botón (el developer la vio en Ajustes, 7 nov 2026). */
+  .lista.larga:not(.abierta) .lista-opciones {
+    overflow-y: hidden;
+  }
+
   .lista.abierta .lista-opciones {
     pointer-events: auto;
   }

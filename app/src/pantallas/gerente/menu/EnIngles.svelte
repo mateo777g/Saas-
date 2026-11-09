@@ -73,7 +73,7 @@
     margin-top: 4px;
     height: 48px;
     overflow: hidden;
-    border-radius: 24px;
+    border-radius: 12px;
     background: var(--chip);
     transition: height 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
   }
@@ -86,7 +86,7 @@
     gap: 10px;
     padding: 0 16px;
     border: 0;
-    border-radius: 24px;
+    border-radius: 12px;
     background: transparent;
     color: var(--texto);
     font: inherit;

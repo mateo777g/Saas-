@@ -293,7 +293,7 @@
     padding: 0 12px;
     overflow: hidden;
     border: 0;
-    border-radius: 999px;
+    border-radius: 12px; /* rectángulo como los de la barra de arriba (9 nov 2026) */
     background: var(--ba-fondo);
     color: var(--ba-letra);
     font: 600 13.5px var(--jakarta);

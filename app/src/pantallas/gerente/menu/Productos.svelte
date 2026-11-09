@@ -7,11 +7,16 @@
 
   En «Ocultar varios» cada fila es un botón con su cajita (las ya ocultas, apagadas), y abajo sale
   la barra negra que las oculta de una vez. Ocultar nunca borra.
+
+  Desde la tabla nueva (8 nov 2026, maqueta Ltm74p3fb7tiAqYcj5nqbX): la búsqueda, del tamaño de la de
+  Inicio, y el filtro van sueltos sobre el fondo; la tabla, en su marco. Mientras se lee el menú la
+  primera vez (`cargando`), esqueletos con la forma de cada fila y del conteo.
 -->
 <script lang="ts">
   import type { SvelteSet } from 'svelte/reactivity';
   import Boton from '../../../diseno/Boton.svelte';
   import BotonCuadro from '../../../diseno/BotonCuadro.svelte';
+  import Esqueleto from '../../../diseno/Esqueleto.svelte';
   import Haz from '../../../diseno/Haz.svelte';
   import Icono from '../../../diseno/Icono.svelte';
   import IconoCategoria from '../../../diseno/IconoCategoria.svelte';
@@ -25,6 +30,8 @@
 
   let {
     menu,
+    cargando = false,
+    esqueletos = 3,
     busqueda = $bindable(''),
     filtro,
     alFiltrar,
@@ -37,6 +44,8 @@
     alOcultar,
   }: {
     menu: Menu;
+    cargando?: boolean;
+    esqueletos?: number;
     busqueda?: string;
     filtro: number | null;
     alFiltrar: (id: number | null) => void;
@@ -50,6 +59,14 @@
   } = $props();
 
   const COLUMNAS = '2.2fr 2.8fr 1.1fr 0.8fr 1fr 80px';
+  const ESQUELETO = [
+    { nombre: '92px', descripcion: '164px', categoria: '72px' },
+    { nombre: '108px', descripcion: '270px', categoria: '72px' },
+    { nombre: '44px', descripcion: '214px', categoria: '72px' },
+    { nombre: '70px', descripcion: '168px', categoria: '72px' },
+    { nombre: '108px', descripcion: '120px', categoria: '86px' },
+  ];
+  const filasEsqueleto = $derived(Array.from({ length: esqueletos }, (_, i) => ESQUELETO[i % ESQUELETO.length]));
   const COLUMNAS_ELIGIENDO = '20px 2.2fr 2.8fr 1.1fr 0.8fr 1fr';
 
   const categoriaDe = $derived(new Map(menu.categorias.map((c) => [c.id, c])));
@@ -113,7 +130,7 @@
 <div class="herramientas">
   <Haz>
     <label class="buscador">
-      <Icono nombre="buscar" tamano={16} />
+      <Icono nombre="buscar" tamano={18} />
       <input
         type="search"
         aria-label="Buscar productos"
@@ -124,24 +141,40 @@
   </Haz>
   <FiltroCategorias categorias={menu.categorias} productos={menu.productos} {filtro} alElegir={alFiltrar} />
   <span class="crece"></span>
-  <span class="etiqueta">{plural(mostrados.length, 'PRODUCTO', 'PRODUCTOS')}</span>
+  <span class="etiqueta">
+    {#if cargando}<Esqueleto ancho="80px" alto="10px" />{:else}{plural(mostrados.length, 'PRODUCTO', 'PRODUCTOS')}{/if}
+  </span>
 </div>
 
 <Tabla
   columnas={eligiendo ? COLUMNAS_ELIGIENDO : COLUMNAS}
   relleno="0 16px"
   altoFila={64}
+  marco
   encabezados={[
     ...(eligiendo ? [{ texto: '' }] : []),
-    { texto: 'PRODUCTO' },
-    { texto: 'DESCRIPCIÓN' },
-    { texto: 'CATEGORÍA' },
-    { texto: 'PRECIO' },
-    { texto: 'VISIBILIDAD' },
+    { texto: 'Producto' },
+    { texto: 'Descripción' },
+    { texto: 'Categoría' },
+    { texto: 'Precio' },
+    { texto: 'Visibilidad' },
     ...(eligiendo ? [] : [{ texto: '' }]),
   ]}
 >
-  {#if !menu.productos.length}
+  {#if cargando}
+    <!-- El esqueleto: tantas filas como productos había la última vez, con su forma y sin sus botones. -->
+    <span class="solo-lector">Cargando tu menú…</span>
+    {#each filasEsqueleto as e, i (i)}
+      <div class="fila quieta" aria-hidden="true">
+        <span class="producto"><Esqueleto ancho="44px" alto="44px" redondo="11px" /><Esqueleto ancho={e.nombre} alto="11px" /></span>
+        <span><Esqueleto ancho={e.descripcion} alto="10px" /></span>
+        <span><Esqueleto ancho={e.categoria} alto="24px" redondo="8px" /></span>
+        <span><Esqueleto ancho="28px" alto="11px" /></span>
+        <span><Esqueleto ancho="56px" alto="10px" /></span>
+        <span></span>
+      </div>
+    {/each}
+  {:else if !menu.productos.length}
     {#if !menu.categorias.length}
       <NotaTabla
         relleno={48} angosta
@@ -221,21 +254,26 @@
   .herramientas {
     position: relative;
     flex: none;
-    min-height: 40px;
+    min-height: 48px;
     display: flex;
     align-items: center;
     gap: 12px;
   }
 
-  /* Píldora con el brillo de Haz, como la de Inicio (maqueta 4B6Qhre6dkK3pJgXtryyEV v3); se queda en 40 px,
-     al alto de «Todas las categorías». */
+  /* Píldora con el brillo de Haz, como la de Inicio (maqueta 4B6Qhre6dkK3pJgXtryyEV v3) y de su tamaño desde la
+     tabla nueva: 48 de alto y hasta 780 de ancho; si no cabe, se angosta. */
+  .herramientas > :global(div.haz) {
+    flex: 0 1 780px;
+    min-width: 0;
+  }
+
   .buscador {
-    width: 380px;
-    height: 40px;
+    width: 100%;
+    height: 48px;
     display: flex;
     align-items: center;
     gap: 10px;
-    padding: 0 14px;
+    padding: 0 14px 0 18px;
     border: 1px solid var(--borde-tarjeta);
     border-radius: 999px;
     background: var(--solido);
@@ -252,8 +290,8 @@
     border: 0;
     background: transparent;
     color: var(--texto);
-    font-size: 13px;
-    font-weight: 500;
+    font-size: 15px;
+    font-weight: 400;
     outline: none;
   }
 

@@ -4,9 +4,14 @@
   su ícono, su nombre, cuántos productos tiene y cuántos están ocultos, su área (maqueta de Opciones
   y áreas GhrEVWPmevfBZtWzi4exKi), las flechas de subir y bajar (se guarda al instante, como el
   ojito) y el lápiz.
+
+  Desde la tabla nueva (8 nov 2026, maqueta Ltm74p3fb7tiAqYcj5nqbX): la nota va suelta sobre el fondo y la
+  tabla, en su marco. Mientras se lee el menú la primera vez (`cargando`), esqueletos con la forma de cada
+  fila y del conteo.
 -->
 <script lang="ts">
   import BotonCuadro from '../../../diseno/BotonCuadro.svelte';
+  import Esqueleto from '../../../diseno/Esqueleto.svelte';
   import IconoCategoria from '../../../diseno/IconoCategoria.svelte';
   import NotaTabla from '../../../diseno/NotaTabla.svelte';
   import Tabla from '../../../diseno/Tabla.svelte';
@@ -15,13 +20,24 @@
 
   let {
     menu,
+    cargando = false,
+    esqueletos = 3,
     alMover,
     alEditar,
   }: {
     menu: Menu;
+    cargando?: boolean;
+    esqueletos?: number;
     alMover: (c: Categoria, hacia: 'arriba' | 'abajo') => void;
     alEditar: (c: Categoria) => void;
   } = $props();
+
+  const ESQUELETO = [
+    { nombre: '60px', cuenta: '128px', area: '60px' },
+    { nombre: '86px', cuenta: '96px', area: '52px' },
+    { nombre: '72px', cuenta: '112px', area: '60px' },
+  ];
+  const filasEsqueleto = $derived(Array.from({ length: esqueletos }, (_, i) => ESQUELETO[i % ESQUELETO.length]));
 
   const nombreArea = $derived(new Map(menu.areas.map((a) => [a.id, a.nombre])));
 
@@ -37,16 +53,34 @@
 <div class="herramientas">
   <p class="nota">Así salen en tu menú en línea, de arriba abajo. Muévelas con las flechas.</p>
   <span class="crece"></span>
-  <span class="etiqueta">{plural(menu.categorias.length, 'CATEGORÍA', 'CATEGORÍAS')}</span>
+  <span class="etiqueta">
+    {#if cargando}<Esqueleto ancho="92px" alto="10px" />{:else}{plural(menu.categorias.length, 'CATEGORÍA', 'CATEGORÍAS')}{/if}
+  </span>
 </div>
 
 <Tabla
   columnas="3fr 1.6fr 1.5fr 128px"
   relleno="0 16px"
   altoFila={64}
-  encabezados={[{ texto: 'CATEGORÍA' }, { texto: 'PRODUCTOS' }, { texto: 'ÁREA' }, { texto: '' }]}
+  marco
+  encabezados={[{ texto: 'Categoría' }, { texto: 'Productos' }, { texto: 'Área' }, { texto: '' }]}
 >
-  {#if !menu.categorias.length}
+  {#if cargando}
+    <!-- El esqueleto: tantas filas como categorías había la última vez, con su forma y sin sus botones. -->
+    <span class="solo-lector">Cargando tus categorías…</span>
+    {#each filasEsqueleto as e, i (i)}
+      <div class="fila quieta" aria-hidden="true">
+        <span class="categoria">
+          <span class="numero"><Esqueleto ancho="16px" alto="9px" /></span>
+          <Esqueleto ancho="36px" alto="36px" redondo="11px" />
+          <Esqueleto ancho={e.nombre} alto="11px" />
+        </span>
+        <span><Esqueleto ancho={e.cuenta} alto="10px" /></span>
+        <span><Esqueleto ancho={e.area} alto="26px" redondo="8px" /></span>
+        <span></span>
+      </div>
+    {/each}
+  {:else if !menu.categorias.length}
     <NotaTabla
       relleno={48} angosta
       titulo="Todavía no tienes categorías."
@@ -93,9 +127,10 @@
 </Tabla>
 
 <style>
+  /* 48, como la de Productos con su búsqueda: la tabla no brinca al cambiar de sección. */
   .herramientas {
     flex: none;
-    min-height: 40px;
+    min-height: 48px;
     display: flex;
     align-items: center;
     gap: 12px;

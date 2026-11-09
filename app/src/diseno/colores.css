@@ -30,6 +30,12 @@
   --chip: rgba(0, 0, 0, 0.043);        /* fondo de chips, iconos y el selector */
   --fila-abierta: rgba(0, 0, 0, 0.09);  /* la conversación abierta en la barra de chats */
   --barrita: #b0b0b0;                  /* la barrita de una mini tabla que no cabe */
+  /* La tabla en su marco (Mi menú, 8 nov 2026): los grises de la Table de HeroUI, medidos en heroui.com. */
+  --tabla-marco: #efeff0;              /* el marco y la fila de los encabezados */
+  --tabla-encabezado: #71717a;
+  --tabla-raya: #e4e4e7;               /* la rayita entre encabezado y encabezado */
+  --tabla-linea-cabecera: color-mix(in oklab, #e4e4e7 50%, transparent);
+  --tabla-linea: color-mix(in oklab, #cdcdce 50%, transparent); /* entre fila y fila */
   --tinta: #0b0b0b;                    /* lo activo: opción del menú, botón principal */
   --sobre-tinta: #ffffff;
   --sobre-tinta-suave: rgba(255, 255, 255, 0.64); /* el texto chico de la barra de Ocultar varios */
@@ -84,6 +90,11 @@
   --chip: rgba(255, 255, 255, 0.06);
   --fila-abierta: rgba(255, 255, 255, 0.1);
   --barrita: #5f5f5f;
+  --tabla-marco: #232325;
+  --tabla-encabezado: #9f9fa9;
+  --tabla-raya: #34343a;
+  --tabla-linea-cabecera: color-mix(in oklab, #212124 50%, transparent);
+  --tabla-linea: color-mix(in oklab, #3c3c3f 50%, transparent);
   --tinta: #f5f5f2;
   --sobre-tinta: #0b0b0b;
   --sobre-tinta-suave: rgba(0, 0, 0, 0.64);

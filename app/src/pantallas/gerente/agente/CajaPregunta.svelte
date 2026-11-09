@@ -410,7 +410,7 @@
     place-items: center;
     padding: 0;
     border: 0;
-    border-radius: 50%;
+    border-radius: 10px; /* rectángulo como los botones de ícono (9 nov 2026) */
     background: var(--mandar);
     color: var(--sobre-mandar);
     transition:
@@ -467,7 +467,7 @@
     place-items: center;
     padding: 0;
     border: 0;
-    border-radius: 50%;
+    border-radius: 10px; /* rectángulo como los botones de ícono (9 nov 2026) */
     background: none;
     color: var(--suave);
   }

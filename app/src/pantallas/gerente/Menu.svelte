@@ -15,6 +15,12 @@
   pastilla pegada al título. El inglés lo traduce la IA sola (lib/traduccion.ts): al abrir la vista y
   después de guardar un producto, una categoría o un grupo, sin esperarlo; si escribió algo, se vuelve a
   leer el menú. Se para al salir de la vista.
+
+  Desde la tabla nueva (8 nov 2026, maqueta Ltm74p3fb7tiAqYcj5nqbX): sin la tarjeta blanca. Lo de arriba de
+  cada sección (la búsqueda, la nota) va suelto sobre el fondo y su tabla, en su marco, 16 abajo. Mientras
+  lee por primera vez, la sección sale con un menú vacío y `cargando`, que pinta sus esqueletos, tantos
+  como filas tenía la última vez en este navegador (encuesta del 8 nov 2026); si no pudo leer, la tabla
+  vacía de la sección con su nota.
 -->
 <script lang="ts">
   import { onDestroy, onMount, tick } from 'svelte';
@@ -26,7 +32,6 @@
   import { trazosCategoria } from '../../diseno/iconosCategorias';
   import NotaTabla from '../../diseno/NotaTabla.svelte';
   import Tabla from '../../diseno/Tabla.svelte';
-  import Tarjeta from '../../diseno/Tarjeta.svelte';
   import { esDeRed, SIN_CONEXION } from '../../lib/errores';
   import { plural } from '../../lib/formato';
   import type { Sucursal } from '../../lib/gerente';
@@ -79,6 +84,37 @@
   let tarjeta = $state<HTMLElement>();
 
   const menu = $derived(lectura.estado === 'listo' ? lectura.menu : null);
+  const cargando = $derived(lectura.estado === 'leyendo');
+  // Lo que ven las secciones mientras leen: nada, con sus esqueletos encima.
+  const VACIO: Menu = { categorias: [], productos: [], grupos: [], areas: [] };
+  const visto = $derived(menu ?? VACIO);
+
+  // Cuántas filas tenía cada sección la última vez, en este navegador y en esta sucursal, para que el
+  // esqueleto salga con esas: 3 la primera vez, al menos 1 y a lo más 10 (las que caben).
+  type Filas = Record<Seccion, number>;
+  const llaveFilas = () => `fragmentless-menu-filas-${sucursal.id}`;
+  const entre = (n: unknown) => (typeof n === 'number' && Number.isFinite(n) ? Math.min(10, Math.max(1, Math.round(n))) : 3);
+
+  function leerFilas(): Filas {
+    try {
+      const g = JSON.parse(localStorage.getItem(llaveFilas()) ?? 'null') as Partial<Filas> | null;
+      return { productos: entre(g?.productos), categorias: entre(g?.categorias), opciones: entre(g?.opciones), areas: entre(g?.areas) };
+    } catch (error) {
+      console.error('[menu] no se pudo leer cuántas filas había; el esqueleto sale con 3:', error);
+      return { productos: 3, categorias: 3, opciones: 3, areas: 3 };
+    }
+  }
+
+  function guardarFilas(m: Menu) {
+    const filas: Filas = { productos: m.productos.length, categorias: m.categorias.length, opciones: m.grupos.length, areas: m.areas.length };
+    try {
+      localStorage.setItem(llaveFilas(), JSON.stringify(filas));
+    } catch (error) {
+      console.error('[menu] no se pudo recordar cuántas filas hay:', error);
+    }
+  }
+
+  const filas = leerFilas();
 
   const estado = $derived.by(() => {
     if (lectura.estado === 'leyendo') return { texto: 'Cargando tu menú…', vivo: true };
@@ -99,6 +135,7 @@
     try {
       const nuevo = await leerMenu(sucursal.id);
       lectura = { estado: 'listo', menu: nuevo };
+      guardarFilas(nuevo);
       if (filtro !== null && !nuevo.categorias.some((c) => c.id === filtro)) filtro = null;
     } catch (error) {
       console.error('[menu] no se pudo leer el menú:', error);
@@ -126,15 +163,15 @@
     else aviso = 'Primero crea una categoría.';
   });
 
-  // La tabla vacía de cada sección, mientras lee o si no pudo leer.
+  // La tabla vacía de cada sección, si no pudo leer.
   const VACIA: Record<Seccion, { columnas: string; encabezados: string[] }> = {
     productos: {
       columnas: '2.2fr 2.8fr 1.1fr 0.8fr 1fr 80px',
-      encabezados: ['PRODUCTO', 'DESCRIPCIÓN', 'CATEGORÍA', 'PRECIO', 'VISIBILIDAD', ''],
+      encabezados: ['Producto', 'Descripción', 'Categoría', 'Precio', 'Visibilidad', ''],
     },
-    categorias: { columnas: '3fr 1.6fr 1.5fr 128px', encabezados: ['CATEGORÍA', 'PRODUCTOS', 'ÁREA', ''] },
-    opciones: { columnas: '3fr 1.3fr 1.1fr 128px', encabezados: ['GRUPO', 'CÓMO SE ELIGE', 'PRODUCTOS', ''] },
-    areas: { columnas: '1.4fr 3fr 88px', encabezados: ['ÁREA', 'LE LLEGAN', ''] },
+    categorias: { columnas: '3fr 1.6fr 1.5fr 128px', encabezados: ['Categoría', 'Productos', 'Área', ''] },
+    opciones: { columnas: '3fr 1.3fr 1.1fr 128px', encabezados: ['Grupo', 'Cómo se elige', 'Productos', ''] },
+    areas: { columnas: '1.4fr 3fr 88px', encabezados: ['Área', 'Le llegan', ''] },
   };
 
   function cambiarSeccion(valor: Seccion) {
@@ -281,11 +318,13 @@
 </BarraArriba>
 
 <main class="cuerpo" bind:this={tarjeta}>
-  <Tarjeta como="section" class="tarjeta-menu" aria-label="Mi menú">
-    {#if menu}
+  <section class="seccion" aria-label="Mi menú">
+    {#if lectura.estado !== 'error'}
       {#if seccion === 'productos'}
         <Productos
-          {menu}
+          menu={visto}
+          {cargando}
+          esqueletos={filas.productos}
           bind:busqueda
           {filtro}
           alFiltrar={(id) => (filtro = id)}
@@ -299,33 +338,38 @@
         />
       {:else if seccion === 'categorias'}
         <Categorias
-          {menu}
-          alMover={(c, hacia) =>
-            mover(menu.categorias, c, hacia, moverCategoria, () => (menu.productos = ordenarProductos(menu.categorias, menu.productos)))}
+          menu={visto}
+          {cargando}
+          esqueletos={filas.categorias}
+          alMover={(c, hacia) => {
+            if (menu) mover(menu.categorias, c, hacia, moverCategoria, () => (menu.productos = ordenarProductos(menu.categorias, menu.productos)));
+          }}
           alEditar={(c) => (ventana = { tipo: 'categoria', categoria: c })}
         />
       {:else if seccion === 'opciones'}
         <Opciones
-          {menu}
-          alMover={(g, hacia) => mover(menu.grupos, g, hacia, moverGrupo)}
+          menu={visto}
+          {cargando}
+          esqueletos={filas.opciones}
+          alMover={(g, hacia) => {
+            if (menu) mover(menu.grupos, g, hacia, moverGrupo);
+          }}
           alEditar={(g) => (ventana = { tipo: 'grupo', grupo: g })}
         />
       {:else}
-        <Areas {menu} alEditar={(a) => (ventana = { tipo: 'area', area: a })} />
+        <Areas menu={visto} {cargando} esqueletos={filas.areas} alEditar={(a) => (ventana = { tipo: 'area', area: a })} />
       {/if}
     {:else}
-      <!-- Mientras lee o si no pudo: la tabla vacía con su nota, como en Flet. -->
-      <Tabla columnas={VACIA[seccion].columnas} encabezados={VACIA[seccion].encabezados.map((texto) => ({ texto }))}>
-        {#if lectura.estado === 'leyendo'}
-          <NotaTabla relleno={48} angosta titulo="Cargando tu menú…" />
-        {:else if lectura.estado === 'error' && lectura.deRed}
+      <!-- Si no pudo leer: la tabla vacía con su nota, como en Flet. -->
+      <Tabla columnas={VACIA[seccion].columnas} encabezados={VACIA[seccion].encabezados.map((texto) => ({ texto }))} marco>
+        {#if lectura.deRed}
           <NotaTabla relleno={48} angosta titulo="Sin conexión." texto={SIN_CONEXION} />
         {:else}
           <NotaTabla relleno={48} angosta titulo="No se pudo cargar tu menú." texto="Intenta de nuevo en un momento." />
         {/if}
       </Tabla>
     {/if}
-  </Tarjeta>
+  </section>
 </main>
 
 {#if menu && ventana?.tipo === 'producto'}
@@ -379,11 +423,10 @@
     bottom: var(--vista-abajo);
   }
 
-  .cuerpo > :global(.tarjeta-menu) {
+  .seccion {
     height: 100%;
-    padding: 20px;
     display: flex;
     flex-direction: column;
-    gap: 14px;
+    gap: 16px;
   }
 </style>

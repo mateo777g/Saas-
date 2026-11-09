@@ -892,12 +892,12 @@
     opacity: 0.35;
   }
 
-  /* «Ver inglés»: la píldora de las ventanas de producto y de categoría, sin abrirse. */
+  /* «Ver inglés»: la barra (rectángulo desde el 9 nov 2026) de las ventanas de producto y de categoría, sin abrirse. */
   .ver-ingles {
     margin-top: 4px;
     height: 48px;
     overflow: hidden;
-    border-radius: 24px;
+    border-radius: 12px;
     background: var(--chip);
   }
 
@@ -909,7 +909,7 @@
     gap: 10px;
     padding: 0 16px;
     border: 0;
-    border-radius: 24px;
+    border-radius: 12px;
     background: transparent;
     color: var(--texto);
     font: inherit;

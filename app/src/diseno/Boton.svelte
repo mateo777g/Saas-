@@ -4,17 +4,19 @@
               tinta: el principal (negro en claro, blanco en oscuro)
               acento: naranja en claro, azul en oscuro (Conectar Mercado Pago, Renovar)
               verde: el que guarda o agrega en las ventanas del panel del gerente, como el «Arrow Fill
-                Button» de Hyperiux (Mi menú, versión 8): píldora de 44 con un círculo blanco a la derecha;
+                Button» de Hyperiux (Mi menú, versión 8): rectángulo de 44 con un cuadrito blanco a la derecha;
                 con el mouse encima, al tocarlo (450 ms) o con el teclado, el blanco crece hasta llenarlo,
                 la letra se vuelve verde y el ícono sale por la derecha mientras entra otro. «Agregar…»
                 lleva el +; lo demás, la flecha. Mientras guarda, el círculo gira; listo, la palomita.
               peligro: lo que borra, con contorno rojo (Eliminar producto, el anuncio abierto), como el
-                «Flow Button» (versión 9), siempre en píldora: un círculo nace del centro y lo llena, el
+                «Flow Button» (versión 9): un círculo nace del centro y lo llena, el
                 texto se recorre y el ícono cruza de lado. 44 de alto.
               peligro-lleno: el mismo, lleno de rojo, el «Sí, eliminar» de Confirmar. 40 de alto.
-              alarga: las acciones sencillas, como el «Expanding Icon Button» (versión 13): un círculo de
+              alarga: las acciones sencillas, como el «Expanding Icon Button» (versión 13): un cuadro de
                 40 con su ícono que, con el mouse encima, al tocarlo o con el teclado, se alarga justo lo
                 que mide su texto (Cancelar). En tinta.
+              Desde el 9 nov 2026 ninguno es píldora ni círculo: todos llevan las esquinas de 12 de los de
+              la barra de arriba (regla de diseño «Los botones»); sus animaciones no cambiaron.
     tamano    normal: 40 de alto, letra 13 (la barra de arriba, las ventanas)
               grande: 48 de alto, letra 14, a todo lo ancho (el login)
               chico: 34 de alto, letra 12.5, icono 14 ("Ver clientes →")
@@ -288,7 +290,7 @@
     justify-content: flex-start;
     gap: 0;
     border: 1px solid var(--bf-fondo);
-    border-radius: 999px;
+    border-radius: 12px;
     background: var(--bf-fondo);
     color: var(--bf-letra);
     font: 600 13.5px var(--jakarta);
@@ -304,7 +306,7 @@
     position: absolute;
     z-index: 2;
     inset: var(--bf-y) var(--bf-derecha) var(--bf-y) calc(100% - var(--bf-derecha) - var(--bf-circulo));
-    border-radius: 999px;
+    border-radius: 8px;
     background: var(--bf-blanco);
     pointer-events: none;
     transition: inset 0.45s var(--bf-curva);
@@ -332,7 +334,7 @@
     height: var(--bf-circulo);
     transform: translateY(-50%);
     overflow: hidden;
-    border-radius: 999px;
+    border-radius: 8px;
     background: var(--bf-blanco);
     color: var(--bf-fondo);
     pointer-events: none;
@@ -402,7 +404,7 @@
     animation: girar 0.8s linear infinite;
   }
 
-  /* ─── Los rojos (Flow Button), con sus mismas curvas y tiempos, siempre en píldora. Con contorno el
+  /* ─── Los rojos (Flow Button), con sus mismas curvas y tiempos, con las esquinas de 12. Con contorno el
      círculo es rojo y la letra se vuelve blanca; lleno, el círculo es un rojo más oscuro. */
   .boton.flujo {
     --bfl-c1: cubic-bezier(0.23, 1, 0.32, 1);
@@ -419,7 +421,7 @@
     padding: 0 32px;
     gap: 0;
     border: 1.5px solid color-mix(in srgb, var(--rojo) 45%, transparent);
-    border-radius: 999px;
+    border-radius: 12px;
     background: transparent;
     color: var(--rojo);
     font: 600 13.5px var(--jakarta);
@@ -568,7 +570,7 @@
     padding: 0 12px;
     overflow: hidden;
     border: 0;
-    border-radius: 999px;
+    border-radius: 12px;
     background: var(--ba-fondo);
     color: var(--ba-letra);
     font: 600 13.5px var(--jakarta);

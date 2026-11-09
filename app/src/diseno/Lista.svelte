@@ -12,6 +12,7 @@
 <script lang="ts" generics="V extends string | number">
   import { tick } from 'svelte';
   import { Tween } from 'svelte/motion';
+  import { DURA_FLECHA, resorteFlecha, trazosFlecha } from './flecha';
   import IconoCategoria from './IconoCategoria.svelte';
 
   let {
@@ -43,27 +44,15 @@
   const n = $derived(opciones.length);
   const elegida = $derived(opciones.find((o) => o.valor === valor));
 
-  // La flecha: cada punta va de la V a la ✕ con el resorte de framer-motion (rigidez 260, freno 22, masa 1),
-  // resuelto por tiempo, como la transición CSS de 0.662 s de la maqueta: rebasa 5 % y regresa. No va con el
-  // `Spring` de Svelte porque ese suma su empuje en cada cuadro: en una pantalla de 120 Hz o más corre más
-  // rápido y ya no rebota (medido el 7 de noviembre de 2026).
+  // La flecha se dobla en ✕ con el resorte 260/22 (diseno/flecha.ts).
   const quieto = typeof matchMedia === 'function' ? matchMedia('(prefers-reduced-motion: reduce)') : null;
-  const W0 = Math.sqrt(260);
-  const Z = 22 / (2 * W0);
-  const WD = W0 * Math.sqrt(1 - Z * Z);
-  const DURA = 662;
-  function resorte(p: number): number {
-    if (p >= 1) return 1;
-    const t = (p * DURA) / 1000;
-    return 1 - Math.exp(-Z * W0 * t) * (Math.cos(WD * t) + ((Z * W0) / WD) * Math.sin(WD * t));
-  }
-  const doblez = new Tween(0, { duration: DURA, easing: resorte });
+  const doblez = new Tween(0, { duration: DURA_FLECHA, easing: resorteFlecha });
   $effect(() => {
     doblez.set(abierta ? 1 : 0, quieto?.matches ? { duration: 0 } : undefined);
   });
-  const ir = (a: number, b: number) => (a + (b - a) * doblez.current).toFixed(2);
-  const l1 = $derived(`M ${ir(6, 6)} ${ir(10, 6)} L ${ir(12, 18)} ${ir(16, 18)}`);
-  const l2 = $derived(`M ${ir(12, 6)} ${ir(16, 18)} L ${ir(18, 18)} ${ir(10, 6)}`);
+  const trazos = $derived(trazosFlecha(doblez.current));
+  const l1 = $derived(trazos[0]);
+  const l2 = $derived(trazos[1]);
 
   function opcionesDom(): HTMLButtonElement[] {
     return caja ? [...caja.querySelectorAll<HTMLButtonElement>('.lista-opcion')] : [];
@@ -225,8 +214,6 @@
   .lista {
     position: relative;
     min-width: 0;
-    --resorte-fondo: linear(0, 0.0116, 0.042, 0.0856, 0.138, 0.1957, 0.2562, 0.3173, 0.3775, 0.4357, 0.4912, 0.5435, 0.5922, 0.6372, 0.6785, 0.7161, 0.7502, 0.7808, 0.8084, 0.8329, 0.8548, 0.8742, 0.8912, 0.9063, 0.9194, 0.931, 0.941, 0.9497, 0.9573, 0.9638, 0.9694, 0.9743, 0.9784, 0.9819, 0.985, 0.9875, 0.9897, 0.9915, 0.9931, 0.9943, 0.9954, 0.9963, 0.9971, 0.9977, 0.9982, 0.9986, 0.9989, 0.9992, 1);
-    --resorte-opcion: linear(0, 0.0158, 0.0565, 0.1141, 0.182, 0.2553, 0.3304, 0.4044, 0.4755, 0.5424, 0.6042, 0.6605, 0.7112, 0.7563, 0.7961, 0.8308, 0.8608, 0.8866, 0.9086, 0.9271, 0.9426, 0.9555, 0.9661, 0.9748, 0.9817, 0.9873, 0.9917, 0.9951, 0.9977, 0.9996, 1.001, 1.002, 1.0027, 1.0031, 1.0032, 1.0033, 1.0032, 1.0031, 1.0029, 1.0026, 1.0024, 1.0021, 1.0019, 1.0017, 1.0015, 1.0013, 1.0011, 1.0009, 1);
   }
 
   .lista-boton {

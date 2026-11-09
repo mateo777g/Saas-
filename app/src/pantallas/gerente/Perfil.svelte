@@ -11,6 +11,7 @@
 <script lang="ts">
   import Campo from '../../diseno/Campo.svelte';
   import Formulario from '../../diseno/Formulario.svelte';
+  import GrupoCampos from '../../diseno/GrupoCampos.svelte';
   import Ventana from '../../diseno/Ventana.svelte';
   import { guardarPerfil } from '../../lib/gerente';
 
@@ -40,7 +41,7 @@
   }
 </script>
 
-<Ventana
+<Ventana centrado
   etiqueta="PERFIL"
   titulo="Tus datos"
   texto="Y cómo te llama Fragmentless en el panel."
@@ -57,6 +58,7 @@
     espacio={18}
     antesDelBoton={24}
   >
+    <GrupoCampos>
     <Campo
       id="perfil-nombre"
       etiqueta="NOMBRE COMPLETO"
@@ -71,5 +73,6 @@
       bind:valor={apodo}
       pista="Sale en el saludo de Inicio y del Agente IA. Máximo 20 letras."
     />
+    </GrupoCampos>
   </Formulario>
 </Ventana>

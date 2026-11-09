@@ -5,6 +5,7 @@
 -->
 <script lang="ts">
   import Formulario from '../../../diseno/Formulario.svelte';
+  import GrupoCampos from '../../../diseno/GrupoCampos.svelte';
   import Ventana from '../../../diseno/Ventana.svelte';
   import { ponerPin, type Persona } from '../../../lib/equipo';
   import { ALGO_SALIO_PANEL, Fallo } from '../../../lib/errores';
@@ -41,13 +42,14 @@
   }
 </script>
 
-<Ventana
+<Ventana centrado
   etiqueta={paso === 'guardando' ? 'GUARDANDO…' : p.yo ? 'TU PIN' : 'PIN NUEVO'}
   titulo={p.yo ? 'Tu PIN' : p.nombre}
   ancho={440}
   alCerrar={cerrar}
 >
   <Formulario verde boton={{ etiqueta: 'Guardar PIN', icono: 'check' }} {guardar} alTerminar={alCerrar} antesDelBoton={28}>
+    <GrupoCampos>
     <CampoPin
       id="pin-nuevo"
       etiqueta={p.yo && p.tienePin ? 'PIN NUEVO' : 'PIN'}
@@ -56,5 +58,6 @@
         ? 'Con tu PIN autorizas cancelaciones y descuentos en los aparatos de tu equipo.'
         : 'Díselo en persona. Si su PIN estaba bloqueado, con el nuevo vuelve a entrar.'}
     />
+    </GrupoCampos>
   </Formulario>
 </Ventana>

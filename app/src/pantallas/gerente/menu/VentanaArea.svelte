@@ -9,6 +9,7 @@
   import Campo from '../../../diseno/Campo.svelte';
   import Confirmar from '../../../diseno/Confirmar.svelte';
   import Formulario from '../../../diseno/Formulario.svelte';
+  import GrupoCampos from '../../../diseno/GrupoCampos.svelte';
   import Ventana from '../../../diseno/Ventana.svelte';
   import { ALGO_SALIO_PANEL, Fallo } from '../../../lib/errores';
   import { plural } from '../../../lib/formato';
@@ -103,7 +104,7 @@
     alTerminar={alCerrar}
   />
 {:else}
-  <Ventana
+  <Ventana centrado
     etiqueta={paso === 'guardando' ? 'GUARDANDO…' : inicial ? 'EDITAR ÁREA' : 'NUEVA ÁREA'}
     titulo={inicial ? inicial.nombre : 'Agrega un área'}
     ancho={460}
@@ -118,6 +119,7 @@
       espacio={16}
       antesDelBoton={28}
     >
+      <GrupoCampos>
       <Campo
         id="area-nombre"
         etiqueta="NOMBRE"
@@ -127,6 +129,7 @@
           ? 'Así sale en tus categorías y en la pantalla de cocina.'
           : 'Después, en Categorías, elige qué categorías van a ella.'}
       />
+      </GrupoCampos>
 
       {#snippet izquierda()}
         {#if inicial}

@@ -15,6 +15,7 @@
   import IconoCategoria from '../../../diseno/IconoCategoria.svelte';
   import { ICONOS_CATEGORIAS } from '../../../diseno/iconosCategorias';
   import Ventana from '../../../diseno/Ventana.svelte';
+  import GrupoCampos from '../../../diseno/GrupoCampos.svelte';
   import { pista } from '../../../diseno/pista';
   import { ALGO_SALIO_PANEL, Fallo } from '../../../lib/errores';
   import { plural } from '../../../lib/formato';
@@ -159,6 +160,7 @@
            derecha, en el lugar de la foto (maqueta de Mi menú, versiones 17 y 18). -->
       <div class="dos-columnas">
         <div class="col-campos">
+          <GrupoCampos>
           <Campo id="categoria-nombre" etiqueta="NOMBRE" bind:valor={nombre} placeholder="Ej. Tacos" />
 
           <Lista
@@ -169,6 +171,7 @@
             opciones={[...menu.areas.map((a) => ({ valor: String(a.id), texto: a.nombre })), { valor: 'mesero', texto: 'Lo sirve el mesero' }]}
             pista="Ahí llegan sus productos al mandar a cocina. Lo que sirve el mesero no llega a ninguna pantalla."
           />
+          </GrupoCampos>
 
           <div class="muestra">
             <span class="cuadro-icono">{#if icono}<IconoCategoria id={icono} tamano={18} />{/if}</span>
@@ -186,6 +189,7 @@
         </div>
 
         <div class="col-icono">
+          <GrupoCampos>
           <div class="campo">
             <span class="etiqueta" id="categoria-icono">ÍCONO</span>
             <div class="iconos" role="radiogroup" aria-labelledby="categoria-icono">
@@ -204,6 +208,7 @@
               {/each}
             </div>
           </div>
+          </GrupoCampos>
         </div>
       </div>
 

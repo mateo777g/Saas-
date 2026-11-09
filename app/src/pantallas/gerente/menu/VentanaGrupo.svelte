@@ -24,6 +24,7 @@
   import Confirmar from '../../../diseno/Confirmar.svelte';
   import Formulario from '../../../diseno/Formulario.svelte';
   import Icono from '../../../diseno/Icono.svelte';
+  import GrupoCampos from '../../../diseno/GrupoCampos.svelte';
   import { pista } from '../../../diseno/pista';
   import IconoCategoria from '../../../diseno/IconoCategoria.svelte';
   import Ventana from '../../../diseno/Ventana.svelte';
@@ -286,6 +287,7 @@
     >
       <div class="dos-columnas" class:en-ingles-modo={ingles}>
         <div class="columna" bind:this={columnaIzquierda}>
+          <GrupoCampos>
           <div class="con-marca-en">
             <Campo
               id="grupo-nombre"
@@ -310,7 +312,9 @@
               </div>
             </div>
           </div>
+          </GrupoCampos>
 
+          <GrupoCampos>
           <div class="campo">
             <div class="etiquetas"><span class="etiqueta">OPCIONES</span><span class="etiqueta">PRECIO EXTRA</span></div>
             <div class="opciones" bind:this={listaOpciones}>
@@ -361,6 +365,7 @@
             </div>
             <p class="pista">El precio extra se suma al del producto; vacío es $0. El ojito marca una opción agotada.</p>
           </div>
+          </GrupoCampos>
 
           <div class="ver-ingles">
             <button type="button" class="ver-ingles-fila" aria-pressed={ingles} onclick={cambiarIdioma}>
@@ -910,7 +915,7 @@
     height: 48px;
     overflow: hidden;
     border-radius: 12px;
-    background: var(--chip);
+    background: var(--fondo); /* el gris de los grupos de campos (GrupoCampos), desde el 9 nov 2026 */
   }
 
   .ver-ingles-fila {

@@ -7,6 +7,7 @@
 <script lang="ts">
   import Boton from '../../../diseno/Boton.svelte';
   import Icono from '../../../diseno/Icono.svelte';
+  import GrupoCampos from '../../../diseno/GrupoCampos.svelte';
   import Ventana from '../../../diseno/Ventana.svelte';
   import { esClaro, hexAHsv, hsvAHex, leerCodigo } from '../../../lib/color';
   import { loQuePinta, type EstiloDeHoy } from '../../../lib/crearContenido';
@@ -61,7 +62,7 @@
   }
 </script>
 
-<Ventana etiqueta="Color" titulo="Color de este anuncio" ancho={440} relleno="24px 28px" {alCerrar}>
+<Ventana centrado etiqueta="Color" titulo="Color de este anuncio" ancho={440} relleno="24px 28px" {alCerrar}>
   <p class="nota primera">Solo para este anuncio: tu marca se queda con {marca ?? 'su color'}.</p>
   <!-- svelte-ignore a11y_no_static_element_interactions -->
   <div class="sv" style:background={hsvAHex(hsv[0], 1, 1)} onpointerdown={(e) => arrastrar(e, (x, y) => (hsv = [hsv[0], x, 1 - y]))}>
@@ -73,10 +74,14 @@
   <div class="tono" onpointerdown={(e) => arrastrar(e, (x) => (hsv = [x * 359.9, hsv[1], hsv[2]]))}>
     <span class="perilla" style:left="{(hsv[0] / 360) * 100}%" style:background={hsvAHex(hsv[0], 1, 1)}></span>
   </div>
+  <div class="codigo-grupo">
+  <GrupoCampos>
   <div class="codigo-fila">
     <span class="gota" style:background={hex}></span>
     <input bind:value={codigo} oninput={alEscribir} maxlength="7" aria-label="Código del color" autocomplete="off" spellcheck="false" />
     <span class="nota">Escríbelo si ya lo tienes, como el de tu logo.</span>
+  </div>
+  </GrupoCampos>
   </div>
   {#if pinta}
     <p class="aviso"><Icono nombre="info" tamano={16} /><span>En {estilo.nombre} pinta <b>{pinta}</b>.</span></p>
@@ -141,8 +146,12 @@
     top: 7px;
   }
 
-  .codigo-fila {
+  /* El código va en su gris (GrupoCampos, 9 nov 2026); el espacio de arriba pasa al grupo. */
+  .codigo-grupo {
     margin-top: 16px;
+  }
+
+  .codigo-fila {
     display: flex;
     align-items: center;
     gap: 12px;

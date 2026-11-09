@@ -47,7 +47,7 @@
   </div>
 {/snippet}
 
-<Ventana etiqueta="Estilo · se ve en {formatoDe(formato).texto.toLowerCase()}" titulo="Elige un estilo" ancho={1000} alto={720} relleno="24px 28px" {alCerrar}>
+<Ventana centrado etiqueta="Estilo · se ve en {formatoDe(formato).texto.toLowerCase()}" titulo="Elige un estilo" ancho={1000} alto={720} relleno="24px 28px" {alCerrar}>
   <div class="cuerpo">
     <div class="izq">
       <div class="muestra" style:width="{ancho}px" style:height="{alto}px">

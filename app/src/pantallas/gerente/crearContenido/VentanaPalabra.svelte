@@ -5,6 +5,7 @@
 -->
 <script lang="ts">
   import Boton from '../../../diseno/Boton.svelte';
+  import GrupoCampos from '../../../diseno/GrupoCampos.svelte';
   import Ventana from '../../../diseno/Ventana.svelte';
 
   let {
@@ -41,7 +42,9 @@
   }
 </script>
 
-<Ventana etiqueta="Cambiar palabra" {titulo} ancho={420} relleno="24px 28px" {alCerrar}>
+<Ventana centrado etiqueta="Cambiar palabra" {titulo} ancho={420} relleno="24px 28px" {alCerrar}>
+  <div class="grupo-arriba">
+  <GrupoCampos>
   <div class="campo">
     <div class="etq-fila">
       <label class="etq" for="palabra">Va en tu anuncio</label>
@@ -62,6 +65,8 @@
     />
     <p class="pista">Va tal cual al anuncio. No gasta nada más.</p>
   </div>
+  </GrupoCampos>
+  </div>
   <div class="pie">
     <Boton etiqueta="Cancelar" icono="cerrar" tono="alarga" onclick={alCerrar} />
     <span class="crece"></span>
@@ -70,8 +75,12 @@
 </Ventana>
 
 <style>
-  .campo {
+  /* El campo va en su gris (GrupoCampos, 9 nov 2026); el espacio de arriba pasa al grupo. */
+  .grupo-arriba {
     margin-top: 18px;
+  }
+
+  .campo {
     min-width: 0;
     display: flex;
     flex-direction: column;

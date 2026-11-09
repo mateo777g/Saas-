@@ -12,6 +12,7 @@
   import Campo from '../../../diseno/Campo.svelte';
   import Formulario from '../../../diseno/Formulario.svelte';
   import Lista from '../../../diseno/Lista.svelte';
+  import GrupoCampos from '../../../diseno/GrupoCampos.svelte';
   import Ventana from '../../../diseno/Ventana.svelte';
   import { crearCodigo, type Aparato, type Persona } from '../../../lib/equipo';
   import { ALGO_SALIO_PANEL, Fallo } from '../../../lib/errores';
@@ -107,7 +108,7 @@
   }
 </script>
 
-<Ventana
+<Ventana centrado
   etiqueta={!codigo && paso === 'guardando' ? 'CREANDO CÓDIGO…' : 'VINCULAR APARATO'}
   titulo={codigo ? nombre.trim() : 'Liga un aparato'}
   ancho={codigo ? 560 : 480}
@@ -124,6 +125,7 @@
       antesDelBoton={28}
       textoCargando="Creando…"
     >
+      <GrupoCampos>
       <Campo
         id="aparato-nombre"
         etiqueta="NOMBRE DEL APARATO"
@@ -142,6 +144,7 @@
           celular de alguien, solo esa persona puede entrar.
         </p>
       </div>
+      </GrupoCampos>
     </Formulario>
   {:else}
     <div class="caja-codigo" class:vencido>

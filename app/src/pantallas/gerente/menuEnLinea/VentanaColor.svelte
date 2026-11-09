@@ -8,6 +8,7 @@
 <script lang="ts">
   import Boton from '../../../diseno/Boton.svelte';
   import Icono from '../../../diseno/Icono.svelte';
+  import GrupoCampos from '../../../diseno/GrupoCampos.svelte';
   import Ventana from '../../../diseno/Ventana.svelte';
   import { casiNoSeVe, esClaro, hexAHsv, hsvAHex, leerCodigo, type TemaMenu } from '../../../lib/color';
   import Muestra from './Muestra.svelte';
@@ -61,7 +62,7 @@
   }
 </script>
 
-<Ventana titulo="Color de tu menú" nota="Pinta la barra de arriba, la raya de la categoría y los botones." ancho={440} {alCerrar}>
+<Ventana centrado titulo="Color de tu menú" nota="Pinta la barra de arriba, la raya de la categoría y los botones." ancho={440} {alCerrar}>
   <!-- svelte-ignore a11y_no_static_element_interactions -->
   <div class="sv" style:background={hsvAHex(hsv[0], 1, 1)} onpointerdown={(e) => arrastrar(e, (x, y) => (hsv = [hsv[0], x, 1 - y]))}>
     <div class="blanco"></div>
@@ -72,10 +73,14 @@
   <div class="tono" onpointerdown={(e) => arrastrar(e, (x) => (hsv = [x * 359.9, hsv[1], hsv[2]]))}>
     <span class="perilla" style:left="{(hsv[0] / 360) * 100}%" style:background={hsvAHex(hsv[0], 1, 1)}></span>
   </div>
+  <div class="codigo-grupo">
+  <GrupoCampos>
   <div class="codigo-fila">
     <span class="gota" style:background={hex}></span>
     <input bind:value={codigo} oninput={alEscribir} maxlength="7" aria-label="Código del color" autocomplete="off" spellcheck="false" />
     <span class="nota">Escríbelo si ya lo tienes, como el de tu logo.</span>
+  </div>
+  </GrupoCampos>
   </div>
   <div class="probar">
     <Muestra {slug} como="barra" muestra={{ tema, color: hex }} />
@@ -147,8 +152,12 @@
     top: 7px;
   }
 
-  .codigo-fila {
+  /* El código va en su gris (GrupoCampos, 9 nov 2026); el espacio de arriba pasa al grupo. */
+  .codigo-grupo {
     margin-top: 16px;
+  }
+
+  .codigo-fila {
     display: flex;
     align-items: center;
     gap: 12px;

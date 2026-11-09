@@ -74,7 +74,7 @@
     height: 48px;
     overflow: hidden;
     border-radius: 12px;
-    background: var(--chip);
+    background: var(--fondo); /* el gris de los grupos de campos (GrupoCampos), desde el 9 nov 2026 */
     transition: height 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
   }
 

@@ -8,8 +8,9 @@
   el foco. Se cierra con la X, con Escape o con un clic en el velo, como en la maqueta
   (Tbt7H3G1QRXykzNKe1GXHh); el panel decide qué pasa al cerrar (alCerrar).
 
-  `centrado` pone la etiqueta y el título al centro, con la X en su esquina (las ventanas de producto,
-  categoría y grupo de Mi menú, maqueta U9YqpsSb2PeB5pFXTPvh1C).
+  `centrado` pone la etiqueta, el título y su texto al centro, con la X en su esquina (las ventanas de producto,
+  categoría y grupo de Mi menú, maqueta U9YqpsSb2PeB5pFXTPvh1C; desde el 9 nov 2026, todas las del panel del gerente).
+  Los campos de adentro siguen a la izquierda.
 -->
 <script lang="ts">
   import { onMount, type Snippet } from 'svelte';
@@ -83,7 +84,7 @@
       <BotonCuadro icono="cerrar" ayuda="Cerrar" onclick={alCerrar} />
     </div>
     {#if texto}
-      <p class="texto" style:font-size="{tamanoTexto}px">{texto}</p>
+      <p class="texto" class:centrado style:font-size="{tamanoTexto}px">{texto}</p>
     {/if}
     {@render children()}
   </div>
@@ -145,6 +146,10 @@
     align-items: center;
     text-align: center;
     padding: 0 52px;
+  }
+
+  .texto.centrado {
+    text-align: center;
   }
 
   .centrado > :global(:last-child) {

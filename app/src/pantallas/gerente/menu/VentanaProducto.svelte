@@ -39,6 +39,7 @@
   } from '../../../lib/menu';
   import CajaFoto from './CajaFoto.svelte';
   import EnIngles from './EnIngles.svelte';
+  import GrupoCampos from '../../../diseno/GrupoCampos.svelte';
   import GruposProducto from './GruposProducto.svelte';
 
   let {
@@ -201,14 +202,17 @@
     >
       <div class="dos-columnas">
         <div class="col-campos">
-          <Campo id="producto-nombre" etiqueta="NOMBRE" bind:valor={nombre} placeholder="Ej. Tacos al pastor" />
-          <Campo
-            id="producto-descripcion"
-            etiqueta="DESCRIPCIÓN"
-            bind:valor={descripcion}
-            placeholder="Qué lleva, cómo se sirve… (opcional)"
-            multilinea
-          />
+          <GrupoCampos>
+            <Campo id="producto-nombre" etiqueta="NOMBRE" bind:valor={nombre} placeholder="Ej. Tacos al pastor" />
+            <Campo
+              id="producto-descripcion"
+              etiqueta="DESCRIPCIÓN"
+              bind:valor={descripcion}
+              placeholder="Qué lleva, cómo se sirve… (opcional)"
+              multilinea
+            />
+          </GrupoCampos>
+          <GrupoCampos>
           <div class="dos">
             <Lista
               id="producto-categoria"
@@ -228,6 +232,7 @@
               />
             </div>
           </div>
+          </GrupoCampos>
 
           <div class="fila-switch">
             <Interruptor prendido={envio} ayuda="Es un costo de envío" apagado={paso !== null} alCambiar={(v) => (envio = v)} />
@@ -244,7 +249,7 @@
           {#if envio}
             <p class="pista">Un envío no lleva opciones ni foto, ni su parte en inglés, porque tus clientes no lo ven.</p>
           {:else}
-            <GruposProducto {grupos} bind:elegidos apagado={paso !== null} />
+            <GrupoCampos><GruposProducto {grupos} bind:elegidos apagado={paso !== null} /></GrupoCampos>
           {/if}
         </div>
         <CajaFoto src={foto} {envio} apagado={paso !== null} alElegir={alElegirFoto} />
@@ -314,7 +319,7 @@
     gap: 14px;
     padding: 14px 16px;
     border-radius: 16px;
-    background: var(--chip);
+    background: var(--fondo); /* el gris de los grupos de campos (GrupoCampos), desde el 9 nov 2026 */
   }
 
   .fila-switch :global(.interruptor) {

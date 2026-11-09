@@ -7,6 +7,7 @@
 <script lang="ts">
   import Campo from '../../../diseno/Campo.svelte';
   import Formulario from '../../../diseno/Formulario.svelte';
+  import GrupoCampos from '../../../diseno/GrupoCampos.svelte';
   import Ventana from '../../../diseno/Ventana.svelte';
   import { altaEmpleado, editarEmpleado, type Persona } from '../../../lib/equipo';
   import { ROLES, type Rol } from '../../../lib/roles';
@@ -65,7 +66,7 @@
   }
 </script>
 
-<Ventana
+<Ventana centrado
   etiqueta={paso === 'guardando' ? 'GUARDANDO…' : inicial ? 'EDITAR EMPLEADO' : 'NUEVO EMPLEADO'}
   titulo={inicial ? inicial.nombre : 'Agrega a tu equipo'}
   ancho={480}
@@ -79,15 +80,19 @@
     espacio={18}
     antesDelBoton={28}
   >
-    <Campo id="empleado-nombre" etiqueta="NOMBRE" bind:valor={nombre} placeholder="Ej. «Pepe Martínez»" />
-    <ElegirRoles bind:roles />
+    <GrupoCampos>
+      <Campo id="empleado-nombre" etiqueta="NOMBRE" bind:valor={nombre} placeholder="Ej. «Pepe Martínez»" />
+      <ElegirRoles bind:roles />
+    </GrupoCampos>
     {#if !inicial}
-      <CampoPin
-        id="empleado-pin"
-        etiqueta="PIN"
-        bind:valor={pin}
-        pista="4 números. Díselo en persona: después nadie lo puede ver, ni tú."
-      />
+      <GrupoCampos>
+        <CampoPin
+          id="empleado-pin"
+          etiqueta="PIN"
+          bind:valor={pin}
+          pista="4 números. Díselo en persona: después nadie lo puede ver, ni tú."
+        />
+      </GrupoCampos>
     {/if}
   </Formulario>
 </Ventana>

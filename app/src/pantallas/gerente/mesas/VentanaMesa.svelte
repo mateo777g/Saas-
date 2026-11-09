@@ -7,6 +7,7 @@
 <script lang="ts">
   import Campo from '../../../diseno/Campo.svelte';
   import Formulario from '../../../diseno/Formulario.svelte';
+  import GrupoCampos from '../../../diseno/GrupoCampos.svelte';
   import Ventana from '../../../diseno/Ventana.svelte';
   import { ALGO_SALIO_PANEL, Fallo } from '../../../lib/errores';
   import { crearMesa, renombrarMesa, type Mesa } from '../../../lib/mesas';
@@ -57,7 +58,7 @@
   }
 </script>
 
-<Ventana
+<Ventana centrado
   etiqueta={paso === 'guardando' ? 'GUARDANDO…' : inicial ? 'EDITAR MESA' : 'NUEVA MESA'}
   titulo={inicial ? inicial.nombre : 'Agrega una mesa'}
   ancho={440}
@@ -70,6 +71,8 @@
     alTerminar={alCerrar}
     antesDelBoton={28}
   >
-    <Campo id="mesa-nombre" etiqueta="NOMBRE" bind:valor={nombre} placeholder="Ej. «Mesa 6» o «Barra 1»" />
+    <GrupoCampos>
+      <Campo id="mesa-nombre" etiqueta="NOMBRE" bind:valor={nombre} placeholder="Ej. «Mesa 6» o «Barra 1»" />
+    </GrupoCampos>
   </Formulario>
 </Ventana>

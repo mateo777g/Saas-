@@ -4,6 +4,8 @@
   Recientes y las primeras 4 acciones. Se mueve con ↑ ↓, Enter abre y Esc cierra. Cada panel pone sus
   renglones. Desde el 7 de noviembre es una píldora con el brillo de Haz, y su ventanita sale como las ideas
   del Agente IA: ella primero y luego, en fila, cada título y cada renglón (maqueta 4B6Qhre6dkK3pJgXtryyEV v3).
+  Con `alCerrar` va dentro de BuscarAqui (la que se abre en cualquier vista, 9 nov 2026): no se cierra al perder el
+  foco, Esc y elegir algo la cierran, y toma el ancho de su ventana.
 -->
 <script lang="ts" module>
   export type RenglonBusqueda = { clave: string; texto: string; de?: string; icono: string; alPicar: () => void };
@@ -19,12 +21,15 @@
     acciones,
     recientes,
     placeholder = 'Busca una vista o una acción…',
+    alCerrar,
   }: {
     vistas: RenglonBusqueda[];
     acciones: RenglonBusqueda[];
     recientes: RenglonBusqueda[];
     // El distribuidor no tiene acciones: «Busca una vista…» (8 nov 2026).
     placeholder?: string;
+    // Solo en BuscarAqui: cierra su ventana.
+    alCerrar?: () => void;
   } = $props();
 
   type Seccion = { titulo: string; renglones: RenglonBusqueda[] };
@@ -84,6 +89,11 @@
 
   function elegir(r: RenglonBusqueda | undefined) {
     if (!r) return;
+    if (alCerrar) {
+      alCerrar();
+      r.alPicar();
+      return;
+    }
     texto = '';
     abierta = false;
     ya = false;
@@ -102,6 +112,11 @@
       e.preventDefault();
       elegir(todos[marcado]);
     } else if (e.key === 'Escape') {
+      if (alCerrar) {
+        e.preventDefault();
+        alCerrar();
+        return;
+      }
       abierta = false;
       campo.blur();
     }
@@ -113,7 +128,7 @@
   }
 </script>
 
-<div class="buscador" class:abierta class:ya>
+<div class="buscador" class:abierta class:ya class:flotante={!!alCerrar}>
   <Haz>
     <label class="campo">
       <Icono nombre="r-buscar" tamano={18} />
@@ -135,11 +150,13 @@
           abierta = true;
           ya = true;
         }}
-        onblur={() =>
+        onblur={() => {
+          if (alCerrar) return;
           setTimeout(() => {
             abierta = false;
             ya = false;
-          }, 120)}
+          }, 120);
+        }}
         onkeydown={alTeclear}
       />
       <kbd>Ctrl</kbd><kbd>K</kbd>
@@ -187,6 +204,11 @@
     width: 100%;
     max-width: 780px;
     margin: 30px auto 0;
+  }
+
+  .buscador.flotante {
+    max-width: none;
+    margin: 0;
   }
 
   /* Como la píldora del Agente IA: 48 px, sin aro, el borde de las tarjetas y, con foco, el fuerte. */

@@ -3,6 +3,8 @@
 // abiertas en este navegador; «Cerrar sesión» las borra (lib/supabase.ts, todo lo que empieza con
 // fragmentless-recientes-).
 
+import type { RenglonBusqueda } from '../diseno/Buscador.svelte';
+
 export type VistaDistribuidor = 'inicio' | 'clientes' | 'ajustes';
 
 export const VISTAS: Record<VistaDistribuidor, { texto: string; icono: string }> = {
@@ -10,6 +12,17 @@ export const VISTAS: Record<VistaDistribuidor, { texto: string; icono: string }>
   clientes: { texto: 'Clientes', icono: 'r-tienda' },
   ajustes: { texto: 'Ajustes', icono: 'r-ajustes' },
 };
+
+// Los renglones de su búsqueda: la grande de Inicio y la que se abre en cualquier otra vista (BuscarAqui).
+export function renglonesDeBusqueda(alIr: (vista: VistaDistribuidor) => void) {
+  const deVista = (v: VistaDistribuidor): RenglonBusqueda => ({
+    clave: v,
+    texto: VISTAS[v].texto,
+    icono: VISTAS[v].icono,
+    alPicar: () => alIr(v),
+  });
+  return { deVista, vistas: (['clientes', 'ajustes'] as const).map(deVista) };
+}
 
 const LLAVE = 'fragmentless-recientes-distribuidor';
 const CUANTOS = 5;

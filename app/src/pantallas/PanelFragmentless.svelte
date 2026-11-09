@@ -7,7 +7,8 @@
   su chip (decidido el 12 de octubre de 2026). Estilos (parte 7a, maqueta H2yFVjosPvSV56DJD1Un71)
   va después de Distribuidores y trae su propia barra de arriba, sus lecturas y sus ventanas. En Inicio,
   la hora de la última lectura va junto al botón cuadrado, como en el gerente (decidido el 6 de noviembre
-  de 2026).
+  de 2026). Ctrl K o la búsqueda chica de la barra abren, en Inicio, su búsqueda grande y, en cualquier otra vista, la
+  misma búsqueda ahí mismo sobre el velo (diseno/BuscarAqui.svelte, 9 nov 2026).
 
   Lee todo de una vez al abrir, con Actualizar y después de cada cambio (lib/panel.ts). Las
   ventanas escriben en Saas-Restaurantes de verdad.
@@ -20,7 +21,15 @@
   import Marco from '../diseno/Marco.svelte';
   import { plural } from '../lib/formato';
   import { leerPanel, type Cliente, type DatosPanel, type Distribuidor } from '../lib/panel';
-  import { anotarReciente, MI_NOMBRE, type DestinoPanel, type VistaPanel } from '../lib/vistasFragmentless';
+  import BuscarAqui from '../diseno/BuscarAqui.svelte';
+  import {
+    anotarReciente,
+    leerRecientes,
+    MI_NOMBRE,
+    renglonesDeBusqueda,
+    type DestinoPanel,
+    type VistaPanel,
+  } from '../lib/vistasFragmentless';
   import AltaDistribuidor from './fragmentless/AltaDistribuidor.svelte';
   import AltaRestaurante from './fragmentless/AltaRestaurante.svelte';
   import BajaOReactivar from './fragmentless/BajaOReactivar.svelte';
@@ -56,8 +65,10 @@
   let datos = $state<DatosPanel | null>(null);
   let leyendo = $state(false);
   let ventana = $state<VentanaAbierta | null>(null);
-  // Ctrl K o la búsqueda chica de la barra: Inicio abre la grande y lo toma una vez.
+  // Ctrl K o la búsqueda chica de la barra: en Inicio, Inicio abre la grande y lo toma una vez; en otra vista, se
+  // abre ahí mismo (buscando).
   let busquedaPedida = $state(false);
+  let buscando = $state(false);
   // «Nuevo estilo» en la búsqueda o en Atajos: Estilos abre su ventana al llegar y lo toma una vez.
   let estiloPedido = false;
   // Si se pide leer otra vez antes de que termine la lectura anterior, gana la última.
@@ -100,9 +111,11 @@
   }
 
   function abrirBusqueda() {
-    vista = 'inicio';
-    busquedaPedida = true;
+    if (vista === 'inicio') busquedaPedida = true;
+    else buscando = true;
   }
+
+  const busqueda = renglonesDeBusqueda((destino) => ir(destino));
 
   function tomarBusqueda() {
     const es = busquedaPedida;
@@ -225,6 +238,15 @@
         alGuardar={leer}
       />
     {/if}
+  {/if}
+
+  {#if buscando}
+    <BuscarAqui
+      vistas={busqueda.vistas}
+      acciones={busqueda.acciones}
+      recientes={leerRecientes().map(busqueda.deVista)}
+      alCerrar={() => (buscando = false)}
+    />
   {/if}
 </Marco>
 

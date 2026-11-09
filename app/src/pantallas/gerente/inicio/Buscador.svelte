@@ -1,11 +1,17 @@
 <!--
-  La búsqueda grande del Inicio del gerente: sus vistas y sus acciones (lib/vistas.ts).
+  La búsqueda del gerente: sus vistas y sus acciones (lib/vistas.ts). Sin `alCerrar` es la grande de Inicio; con
+  `alCerrar`, la que se abre en cualquier otra vista (diseno/BuscarAqui.svelte, 9 nov 2026).
 -->
 <script lang="ts">
   import BuscadorBase, { type RenglonBusqueda } from '../../../diseno/Buscador.svelte';
+  import BuscarAqui from '../../../diseno/BuscarAqui.svelte';
   import { ACCIONES, VISTAS, type Destino, type VistaGerente } from '../../../lib/vistas';
 
-  let { recientes, alIr }: { recientes: VistaGerente[]; alIr: (destino: Destino) => void } = $props();
+  let {
+    recientes,
+    alIr,
+    alCerrar,
+  }: { recientes: VistaGerente[]; alIr: (destino: Destino) => void; alCerrar?: () => void } = $props();
 
   let base = $state<{ enfocar: () => void } | null>(null);
 
@@ -32,4 +38,8 @@
   }
 </script>
 
-<BuscadorBase bind:this={base} {vistas} {acciones} recientes={deRecientes} />
+{#if alCerrar}
+  <BuscarAqui {vistas} {acciones} recientes={deRecientes} {alCerrar} />
+{:else}
+  <BuscadorBase bind:this={base} {vistas} {acciones} recientes={deRecientes} />
+{/if}

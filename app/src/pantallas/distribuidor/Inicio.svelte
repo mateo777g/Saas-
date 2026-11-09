@@ -19,7 +19,7 @@
 -->
 <script lang="ts">
   import Boton from '../../diseno/Boton.svelte';
-  import Buscador, { type RenglonBusqueda } from '../../diseno/Buscador.svelte';
+  import Buscador from '../../diseno/Buscador.svelte';
   import Columnas, { type ItemColumna } from '../../diseno/Columnas.svelte';
   import Esqueleto from '../../diseno/Esqueleto.svelte';
   import Estadisticas from '../fragmentless/inicio/Estadisticas.svelte';
@@ -31,7 +31,7 @@
   import type { DatosDistribuidor } from '../../lib/distribuidor';
   import { diaConNombre, fecha, saludoPorHora, vigencia } from '../../lib/formato';
   import { urgente } from '../../lib/panel';
-  import { leerRecientes, VISTAS, type VistaDistribuidor } from '../../lib/vistasDistribuidor';
+  import { leerRecientes, renglonesDeBusqueda, type VistaDistribuidor } from '../../lib/vistasDistribuidor';
 
   let {
     datos,
@@ -57,13 +57,7 @@
 
   const recientes = leerRecientes();
 
-  const deVista = (v: VistaDistribuidor): RenglonBusqueda => ({
-    clave: v,
-    texto: VISTAS[v].texto,
-    icono: VISTAS[v].icono,
-    alPicar: () => alIr(v),
-  });
-  const vistas = (['clientes', 'ajustes'] as const).map(deVista);
+  const { deVista, vistas } = renglonesDeBusqueda((vista) => alIr(vista));
   const abrir: ItemColumna[] = (['clientes', 'ajustes'] as const).map(deVista);
   const deRecientes: ItemColumna[] = recientes.map((v) => ({ ...deVista(v), icono: 'r-reloj' }));
 

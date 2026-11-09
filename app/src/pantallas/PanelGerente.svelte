@@ -3,8 +3,9 @@
   liso con la barra lateral por grupos (Inicio; OPERACIÓN; TU NEGOCIO; IA Y CONTENIDO; abajo, Ayuda, Ajustes
   y la persona, que abre su Perfil) y cada vista con su propia barra de arriba. Al entrar al panel se
   prepara el saludo del agente, para que salga al instante. «Abrir» en Inicio abre ahí mismo el punto de
-  venta, la caja o la cocina, con su sesión (maqueta Mesero y cocina TYq97pKacRCYBqcvRp1bZ2). Ctrl K, desde
-  cualquier vista, lleva a Inicio y abre su búsqueda. Si la sucursal en la que está no funciona hoy
+  venta, la caja o la cocina, con su sesión (maqueta Mesero y cocina TYq97pKacRCYBqcvRp1bZ2). Ctrl K o la
+  búsqueda chica de la barra abren, en Inicio, su búsqueda grande y, en cualquier otra vista, la misma búsqueda ahí
+  mismo sobre el velo (diseno/BuscarAqui.svelte, 9 nov 2026). Si la sucursal en la que está no funciona hoy
   (vencida o pausada, lo dice Postgres), en lugar de todo eso sale la suscripción terminada.
 
   Vuelve a leer cada vez que Don Chuy regresa a la pestaña (decidido el 11 de octubre de 2026):
@@ -30,12 +31,13 @@
   import { VigiaPedidos } from '../lib/pedidos.svelte';
   import { SIN_PANEL } from '../lib/sesion';
   import { supabase } from '../lib/supabase';
-  import { anotarReciente, type Destino, type NuevoAlEntrar } from '../lib/vistas';
+  import { anotarReciente, leerRecientes, type Destino, type NuevoAlEntrar } from '../lib/vistas';
   import CajaError from '../diseno/CajaError.svelte';
   import { esDeRed, SIN_CONEXION } from '../lib/errores';
   import AccesoAbierto from './gerente/AccesoAbierto.svelte';
   import Ajustes from './gerente/Ajustes.svelte';
   import Biblioteca from './gerente/Biblioteca.svelte';
+  import BuscadorGerente from './gerente/inicio/Buscador.svelte';
   import Cortes from './gerente/Cortes.svelte';
   import CrearContenido from './gerente/CrearContenido.svelte';
   import Empleados from './gerente/Empleados.svelte';
@@ -86,8 +88,10 @@
     | 'menu-en-linea'
   >('inicio');
   let perfilAbierto = $state(false);
-  // Ctrl K o la búsqueda chica de la barra: Inicio abre la grande y lo toma una vez.
+  // Ctrl K o la búsqueda chica de la barra: en Inicio, Inicio abre la grande y lo toma una vez; en otra vista, se
+  // abre ahí mismo (buscando).
   let busquedaPedida = $state(false);
+  let buscando = $state(false);
   // La ventana que se abre al llegar a una vista (Agregar producto en la búsqueda); la vista la toma una vez.
   let nuevoAlEntrar: NuevoAlEntrar | null = null;
 
@@ -216,8 +220,8 @@
   }
 
   function abrirBusqueda() {
-    vista = 'inicio';
-    busquedaPedida = true;
+    if (vista === 'inicio') busquedaPedida = true;
+    else buscando = true;
   }
 
   function tomarBusqueda() {
@@ -376,6 +380,10 @@
       </main>
     {/if}
   </Marco>
+
+  {#if buscando}
+    <BuscadorGerente recientes={leerRecientes(actual.id)} alIr={irA} alCerrar={() => (buscando = false)} />
+  {/if}
 
   {#if perfilAbierto}
     <Perfil

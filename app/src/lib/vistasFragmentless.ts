@@ -2,6 +2,8 @@
 // (maqueta 4Ryyf9E7u4vsDs57PdkAnz). La búsqueda no lee la base: solo esto. Recientes son las últimas 5
 // vistas abiertas en este navegador; «Cerrar sesión» las borra (lib/supabase.ts).
 
+import type { RenglonBusqueda } from '../diseno/Buscador.svelte';
+
 // Decidido el 5 de noviembre de 2026: solo existe esta cuenta y no tiene Perfil.
 export const MI_NOMBRE = 'Mateo';
 
@@ -25,6 +27,24 @@ export const ACCIONES: { texto: string; de: string; icono: string; destino: Dest
   { texto: 'Nuevo distribuidor', de: 'Distribuidores', icono: 'r-usuarios', destino: { vista: 'distribuidores', nuevo: 'alta-distribuidor' } },
   { texto: 'Nuevo estilo', de: 'Estilos', icono: 'r-biblio', destino: { vista: 'estilos', nuevo: 'estilo' } },
 ];
+
+// Los renglones de su búsqueda: la grande de Inicio y la que se abre en cualquier otra vista (BuscarAqui).
+export function renglonesDeBusqueda(alIr: (destino: DestinoPanel) => void) {
+  const deVista = (v: VistaPanel): RenglonBusqueda => ({
+    clave: v,
+    texto: VISTAS[v].texto,
+    icono: VISTAS[v].icono,
+    alPicar: () => alIr({ vista: v }),
+  });
+  const acciones: RenglonBusqueda[] = ACCIONES.map((a) => ({
+    clave: a.texto,
+    texto: a.texto,
+    de: a.de,
+    icono: a.icono,
+    alPicar: () => alIr(a.destino),
+  }));
+  return { deVista, vistas: (Object.keys(VISTAS) as VistaPanel[]).map(deVista), acciones };
+}
 
 const LLAVE = 'fragmentless-recientes-panel';
 const CUANTOS = 5;

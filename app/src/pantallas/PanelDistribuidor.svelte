@@ -7,7 +7,9 @@
   Solo lee: no ve ventas ni gerentes, y no cambia nada.
 
   Desde el 8 de noviembre de 2026 su Inicio es como el de Fragmentless (saludo, búsqueda grande con Ctrl K,
-  Abrir y Recientes, y debajo lo de antes) y anota sus vistas recientes en este navegador.
+  Abrir y Recientes, y debajo lo de antes) y anota sus vistas recientes en este navegador. Ctrl K o la búsqueda chica
+  de la barra abren, en Inicio, su búsqueda grande y, en Clientes o Ajustes, la misma búsqueda ahí mismo sobre el velo
+  (diseno/BuscarAqui.svelte, 9 nov 2026).
 
   Si Fragmentless lo da de baja, en lugar de todo eso sale la pantalla de baja. Vuelve a leer su
   fila y sus clientes con Actualizar y cada vez que regresa a la pestaña, como el panel del
@@ -22,7 +24,8 @@
   import { leerCuenta, leerPanelDistribuidor, type Cuenta, type DatosDistribuidor } from '../lib/distribuidor';
   import { plural } from '../lib/formato';
   import { SIN_PANEL } from '../lib/sesion';
-  import { anotarReciente, type VistaDistribuidor } from '../lib/vistasDistribuidor';
+  import BuscarAqui from '../diseno/BuscarAqui.svelte';
+  import { anotarReciente, leerRecientes, renglonesDeBusqueda, type VistaDistribuidor } from '../lib/vistasDistribuidor';
   import Baja from './distribuidor/Baja.svelte';
   import Clientes from './distribuidor/Clientes.svelte';
   import Inicio from './distribuidor/Inicio.svelte';
@@ -99,13 +102,17 @@
     vista = valor as Vista;
   }
 
-  // Ctrl K o la búsqueda chica de la barra: a Inicio, con la búsqueda grande abierta (como el panel de Fragmentless).
+  // Ctrl K o la búsqueda chica de la barra: en Inicio, Inicio abre la grande y lo toma una vez; en otra vista, se
+  // abre ahí mismo (buscando), como en el panel de Fragmentless.
   let busquedaPedida = $state(false);
+  let buscando = $state(false);
 
   function abrirBusqueda() {
-    vista = 'inicio';
-    busquedaPedida = true;
+    if (vista === 'inicio') busquedaPedida = true;
+    else buscando = true;
   }
+
+  const busqueda = renglonesDeBusqueda((v) => (vista = v));
 
   function tomarBusqueda() {
     const es = busquedaPedida;
@@ -175,6 +182,16 @@
           <Ajustes />
         {/if}
       </main>
+    {/if}
+
+    {#if buscando}
+      <BuscarAqui
+        vistas={busqueda.vistas}
+        acciones={[]}
+        recientes={leerRecientes().map(busqueda.deVista)}
+        placeholder="Busca una vista…"
+        alCerrar={() => (buscando = false)}
+      />
     {/if}
   </Marco>
 {/if}

@@ -15,12 +15,12 @@
   import TablaDeslizable from '../../diseno/TablaDeslizable.svelte';
   import BotonCuadro from '../../diseno/BotonCuadro.svelte';
   import Esqueleto from '../../diseno/Esqueleto.svelte';
-  import Buscador, { type RenglonBusqueda } from '../../diseno/Buscador.svelte';
+  import Buscador from '../../diseno/Buscador.svelte';
   import Columnas, { type ItemColumna } from '../../diseno/Columnas.svelte';
   import Icono from '../../diseno/Icono.svelte';
   import { diaConNombre, fecha, saludoPorHora, vigencia } from '../../lib/formato';
   import { urgente, type Cliente, type DatosPanel } from '../../lib/panel';
-  import { ACCIONES, leerRecientes, MI_NOMBRE, VISTAS, type DestinoPanel, type VistaPanel } from '../../lib/vistasFragmentless';
+  import { leerRecientes, MI_NOMBRE, renglonesDeBusqueda, type DestinoPanel } from '../../lib/vistasFragmentless';
   import Estadisticas from './inicio/Estadisticas.svelte';
 
   let {
@@ -45,20 +45,7 @@
 
   const recientes = leerRecientes();
 
-  const deVista = (v: VistaPanel): RenglonBusqueda => ({
-    clave: v,
-    texto: VISTAS[v].texto,
-    icono: VISTAS[v].icono,
-    alPicar: () => alIr({ vista: v }),
-  });
-  const acciones: RenglonBusqueda[] = ACCIONES.map((a) => ({
-    clave: a.texto,
-    texto: a.texto,
-    de: a.de,
-    icono: a.icono,
-    alPicar: () => alIr(a.destino),
-  }));
-  const vistas = (Object.keys(VISTAS) as VistaPanel[]).map(deVista);
+  const { deVista, vistas, acciones } = renglonesDeBusqueda((destino) => alIr(destino));
 
   const abrir: ItemColumna[] = (['clientes', 'distribuidores', 'estilos'] as const).map(deVista);
   const atajos: ItemColumna[] = acciones.map((a) => ({ ...a, de: undefined }));

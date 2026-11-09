@@ -23,6 +23,7 @@
   import Boton from './Boton.svelte';
   import CajaError from './CajaError.svelte';
   import Icono from './Icono.svelte';
+  import { seMueven, ventanaSale, veloSale } from './ventanaSeMueve';
 
   const ESPERA_EXITO = 1600;
 
@@ -52,6 +53,8 @@
 
   let dialogo: HTMLDialogElement;
   const idTitulo = $props.id();
+  // En el panel del gerente se mueve como las ventanas (diseno/ventanaSeMueve.ts).
+  const mueve = seMueven();
   let estado = $state<'reposo' | 'guardando' | 'listo'>('reposo');
   let textoListo = $state('');
   let error = $state<string | null>(null);
@@ -109,12 +112,14 @@
   bind:this={dialogo}
   class="velo"
   aria-labelledby={idTitulo}
+  in:veloSale|global={mueve}
+  out:veloSale|global={mueve}
   oncancel={alCancelar}
   onclick={(e) => {
     if (e.target === dialogo) cancelar();
   }}
 >
-  <div class="ventana" class:centrada={peligro && !miniatura}>
+  <div class="ventana" class:centrada={peligro && !miniatura} in:ventanaSale|global={mueve} out:ventanaSale|global={mueve}>
     {#if miniatura}
       <img class="mini" src={miniatura.src} alt="" style:height="{miniatura.alto}px" />
     {:else if peligro}

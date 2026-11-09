@@ -16,6 +16,7 @@
   import { onMount } from 'svelte';
   import BarraArriba from '../diseno/BarraArriba.svelte';
   import Marco from '../diseno/Marco.svelte';
+  import { ventanasQueSeMueven } from '../diseno/ventanaSeMueve';
   import { haySaludo, prepararSaludo } from '../lib/agente';
   import { saludoPorHora } from '../lib/formato';
   import { WHATSAPP_FRAGMENTLESS } from '../lib/fragmentless';
@@ -58,6 +59,9 @@
     alSalir: () => void;
     alSinAcceso: (mensaje: string) => void;
   } = $props();
+
+  // Las ventanas del gerente se mueven al abrir, cerrar y agrandar (Fragmentless y distribuidores no).
+  ventanasQueSeMueven();
 
   // Lo que llegó al entrar; después, lo de cada nueva lectura.
   // svelte-ignore state_referenced_locally

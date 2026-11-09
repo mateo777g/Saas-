@@ -124,7 +124,8 @@
     display: flex;
   }
 
-  /* boton() de diseno.py, el secundario; abierto, con chip. De 48 desde la tabla nueva (8 nov 2026), parejo con la búsqueda. */
+  /* boton() de diseno.py, el secundario; abierto, con chip. De 48 desde la tabla nueva (8 nov 2026), parejo con la búsqueda,
+     y desde el 9 nov 2026 en su mismo blanco (el developer: un blanco junto a otro color «me da un tick»). */
   .boton {
     height: 48px;
     display: inline-flex;
@@ -133,7 +134,7 @@
     padding: 0 14px;
     border: 1px solid var(--linea);
     border-radius: 12px;
-    background: transparent;
+    background: var(--solido);
     color: var(--texto);
     font-size: 13px;
     font-weight: 600;

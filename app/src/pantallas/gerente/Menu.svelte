@@ -29,6 +29,7 @@
   import BarraArriba from '../../diseno/BarraArriba.svelte';
   import Boton from '../../diseno/Boton.svelte';
   import Dock from '../../diseno/Dock.svelte';
+  import { cascada } from '../../diseno/cascada';
   import { trazosCategoria } from '../../diseno/iconosCategorias';
   import NotaTabla from '../../diseno/NotaTabla.svelte';
   import Tabla from '../../diseno/Tabla.svelte';
@@ -157,7 +158,12 @@
   onMount(async () => {
     const abrir = abrirNuevo?.() ?? false;
     await leer();
-    if (lectura.estado === 'listo') traduce.correr();
+    if (lectura.estado === 'listo') {
+      traduce.correr();
+      // Las filas entran en cascada al llegar la primera vez (diseno/cascada.ts); al releer se quedan quietas.
+      await tick();
+      cascada(tarjeta);
+    }
     if (!abrir || lectura.estado !== 'listo') return;
     if (lectura.menu.categorias.length) ventana = { tipo: 'producto', producto: null };
     else aviso = 'Primero crea una categoría.';
@@ -174,9 +180,14 @@
     areas: { columnas: '1.4fr 3fr 88px', encabezados: ['Área', 'Le llegan', ''] },
   };
 
-  function cambiarSeccion(valor: Seccion) {
+  async function cambiarSeccion(valor: Seccion) {
+    const otra = valor !== seccion;
     seccion = valor;
     salirDeEleccion();
+    // Las de la sección nueva entran en cascada (si ya llegaron; mientras lee, sus esqueletos).
+    if (!otra || !menu) return;
+    await tick();
+    cascada(tarjeta);
   }
 
   function salirDeEleccion() {

@@ -36,6 +36,12 @@
   --tabla-raya: #e4e4e7;               /* la rayita entre encabezado y encabezado */
   --tabla-linea-cabecera: color-mix(in oklab, #e4e4e7 50%, transparent);
   --tabla-linea: color-mix(in oklab, #cdcdce 50%, transparent); /* entre fila y fila */
+  /* Las cajas de texto (9 nov 2026): el Input de HeroUI, medido en heroui.com. Sin borde, con su sombra, y al
+     escribir un aro azul de 2 px. */
+  --campo-fondo: #ffffff;
+  --campo-encima: #f8f8f8;
+  --campo-sombra: 0 2px 4px 0 rgba(0, 0, 0, 0.04), 0 1px 2px 0 rgba(0, 0, 0, 0.06), 0 0 1px 0 rgba(0, 0, 0, 0.06);
+  --campo-aro: #0485f7;
   --tinta: #0b0b0b;                    /* lo activo: opción del menú, botón principal */
   --sobre-tinta: #ffffff;
   --sobre-tinta-suave: rgba(255, 255, 255, 0.64); /* el texto chico de la barra de Ocultar varios */
@@ -95,6 +101,11 @@
   --tabla-raya: #34343a;
   --tabla-linea-cabecera: color-mix(in oklab, #212124 50%, transparent);
   --tabla-linea: color-mix(in oklab, #3c3c3f 50%, transparent);
+  /* En oscuro, el gris de campo de HeroUI (--default): su fondo de campo es casi el de nuestras ventanas. */
+  --campo-fondo: #27272a;
+  --campo-encima: #2e2e31;
+  --campo-sombra: 0 0 0 0 transparent;
+  --campo-aro: #0485f7;
   --tinta: #f5f5f2;
   --sobre-tinta: #0b0b0b;
   --sobre-tinta-suave: rgba(0, 0, 0, 0.64);

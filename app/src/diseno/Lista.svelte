@@ -8,6 +8,8 @@
   y abren en la elegida. La elegida lleva palomita; una categoría, su ícono. Con el teclado: Enter o las
   flechas la abren, las flechas recorren, Enter elige y Escape cierra. Respeta «reducir movimiento».
   Mientras no hay nada elegido, enseña `placeholder` en gris. Fragmentless sigue con CampoLista.
+  Desde el 9 nov 2026 su botón es como las cajas de texto (el Input de HeroUI, diseno/Campo.svelte): sin
+  borde, con su sombra y el aro azul con el teclado; abierta, la lista cuelga de él con su sombra.
 -->
 <script lang="ts" generics="V extends string | number">
   import { tick } from 'svelte';
@@ -227,22 +229,23 @@
     gap: 8px;
     padding: 0 12px 0 14px;
     box-sizing: border-box;
-    border: 1px solid var(--linea);
+    border: 0;
     border-radius: 12px;
-    background: var(--solido);
+    background: var(--campo-fondo);
+    box-shadow: var(--campo-sombra);
     color: var(--texto);
     font: 500 13.5px var(--jakarta);
     text-align: left;
     cursor: pointer;
     transition:
       border-radius 0.2s ease,
-      border-color 0.2s ease,
+      box-shadow 0.15s ease-out,
       transform 0.2s ease,
       background 0.2s ease;
   }
 
   .lista-boton:not(:disabled):hover {
-    border-color: var(--linea-fuerte);
+    background: var(--campo-encima);
   }
 
   .lista-boton:not(:disabled):active {
@@ -252,7 +255,7 @@
   /* Con el mismo peso que el hover y después de él: con el teclado gana la orilla oscura, como en la maqueta. */
   .lista-boton:not(:disabled):focus-visible {
     outline: none;
-    border-color: var(--suave);
+    box-shadow: 0 0 0 2px var(--campo-aro);
   }
 
   .lista-boton:disabled {
@@ -280,7 +283,7 @@
 
   .lista.abierta .lista-boton {
     border-radius: 12px 12px 0 0;
-    border-color: var(--linea-fuerte);
+    background: var(--campo-fondo);
   }
 
   .lista-fondo {
@@ -292,10 +295,9 @@
     height: 0;
     min-width: 170px;
     box-sizing: border-box;
-    border: 1px solid var(--linea-fuerte);
-    border-top: 0;
+    border: 0;
     border-radius: 0 0 12px 12px;
-    background: var(--solido);
+    background: var(--campo-fondo);
     opacity: 0;
     pointer-events: none;
     transition:

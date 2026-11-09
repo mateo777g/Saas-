@@ -1,7 +1,8 @@
 <!--
-  campo() de diseno.py: una caja de texto en sólido con su etiqueta encima ("NOMBRE", mono) y,
-  si hace falta, una pista debajo. Borde fino (más marcado mientras se escribe), radio 12, 44 de
-  alto, letra 13.5. Sin relleno propio: toma el sólido de la ventana en la que va.
+  campo() de diseno.py: una caja de texto con su etiqueta encima ("NOMBRE", mono) y, si hace falta,
+  una pista debajo. Radio 12, 44 de alto, letra 13.5. Desde el 9 nov 2026, como el Input de HeroUI:
+  sin borde, en --campo-fondo con su sombra suave, un poco más gris con el mouse encima y, mientras se
+  escribe, un aro azul de 2 px (--campo-aro); el dato que no se pudo guardar lleva el aro en rojo.
   `valor` siempre es texto, también en las fechas ('aaaa-mm-dd') y los números: quien guarda lo
   convierte. Como en Flet, puede llevar un `prefijo` adentro, a la izquierda ("$" en el precio), o
   ser `multilinea` (la descripción de un producto: 72 de alto). Con `contador`, a la derecha de la etiqueta
@@ -124,13 +125,22 @@
     width: 100%;
     height: 44px;
     padding: 0 14px;
-    border: 1px solid var(--linea);
+    border: 0;
     border-radius: 12px;
-    background: transparent;
+    background: var(--campo-fondo);
+    box-shadow: var(--campo-sombra);
     color: var(--texto);
     font-size: 13.5px;
     font-weight: 500;
     outline: none;
+    transition:
+      background-color 0.15s ease,
+      box-shadow 0.15s ease-out;
+  }
+
+  input:hover:not(:focus),
+  textarea:hover:not(:focus) {
+    background: var(--campo-encima);
   }
 
   textarea {
@@ -170,11 +180,22 @@
 
   input:focus,
   textarea:focus {
-    border-color: var(--suave);
+    box-shadow: 0 0 0 2px var(--campo-aro);
   }
 
   input.mal {
-    border-color: var(--rojo);
+    box-shadow: 0 0 0 1px var(--rojo);
+  }
+
+  input.mal:focus {
+    box-shadow: 0 0 0 2px var(--rojo);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    input,
+    textarea {
+      transition: none;
+    }
   }
 
   input.mono {

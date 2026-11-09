@@ -48,23 +48,37 @@
     gap: 8px;
     height: 40px;
     padding: 0 14px;
-    border: 1px solid var(--linea);
+    border: 0;
     border-radius: 12px;
-    background: transparent;
+    background: var(--campo-fondo);
+    box-shadow: var(--campo-sombra);
     color: var(--texto);
     font-size: 13px;
     font-weight: 600;
-    transition: background-color 150ms;
+    transition:
+      background-color 0.15s ease,
+      box-shadow 0.15s ease-out;
   }
 
+  /* Como las cajas de texto (diseno/Campo.svelte, el Input de HeroUI), desde el 9 nov 2026. */
   .rol:hover {
-    background: var(--chip);
+    background: var(--campo-encima);
+  }
+
+  .rol:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px var(--campo-aro);
   }
 
   .rol[aria-checked='true'] {
-    border-color: var(--tinta);
     background: var(--tinta);
     color: var(--sobre-tinta);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .rol {
+      transition: none;
+    }
   }
 
   .cajita {

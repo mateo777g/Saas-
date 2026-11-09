@@ -9,8 +9,10 @@
   import Boton from '../../../diseno/Boton.svelte';
   import BotonCuadro from '../../../diseno/BotonCuadro.svelte';
   import CajaError from '../../../diseno/CajaError.svelte';
+  import Esqueleto from '../../../diseno/Esqueleto.svelte';
   import Icono from '../../../diseno/Icono.svelte';
   import { ALGO_SALIO_PANEL, Fallo } from '../../../lib/errores';
+  import { filasDeLaUltimaVez, recordarFilas } from '../../../lib/esqueletos';
   import { borrarFoto, convertirCartel, revisarFoto, subirFoto, urlFoto } from '../../../lib/fotos';
   import {
     agregarCartel,
@@ -25,7 +27,15 @@
     restauranteId,
     carteles,
     alCambiar,
-  }: { restauranteId: string; carteles: Cartel[]; alCambiar: () => Promise<void> } = $props();
+    cargando = false,
+  }: { restauranteId: string; carteles: Cartel[]; alCambiar: () => Promise<void>; cargando?: boolean } = $props();
+
+  // El esqueleto de la primera lectura (regla «Los esqueletos»): tantos carteles como había la última vez.
+  const llave = $derived(`carteles-${restauranteId}`);
+  const filasEsqueleto = $derived(Array.from({ length: filasDeLaUltimaVez(llave) }, (_, i) => i));
+  $effect(() => {
+    if (!cargando) recordarFilas(llave, carteles.length);
+  });
 
   // Qué se está haciendo: subir uno nuevo o cambiar la imagen de uno (su id), o mover o quitar.
   let ocupado = $state<null | 'nuevo' | number | 'otro'>(null);
@@ -93,10 +103,20 @@
       <span class="titulo">Carteles</span>
       <span class="nota">Tus promociones, arriba de tu menú. Pasan solos.</span>
     </span>
-    <span class="etiqueta">{carteles.length} DE {MAXIMO_CARTELES}</span>
+    <span class="etiqueta">{#if cargando}<Esqueleto ancho="48px" alto="10px" />{:else}{carteles.length} DE {MAXIMO_CARTELES}{/if}</span>
   </div>
   <div class="raya"></div>
-  {#if carteles.length}
+  {#if cargando}
+    <span class="solo-lector">Cargando tus carteles…</span>
+    <div class="lista" aria-hidden="true">
+      {#each filasEsqueleto as i (i)}
+        <div class="fila">
+          <Esqueleto ancho="96px" alto="54px" redondo="9px" />
+          <span class="num"><Esqueleto ancho="64px" alto="11px" /></span>
+        </div>
+      {/each}
+    </div>
+  {:else if carteles.length}
     <div class="lista">
       {#each carteles as c, i (c.id)}
         <div class="fila">

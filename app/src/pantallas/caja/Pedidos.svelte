@@ -13,8 +13,10 @@
   import type { SupabaseClient } from '@supabase/supabase-js';
   import { onMount, type Snippet } from 'svelte';
   import CajaError from '../../diseno/CajaError.svelte';
+  import Esqueleto from '../../diseno/Esqueleto.svelte';
   import Icono from '../../diseno/Icono.svelte';
   import { ALGO_SALIO_PANEL, esDeRed, SIN_CONEXION } from '../../lib/errores';
+  import { filasDeLaUltimaVez, recordarFilas } from '../../lib/esqueletos';
   import { dinero, enZona } from '../../lib/formato';
   import {
     confirmarPedido,
@@ -65,6 +67,13 @@
   let reloj = $state(performance.now());
 
   const datos = $derived(vigia.datos);
+
+  // En el panel, el esqueleto de la primera lectura (regla «Los esqueletos» del panel; el aparato sigue con su texto):
+  // tantos pedidos por confirmar como había la última vez, hasta 3.
+  const esqueletoPedidos = $derived(enPanel ? Math.min(3, filasDeLaUltimaVez(`pedidos-${restauranteId}`)) : 0);
+  $effect(() => {
+    if (enPanel && datos) recordarFilas(`pedidos-${restauranteId}`, datos.por_confirmar.length);
+  });
   const hora = (momento: string) => enZona(momento, zona).hora;
   const pila = (nombre: string | null) => (nombre ?? '—').trim().split(/\s+/)[0];
   const telefono = (t: string) => `${t.slice(0, 3)} ${t.slice(3, 6)} ${t.slice(6)}`;
@@ -220,6 +229,20 @@
     <div class="desliza">
       {#if vigia.error}
         <CajaError mensaje={SIN_CONEXION} />
+      {:else if enPanel}
+        <span class="solo-lector">Abriendo los pedidos…</span>
+        <div class="bloque-cabeza" aria-hidden="true"><Esqueleto ancho="120px" alto="10px" /></div>
+        {#each Array.from({ length: esqueletoPedidos }, (_, i) => i) as i (i)}
+          <div class="pedido" aria-hidden="true">
+            <div class="ped-cabeza">
+              <Esqueleto ancho="34px" alto="14px" />
+              <span class="t"><Esqueleto ancho="{i % 2 ? 96 : 120}px" alto="12px" /><Esqueleto ancho="140px" alto="10px" /></span>
+              <Esqueleto ancho="56px" alto="12px" />
+            </div>
+            <Esqueleto ancho="80%" alto="10px" />
+            <Esqueleto ancho="60%" alto="10px" />
+          </div>
+        {/each}
       {:else}
         <div class="vacio"><span>Abriendo los pedidos…</span></div>
       {/if}

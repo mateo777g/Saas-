@@ -6,7 +6,9 @@
   Los 3 puntitos salen al pasar el mouse, al llegar con el teclado o siempre si no hay mouse (tableta).
   Su menú trae la fecha, Fijar, Cambiar nombre y Eliminar; se cierra con Esc, con un clic afuera o al hacer
   scroll. La barra corta lo que se sale (para abrirse de 0 a 288), así que lo que flota va fijo a la
-  ventana: este menú y la lista de sucursales.
+  ventana: este menú y la lista de sucursales. Desde el 9 nov 2026 el menú se abre como la Lista (regla «Las listas que se
+  abren»): el fondo crece desde los puntitos (220/28) y cada renglón sale de ellos, de 0.8 a 1, uno tras otro desde el
+  más cercano (220/26, 45 ms; al cerrar, al revés y de 20 en 20 ms, y luego se quita). Al hacer scroll se va de una vez.
 
   La que todavía no se guarda (se guarda con su primera respuesta) ya sale en la lista, sin fecha ni
   puntitos: todavía no hay nada que fijar ni eliminar.
@@ -54,6 +56,23 @@
   // La conversación del menú abierto y dónde va.
   let menuDe = $state<Conversacion | null>(null);
   let lugarMenu = $state({ left: 0, top: 0 });
+  // El movimiento del menú: visible, si salió hacia arriba, de dónde sale cada renglón y cuánto mide.
+  let menuVisible = $state(false);
+  let menuArriba = $state(false);
+  let midiendo = $state(false);
+  let desde = $state<number[]>([]);
+  let altoMenu = $state(0);
+  const RENGLONES_MENU = 4;
+
+  // Lo regresa a los puntitos y luego lo quita (lo que tarda en irse el último renglón).
+  function cerrarMenu() {
+    if (!menuDe) return;
+    menuVisible = false;
+    const de = menuDe;
+    setTimeout(() => {
+      if (!menuVisible && menuDe === de) menuDe = null;
+    }, 380);
+  }
   let editando = $state<string | null>(null);
   let nombre = $state('');
   let porEliminar = $state<string | null>(null);
@@ -70,19 +89,24 @@
 
   // Alineado a la derecha de los puntitos; si no cabe abajo, se abre arriba.
   async function abrirMenu(c: Conversacion, boton: HTMLElement) {
-    if (menuDe?.id === c.id) {
-      menuDe = null;
+    if (menuDe?.id === c.id && menuVisible) {
+      cerrarMenu();
       return;
     }
+    menuVisible = false;
+    midiendo = true;
     menuDe = c;
     await tick();
     if (!cajaMenu) return;
     const r = boton.getBoundingClientRect();
     const abajo = r.bottom + 4;
-    lugarMenu = {
-      left: r.right - cajaMenu.offsetWidth,
-      top: abajo + cajaMenu.offsetHeight > window.innerHeight - 8 ? r.top - cajaMenu.offsetHeight - 4 : abajo,
-    };
+    menuArriba = abajo + cajaMenu.offsetHeight > window.innerHeight - 8;
+    lugarMenu = { left: r.right - cajaMenu.offsetWidth, top: menuArriba ? r.top - cajaMenu.offsetHeight - 4 : abajo };
+    desde = [...cajaMenu.querySelectorAll<HTMLElement>('.renglon')].map((f) => r.top - (lugarMenu.top + f.offsetTop));
+    await tick();
+    void cajaMenu.offsetHeight;
+    midiendo = false;
+    menuVisible = true;
     cajaMenu.querySelector('button')?.focus({ preventScroll: true });
   }
 
@@ -100,13 +124,13 @@
   }
 
   function fijar(c: Conversacion) {
-    menuDe = null;
+    cerrarMenu();
     alFijar(c.id);
     enfocarFila(c.id, 'conv-mas');
   }
 
   function cambiarNombre(c: Conversacion) {
-    menuDe = null;
+    cerrarMenu();
     nombre = c.titulo;
     editando = c.id;
   }
@@ -141,12 +165,12 @@
 <svelte:window
   onclick={(e) => {
     const donde = e.target as Element;
-    if (menuDe && !donde.closest('.menu-chat, .conv-mas')) menuDe = null;
+    if (menuDe && !donde.closest('.menu-chat, .conv-mas')) cerrarMenu();
   }}
   onkeydown={(e) => {
     if (e.key !== 'Escape' || !menuDe) return;
     enfocarFila(menuDe.id, 'conv-mas');
-    menuDe = null;
+    cerrarMenu();
   }}
   onresize={() => (menuDe = null)}
 />
@@ -215,28 +239,46 @@
   {#if menuDe}
     {@const c = menuDe}
     <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
+    {@const salida = (j: number) => {
+      const k = menuArriba ? RENGLONES_MENU - 1 - j : j;
+      return { y: `${desde[j] ?? 0}px`, da: `${k * 45}ms`, dc: `${(RENGLONES_MENU - 1 - k) * 20}ms` };
+    }}
     <div
       class="menu-chat"
+      class:visible={menuVisible}
+      class:arriba={menuArriba}
+      class:midiendo
       role="menu"
       tabindex="-1"
       aria-label="Opciones de la conversación"
       bind:this={cajaMenu}
+      bind:offsetHeight={altoMenu}
       style:left="{lugarMenu.left}px"
       style:top="{lugarMenu.top}px"
+      style:--alto="{altoMenu}px"
+      inert={!menuVisible && !midiendo}
       onkeydown={teclaDelMenu}
     >
-      <div class="fecha">{cuando(c)}</div>
+      <div class="menu-fondo" aria-hidden="true"></div>
+      <div class="fecha renglon" style:--y={salida(0).y} style:--da={salida(0).da} style:--dc={salida(0).dc}>{cuando(c)}</div>
       <hr />
-      <button type="button" role="menuitem" onclick={() => fijar(c)}>{c.fijada ? 'Desfijar' : 'Fijar'}</button>
-      <button type="button" role="menuitem" onclick={() => cambiarNombre(c)}>Cambiar nombre</button>
+      <button type="button" role="menuitem" class="renglon" style:--y={salida(1).y} style:--da={salida(1).da} style:--dc={salida(1).dc} onclick={() => fijar(c)}
+        >{c.fijada ? 'Desfijar' : 'Fijar'}</button
+      >
+      <button type="button" role="menuitem" class="renglon" style:--y={salida(2).y} style:--da={salida(2).da} style:--dc={salida(2).dc} onclick={() => cambiarNombre(c)}
+        >Cambiar nombre</button
+      >
       <hr />
       <button
         type="button"
         role="menuitem"
-        class="rojo"
+        class="rojo renglon"
+        style:--y={salida(3).y}
+        style:--da={salida(3).da}
+        style:--dc={salida(3).dc}
         onclick={() => {
           porEliminar = c.id;
-          menuDe = null;
+          cerrarMenu();
         }}>Eliminar</button
       >
     </div>
@@ -491,10 +533,83 @@
     z-index: 30;
     min-width: 200px;
     padding: 6px;
+    outline: none;
+    pointer-events: none;
+  }
+
+  .menu-chat.visible {
+    pointer-events: auto;
+  }
+
+  /* El fondo crece desde los puntitos hasta lo que mide el menú (hacia arriba si salió arriba). */
+  .menu-fondo {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    z-index: -1;
+    height: 0;
     background: var(--solido);
     border: 1px solid var(--linea-fuerte);
     border-radius: 12px;
+    opacity: 0;
+    transition:
+      height 0.518s var(--resorte-fondo),
+      opacity 0.25s ease,
+      box-shadow 0.25s ease;
+  }
+
+  .menu-chat.arriba .menu-fondo {
+    top: auto;
+    bottom: 0;
+  }
+
+  .menu-chat.visible .menu-fondo {
+    height: var(--alto);
+    opacity: 1;
     box-shadow: 0 14px 34px var(--sombra-menu);
+  }
+
+  .menu-chat {
+    isolation: isolate;
+  }
+
+  .renglon {
+    position: relative;
+    opacity: 0;
+    transform: translateY(var(--y)) scale(0.8);
+    transition:
+      transform 0.607s var(--resorte-opcion) var(--dc),
+      opacity 0.3s ease var(--dc),
+      background-color 150ms;
+  }
+
+  .menu-chat.visible .renglon {
+    opacity: 1;
+    transform: none;
+    transition:
+      transform 0.607s var(--resorte-opcion) var(--da),
+      opacity 0.3s ease var(--da),
+      background-color 150ms;
+  }
+
+  .menu-chat hr {
+    opacity: 0;
+    transition: opacity 0.2s ease;
+  }
+
+  .menu-chat.visible hr {
+    opacity: 1;
+    transition: opacity 0.3s ease 0.1s;
+  }
+
+  .menu-chat.midiendo .renglon {
+    transition: none;
+  }
+
+  .menu-chat.visible button.renglon:active {
+    transform: scale(0.95);
+    transition: transform 0.15s ease;
   }
 
   .fecha {
@@ -532,7 +647,12 @@
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .conv {
+    .conv,
+    .menu-fondo,
+    .renglon,
+    .menu-chat hr,
+    .menu-chat.visible .renglon,
+    .menu-chat.visible hr {
       transition: none;
     }
   }

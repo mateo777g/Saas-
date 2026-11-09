@@ -24,6 +24,7 @@
   import Confirmar from '../../../diseno/Confirmar.svelte';
   import Formulario from '../../../diseno/Formulario.svelte';
   import Icono from '../../../diseno/Icono.svelte';
+  import { pista } from '../../../diseno/pista';
   import IconoCategoria from '../../../diseno/IconoCategoria.svelte';
   import Ventana from '../../../diseno/Ventana.svelte';
   import { ALGO_SALIO_PANEL, Fallo } from '../../../lib/errores';
@@ -237,11 +238,11 @@
   <div class="paso">
     <span class="paso-etiqueta">{etiqueta}</span>
     <div class="paso-caja">
-      <button type="button" class="paso-boton" aria-label="{etiqueta}: uno menos" disabled={sinMenos || paso !== null} onclick={menos}>
+      <button type="button" class="paso-boton" aria-label="{etiqueta}: uno menos" use:pista={'Uno menos'} disabled={sinMenos || paso !== null} onclick={menos}>
         <Icono nombre="menos" tamano={14} />
       </button>
       <span class="paso-valor">{valor}</span>
-      <button type="button" class="paso-boton" aria-label="{etiqueta}: uno más" disabled={sinMas || paso !== null} onclick={mas}>
+      <button type="button" class="paso-boton" aria-label="{etiqueta}: uno más" use:pista={'Uno más'} disabled={sinMas || paso !== null} onclick={mas}>
         <Icono nombre="mas" tamano={14} />
       </button>
     </div>
@@ -533,18 +534,20 @@
     color: var(--suave);
   }
 
+  /* Como las cajas de texto (diseno/Campo.svelte, el Input de HeroUI), desde el 9 nov 2026. */
   .paso-caja {
     height: 40px;
     display: inline-flex;
     align-items: center;
-    border: 1px solid var(--linea);
     border-radius: 12px;
+    background: var(--campo-fondo);
+    box-shadow: var(--campo-sombra);
     overflow: hidden;
   }
 
   .paso-boton {
-    width: 36px;
-    height: 38px;
+    width: 37px;
+    height: 40px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -597,21 +600,30 @@
     gap: 8px;
   }
 
+  /* Como las cajas de texto (diseno/Campo.svelte, el Input de HeroUI), desde el 9 nov 2026. */
   .opcion input {
     width: 100%;
     height: 40px;
     padding: 0 12px;
-    border: 1px solid var(--linea);
+    border: 0;
     border-radius: 12px;
-    background: transparent;
+    background: var(--campo-fondo);
+    box-shadow: var(--campo-sombra);
     color: var(--texto);
     font-size: 13.5px;
     font-weight: 500;
     outline: none;
+    transition:
+      background-color 0.15s ease,
+      box-shadow 0.15s ease-out;
+  }
+
+  .opcion input:hover:not(:focus):not(:disabled) {
+    background: var(--campo-encima);
   }
 
   .opcion input:focus {
-    border-color: var(--suave);
+    box-shadow: 0 0 0 2px var(--campo-aro);
   }
 
   .opcion input::placeholder {
@@ -953,6 +965,7 @@
 
   @media (prefers-reduced-motion: reduce) {
     .paso-boton,
+    .opcion input,
     .pt,
     .pt-marca,
     .marca-en,

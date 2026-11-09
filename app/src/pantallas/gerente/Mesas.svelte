@@ -20,11 +20,13 @@
   import Boton from '../../diseno/Boton.svelte';
   import BotonCuadro from '../../diseno/BotonCuadro.svelte';
   import Confirmar from '../../diseno/Confirmar.svelte';
+  import Esqueleto from '../../diseno/Esqueleto.svelte';
   import Icono from '../../diseno/Icono.svelte';
   import NotaTabla from '../../diseno/NotaTabla.svelte';
   import Tabla from '../../diseno/Tabla.svelte';
   import Tarjeta from '../../diseno/Tarjeta.svelte';
   import { ALGO_SALIO_PANEL, esDeRed, Fallo, SIN_CONEXION } from '../../lib/errores';
+  import { anchos, filasDeLaUltimaVez, recordarFilas } from '../../lib/esqueletos';
   import { dinero, plural } from '../../lib/formato';
   import type { Sucursal } from '../../lib/gerente';
   import { eliminarMesa, leerMesas, moverMesa, type Mesa } from '../../lib/mesas';
@@ -50,10 +52,15 @@
     return { texto: plural(lectura.mesas.length, 'mesa', 'mesas'), vivo: true };
   });
 
+  // El esqueleto de la primera lectura (regla «Los esqueletos»): tantas filas como mesas había la última vez.
+  const filasEsqueleto = $derived(anchos(['72px', '96px', '64px', '84px'], filasDeLaUltimaVez(`mesas-${sucursal.id}`)));
+
   async function leer() {
     leerCuentas();
     try {
-      lectura = { estado: 'listo', mesas: await leerMesas(sucursal.id) };
+      const leidas = await leerMesas(sucursal.id);
+      lectura = { estado: 'listo', mesas: leidas };
+      recordarFilas(`mesas-${sucursal.id}`, leidas.length);
     } catch (error) {
       console.error('[mesas] no se pudieron leer las mesas:', error);
       lectura = { estado: 'error', deRed: esDeRed(error) };
@@ -169,7 +176,8 @@
     <div class="herramientas">
       <p class="nota">Las mesas que tu equipo elige al tomar un pedido, en este orden. Muévelas con las flechas.</p>
       <span class="crece"></span>
-      {#if mesas}<span class="etiqueta">{conteo}</span>{/if}
+      {#if lectura.estado === 'leyendo'}<span class="etiqueta"><Esqueleto ancho="64px" alto="10px" /></span>
+      {:else if mesas}<span class="etiqueta">{conteo}</span>{/if}
     </div>
 
     <Tabla
@@ -179,7 +187,21 @@
       encabezados={[{ texto: 'MESA' }, { texto: 'ESTADO' }, { texto: 'ABIERTA' }, { texto: 'CUENTA' }, { texto: '' }]}
     >
       {#if lectura.estado === 'leyendo'}
-        <NotaTabla relleno={48} angosta titulo="Cargando tus mesas…" />
+        <!-- El esqueleto: con su forma y sin sus botones. -->
+        <span class="solo-lector">Cargando tus mesas…</span>
+        {#each filasEsqueleto as ancho, i (i)}
+          <div class="fila quieta" aria-hidden="true">
+            <span class="mesa">
+              <span class="numero"><Esqueleto ancho="16px" alto="9px" /></span>
+              <Esqueleto ancho="36px" alto="36px" redondo="11px" />
+              <Esqueleto {ancho} alto="11px" />
+            </span>
+            <span><Esqueleto ancho="76px" alto="10px" /></span>
+            <span><Esqueleto ancho="40px" alto="10px" /></span>
+            <span><Esqueleto ancho="48px" alto="10px" /></span>
+            <span></span>
+          </div>
+        {/each}
       {:else if lectura.estado === 'error' && lectura.deRed}
         <NotaTabla relleno={48} angosta titulo="Sin conexión." texto={SIN_CONEXION} />
       {:else if lectura.estado === 'error'}

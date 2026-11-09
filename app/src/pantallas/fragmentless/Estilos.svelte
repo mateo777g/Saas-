@@ -21,6 +21,7 @@
   import Boton from '../../diseno/Boton.svelte';
   import BotonCuadro from '../../diseno/BotonCuadro.svelte';
   import Interruptor from '../../diseno/Interruptor.svelte';
+  import Esqueleto from '../../diseno/Esqueleto.svelte';
   import NotaTabla from '../../diseno/NotaTabla.svelte';
   import Tabla from '../../diseno/Tabla.svelte';
   import Tarjeta from '../../diseno/Tarjeta.svelte';
@@ -141,7 +142,7 @@
         arriba abajo. Muévelos con las flechas.
       </p>
       <span class="crece"></span>
-      <span class="etiqueta">{datos ? plural(datos.estilos.length, 'ESTILO', 'ESTILOS') : ''}</span>
+      <span class="etiqueta">{#if !lectura}<Esqueleto ancho="64px" alto="10px" />{:else}{datos ? plural(datos.estilos.length, 'ESTILO', 'ESTILOS') : ''}{/if}</span>
     </div>
 
     <Tabla
@@ -157,7 +158,20 @@
       ]}
     >
       {#if !lectura}
-        <!-- leyendo la primera vez -->
+        <!-- El esqueleto de la primera lectura (regla «Los esqueletos»): unos estilos con su forma, sin sus botones. -->
+        <span class="solo-lector">Cargando los estilos…</span>
+        {#each ['96px', '120px', '84px', '108px'] as ancho, i (i)}
+          <div class="fila quieta" aria-hidden="true">
+            <span class="estilo">
+              <Esqueleto ancho="40px" alto="50px" redondo="8px" />
+              <span class="textos"><Esqueleto {ancho} alto="11px" /><Esqueleto ancho="64px" alto="9px" /></span>
+            </span>
+            <span><Esqueleto ancho="80%" alto="10px" /></span>
+            <span><Esqueleto ancho="72px" alto="10px" /></span>
+            <span><Esqueleto ancho="34px" alto="20px" redondo="10px" /></span>
+            <span></span>
+          </div>
+        {/each}
       {:else if !lectura.ok}
         <NotaTabla relleno={48} angosta titulo="No pudimos leer los estilos." texto="Revisa tu conexión y toca Actualizar." />
       {:else if !lectura.datos.estilos.length}

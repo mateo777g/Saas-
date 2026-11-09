@@ -518,20 +518,35 @@
     color: var(--suave);
   }
 
+  /* Desde el 9 nov 2026, como las cajas de texto (diseno/Campo.svelte, el Input de HeroUI). */
   select {
     height: 38px;
-    padding: 0 10px;
-    border: 1px solid var(--linea);
+    padding: 0 11px;
+    border: 0;
     border-radius: 12px;
-    background: var(--solido);
+    background: var(--campo-fondo);
+    box-shadow: var(--campo-sombra);
     color: var(--texto);
     font-size: 13.5px;
     font-weight: 500;
     outline: none;
+    transition:
+      background-color 0.15s ease,
+      box-shadow 0.15s ease-out;
+  }
+
+  select:hover:not(:focus) {
+    background: var(--campo-encima);
   }
 
   select:focus {
-    border-color: var(--suave);
+    box-shadow: 0 0 0 2px var(--campo-aro);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    select {
+      transition: none;
+    }
   }
 
   .dia {

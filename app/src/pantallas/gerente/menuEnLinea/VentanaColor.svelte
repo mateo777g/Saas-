@@ -167,18 +167,33 @@
     width: 130px;
     flex: none;
     padding: 0 14px;
-    border: 1px solid var(--linea);
+    border: 0;
     border-radius: 12px;
-    background: transparent;
+    background: var(--campo-fondo);
+    box-shadow: var(--campo-sombra);
     color: var(--texto);
     font-family: var(--mono);
     font-size: 14px;
     text-transform: uppercase;
     outline: none;
+    transition:
+      background-color 0.15s ease,
+      box-shadow 0.15s ease-out;
+  }
+
+  /* Como las cajas de texto (diseno/Campo.svelte, el Input de HeroUI), desde el 9 nov 2026. */
+  input:hover:not(:focus) {
+    background: var(--campo-encima);
   }
 
   input:focus {
-    border-color: var(--suave);
+    box-shadow: 0 0 0 2px var(--campo-aro);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    input {
+      transition: none;
+    }
   }
 
   .nota {

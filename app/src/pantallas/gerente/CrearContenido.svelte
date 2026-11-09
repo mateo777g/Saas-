@@ -16,6 +16,7 @@
   import BarraArriba from '../../diseno/BarraArriba.svelte';
   import BotonCuadro from '../../diseno/BotonCuadro.svelte';
   import CajaError from '../../diseno/CajaError.svelte';
+  import Esqueleto from '../../diseno/Esqueleto.svelte';
   import Icono from '../../diseno/Icono.svelte';
   import { pista } from '../../diseno/pista';
   import Tarjeta from '../../diseno/Tarjeta.svelte';
@@ -461,7 +462,18 @@
             {#if i >= 0}<span class="numero" class:apagado={deMas}>{i + 1}</span>{/if}
           </button>
         {:else}
-          <div class="nota-rejilla">{datos ? (productos.length ? 'No hay productos con ese nombre en tu menú.' : 'Todavía no hay productos en tu menú.') : 'Leyendo tu menú…'}</div>
+          {#if datos}
+            <div class="nota-rejilla">{productos.length ? 'No hay productos con ese nombre en tu menú.' : 'Todavía no hay productos en tu menú.'}</div>
+          {:else}
+            <!-- El esqueleto de la primera lectura (regla «Los esqueletos»): una fila de productos con su forma. -->
+            <span class="solo-lector">Leyendo tu menú…</span>
+            {#each ['78%', '60%', '84%', '66%', '72%'] as ancho, i (i)}
+              <div class="prod quieto" aria-hidden="true">
+                <Esqueleto alto="88px" redondo="10px" />
+                <span class="prod-textos"><Esqueleto {ancho} alto="10px" /><Esqueleto ancho="40%" alto="9px" /></span>
+              </div>
+            {/each}
+          {/if}
         {/each}
       </div>
     </div>
@@ -522,7 +534,7 @@
       <span class="separador"></span>
       <button type="button" class="boton-opcion" use:pista={'Elegir el estilo del anuncio'} disabled={!estilos?.length} onclick={() => (ventana = { tipo: 'estilos' })}>
         <span class="estilo-mini" style:background-image={estilo ? `url(${urlFoto(estilo.muestras.post)})` : undefined}></span>Estilo<span class="valor"
-          >{estilo?.nombre ?? (sinEstilos ? 'Ninguno' : '…')}</span
+          >{#if estilos === null}<Esqueleto ancho="56px" alto="10px" />{:else}{estilo?.nombre ?? (sinEstilos ? 'Ninguno' : '…')}{/if}</span
         >
       </button>
       {#if estilo}<span class="desc-estilo" title={estilo.descripcion}>{estilo.descripcion}</span>{/if}
@@ -535,7 +547,9 @@
         <button type="button" class="enlace" onclick={() => alIr('restaurante')}>Editar tus datos</button>
       </div>
       <div class="ira-linea">
-        {#if linea.length}
+        {#if !datos}
+          <Esqueleto ancho="62%" alto="10px" />
+        {:else if linea.length}
           {#each linea as parte, n (n)}{n ? ' · ' : ''}<span class:vacio={parte.vacio}>{parte.texto}</span>{/each}
         {:else}
           <span class="vacio">Sin datos de tu restaurante: solo tu producto.</span>
@@ -770,6 +784,10 @@
     cursor: pointer;
   }
 
+  .prod.quieto {
+    cursor: default;
+  }
+
   .prod.elegido {
     box-shadow: 0 0 0 2px var(--tinta);
     border-color: transparent;
@@ -908,20 +926,40 @@
     font-weight: 700;
   }
 
+  /* Como las cajas de texto (diseno/Campo.svelte, el Input de HeroUI), desde el 9 nov 2026: sin borde, más gris con el
+     mouse encima, el aro azul al escribir y el rojo cuando se pasa de letras. */
   .caja-mensaje {
     display: block;
-    padding: 10px 14px;
-    border: 1px solid var(--linea);
+    padding: 11px 15px;
     border-radius: 12px;
+    background: var(--campo-fondo);
+    box-shadow: var(--campo-sombra);
     cursor: text;
+    transition:
+      background-color 0.15s ease,
+      box-shadow 0.15s ease-out;
+  }
+
+  .caja-mensaje:hover:not(:focus-within) {
+    background: var(--campo-encima);
   }
 
   .caja-mensaje:focus-within {
-    border-color: var(--suave);
+    box-shadow: 0 0 0 2px var(--campo-aro);
   }
 
   .caja-mensaje.pasado {
-    border-color: var(--rojo);
+    box-shadow: 0 0 0 1px var(--rojo);
+  }
+
+  .caja-mensaje.pasado:focus-within {
+    box-shadow: 0 0 0 2px var(--rojo);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .caja-mensaje {
+      transition: none;
+    }
   }
 
   .caja-mensaje textarea {

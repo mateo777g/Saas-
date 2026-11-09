@@ -208,7 +208,7 @@
     width: 44px;
     height: 44px;
     padding: 0;
-    border-radius: 22px;
+    border-radius: 12px; /* rectángulo como los botones del panel (9 nov 2026; antes, círculo) */
     border: 1px solid var(--linea);
     background: var(--solido);
     color: var(--texto);

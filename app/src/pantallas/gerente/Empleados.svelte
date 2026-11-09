@@ -18,6 +18,7 @@
   import Boton from '../../diseno/Boton.svelte';
   import BotonCuadro from '../../diseno/BotonCuadro.svelte';
   import Confirmar from '../../diseno/Confirmar.svelte';
+  import Esqueleto from '../../diseno/Esqueleto.svelte';
   import Icono from '../../diseno/Icono.svelte';
   import NotaTabla from '../../diseno/NotaTabla.svelte';
   import Selector from '../../diseno/Selector.svelte';
@@ -33,6 +34,7 @@
     type Persona,
   } from '../../lib/equipo';
   import { ALGO_SALIO_PANEL, esDeRed, Fallo, SIN_CONEXION } from '../../lib/errores';
+  import { anchos, filasDeLaUltimaVez, recordarFilas } from '../../lib/esqueletos';
   import { plural } from '../../lib/formato';
   import { NOMBRE_ROL } from '../../lib/roles';
   import type { Sucursal } from '../../lib/gerente';
@@ -77,9 +79,16 @@
       : { texto: plural(aparatos.length, 'aparato ligado', 'aparatos ligados'), vivo: true };
   });
 
+  // El esqueleto de la primera lectura (regla «Los esqueletos»): tantas filas como había la última vez en cada sección.
+  const esqueletoPersonas = $derived(anchos(['92px', '64px', '78px', '70px'], filasDeLaUltimaVez(`personas-${sucursal.id}`)));
+  const esqueletoAparatos = $derived(anchos(['118px', '96px', '132px', '104px'], filasDeLaUltimaVez(`aparatos-${sucursal.id}`)));
+
   async function leer() {
     try {
-      lectura = { estado: 'listo', equipo: await leerEquipo(sucursal, usuarioId) };
+      const leido = await leerEquipo(sucursal, usuarioId);
+      lectura = { estado: 'listo', equipo: leido };
+      recordarFilas(`personas-${sucursal.id}`, leido.personas.length);
+      recordarFilas(`aparatos-${sucursal.id}`, leido.aparatos.length);
     } catch (error) {
       console.error('[equipo] no se pudo leer el equipo:', error);
       // Si ya se veía la lista, se queda; si no, la nota del error.
@@ -171,7 +180,9 @@
           : 'Los celulares y tabletas desde donde entra tu equipo. Uno compartido muestra a todo el equipo; el de una persona, solo a ella.'}
       </p>
       <span class="crece"></span>
-      {#if equipo}
+      {#if lectura.estado === 'leyendo'}
+        <span class="etiqueta"><Esqueleto ancho="80px" alto="10px" /></span>
+      {:else if equipo}
         <span class="etiqueta">
           {seccion === 'personas'
             ? plural(personas.length, 'PERSONA', 'PERSONAS')
@@ -188,7 +199,19 @@
         encabezados={[{ texto: 'PERSONA' }, { texto: 'ROLES' }, { texto: 'PIN' }, { texto: '' }]}
       >
         {#if lectura.estado === 'leyendo'}
-          <NotaTabla relleno={48} angosta titulo="Cargando tu equipo…" />
+          <!-- El esqueleto: con su forma y sin sus botones. -->
+          <span class="solo-lector">Cargando tu equipo…</span>
+          {#each esqueletoPersonas as ancho, i (i)}
+            <div class="fila quieta" aria-hidden="true">
+              <span class="persona">
+                <Esqueleto ancho="36px" alto="36px" redondo="50%" />
+                <Esqueleto {ancho} alto="11px" />
+              </span>
+              <span class="roles"><Esqueleto ancho="56px" alto="22px" redondo="7px" /></span>
+              <span><Esqueleto ancho="52px" alto="10px" /></span>
+              <span></span>
+            </div>
+          {/each}
         {:else if lectura.estado === 'error' && lectura.deRed}
           <NotaTabla relleno={48} angosta titulo="Sin conexión." texto={SIN_CONEXION} />
         {:else if lectura.estado === 'error'}
@@ -276,7 +299,18 @@
         encabezados={[{ texto: 'APARATO' }, { texto: 'DE QUIÉN ES' }, { texto: 'ÚLTIMO USO' }, { texto: '' }]}
       >
         {#if lectura.estado === 'leyendo'}
-          <NotaTabla relleno={48} angosta titulo="Cargando tu equipo…" />
+          <span class="solo-lector">Cargando tus aparatos…</span>
+          {#each esqueletoAparatos as ancho, i (i)}
+            <div class="fila quieta" aria-hidden="true">
+              <span class="aparato">
+                <Esqueleto ancho="36px" alto="36px" redondo="11px" />
+                <Esqueleto {ancho} alto="11px" />
+              </span>
+              <span><Esqueleto ancho="88px" alto="10px" /></span>
+              <span><Esqueleto ancho="64px" alto="10px" /></span>
+              <span></span>
+            </div>
+          {/each}
         {:else if lectura.estado === 'error' && lectura.deRed}
           <NotaTabla relleno={48} angosta titulo="Sin conexión." texto={SIN_CONEXION} />
         {:else if lectura.estado === 'error'}

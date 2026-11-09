@@ -17,7 +17,11 @@
   la de otra (`ocupado`), la flecha se apaga.
 -->
 <script lang="ts">
+  import { tick } from 'svelte';
+  import { Tween } from 'svelte/motion';
+  import { DURA_FLECHA, resorteFlecha } from '../../../diseno/flecha';
   import Icono from '../../../diseno/Icono.svelte';
+  import { pista } from '../../../diseno/pista';
   import { PERIODOS_REPORTE, type PeriodoReporte } from '../../../lib/reporte';
 
   let {
@@ -54,6 +58,36 @@
   let campo = $state<HTMLTextAreaElement | null>(null);
   let envoltura = $state<HTMLDivElement | null>(null);
   let menuAbierto = $state(false);
+  // En la conversación el menú sale hacia arriba; su título y sus 3 periodos salen uno tras otro.
+  const menuArriba = $derived(modo === 'chat');
+  const N_MENU = PERIODOS_REPORTE.length + 1;
+  // El menú del «+» se abre como la Lista (regla «Las listas que se abren», 9 nov 2026): el fondo crece desde el «+»
+  // (220/28), cada renglón sale del «+», de 0.8 a 1, uno tras otro desde el más cercano (220/26, 45 ms; al cerrar, al
+  // revés y de 20 en 20 ms) y el «+» gira a ✕ con el resorte de la flecha (260/22).
+  let menu = $state<HTMLDivElement | null>(null);
+  let botonMas = $state<HTMLButtonElement | null>(null);
+  let altoMenu = $state(0);
+  let desde = $state<number[]>([]);
+  let midiendo = $state(false);
+  const quieto = typeof matchMedia === 'function' ? matchMedia('(prefers-reduced-motion: reduce)') : null;
+  const giro = new Tween(0, { duration: DURA_FLECHA, easing: resorteFlecha });
+  $effect(() => {
+    giro.set(menuAbierto ? 1 : 0, quieto?.matches ? { duration: 0 } : undefined);
+  });
+
+  // Pone, quieto, de dónde sale cada renglón (el «+») y luego abre, para que el resorte arranque ahí.
+  async function abrirMenu() {
+    if (menu && botonMas) {
+      const b = botonMas.getBoundingClientRect().top;
+      const m = menu.getBoundingClientRect().top;
+      desde = [...menu.querySelectorAll<HTMLElement>('.renglon')].map((r) => b - (m + r.offsetTop));
+    }
+    midiendo = true;
+    await tick();
+    void menu?.offsetHeight;
+    midiendo = false;
+    menuAbierto = true;
+  }
   // Mientras se escribe en la caja ya abierta, crece sin el resorte.
   let escribiendo = $state(false);
   let altoCampo = $state<number | null>(null);
@@ -150,14 +184,16 @@
     campo?.focus();
   }
 
-  // En la píldora, el «+» abre la caja con su menú.
-  function picarMas() {
+  // En la píldora, el «+» abre la caja con su menú (cuando la caja ya creció, para medir desde su lugar).
+  async function picarMas() {
     if (!abierta && !aviso) {
-      menuAbierto = true;
       abrir();
+      await tick();
+      abrirMenu();
       return;
     }
-    menuAbierto = !menuAbierto;
+    if (menuAbierto) menuAbierto = false;
+    else abrirMenu();
   }
 
   function elegir(periodo: PeriodoReporte) {
@@ -183,18 +219,42 @@
       aria-label="Más"
       aria-expanded={menuAbierto}
       disabled={ocupado}
+      use:pista={menuAbierto ? null : 'Reporte en PDF'}
+      bind:this={botonMas}
       onclick={picarMas}
     >
-      <Icono nombre="r-mas" tamano={18} />
+      <span class="giro" style:transform="rotate({giro.current * 45}deg)"><Icono nombre="r-mas" tamano={18} /></span>
     </button>
-    {#if menuAbierto}
-      <div class="menu-mas" class:arriba={modo === 'chat'} class:a-la-derecha={!!aviso}>
-        <div class="titulo-menu"><Icono nombre="r-hoy" tamano={16} />Reporte en PDF</div>
-        {#each PERIODOS_REPORTE as p (p.valor)}
-          <button type="button" class="opcion" onclick={() => elegir(p.valor)}>{p.boton}</button>
+    <div
+      class="menu-mas"
+      class:arriba={menuArriba}
+      class:a-la-derecha={!!aviso}
+      class:abierto={menuAbierto}
+      class:midiendo
+      style:--alto="{altoMenu}px"
+      inert={!menuAbierto}
+    >
+      <div class="menu-fondo" aria-hidden="true"></div>
+      <div class="menu-renglones" bind:this={menu} bind:offsetHeight={altoMenu}>
+        {#each [null, ...PERIODOS_REPORTE] as p, j (p?.valor ?? 'titulo')}
+          {@const k = menuArriba ? N_MENU - 1 - j : j}
+          {#if p}
+            <button
+              type="button"
+              class="opcion renglon"
+              style:--y="{desde[j] ?? 0}px"
+              style:--da="{k * 45}ms"
+              style:--dc="{(N_MENU - 1 - k) * 20}ms"
+              onclick={() => elegir(p.valor)}>{p.boton}</button
+            >
+          {:else}
+            <div class="titulo-menu renglon" style:--y="{desde[j] ?? 0}px" style:--da="{k * 45}ms" style:--dc="{(N_MENU - 1 - k) * 20}ms">
+              <Icono nombre="r-hoy" tamano={16} />Reporte en PDF
+            </div>
+          {/if}
         {/each}
       </div>
-    {/if}
+    </div>
   </div>
 {/snippet}
 
@@ -241,6 +301,7 @@
       class="mandar"
       class:parando={!!alDetener}
       aria-label={alDetener ? 'Detener' : 'Mandar la pregunta'}
+      use:pista={alDetener ? 'Detener' : 'Mandar'}
       disabled={alDetener ? false : ocupado || !valor.trim()}
       onclick={alDetener ?? mandar}
     >
@@ -483,19 +544,84 @@
     cursor: default;
   }
 
+  .giro {
+    display: grid;
+    place-items: center;
+  }
+
   .menu-mas {
     position: absolute;
     left: 0;
     top: calc(100% + 8px);
     z-index: 30;
     min-width: 220px;
-    padding: 6px;
+    text-align: left;
+    cursor: default;
+    pointer-events: none;
+  }
+
+  .menu-mas.abierto {
+    pointer-events: auto;
+  }
+
+  /* El fondo crece desde el «+» hasta lo que miden los renglones; hacia arriba en la conversación. */
+  .menu-fondo {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    height: 0;
     border: 1px solid var(--linea-fuerte);
     border-radius: 12px;
     background: var(--solido);
+    opacity: 0;
+    transition:
+      height 0.518s var(--resorte-fondo),
+      opacity 0.25s ease,
+      box-shadow 0.25s ease;
+  }
+
+  .menu-mas.arriba .menu-fondo {
+    top: auto;
+    bottom: 0;
+  }
+
+  .menu-mas.abierto .menu-fondo {
+    height: var(--alto);
+    opacity: 1;
     box-shadow: 0 14px 34px var(--sombra-menu);
-    text-align: left;
-    cursor: default;
+  }
+
+  .menu-renglones {
+    position: relative;
+    padding: 6px;
+  }
+
+  .renglon {
+    opacity: 0;
+    transform: translateY(var(--y)) scale(0.8);
+    transition:
+      transform 0.607s var(--resorte-opcion) var(--dc),
+      opacity 0.3s ease var(--dc),
+      background-color 150ms;
+  }
+
+  .menu-mas.abierto .renglon {
+    opacity: 1;
+    transform: none;
+    transition:
+      transform 0.607s var(--resorte-opcion) var(--da),
+      opacity 0.3s ease var(--da),
+      background-color 150ms;
+  }
+
+  .menu-mas.midiendo .renglon {
+    transition: none;
+  }
+
+  .menu-mas.abierto .opcion:active {
+    transform: scale(0.95);
+    transition: transform 0.15s ease;
   }
 
   .menu-mas.arriba {
@@ -574,7 +700,10 @@
     .escribiendo textarea,
     .pista,
     .mandar,
-    .capa {
+    .capa,
+    .menu-fondo,
+    .renglon,
+    .menu-mas.abierto .renglon {
       transition: none;
     }
   }

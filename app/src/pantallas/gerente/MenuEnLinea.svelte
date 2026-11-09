@@ -17,6 +17,7 @@
   import Boton from '../../diseno/Boton.svelte';
   import BotonCuadro from '../../diseno/BotonCuadro.svelte';
   import CajaError from '../../diseno/CajaError.svelte';
+  import Esqueleto from '../../diseno/Esqueleto.svelte';
   import Icono from '../../diseno/Icono.svelte';
   import Interruptor from '../../diseno/Interruptor.svelte';
   import Selector from '../../diseno/Selector.svelte';
@@ -79,6 +80,8 @@
         envios !== guardado.hace_envios),
   );
   const casi = $derived(casiNoSeVe(color, tema));
+  // Sin datos todavía (la primera lectura): esqueletos en lo que viene de la base (regla «Los esqueletos»).
+  const cargando = $derived(!guardado && !errorLectura);
 
   async function leer() {
     try {
@@ -225,7 +228,7 @@
             </div>
           </div>
 
-          <Carteles restauranteId={sucursal.id} {carteles} alCambiar={alCambiarCarteles} />
+          <Carteles restauranteId={sucursal.id} {carteles} alCambiar={alCambiarCarteles} {cargando} />
         </div>
 
         <div class="tarjeta como">
@@ -245,7 +248,9 @@
           <span class="etiqueta">COLOR</span>
           <div class="color-fila">
             <div class="muestra-color">
-              {#if color}
+              {#if cargando}
+                <Esqueleto ancho="22px" alto="22px" redondo="7px" /><Esqueleto ancho="120px" alto="10px" />
+              {:else if color}
                 <span class="gota" style:background={color}></span><span class="mono">{color}</span>
               {:else}
                 <span class="gota" style:background={tema === 'claro' ? '#121212' : '#1f1f1f'}></span>
@@ -268,9 +273,15 @@
           <div class="raya"></div>
           <span class="etiqueta">PEDIDOS</span>
           <div class="envios-fila">
-            <Interruptor prendido={envios} texto="Hago envíos" alCambiar={(v) => (envios = v)} />
+            {#if cargando}
+              <span class="envios-esqueleto" aria-hidden="true"><Esqueleto ancho="34px" alto="20px" redondo="10px" /><Esqueleto ancho="84px" alto="10px" /></span>
+            {:else}
+              <Interruptor prendido={envios} texto="Hago envíos" alCambiar={(v) => (envios = v)} />
+            {/if}
             <span class="pista crece">
-              {#if !envios}
+              {#if cargando}
+                <Esqueleto ancho="70%" alto="10px" />
+              {:else if !envios}
                 Tus clientes solo piden para llevar.
               {:else if !listaEnvios.length}
                 Tus clientes también piden a domicilio. Para cobrar el envío, crea un producto en Mi menú y prende «Es un costo de
@@ -588,6 +599,13 @@
 
   .pista.arriba {
     margin-top: 8px;
+  }
+
+  .envios-esqueleto {
+    display: inline-flex;
+    align-items: center;
+    gap: 9px;
+    min-height: 20px;
   }
 
   .envios-fila {

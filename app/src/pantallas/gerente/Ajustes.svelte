@@ -16,6 +16,7 @@
   import { onMount } from 'svelte';
   import Boton from '../../diseno/Boton.svelte';
   import CajaError from '../../diseno/CajaError.svelte';
+  import Esqueleto from '../../diseno/Esqueleto.svelte';
   import Icono from '../../diseno/Icono.svelte';
   import Lista from '../../diseno/Lista.svelte';
   import Selector from '../../diseno/Selector.svelte';
@@ -125,7 +126,13 @@
         <div class="raya"></div>
         <label class="etiqueta" for="hora-corte">EL DÍA EMPIEZA A LAS</label>
         <div class="hora-fila">
+          {#if hora === null && !error}
+            <!-- El esqueleto de la primera lectura (regla «Los esqueletos»): la lista con su mismo tamaño. -->
+            <span class="solo-lector">Cargando tu hora de corte…</span>
+            <span class="hora-esqueleto" aria-hidden="true"><Esqueleto alto="44px" redondo="12px" /></span>
+          {:else}
           <Lista id="hora-corte" bind:valor={hora} apagado={hora === null || paso !== null} opciones={HORAS.map((h) => ({ valor: h, texto: `${h}:00` }))} />
+          {/if}
           <Boton
             etiqueta={paso === 'guardando' ? 'Guardando…' : paso === 'listo' ? 'Guardado' : 'Guardar'}
             icono="guardar"
@@ -136,7 +143,12 @@
             onclick={guardar}
           />
         </div>
-        {#if hora !== null}
+        {#if hora === null && !error}
+          <p class="ejemplo" aria-hidden="true">
+            <Esqueleto ancho="16px" alto="16px" />
+            <span class="ejemplo-esqueleto"><Esqueleto ancho="92%" alto="10px" /><Esqueleto ancho="24%" alto="10px" /></span>
+          </p>
+        {:else if hora !== null}
           {@const e = ejemplo(hora)}
           <p class="ejemplo"><Icono nombre="info" tamano={16} /><span>Con <b>{e.hora}</b>{e.resto}</span></p>
         {/if}
@@ -249,6 +261,21 @@
   }
 
 
+
+  /* Lo que mide la lista con «6:00»: así el botón no se mueve al llegar. */
+  .hora-esqueleto {
+    width: 82px;
+    flex: none;
+    display: flex;
+  }
+
+  .ejemplo-esqueleto {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 9px;
+    padding: 4px 0;
+  }
 
   .ejemplo {
     margin: 14px 0 0;

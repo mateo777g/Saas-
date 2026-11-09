@@ -13,6 +13,7 @@
   import { onMount } from 'svelte';
   import BarraArriba from '../../diseno/BarraArriba.svelte';
   import BotonCuadro from '../../diseno/BotonCuadro.svelte';
+  import Esqueleto from '../../diseno/Esqueleto.svelte';
   import Icono from '../../diseno/Icono.svelte';
   import Tarjeta from '../../diseno/Tarjeta.svelte';
   import { esDeRed, SIN_CONEXION } from '../../lib/errores';
@@ -160,9 +161,11 @@
         onclick={() => reporte && ir(diaAnterior(reporte.dia))}
       />
       <span class="dia-texto">
-        {reporte ? diaConNombre(reporte.dia) : '—'}
+        {#if lectura.estado === 'leyendo'}<Esqueleto ancho="120px" alto="12px" />{:else}{reporte ? diaConNombre(reporte.dia) : '—'}{/if}
         <small>
-          {#if reporte}
+          {#if lectura.estado === 'leyendo'}
+            <Esqueleto ancho="132px" alto="9px" />
+          {:else if reporte}
             {reporte.dia === reporte.hoy ? `Hoy · desde las ${reporte.hora_corte}:00` : `Día de negocio · de ${reporte.hora_corte}:00 a ${reporte.hora_corte}:00`}
           {/if}
         </small>
@@ -188,11 +191,22 @@
         <span class="titulo-tarjeta">Cortes de caja</span>
         <span class="nota">Cada turno que se abrió este día, con su corte.</span>
       </div>
-      {#if reporte}<span class="etiqueta">{plural(reporte.turnos.length, 'TURNO', 'TURNOS')}</span>{/if}
+      {#if lectura.estado === 'leyendo'}<span class="etiqueta"><Esqueleto ancho="56px" alto="10px" /></span>
+      {:else if reporte}<span class="etiqueta">{plural(reporte.turnos.length, 'TURNO', 'TURNOS')}</span>{/if}
     </div>
     <div class="desliza">
       {#if lectura.estado === 'leyendo'}
-        <div class="vacio"><b>Cargando…</b></div>
+        <!-- El esqueleto (regla «Los esqueletos»): un turno con su forma. -->
+        <span class="solo-lector">Cargando los cortes de este día…</span>
+        <div class="turno-esqueleto" aria-hidden="true">
+          <div class="te-cabeza">
+            <Esqueleto ancho="36px" alto="36px" redondo="11px" />
+            <span class="te-textos"><Esqueleto ancho="140px" alto="12px" /><Esqueleto ancho="180px" alto="10px" /></span>
+          </div>
+          {#each ['70%', '55%', '62%', '48%'] as ancho, i (i)}
+            <div class="te-fila"><Esqueleto {ancho} alto="10px" /><Esqueleto ancho="64px" alto="10px" /></div>
+          {/each}
+        </div>
       {:else if lectura.estado === 'error'}
         <div class="vacio">
           <b>{lectura.deRed ? 'Sin conexión.' : 'No se pudo leer este día.'}</b>
@@ -219,7 +233,26 @@
       </div>
     </div>
     <div class="desliza">
-      {#if reporte && nada}
+      {#if lectura.estado === 'leyendo'}
+        <span class="solo-lector">Cargando los descuentos y cancelaciones…</span>
+        <div class="resumen" aria-hidden="true">
+          {#each ['DESCUENTOS', 'CANCELACIONES'] as e (e)}
+            <div class="cifra">
+              <span class="etiqueta">{e}</span>
+              <span class="cifra-valor"><Esqueleto ancho="88px" alto="20px" /></span>
+              <span class="cifra-nota"><Esqueleto ancho="120px" alto="10px" /></span>
+            </div>
+          {/each}
+        </div>
+        {#each ['DESCUENTOS', 'CANCELACIONES', 'OTROS CAMBIOS'] as e (e)}
+          <div class="bloque" aria-hidden="true">
+            <span class="etiqueta">{e}</span>
+            <div class="lista">
+              <div class="f"><Esqueleto ancho="55%" alto="10px" /><Esqueleto ancho="48px" alto="10px" /></div>
+            </div>
+          </div>
+        {/each}
+      {:else if reporte && nada}
         <div class="vacio">
           <b>Nada se descontó ni se canceló este día.</b>
           <span>Aquí salen los descuentos, las cancelaciones y los cambios de mesa, con quién los pidió y quién los autorizó.</span>
@@ -402,6 +435,36 @@
     font-size: 12.5px;
     line-height: 1.45;
     color: var(--suave);
+  }
+
+  /* El esqueleto de un turno: la tarjeta de cortes/Turno.svelte con barras grises. */
+  .turno-esqueleto {
+    flex: none;
+    padding: 16px;
+    border-radius: 18px;
+    border: 1px solid var(--linea);
+    background: var(--solido);
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .te-cabeza {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .te-textos {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .te-fila {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
   }
 
   .resumen {

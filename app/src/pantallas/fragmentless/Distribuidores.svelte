@@ -12,9 +12,11 @@
 <script lang="ts">
   import BotonCuadro from '../../diseno/BotonCuadro.svelte';
   import EstadoPunto from '../../diseno/EstadoPunto.svelte';
+  import Esqueleto from '../../diseno/Esqueleto.svelte';
   import NotaTabla from '../../diseno/NotaTabla.svelte';
   import Tabla from '../../diseno/Tabla.svelte';
   import Tarjeta from '../../diseno/Tarjeta.svelte';
+  import { anchos, filasDeLaUltimaVez, recordarFilas } from '../../lib/esqueletos';
   import type { Distribuidor, Lectura } from '../../lib/panel';
 
   let {
@@ -24,6 +26,12 @@
     distribuidores: Lectura<Distribuidor[]> | null;
     alElegir: (accion: AccionDistribuidor, distribuidor: Distribuidor) => void;
   } = $props();
+
+  // El esqueleto de la primera lectura (regla «Los esqueletos»): tantas filas como había la última vez.
+  const filasEsqueleto = anchos(['132px', '104px', '150px', '118px'], filasDeLaUltimaVez('fragmentless-distribuidores'));
+  $effect(() => {
+    if (distribuidores?.ok) recordarFilas('fragmentless-distribuidores', distribuidores.datos.length);
+  });
 </script>
 
 <div class="distribuidores">
@@ -48,7 +56,21 @@
       ]}
     >
       {#if !distribuidores}
-        <!-- leyendo la primera vez -->
+        <span class="solo-lector">Cargando tus distribuidores…</span>
+        {#each filasEsqueleto as ancho, i (i)}
+          <div class="fila quieta" aria-hidden="true">
+            <div class="persona">
+              <Esqueleto ancho="34px" alto="34px" redondo="50%" />
+              <Esqueleto {ancho} alto="11px" />
+            </div>
+            <span><Esqueleto ancho="60px" alto="10px" /></span>
+            <span><Esqueleto ancho="140px" alto="10px" /></span>
+            <span><Esqueleto ancho="84px" alto="10px" /></span>
+            <span><Esqueleto ancho="56px" alto="10px" /></span>
+            <span><Esqueleto ancho="16px" alto="10px" /></span>
+            <span></span>
+          </div>
+        {/each}
       {:else if !distribuidores.ok}
         <NotaTabla titulo="No se pudo leer la lista de distribuidores." texto={distribuidores.mensaje} />
       {:else if distribuidores.datos.length === 0}

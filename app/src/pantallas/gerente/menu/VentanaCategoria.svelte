@@ -251,23 +251,37 @@
     align-items: center;
     justify-content: center;
     padding: 0;
-    border: 1px solid var(--linea);
+    border: 0;
     border-radius: 12px;
-    background: transparent;
+    background: var(--campo-fondo);
+    box-shadow: var(--campo-sombra);
     color: var(--texto);
-    transition: background-color 150ms;
+    transition:
+      background-color 0.15s ease,
+      box-shadow 0.15s ease-out;
   }
 
+  /* Como las cajas de texto (diseno/Campo.svelte, el Input de HeroUI), desde el 9 nov 2026. */
   .icono:hover {
-    background: var(--chip);
+    background: var(--campo-encima);
+  }
+
+  .icono:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px var(--campo-aro);
   }
 
   /* El ícono elegido, en el azul claro de la estrella (lo eligió el developer en la maqueta, versión 21), con el
      ícono en blanco, en los dos temas. */
   .icono[aria-checked='true'] {
-    border-color: #4fa3ff;
     background: #4fa3ff;
     color: #ffffff;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .icono {
+      transition: none;
+    }
   }
 
   .muestra {

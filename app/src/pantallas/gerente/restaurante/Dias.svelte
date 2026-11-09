@@ -10,13 +10,15 @@
 </script>
 
 <script lang="ts">
+  import Esqueleto from '../../../diseno/Esqueleto.svelte';
   import Lista from '../../../diseno/Lista.svelte';
 
   let {
     dias = $bindable(),
     hoy,
     apagado = false,
-  }: { dias: Dia[]; hoy: number; apagado?: boolean } = $props();
+    cargando = false,
+  }: { dias: Dia[]; hoy: number; apagado?: boolean; cargando?: boolean } = $props();
 
   const NOMBRES = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
   const HORAS = Array.from({ length: 48 }, (_, i) => `${Math.floor(i / 2)}:${i % 2 ? '30' : '00'}`);
@@ -40,6 +42,14 @@
 <div class="dias">
   {#each NOMBRES as nombre, i (nombre)}
     {@const d = dias[i]}
+    {#if cargando}
+      <!-- El esqueleto de la primera lectura (regla «Los esqueletos»): el nombre del día no espera a la red. -->
+      <div class="dia" class:hoy={i === hoy} aria-hidden="true">
+        <span class="dia-nombre">{nombre}</span>
+        <span class="interruptor"><Esqueleto ancho="34px" alto="20px" redondo="10px" /><Esqueleto ancho="40px" alto="10px" /></span>
+        <span class="horas"><Esqueleto ancho="{i % 3 === 2 ? 120 : 176}px" alto="10px" /></span>
+      </div>
+    {:else}
     <div class="dia" class:hoy={i === hoy}>
       <span class="dia-nombre">{nombre}</span>
       <button
@@ -64,6 +74,7 @@
         {/if}
       </span>
     </div>
+    {/if}
   {/each}
 </div>
 

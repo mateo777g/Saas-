@@ -15,6 +15,7 @@
   import BotonCuadro from '../../diseno/BotonCuadro.svelte';
   import CajaError from '../../diseno/CajaError.svelte';
   import Campo from '../../diseno/Campo.svelte';
+  import Esqueleto from '../../diseno/Esqueleto.svelte';
   import Icono from '../../diseno/Icono.svelte';
   import Tarjeta from '../../diseno/Tarjeta.svelte';
   import { ALGO_SALIO_PANEL, esDeRed, Fallo, SIN_CONEXION } from '../../lib/errores';
@@ -100,6 +101,8 @@
     archivo = null;
   }
 
+  // Sin datos todavía (la primera lectura): esqueletos en su lugar (regla «Los esqueletos»).
+  const cargando = $derived(!guardado && !errorLectura);
   const foto = $derived(vistaPrevia ?? (logo ? urlFoto(logo) : null));
   const cambio = $derived(
     !!guardado &&
@@ -224,9 +227,13 @@
           <div class="raya"></div>
           <div class="campos">
             <div class="fila-logo">
+              {#if cargando}
+                <Esqueleto ancho="72px" alto="72px" redondo="14px" />
+              {:else}
               <span class="logo-cuadro" class:vacio={!foto}>
                 {#if foto}<img src={foto} alt="Tu logo" />{:else}<Icono nombre="biblio" tamano={24} />{/if}
               </span>
+              {/if}
               <div class="logo-texto">
                 <div class="logo-botones">
                   <Boton
@@ -243,6 +250,19 @@
               </div>
               <input bind:this={elegirArchivo} type="file" accept="image/*" hidden onchange={alElegirLogo} />
             </div>
+            {#if cargando}
+              <!-- Mientras llegan sus datos: cada campo con su etiqueta y un bloque de su mismo alto. -->
+              <span class="solo-lector">Cargando tu restaurante…</span>
+              {#each ['NOMBRE DEL RESTAURANTE', 'TELÉFONO Y WHATSAPP', 'DIRECCIÓN'] as e (e)}
+                <div class="campo-esqueleto" aria-hidden="true">
+                  <span class="etiqueta">{e}</span>
+                  <Esqueleto alto="44px" redondo="12px" />
+                  {#if e === 'TELÉFONO Y WHATSAPP'}
+                    <span class="pista">10 dígitos. Sale en tu menú y en tus anuncios, y ahí te escriben tus clientes.</span>
+                  {/if}
+                </div>
+              {/each}
+            {:else}
             <Campo id="restaurante-nombre" etiqueta="NOMBRE DEL RESTAURANTE" bind:valor={nombre} largoMaximo={60} />
             <Campo
               id="restaurante-telefono"
@@ -262,6 +282,7 @@
               placeholder="Ej. Av. Juárez 123, Centro"
               largoMaximo={200}
             />
+            {/if}
           </div>
         </div>
 
@@ -274,7 +295,7 @@
             </span>
           </div>
           <div class="raya" style:margin-bottom="4px"></div>
-          <Dias bind:dias {hoy} apagado={!guardado || paso !== null} />
+          <Dias bind:dias {hoy} apagado={!guardado || paso !== null} {cargando} />
           <p class="pie">
             Si cierras después de medianoche, pon la hora del día siguiente: de 18:00 a 2:00. Esas horas cuentan como
             del día en que abriste.
@@ -424,6 +445,12 @@
     justify-content: center;
     flex: none;
     overflow: hidden;
+  }
+
+  .campo-esqueleto {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
   }
 
   .logo-cuadro.vacio {

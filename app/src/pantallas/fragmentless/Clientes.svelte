@@ -9,10 +9,12 @@
   import BotonCuadro from '../../diseno/BotonCuadro.svelte';
   import EstadoPunto from '../../diseno/EstadoPunto.svelte';
   import Icono from '../../diseno/Icono.svelte';
+  import Esqueleto from '../../diseno/Esqueleto.svelte';
   import NotaTabla from '../../diseno/NotaTabla.svelte';
   import Tabla from '../../diseno/Tabla.svelte';
   import Tarjeta from '../../diseno/Tarjeta.svelte';
   import { fecha, vigencia } from '../../lib/formato';
+  import { anchos, filasDeLaUltimaVez, recordarFilas } from '../../lib/esqueletos';
   import { urgente, type Cliente, type Lectura } from '../../lib/panel';
 
   let {
@@ -28,6 +30,12 @@
     alFijar: (cliente: Cliente) => void;
     alTope: (cliente: Cliente) => void;
   } = $props();
+
+  // El esqueleto de la primera lectura (regla «Los esqueletos»): tantas filas como había la última vez.
+  const filasEsqueleto = anchos(['132px', '104px', '150px', '118px'], filasDeLaUltimaVez('fragmentless-clientes'));
+  $effect(() => {
+    if (clientes?.ok) recordarFilas('fragmentless-clientes', clientes.datos.length);
+  });
 </script>
 
 <div class="clientes">
@@ -52,7 +60,21 @@
       ]}
     >
       {#if !clientes}
-        <!-- leyendo la primera vez -->
+        <span class="solo-lector">Cargando tus clientes…</span>
+        {#each filasEsqueleto as ancho, i (i)}
+          <div class="fila quieta" aria-hidden="true">
+            <div class="restaurante">
+              <Esqueleto ancho="36px" alto="36px" redondo="11px" />
+              <div class="nombres"><Esqueleto {ancho} alto="11px" /><Esqueleto ancho="72px" alto="9px" /></div>
+            </div>
+            <span><Esqueleto ancho="70px" alto="10px" /></span>
+            <span><Esqueleto ancho="64px" alto="10px" /></span>
+            <span><Esqueleto ancho="64px" alto="10px" /></span>
+            <span><Esqueleto ancho="56px" alto="10px" /></span>
+            <span><Esqueleto ancho="64px" alto="10px" /></span>
+            <span></span>
+          </div>
+        {/each}
       {:else if !clientes.ok}
         <NotaTabla titulo="No se pudo leer la lista de clientes." texto={clientes.mensaje} />
       {:else if clientes.datos.length === 0}

@@ -16,6 +16,7 @@
   import Boton from '../../diseno/Boton.svelte';
   import CajaError from '../../diseno/CajaError.svelte';
   import Confirmar from '../../diseno/Confirmar.svelte';
+  import Esqueleto from '../../diseno/Esqueleto.svelte';
   import Icono from '../../diseno/Icono.svelte';
   import { pista } from '../../diseno/pista';
   import Tarjeta from '../../diseno/Tarjeta.svelte';
@@ -295,7 +296,22 @@
   <Tarjeta como="main" class="tarjeta-biblio">
     <div class="cuerpo-biblio" bind:this={cuerpo} bind:clientWidth={ancho}>
       {#if errorAccion}<CajaError mensaje={errorAccion} compacta />{/if}
-      {#if datos && !listos.length && !haciendo}
+      {#if !datos}
+        <!-- El esqueleto de la primera lectura (regla «Los esqueletos»): un día con sus piezas en sus formas. -->
+        <span class="solo-lector">Cargando tus anuncios…</span>
+        <div class="dia" aria-hidden="true">
+          <Esqueleto ancho="64px" alto="10px" />
+          <span class="raya"></span>
+          <Esqueleto ancho="120px" alto="10px" />
+        </div>
+        <div class="collage" aria-hidden="true">
+          {#each Array.from({ length: columnas }, (_, n) => n) as n (n)}
+            <div class="columna">
+              <Esqueleto alto="auto" redondo="14px" proporcion={['4 / 5', '9 / 16', '16 / 9'][n % 3]} />
+            </div>
+          {/each}
+        </div>
+      {:else if datos && !listos.length && !haciendo}
         <div class="vacio">
           <div class="huecos">
             <span class="hueco" style:height="90px"></span>

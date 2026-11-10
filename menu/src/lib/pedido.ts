@@ -1,8 +1,10 @@
 // El pedido por WhatsApp (libreta 6, parte 6b; maqueta G2nxGb3xBgiPEYrDb6CgcW). Lo que la señora
 // Ramírez lleva en «Tu pedido» vive en su celular hasta mandarlo (12 horas sin tocarlo y se vacía);
-// «Hacer pedido» lo manda al Worker (POST /menu/pedido), que lo revisa con Turnstile y lo guarda con
-// hacer_pedido. El total que se ve aquí es solo la vista, como en el celular de Pepe: el que vale es
-// el que regresa Postgres, y con ese se arma el mensaje de WhatsApp.
+// «Pedir por WhatsApp» lo manda al Worker (POST /menu/pedido), que lo revisa con Turnstile y lo guarda
+// con hacer_pedido. El total que se ve aquí es solo la vista, como en el celular de Pepe: el que vale
+// es el que regresa Postgres, y con ese se arma el mensaje de WhatsApp.
+// Desde el 9 de noviembre de 2026 es un solo botón (maqueta 3smEgFNCNVBkLMukDTdXWw): el mismo toque
+// guarda el pedido y abre WhatsApp; si el celular no deja abrirlo, queda «Falta un paso» con su botón.
 import { dinero } from '@app/lib/formato';
 import type { Producto } from './datos';
 
@@ -153,9 +155,10 @@ export type Envio = {
 export async function hacerPedido(envio: Envio, sinRed: string): Promise<Respuesta> {
   let respuesta: Response;
   try {
+    // Sin encabezados propios, a propósito: así el navegador no pregunta primero si puede mandarlo (el
+    // «preflight») y el toque espera una vuelta menos antes de abrir WhatsApp. El Worker lee el JSON igual.
     respuesta = await fetch(`${API}/menu/pedido`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ ...envio, marca: marcaDelCelular() }),
     });
   } catch (error) {
@@ -169,10 +172,11 @@ export async function hacerPedido(envio: Envio, sinRed: string): Promise<Respues
   throw new NoSeMando(cuerpo?.error ?? sinRed);
 }
 
-// ─── Hecho: «Falta un paso» y «Pedido enviado» ───
+// ─── Hecho: «Pedido enviado» y, de respaldo, «Falta un paso» ───
 // Se queda en el celular hasta el siguiente pedido, hasta «Volver al menú» o hasta que cambie el día
 // del restaurante, para que al volver de WhatsApp siga ahí. `ids`: qué producto y qué opciones lleva
-// cada renglón, en el orden en que los guardó Postgres, para enseñarlos en inglés.
+// cada renglón, en el orden en que los guardó Postgres, para enseñarlos en inglés. `enviado`: WhatsApp
+// ya se abrió con su mensaje (desde el toque de «Pedir por WhatsApp» o desde el botón del respaldo).
 export type Hecho = { pedido: Guardado; ids: { producto_id: number; opciones: number[] }[]; fecha: string; enviado: boolean };
 
 export function leerHecho(slug: string, hoy: string): Hecho | null {
@@ -210,4 +214,24 @@ export function mensajeWhatsApp(p: Guardado): string {
 
 export function enlaceWhatsApp(telefono: string, texto?: string): string {
   return `https://wa.me/52${telefono}` + (texto ? `?text=${encodeURIComponent(texto)}` : '');
+}
+
+// Abre WhatsApp desde el mismo toque de «Pedir por WhatsApp», ya con el pedido guardado. Regresa
+// false si el navegador no lo dejó (window.open regresa null: Safari en el iPhone, cuando pasó un
+// momento desde el toque): entonces queda la hoja «Falta un paso», cuyo botón sí lo abre siempre.
+// Va sin «noopener» porque con él window.open regresa null aunque sí abra, y no se sabría.
+export function abrirWhatsApp(enlace: string): boolean {
+  let ventana: Window | null = null;
+  try {
+    ventana = window.open(enlace, '_blank');
+  } catch (error) {
+    console.warn('[menu] no se pudo abrir WhatsApp solo:', error);
+  }
+  if (!ventana) return false;
+  try {
+    ventana.opener = null;
+  } catch (error) {
+    console.debug('[menu] la ventana de WhatsApp ya es de otro origen y no deja soltarla:', error);
+  }
+  return true;
 }

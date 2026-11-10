@@ -1,10 +1,14 @@
 <!--
   «Tu pedido» (maqueta de la 6b, estados «Tu pedido», «A domicilio», «Cambió algo» y «Límite»): sus
   renglones con − / + (con 1, el − lo quita), para llevar o a domicilio (solo si Don Chuy hace envíos),
-  los datos que pide cada uno, el total y «Hacer pedido». Al tocar un renglón se reabre su hoja. Si
-  Postgres dijo que algo cambió, cada renglón dice qué; lo que ya no hay sale tachado y se quita al
-  volver a tocar «Hacer pedido». La revisión de Cloudflare vive en su hueco, abajo: invisible, salvo
-  si duda.
+  los datos que pide cada uno, el total y «Pedir por WhatsApp». Al tocar un renglón se reabre su hoja.
+  Si Postgres dijo que algo cambió, cada renglón dice qué; lo que ya no hay sale tachado y se quita al
+  volver a tocar el botón. La revisión de Cloudflare vive en su hueco, abajo: invisible, salvo si duda.
+
+  El botón único (maqueta 3smEgFNCNVBkLMukDTdXWw, 9 de noviembre de 2026): del color del restaurante,
+  con el ícono del mensaje; mientras se guarda dice «Mandando tu pedido…» con sus puntitos, sin
+  ponerse gris. Si el texto no cabe (inglés, a domicilio, en un celular angosto), primero se va el
+  ícono y después se achica la letra.
 -->
 <script lang="ts">
   import { dinero } from '@app/lib/formato';
@@ -87,6 +91,43 @@
       (!dom || (/^\d{10}$/.test(digitos(cliente.telefono)) && cliente.direccion.trim() !== '')) &&
       (!dom || cliente.pagaCon.trim() === '' || Number.isFinite(Number(cliente.pagaCon.trim()))),
   );
+
+  // El texto del botón siempre cabe: si no (lo más largo es inglés a domicilio en un celular angosto),
+  // primero se esconde el ícono y luego la letra baja de medio en medio punto, hasta 12.
+  let boton = $state<HTMLButtonElement>();
+  let icono = $state<HTMLSpanElement>();
+
+  function ajustar() {
+    const b = boton;
+    if (!b) return;
+    const estilo = getComputedStyle(b);
+    const lugar = b.clientWidth - parseFloat(estilo.paddingLeft) - parseFloat(estilo.paddingRight);
+    const rango = document.createRange();
+    const cabe = () => {
+      rango.selectNodeContents(b);
+      return rango.getBoundingClientRect().width <= lugar + 0.5;
+    };
+    b.style.fontSize = '';
+    if (icono) icono.style.display = '';
+    if (cabe()) return;
+    if (icono) icono.style.display = 'none';
+    for (let px = 14.5; px >= 12 && !cabe(); px -= 0.5) b.style.fontSize = `${px}px`;
+  }
+
+  $effect(() => {
+    // Lo que cambia el texto del botón.
+    void [total, dom, moneda, lengua, ocupado];
+    ajustar();
+  });
+
+  // También al cambiar el ancho (girar el celular) y cuando termina de llegar la letra del menú.
+  $effect(() => {
+    if (!boton) return;
+    const observador = new ResizeObserver(ajustar);
+    observador.observe(boton);
+    document.fonts?.ready.then(ajustar).catch((error) => console.warn('[menu] no se supo si llegó la letra:', error));
+    return () => observador.disconnect();
+  });
 </script>
 
 <Hoja etiqueta={t.tuPedido} {alCerrar} {pie}>
@@ -184,8 +225,12 @@
 </Hoja>
 
 {#snippet pie()}
-  <button type="button" class="m-boton" disabled={!listo || limite || ocupado} onclick={alHacer}>
-    {t.hacer} · {pesos(total)}{dom ? t.masEnvio : ''}
+  <button type="button" class="m-boton" class:mandando={ocupado} disabled={!listo || limite || ocupado} onclick={alHacer} bind:this={boton}>
+    {#if ocupado}
+      <span class="puntos" aria-hidden="true"><i></i><i></i><i></i></span>{t.mandando}
+    {:else}
+      <span class="icono" bind:this={icono}><Icono nombre="mensaje" tamano={18} /></span>{t.hacer} · {pesos(total)}{dom ? t.masEnvio : ''}
+    {/if}
   </button>
 {/snippet}
 
@@ -392,5 +437,56 @@
     margin-top: 14px;
     display: flex;
     justify-content: center;
+  }
+
+  /* El botón único. Mientras guarda no se apaga a gris: dice «Mandando tu pedido…». */
+  .m-boton.mandando:disabled {
+    opacity: 1;
+  }
+
+  .icono {
+    display: flex;
+  }
+
+  .puntos {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .puntos i {
+    width: 6px;
+    height: 6px;
+    border-radius: 3px;
+    background: currentColor;
+    animation: punto 1s ease-in-out infinite;
+  }
+
+  .puntos i:nth-child(2) {
+    animation-delay: 0.15s;
+  }
+
+  .puntos i:nth-child(3) {
+    animation-delay: 0.3s;
+  }
+
+  @keyframes punto {
+    0%,
+    60%,
+    100% {
+      opacity: 0.35;
+      transform: translateY(0);
+    }
+    30% {
+      opacity: 1;
+      transform: translateY(-4px);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .puntos i {
+      animation: none;
+      opacity: 0.8;
+    }
   }
 </style>

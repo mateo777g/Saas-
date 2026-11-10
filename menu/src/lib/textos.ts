@@ -70,8 +70,9 @@ export const TEXTOS = {
     total: 'Total',
     masEnvio: ' + envío',
     envioPista: 'El envío te lo dice el restaurante por WhatsApp.',
-    hacer: 'Hacer pedido',
-    hacerPista: 'En el siguiente paso lo mandas por WhatsApp. Aquí no se paga.',
+    hacer: 'Pedir por WhatsApp',
+    hacerPista: 'Se abre WhatsApp con tu pedido ya escrito: solo envíalo. Aquí no se paga.',
+    mandando: 'Mandando tu pedido…',
     notaRenglon: 'Nota: ',
     falta1: 'Falta un paso',
     pedidoN: (n: number) => `Pedido #${n}`,
@@ -82,7 +83,7 @@ export const TEXTOS = {
     otraVez: 'Abrir WhatsApp otra vez',
     volver: 'Volver al menú',
     cambio: 'Cambió algo en el menú',
-    cambioTexto: 'Revisa tu pedido y vuelve a tocar «Hacer pedido».',
+    cambioTexto: 'Revisa tu pedido y vuelve a tocar «Pedir por WhatsApp».',
     yaNoHay: (n: string) => `Ya no hay ${n}`,
     ahoraCuesta: (n: string, precio: string) => `${n} ahora cuesta ${precio}`,
     cambiaronOpciones: (n: string) => `Cambiaron las opciones de ${n}`,
@@ -175,8 +176,9 @@ export const TEXTOS = {
     total: 'Total',
     masEnvio: ' + delivery',
     envioPista: 'The restaurant tells you the delivery fee on WhatsApp.',
-    hacer: 'Place order',
-    hacerPista: "Next, you send it on WhatsApp. You don't pay here.",
+    hacer: 'Order on WhatsApp',
+    hacerPista: "WhatsApp opens with your order already written: just send it. You don't pay here.",
+    mandando: 'Sending your order…',
     notaRenglon: 'Note: ',
     falta1: 'One more step',
     pedidoN: (n: number) => `Order #${n}`,
@@ -187,7 +189,7 @@ export const TEXTOS = {
     otraVez: 'Open WhatsApp again',
     volver: 'Back to the menu',
     cambio: 'Something changed on the menu',
-    cambioTexto: 'Check your order and tap «Place order» again.',
+    cambioTexto: 'Check your order and tap «Order on WhatsApp» again.',
     yaNoHay: (n: string) => `No more ${n}`,
     ahoraCuesta: (n: string, precio: string) => `${n} now costs ${precio}`,
     cambiaronOpciones: (n: string) => `The options for ${n} changed`,
@@ -274,7 +276,7 @@ export function enSuLenguaElNo(mensaje: string, lengua: Lengua): string {
   return lengua === 'en' ? (EN[mensaje] ?? mensaje) : mensaje;
 }
 
-// El límite por hora: «Tu pedido» enseña el botón de WhatsApp y apaga «Hacer pedido».
+// El límite por hora: «Tu pedido» enseña el botón de WhatsApp y apaga «Pedir por WhatsApp».
 export function esLimite(mensaje: string): boolean {
   return mensaje.startsWith('Ya mandaste 3 pedidos') || mensaje.startsWith('Desde esta conexión ya se mandaron');
 }

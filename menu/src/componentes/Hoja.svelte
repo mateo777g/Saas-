@@ -2,7 +2,7 @@
   La hoja que sube desde abajo (maqueta de la 6a: el producto, Ordenar por y la información), sobre
   el velo. Se cierra con su X, con un toque en el velo, con Escape o con «atrás» del celular (esos
   dos los lleva Menu.svelte, con el historial). Con la 6b puede llevar un pie fijo abajo («Agregar al
-  pedido», «Hacer pedido»), y «Falta un paso» no se cierra con el velo.
+  pedido», «Pedir por WhatsApp»), y «Falta un paso» no se cierra con el velo.
 -->
 <script lang="ts">
   import { onMount, type Snippet } from 'svelte';

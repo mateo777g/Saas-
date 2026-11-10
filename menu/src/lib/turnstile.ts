@@ -1,9 +1,11 @@
-// La revisión de Cloudflare (Turnstile, modo «Administrado») antes de cada «Hacer pedido» (relevo de
-// la 6b). Va invisible: solo si duda enseña su casilla, dentro de la hoja «Tu pedido». Su script se
-// carga la primera vez que hace falta, no al abrir el menú. Cada token sirve una vez: se pide uno
-// nuevo en cada «Hacer pedido». Si en 30 segundos no contesta (su script no carga o la revisión se
-// queda pensando), falla: el menú dice «No pudimos mandar tu pedido. Intenta otra vez.» y se puede
-// volver a tocar «Hacer pedido» (decidido el 26 de octubre de 2026, en la prueba de verdad).
+// La revisión de Cloudflare (Turnstile, modo «Administrado») antes de cada pedido (relevo de la 6b).
+// Va invisible: solo si duda enseña su casilla, dentro de la hoja «Tu pedido». Su script se carga la
+// primera vez que hace falta, no al abrir el menú. Cada token sirve una vez: se pide uno nuevo para
+// cada pedido. Si en 30 segundos no contesta (su script no carga o la revisión se queda pensando),
+// falla: el menú dice «No pudimos mandar tu pedido. Intenta otra vez.» y se puede volver a tocar el
+// botón (decidido el 26 de octubre de 2026, en la prueba de verdad).
+// Desde el botón único (9 de noviembre de 2026), «Tu pedido» la corre al abrirse (adelantarToken), no
+// al tocar «Pedir por WhatsApp»; el asistente la sigue pidiendo al preguntar.
 import type { Lengua } from './textos';
 
 const SITIO = import.meta.env.VITE_TURNSTILE_SITIO;
@@ -61,7 +63,7 @@ export function pedirToken(donde: HTMLElement, lengua: Lengua): Promise<string> 
   let reloj: ReturnType<typeof setTimeout> | undefined;
   const tarde = new Promise<never>((_, falla) => {
     reloj = setTimeout(() => {
-      // La que se quedó esperando ya no cuenta: el siguiente «Hacer pedido» empieza de nuevo.
+      // La que se quedó esperando ya no cuenta: el siguiente toque empieza de nuevo.
       if (widget?.esperando) {
         widget.esperando = null;
         window.turnstile?.reset(widget.id);
@@ -110,4 +112,59 @@ export function quitarRevision() {
   widget.esperando?.falla(new Error('Se cerró la hoja'));
   window.turnstile?.remove(widget.id);
   widget = null;
+}
+
+// ─── Por adelantado (el botón único, 9 de noviembre de 2026) ───
+// «Tu pedido» pide su token al abrirse, para que el toque de «Pedir por WhatsApp» no espere a
+// Cloudflare: entre el toque y abrir WhatsApp solo queda la vuelta al Worker, porque Safari en el
+// iPhone no deja abrir WhatsApp si pasó un momento desde el toque. Un token sirve una vez y vence a
+// los 5 minutos: se pide otro a los 4, y `renovar` pide otro después de usarlo (si el pedido no se
+// guardó y la hoja sigue abierta). Si el adelantado no salió, el toque lo pide y lo espera, como antes.
+const VIDA = 4 * 60 * 1000;
+
+export type Adelantado = {
+  // El token para este toque: el adelantado si sigue vigente (o si ya viene en camino), o uno nuevo.
+  tomar: () => Promise<string>;
+  renovar: () => void;
+  soltar: () => void;
+};
+
+export function adelantarToken(donde: HTMLElement, lengua: Lengua): Adelantado {
+  let actual: { promesa: Promise<string>; hasta: number } | null = null;
+  let reloj: ReturnType<typeof setTimeout> | undefined;
+  let suelto = false;
+
+  function pedir() {
+    clearTimeout(reloj);
+    if (suelto) return;
+    const mio = { promesa: pedirToken(donde, lengua), hasta: Infinity };
+    actual = mio;
+    mio.promesa.then(
+      () => {
+        if (actual !== mio || suelto) return;
+        mio.hasta = Date.now() + VIDA;
+        reloj = setTimeout(pedir, VIDA);
+      },
+      (error) => {
+        if (actual === mio) actual = null;
+        if (!suelto) console.warn('[menu] la revisión por adelantado no salió:', error);
+      },
+    );
+  }
+
+  pedir();
+  return {
+    tomar() {
+      clearTimeout(reloj);
+      const listo = actual && Date.now() < actual.hasta ? actual.promesa : null;
+      actual = null;
+      return listo ?? pedirToken(donde, lengua);
+    },
+    renovar: pedir,
+    soltar() {
+      suelto = true;
+      clearTimeout(reloj);
+      actual = null;
+    },
+  };
 }

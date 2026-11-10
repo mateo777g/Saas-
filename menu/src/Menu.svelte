@@ -8,14 +8,16 @@
   Con ?muestra=menu|barra es la vista previa de «Tu menú en línea» en el panel (lib/muestra.ts):
   siempre en español y en pesos, sin poder tocarse, y pinta lo que el panel le mande sin guardar.
 
-  Con la 6b (maqueta G2nxGb3xBgiPEYrDb6CgcW) se pide: el «+» de cada producto, «Ver tu pedido» abajo,
-  «Tu pedido», «Hacer pedido» (Worker /menu/pedido) y luego «Falta un paso» y «Pedido enviado».
+  Con la 6b (maqueta G2nxGb3xBgiPEYrDb6CgcW) se pide: el «+» de cada producto, «Ver tu pedido» abajo y
+  «Tu pedido». Desde el 9 de noviembre de 2026 (maqueta 3smEgFNCNVBkLMukDTdXWw) es un solo botón,
+  «Pedir por WhatsApp»: un toque guarda el pedido (Worker /menu/pedido) y abre WhatsApp; luego «Pedido
+  enviado», o «Falta un paso» si el celular no dejó abrir WhatsApp.
 
   Con la 6c (maqueta 2UPwZw31WrcYRZkH8jaT1Y) llega el asistente: la burbuja con la estrella abajo a la derecha y
   su plática (Worker /menu/pregunta); la hoja de un producto que nombró se abre encima de la plática.
 -->
 <script lang="ts">
-  import { onMount, tick } from 'svelte';
+  import { onMount, tick, untrack } from 'svelte';
   import { estiloColor } from '@app/lib/color';
   import { dinero } from '@app/lib/formato';
   import Aviso from './componentes/Aviso.svelte';
@@ -38,6 +40,8 @@
   import { leerMenu, urlImagen, type MenuPublico, type Producto } from './lib/datos';
   import { avisarAlPanel, escucharPanel, modoMuestra, type Pintura } from './lib/muestra';
   import {
+    abrirWhatsApp,
+    enlaceWhatsApp,
     guardarCarrito,
     guardarCliente,
     guardarHecho,
@@ -45,6 +49,7 @@
     leerCarrito,
     leerCliente,
     leerHecho,
+    mensajeWhatsApp,
     mismoRenglon,
     NoSeMando,
     precioUnitario,
@@ -55,7 +60,7 @@
   } from './lib/pedido';
   import { guardarPreferencias, leerPreferencias, lenguaDelCelular, type Moneda } from './lib/preferencias';
   import { enSuLengua, enSuLenguaElNo, esLimite, TEXTOS, textoEstado, type Lengua } from './lib/textos';
-  import { pedirToken } from './lib/turnstile';
+  import { adelantarToken, pedirToken, type Adelantado } from './lib/turnstile';
 
   const CADA = 5 * 60 * 1000;
   // El slug es lo primero del camino: pidemenu.mx/fonda-don-chuy.
@@ -214,8 +219,8 @@
   );
   const lleva = (id: number) => carrito.reduce((s, r) => s + (r.producto_id === id ? r.cantidad : 0), 0);
 
-  // La clave del pedido cambia con cada cambio, como el borrador de Pepe: tocar dos veces «Hacer
-  // pedido» con lo mismo no lo guarda dos veces.
+  // La clave del pedido cambia con cada cambio, como el borrador de Pepe: tocar dos veces «Pedir por
+  // WhatsApp» con lo mismo no lo guarda dos veces.
   let clave = crypto.randomUUID();
   function cambiarCarrito(nuevo: EnCarrito[]) {
     carrito = nuevo;
@@ -277,8 +282,24 @@
     if (menu && !menu.restaurante.hace_envios && tipo === 'domicilio') tipo = 'para_llevar';
   });
 
+  // La revisión de Cloudflare corre al abrirse «Tu pedido» (cuando aparece su hueco), no al tocar el
+  // botón: así el toque solo espera al Worker (lib/turnstile.ts, «Por adelantado»).
+  let revision: Adelantado | null = null;
+  $effect(() => {
+    const donde = hueco;
+    if (!donde) return;
+    const r = adelantarToken(donde, untrack(() => lengua));
+    revision = r;
+    return () => {
+      r.soltar();
+      if (revision === r) revision = null;
+    };
+  });
+
+  // El toque único: guarda el pedido y abre WhatsApp con lo que guardó Postgres.
   async function hacer() {
-    if (!menu || ocupado || !hueco) return;
+    const rev = revision;
+    if (!menu || ocupado || !rev) return;
     // Lo tachado se quita al volver a pedir; los demás avisos también.
     const limpio = vistaCarrito.filter((r) => !r.aviso?.fuera).map(({ aviso: _aviso, ...r }) => r);
     if (limpio.length !== carrito.length || carrito.some((r) => r.aviso)) cambiarCarrito(limpio);
@@ -289,7 +310,7 @@
     try {
       let token: string;
       try {
-        token = await pedirToken(hueco, lengua);
+        token = await rev.tomar();
       } catch (error) {
         console.error('[menu] la revisión de Cloudflare no contestó:', error);
         throw new NoSeMando(t.noSeMando);
@@ -317,14 +338,22 @@
       );
       guardarCliente({ nombre: cliente.nombre.trim(), telefono: cliente.telefono, direccion: cliente.direccion, referencias: cliente.referencias });
       if (respuesta.ok) {
+        // Primero se apunta en el celular (por si el navegador cambia de página al abrir WhatsApp) y
+        // enseguida, sin esperar nada más, se abre WhatsApp: Safari solo lo deja cerca del toque. Si no
+        // lo dejó, queda «Falta un paso» con su botón; el pedido ya está guardado y en el panel.
         const ids = carrito.map((r) => ({ producto_id: r.producto_id, opciones: r.opciones }));
-        hecho = { pedido: respuesta, ids, fecha: menu.ahora.fecha, enviado: false };
+        hecho = { pedido: respuesta, ids, fecha: menu.ahora.fecha, enviado: true };
         guardarHecho(slug, hecho);
         cambiarCarrito([]);
+        if (!abrirWhatsApp(enlaceWhatsApp(menu.restaurante.telefono ?? '', mensajeWhatsApp(respuesta)))) {
+          hecho = { ...hecho, enviado: false };
+          guardarHecho(slug, hecho);
+        }
         cliente.pagaCon = '';
         pila[pila.length - 1] = { tipo: 'hecho' };
       } else if (respuesta.motivo === 'no_recibe') {
         avisoPedido = { texto: t.noRecibimos };
+        rev.renovar();
         await cargar(true);
       } else {
         // Nada se guardó: cada renglón dice qué cambió y el menú se vuelve a leer con los precios nuevos.
@@ -339,6 +368,7 @@
           }),
         );
         avisoPedido = { titulo: t.cambio, texto: t.cambioTexto };
+        rev.renovar();
         await cargar(true);
       }
     } catch (error) {
@@ -346,6 +376,8 @@
       const mensaje = error instanceof NoSeMando ? error.message : t.noSeMando;
       avisoPedido = { texto: enSuLenguaElNo(mensaje, lengua) };
       limite = esLimite(mensaje);
+      // El token ya se gastó (o no salió): otro por adelantado para el siguiente toque.
+      if (!limite) rev.renovar();
     } finally {
       ocupado = false;
     }

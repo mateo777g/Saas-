@@ -1,9 +1,11 @@
 <!--
-  El pedido ya guardado (maqueta de la 6b, «Falta un paso» y «Enviado»). Primero «Pedido #27 · Falta
-  un paso: mándalo por WhatsApp», sin X: el toque en «Enviar por WhatsApp» es el que abre WhatsApp
-  (Safari en el iPhone no deja abrirlo después de esperar al Worker). Luego «Pedido #27 enviado · Te
-  confirman por WhatsApp», con «Abrir WhatsApp otra vez» por si no lo mandó. Lo que se enseña es lo
-  que guardó Postgres, en pesos; en inglés, los nombres que Don Chuy escribió en inglés.
+  El pedido ya guardado (maqueta de la 6b, «Falta un paso» y «Enviado»). Desde el botón único (9 de
+  noviembre de 2026), el toque de «Pedir por WhatsApp» ya abrió WhatsApp y aquí se llega a «Pedido #27
+  enviado · Te confirman por WhatsApp», con «Abrir WhatsApp otra vez» por si no lo mandó. «Pedido #27 ·
+  Falta un paso: mándalo por WhatsApp», sin X, es el respaldo: sale solo si el celular no dejó abrir
+  WhatsApp (Safari en el iPhone, cuando pasó un momento desde el toque), y su «Enviar por WhatsApp» sí
+  lo abre. Lo que se enseña es lo que guardó Postgres, en pesos; en inglés, los nombres que Don Chuy
+  escribió en inglés.
 -->
 <script lang="ts">
   import { dinero } from '@app/lib/formato';

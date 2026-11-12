@@ -10,20 +10,25 @@
 
   Lee todo al abrir, después de cada cambio y cada vez que Don Chuy regresa a la pestaña (un
   aparato que se ligó, alguien que se bloqueó). Si esa lectura falla, se queda lo que se veía.
+
+  Con el diseño de Mi menú (12 nov 2026, maqueta planes/maquetas/empleados.html): Personas y Aparatos van en
+  el dock, al centro de la barra, con la pastilla pegada al título; sin la tarjeta blanca, la nota y el
+  conteo sueltos sobre el fondo y la tabla en su marco, como las de Mi menú y Mesas. Las filas entran en
+  cascada (diseno/cascada.ts) al llegar la primera vez y al cambiar de sección; al releer se quedan quietas.
 -->
 <script lang="ts">
-  import { onDestroy, onMount } from 'svelte';
+  import { onDestroy, onMount, tick } from 'svelte';
   import AvisoFlotante from '../../diseno/AvisoFlotante.svelte';
   import BarraArriba from '../../diseno/BarraArriba.svelte';
   import Boton from '../../diseno/Boton.svelte';
   import BotonCuadro from '../../diseno/BotonCuadro.svelte';
+  import { cascada } from '../../diseno/cascada';
   import Confirmar from '../../diseno/Confirmar.svelte';
+  import Dock from '../../diseno/Dock.svelte';
   import Esqueleto from '../../diseno/Esqueleto.svelte';
   import Icono from '../../diseno/Icono.svelte';
   import NotaTabla from '../../diseno/NotaTabla.svelte';
-  import Selector from '../../diseno/Selector.svelte';
   import Tabla from '../../diseno/Tabla.svelte';
-  import Tarjeta from '../../diseno/Tarjeta.svelte';
   import {
     darDeBaja,
     desbloquear,
@@ -63,6 +68,7 @@
   // Desbloquear se ve en el mismo botón: apagado mientras trabaja y con la palomita al terminar.
   let desbloqueo = $state<{ id: number; listo: boolean } | null>(null);
   let aviso = $state<string | null>(null);
+  let cuerpo = $state<HTMLElement>();
   let temporizador: ReturnType<typeof setTimeout> | undefined;
 
   const equipo = $derived(lectura.estado === 'listo' ? lectura.equipo : null);
@@ -99,8 +105,12 @@
   onMount(() => {
     // «Dar de alta a un empleado» de la búsqueda de Inicio: al terminar de leer, su ventana.
     const abrir = abrirNuevo?.() ?? false;
-    leer().then(() => {
-      if (abrir && lectura.estado === 'listo') ventana = { tipo: 'empleado', persona: null };
+    leer().then(async () => {
+      if (lectura.estado !== 'listo') return;
+      // Las filas entran en cascada al llegar la primera vez, como en Mi menú; al releer se quedan quietas.
+      await tick();
+      cascada(cuerpo);
+      if (abrir) ventana = { tipo: 'empleado', persona: null };
     });
     const alVolver = () => {
       if (document.visibilityState === 'visible') leer();
@@ -109,6 +119,15 @@
     return () => document.removeEventListener('visibilitychange', alVolver);
   });
   onDestroy(() => clearTimeout(temporizador));
+
+  // El dock: las filas de la otra sección entran en cascada (si ya llegaron; mientras lee, sus esqueletos).
+  async function cambiarSeccion(valor: 'personas' | 'aparatos') {
+    const otra = valor !== seccion;
+    seccion = valor;
+    if (!otra || !equipo) return;
+    await tick();
+    cascada(cuerpo);
+  }
 
   async function quitarBloqueo(p: Persona) {
     desbloqueo = { id: p.id, listo: false };
@@ -140,16 +159,16 @@
   const dueno = (a: Aparato) => (a.miembroId === null ? null : personas.find((p) => p.id === a.miembroId) ?? null);
 </script>
 
-<BarraArriba titulo="Empleados" {estado}>
+<BarraArriba titulo="Empleados" {estado} chipAntes>
   {#snippet junto()}
-    <Selector
+    <Dock
       etiqueta="Sección de Empleados"
       opciones={[
-        { valor: 'personas', texto: 'Personas' },
-        { valor: 'aparatos', texto: 'Aparatos' },
+        { valor: 'personas', texto: 'Personas', icono: 'usuarios' },
+        { valor: 'aparatos', texto: 'Aparatos', icono: 'tableta' },
       ]}
       elegida={seccion}
-      alElegir={(valor) => (seccion = valor)}
+      alElegir={cambiarSeccion}
     />
   {/snippet}
   {#if seccion === 'personas'}
@@ -171,8 +190,8 @@
   {/if}
 </BarraArriba>
 
-<main class="cuerpo">
-  <Tarjeta como="section" class="tarjeta-equipo" aria-label="Empleados">
+<main class="cuerpo" bind:this={cuerpo}>
+  <section class="seccion" aria-label="Empleados">
     <div class="herramientas">
       <p class="nota">
         {seccion === 'personas'
@@ -196,7 +215,8 @@
         columnas={COLUMNAS_PERSONAS}
         relleno="0 16px"
         altoFila={64}
-        encabezados={[{ texto: 'PERSONA' }, { texto: 'ROLES' }, { texto: 'PIN' }, { texto: '' }]}
+        marco
+        encabezados={[{ texto: 'Persona' }, { texto: 'Roles' }, { texto: 'PIN' }, { texto: '' }]}
       >
         {#if lectura.estado === 'leyendo'}
           <!-- El esqueleto: con su forma y sin sus botones. -->
@@ -296,7 +316,8 @@
         columnas={COLUMNAS_APARATOS}
         relleno="0 16px"
         altoFila={64}
-        encabezados={[{ texto: 'APARATO' }, { texto: 'DE QUIÉN ES' }, { texto: 'ÚLTIMO USO' }, { texto: '' }]}
+        marco
+        encabezados={[{ texto: 'Aparato' }, { texto: 'De quién es' }, { texto: 'Último uso' }, { texto: '' }]}
       >
         {#if lectura.estado === 'leyendo'}
           <span class="solo-lector">Cargando tus aparatos…</span>
@@ -350,7 +371,7 @@
         {/if}
       </Tabla>
     {/if}
-  </Tarjeta>
+  </section>
 </main>
 
 {#if equipo && ventana?.tipo === 'empleado'}
@@ -412,17 +433,18 @@
     bottom: var(--vista-abajo);
   }
 
-  .cuerpo > :global(.tarjeta-equipo) {
+  /* Sin tarjeta, como Mi menú: lo de arriba suelto sobre el fondo y la tabla en su marco, 16 abajo. */
+  .seccion {
     height: 100%;
-    padding: 20px;
     display: flex;
     flex-direction: column;
-    gap: 14px;
+    gap: 16px;
   }
 
+  /* 48, como las de Mi menú. */
   .herramientas {
     flex: none;
-    min-height: 40px;
+    min-height: 48px;
     display: flex;
     align-items: center;
     gap: 12px;

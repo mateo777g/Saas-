@@ -209,15 +209,16 @@ $$ language plpgsql;
 -- una caja sin aparato. El menú de A: Tacos (va a la cocina), Aguas (lo sirve el mesero) y Envíos
 -- (con área de cocina, para ver que el envío no llega ahí).
 
--- Un pedido como lo manda el Worker: para llevar, a nombre de Rosa Ramírez, y cada vez desde un
--- celular y una conexión nuevos, salvo que se digan.
+-- Un pedido como lo manda el Worker: para llevar, a nombre de Rosa Ramírez con su teléfono (desde el
+-- 12 de noviembre de 2026 también se pide para llevar), y cada vez desde un celular y una conexión
+-- nuevos, salvo que se digan.
 create function tests.pedir(
   p_slug text,
   p_renglones jsonb,
   p_clave uuid default gen_random_uuid(),
   p_tipo text default 'para_llevar',
   p_nombre text default 'Rosa Ramírez',
-  p_telefono text default null,
+  p_telefono text default '2229876543',
   p_direccion text default null,
   p_referencias text default null,
   p_paga_con numeric default null,
@@ -458,12 +459,12 @@ select is(
       {"producto_id": 504, "cantidad": 1, "precio": 30}]',
     p_clave => '0000000a-0000-4000-8000-000000000001', p_telefono => '222 123 4567', p_direccion => 'No va')
     - 'created_at',
-  '{"ok": true, "numero": 1, "tipo": "para_llevar", "cliente_nombre": "Rosa Ramírez", "cliente_telefono": null,
+  '{"ok": true, "numero": 1, "tipo": "para_llevar", "cliente_nombre": "Rosa Ramírez", "cliente_telefono": "2221234567",
     "cliente_direccion": null, "cliente_referencias": null, "paga_con": null, "total": 94, "renglones": [
       {"nombre": "Taco al pastor", "cantidad": 2, "precio_unitario": 32, "importe": 64, "nota": "Sin cebolla",
        "opciones": [{"grupo": "Salsa", "opcion": "Verde", "precio_extra": 0}, {"grupo": "Extras", "opcion": "Queso", "precio_extra": 10}]},
       {"nombre": "Horchata", "cantidad": 1, "precio_unitario": 30, "importe": 30, "nota": null, "opciones": []}]}'::jsonb,
-  'Para llevar: Postgres pone los precios, el total y el #1; no guarda teléfono ni dirección'
+  'Para llevar: Postgres pone los precios, el total y el #1; guarda el teléfono, no la dirección'
 );
 
 reset role;
@@ -605,9 +606,9 @@ select is(
 );
 
 reset role;
-insert into public.pedidos_en_linea (restaurante_id, dia, numero, tipo, cliente_nombre, total, clave, marca_celular, marca_conexion)
+insert into public.pedidos_en_linea (restaurante_id, dia, numero, tipo, cliente_nombre, cliente_telefono, total, clave, marca_celular, marca_conexion)
 select 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb', privado.dia_de_negocio('America/Mexico_City', 6::smallint), 100 + x,
-       'para_llevar', 'Oficina', 25, gen_random_uuid(), encode(extensions.gen_random_bytes(32), 'hex'), repeat('d', 64)
+       'para_llevar', 'Oficina', '2225550001', 25, gen_random_uuid(), encode(extensions.gen_random_bytes(32), 'hex'), repeat('d', 64)
 from generate_series(1, 10) as x;
 select tests.como_worker();
 
@@ -808,9 +809,9 @@ select throws_ok(
 reset role;
 select tests.guardar('pedidos_a', (select count(*) from public.pedidos_en_linea where restaurante_id = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'));
 select tests.guardar('renglones_a', (select count(*) from public.pedido_items where restaurante_id = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'));
-insert into public.pedidos_en_linea (restaurante_id, dia, numero, tipo, cliente_nombre, total, clave, marca_celular, marca_conexion)
+insert into public.pedidos_en_linea (restaurante_id, dia, numero, tipo, cliente_nombre, cliente_telefono, total, clave, marca_celular, marca_conexion)
 values ('cccccccc-cccc-4ccc-8ccc-cccccccccccc', privado.dia_de_negocio('America/Mexico_City', 6::smallint), 1,
-        'para_llevar', 'En C', 25, gen_random_uuid(), repeat('e', 64), repeat('e', 64));
+        'para_llevar', 'En C', '2225550002', 25, gen_random_uuid(), repeat('e', 64), repeat('e', 64));
 
 select tests.authenticate_as('caja_a');
 select tests.en_aparato('5e5e5e5e-0000-4000-8000-000000000002');
@@ -928,7 +929,7 @@ select is(
                              'direccion', cliente_direccion, 'pedido_numero', pedido_numero, 'abierta_por', abierta_por,
                              'total', total, 'estado', estado)
    from public.ventas where id = tests.id('venta_1')),
-  '{"origen": "menu_en_linea", "tipo": "para_llevar", "cliente_nombre": "Rosa Ramírez", "telefono": null, "direccion": null,
+  '{"origen": "menu_en_linea", "tipo": "para_llevar", "cliente_nombre": "Rosa Ramírez", "telefono": "2221234567", "direccion": null,
     "pedido_numero": 1, "abierta_por": 103, "total": 94, "estado": "abierta"}'::jsonb,
   '«Confirmar» abre una cuenta para llevar a nombre de Lupita, con el #1 y los precios del pedido, aunque la horchata ya cueste $35'
 );
@@ -1047,10 +1048,10 @@ select is(
 );
 
 -- Un pedido de ayer que se quedó «Por confirmar» (pg_cron todavía no pasa).
-insert into public.pedidos_en_linea (id, restaurante_id, dia, numero, tipo, cliente_nombre, total, clave, marca_celular, marca_conexion)
+insert into public.pedidos_en_linea (id, restaurante_id, dia, numero, tipo, cliente_nombre, cliente_telefono, total, clave, marca_celular, marca_conexion)
 overriding system value
 values (9901, 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', privado.dia_de_negocio('America/Mexico_City', 6::smallint) - 1, 1,
-        'para_llevar', 'Ayer', 30, gen_random_uuid(), repeat('e', 64), repeat('e', 64));
+        'para_llevar', 'Ayer', '2225550003', 30, gen_random_uuid(), repeat('e', 64), repeat('e', 64));
 insert into public.pedido_items (restaurante_id, pedido_id, producto_id, nombre, precio_unitario, cantidad)
 values ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 9901, 504, 'Horchata', 30, 1);
 
@@ -1331,28 +1332,46 @@ select is(
 );
 
 
--- ─── Tu menú en línea: «Hago envíos» ──────────────────────────────────────────
+-- ─── Tu restaurante: «Hago envíos» ────────────────────────────────────────────
+-- Desde la migración tu_menu_en_linea (12 de noviembre de 2026) se guarda con Tu restaurante. Aquí se
+-- guarda A tal como está (sus datos y su horario), cambiando solo «Hago envíos».
+
+create function tests.guardar_a(p_hace_envios boolean)
+returns text
+language sql
+as $$
+  select public.guardar_restaurante(
+    r.id, r.nombre, r.telefono, r.direccion, r.logo_ruta,
+    (select coalesce(jsonb_agg(jsonb_build_object(
+              'dia', h.dia, 'abre', to_char(h.abre, 'HH24:MI'), 'cierra', to_char(h.cierra, 'HH24:MI'))), '[]')
+     from public.horarios h where h.restaurante_id = r.id),
+    p_hace_envios)
+  from public.restaurantes r
+  where r.id = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'
+$$;
+
+grant execute on function tests.guardar_a(boolean) to authenticated;
 
 select tests.authenticate_as('gerente_a');
-select public.guardar_menu_en_linea('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 'oscuro', '#B3261E', false);
+select tests.guardar_a(false);
 reset role;
 
 select is(
   (select hace_envios from public.restaurantes where id = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'),
   false,
-  '«Hago envíos» se apaga con el «Guardar» de Cómo se ve'
+  '«Hago envíos» se apaga con el «Guardar» de Tu restaurante'
 );
 
 select tests.authenticate_as('gerente_a');
-select public.guardar_menu_en_linea('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 'oscuro', '#B3261E', true);
-select public.guardar_menu_en_linea('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 'claro', null);
+select tests.guardar_a(true);
+select tests.guardar_a(null);
 reset role;
 
 select is(
-  (select jsonb_build_object('envios', hace_envios, 'tema', menu_tema)
-   from public.restaurantes where id = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'),
-  '{"envios": true, "tema": "claro"}'::jsonb,
-  'Sin decir nada de «Hago envíos», guardar lo deja como estaba (prendido)'
+  (select jsonb_build_object('envios', hace_envios, 'horario', (select count(*) from public.horarios h where h.restaurante_id = r.id))
+   from public.restaurantes r where r.id = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'),
+  '{"envios": true, "horario": 7}'::jsonb,
+  'Sin decir nada de «Hago envíos», guardar Tu restaurante lo deja como estaba (prendido)'
 );
 
 select * from finish();

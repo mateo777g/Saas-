@@ -369,10 +369,10 @@ select ok(
 );
 
 select ok(
-  has_function_privilege('authenticated', 'public.guardar_menu_en_linea(uuid, text, text, boolean)', 'EXECUTE')
-  and not has_function_privilege('anon', 'public.guardar_menu_en_linea(uuid, text, text, boolean)', 'EXECUTE')
-  and not has_function_privilege('service_role', 'public.guardar_menu_en_linea(uuid, text, text, boolean)', 'EXECUTE'),
-  'El «Guardar» de Cómo se ve, sin el dólar, va con la sesión del gerente'
+  has_function_privilege('authenticated', 'public.guardar_menu_en_linea(uuid, text, text, text, text, text, boolean, text, text, text, text, text, text, text, text, text[], text, text, text, boolean, text, text, text)', 'EXECUTE')
+  and not has_function_privilege('anon', 'public.guardar_menu_en_linea(uuid, text, text, text, text, text, boolean, text, text, text, text, text, text, text, text, text[], text, text, text, boolean, text, text, text)', 'EXECUTE')
+  and not has_function_privilege('service_role', 'public.guardar_menu_en_linea(uuid, text, text, text, text, text, boolean, text, text, text, text, text, text, text, text, text[], text, text, text, boolean, text, text, text)', 'EXECUTE'),
+  'El «Guardar» de Cómo se ve, sin el dólar (y desde tu_menu_en_linea con todas las formas), va con la sesión del gerente'
 );
 
 
@@ -902,14 +902,16 @@ select is(
 select tests.authenticate_as('gerente_a');
 
 select lives_ok(
-  $$ select public.guardar_menu_en_linea('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 'oscuro', '#b3261e', true) $$,
+  $$ select public.guardar_menu_en_linea('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 'oscuro', '#b3261e', null, null, 'izquierda', true,
+       'letras', 'letras', 'gris', 'esquinas', 'capsula', 'arriba', 'nombre', 'pestanas',
+       array['carteles', 'busqueda', 'categorias'], 'icono', 'a_lo_largo', 'barra', true, 'completa', 'abajo', 'juntas') $$,
   'Don Chuy guarda Cómo se ve sin escribir el dólar'
 );
 
 select results_eq(
-  $$ select menu_tema, menu_color, hace_envios from public.restaurantes $$,
-  $$ values ('oscuro'::text, '#B3261E'::text, true) $$,
-  'El tema, el color y «Hago envíos» se guardan'
+  $$ select menu_tema, menu_color from public.restaurantes $$,
+  $$ values ('oscuro'::text, '#B3261E'::text) $$,
+  'El tema y el color se guardan («Hago envíos» se fue a Tu restaurante con tu_menu_en_linea)'
 );
 
 reset role;

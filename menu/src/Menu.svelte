@@ -321,7 +321,8 @@
           clave,
           tipo,
           cliente_nombre: cliente.nombre.trim(),
-          cliente_telefono: dom ? cliente.telefono : null,
+          // Desde el 12 de noviembre de 2026 el teléfono se pide también para llevar.
+          cliente_telefono: cliente.telefono,
           cliente_direccion: dom ? cliente.direccion : null,
           cliente_referencias: dom ? cliente.referencias : null,
           paga_con: dom && cliente.pagaCon.trim() ? Number(cliente.pagaCon.trim()) : null,
@@ -570,7 +571,7 @@
             {/if}
           </div>
         {:else}
-          {#if menu.carteles.length}<Carteles rutas={menu.carteles} {t} />{/if}
+          {#if menu.carteles.length}<Carteles rutas={menu.carteles.map((c) => c.ruta)} {t} />{/if}
           <Pestanas {categorias} {activa} {lengua} {t} alElegir={irA} />
           <div class="contenido">
             {#each categorias as c (c.id)}

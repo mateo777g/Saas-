@@ -165,6 +165,19 @@ $$;
 
 grant execute on function tests.filas(text) to anon, authenticated;
 
+-- «Guardar» de Tu menú en línea con el tema y el color, y las demás formas como nace hoy un menú: desde la
+-- migración tu_menu_en_linea (12 de noviembre de 2026) se guarda todo junto.
+create function tests.como_se_ve(p_restaurante_id uuid, p_tema text, p_color text)
+returns void
+language sql
+as $$
+  select public.guardar_menu_en_linea(p_restaurante_id, p_tema, p_color, null, null, 'izquierda', true,
+    'letras', 'letras', 'gris', 'esquinas', 'capsula', 'arriba', 'nombre', 'pestanas',
+    array['carteles', 'busqueda', 'categorias'], 'icono', 'a_lo_largo', 'barra', true, 'completa', 'abajo', 'juntas')
+$$;
+
+grant execute on function tests.como_se_ve(uuid, text, text) to anon, authenticated;
+
 
 
 -- ─── Escenario ────────────────────────────────────────────────────────────────
@@ -392,11 +405,11 @@ select ok(
 
 select is_empty(
   $$ select f from unnest(array[
-       'public.guardar_restaurante(uuid, text, text, text, text, jsonb)',
-       'public.guardar_menu_en_linea(uuid, text, text, boolean)',
+       'public.guardar_restaurante(uuid, text, text, text, text, jsonb, boolean)',
+       'public.guardar_menu_en_linea(uuid, text, text, text, text, text, boolean, text, text, text, text, text, text, text, text, text[], text, text, text, boolean, text, text, text)',
        'public.estado_menu_en_linea(uuid)',
-       'public.agregar_cartel(uuid, text)',
-       'public.cambiar_cartel(bigint, text)',
+       'public.agregar_cartel(uuid, text, bigint)',
+       'public.cambiar_cartel(bigint, text, bigint)',
        'public.mover_cartel(bigint, text)',
        'public.quitar_cartel(bigint)',
        'public.guardar_producto(uuid, bigint, bigint, text, text, numeric, text, bigint[], text, text, boolean)',
@@ -590,7 +603,7 @@ select ok(
 );
 
 select is(
-  public.menu_publico('restaurante-a') -> 'restaurante',
+  (public.menu_publico('restaurante-a') -> 'restaurante') - array['color_barra', 'fondo', 'formas'],
   jsonb_build_object(
     'nombre', 'Restaurante A', 'telefono', '2221234567', 'direccion', 'Av. Juárez 123, Centro',
     'logo_ruta', tests.ruta('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 'logo', 1),
@@ -623,8 +636,9 @@ select is(
 
 select is(
   public.menu_publico('restaurante-a') -> 'carteles',
-  jsonb_build_array(tests.ruta('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 'carteles', 2),
-                    tests.ruta('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 'carteles', 1)),
+  jsonb_build_array(
+    jsonb_build_object('ruta', tests.ruta('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 'carteles', 2), 'producto_id', null),
+    jsonb_build_object('ruta', tests.ruta('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 'carteles', 1), 'producto_id', null)),
   'Los carteles van en su orden'
 );
 
@@ -905,7 +919,7 @@ select throws_ok(
 select tests.authenticate_as('gerente_a');
 
 select lives_ok(
-  $$ select public.guardar_menu_en_linea('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 'oscuro', ' #f2b705 ') $$,
+  $$ select tests.como_se_ve('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 'oscuro', ' #f2b705 ') $$,
   'Gerente A guarda el tema y el color'
 );
 
@@ -916,7 +930,7 @@ select results_eq(
 );
 
 select lives_ok(
-  $$ select public.guardar_menu_en_linea('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 'claro', '') $$,
+  $$ select tests.como_se_ve('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 'claro', '') $$,
   'Y lo puede quitar'
 );
 
@@ -927,13 +941,13 @@ select results_eq(
 );
 
 select throws_ok(
-  $$ select public.guardar_menu_en_linea('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 'gris', null) $$,
+  $$ select tests.como_se_ve('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 'gris', null) $$,
   '22023', 'El menú se ve claro u oscuro',
   'El tema es claro u oscuro'
 );
 
 select throws_ok(
-  $$ select public.guardar_menu_en_linea('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 'claro', 'rojo') $$,
+  $$ select tests.como_se_ve('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 'claro', 'rojo') $$,
   '22023', 'Ese color no se entiende; escríbelo como #B3261E',
   'Un color que no es #RRGGBB no se guarda'
 );
@@ -945,7 +959,7 @@ select throws_ok(
 );
 
 select throws_ok(
-  $$ select public.guardar_menu_en_linea('bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb', 'claro', null) $$,
+  $$ select tests.como_se_ve('bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb', 'claro', null) $$,
   '42501', null,
   'Gerente A no cambia el menú de B'
 );
@@ -954,7 +968,7 @@ select tests.authenticate_as('mesero_a');
 select tests.en_aparato('5e5e5e5e-0000-4000-8000-00000000000a');
 
 select throws_ok(
-  $$ select public.guardar_menu_en_linea('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 'oscuro', null) $$,
+  $$ select tests.como_se_ve('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 'oscuro', null) $$,
   '42501', null,
   'Ni Mesero A'
 );

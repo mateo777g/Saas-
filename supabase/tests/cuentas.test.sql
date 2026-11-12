@@ -1134,9 +1134,9 @@ select throws_ok(
   '23514', null, 'Una cuenta de mesa lleva su mesa'
 );
 select throws_ok(
-  $$ insert into public.ventas (restaurante_id, tipo, cliente_nombre, cliente_telefono)
-     values ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 'para_llevar', 'X', '55') $$,
-  '23514', null, 'Un pedido para llevar no lleva teléfono'
+  $$ insert into public.ventas (restaurante_id, tipo, cliente_nombre, cliente_direccion)
+     values ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 'para_llevar', 'X', 'Calle 5') $$,
+  '23514', null, 'Un pedido para llevar no lleva dirección'
 );
 select throws_ok(
   $$ insert into public.ventas (restaurante_id, tipo, mesa_id, mesa_nombre) values ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 'mesa', 703, 'Mesa 3') $$,

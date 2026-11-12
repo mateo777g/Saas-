@@ -73,7 +73,8 @@ export type MenuPublico = {
   pedidos_pausados: boolean;
   // Si el asistente contesta (parte 6c): su sobre tiene dinero. Sin números.
   asistente_contesta: boolean;
-  carteles: string[];
+  // Cada cartel es una imagen subida o la foto de un producto de Mi menú (migración tu_menu_en_linea).
+  carteles: { ruta: string; producto_id: number | null }[];
   categorias: Categoria[];
 };
 

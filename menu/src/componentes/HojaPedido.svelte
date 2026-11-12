@@ -88,7 +88,8 @@
   const listo = $derived(
     renglones.some((r) => !r.aviso?.fuera) &&
       cliente.nombre.trim() !== '' &&
-      (!dom || (/^\d{10}$/.test(digitos(cliente.telefono)) && cliente.direccion.trim() !== '')) &&
+      /^\d{10}$/.test(digitos(cliente.telefono)) &&
+      (!dom || cliente.direccion.trim() !== '') &&
       (!dom || cliente.pagaCon.trim() === '' || Number.isFinite(Number(cliente.pagaCon.trim()))),
   );
 
@@ -193,11 +194,12 @@
     <label for="m-nombre">{t.tuNombre}</label>
     <input id="m-nombre" bind:value={cliente.nombre} placeholder={t.nombreEjemplo} maxlength="60" autocomplete="name" />
   </div>
+  <!-- El teléfono, también para llevar (12 de noviembre de 2026): la caja le puede llamar si su mensaje no llegó. -->
+  <div class="m-campo">
+    <label for="m-tel">{t.telefono}</label>
+    <input id="m-tel" bind:value={cliente.telefono} placeholder={t.telefonoEjemplo} inputmode="tel" autocomplete="tel-national" />
+  </div>
   {#if dom}
-    <div class="m-campo">
-      <label for="m-tel">{t.telefono}</label>
-      <input id="m-tel" bind:value={cliente.telefono} placeholder={t.telefonoEjemplo} inputmode="tel" autocomplete="tel-national" />
-    </div>
     <div class="m-campo">
       <label for="m-dir">{t.tuDireccion}</label>
       <input id="m-dir" bind:value={cliente.direccion} placeholder={t.direccionEjemplo} maxlength="200" autocomplete="street-address" />

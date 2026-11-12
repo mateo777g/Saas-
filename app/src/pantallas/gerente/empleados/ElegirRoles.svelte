@@ -1,6 +1,8 @@
 <!--
   Los roles de una persona del equipo (maqueta de Empleados): Mesero, Caja y Cocina, uno o varios,
   como casillas que se rellenan de tinta al elegirlas. El de gerente no sale: lo liga Fragmentless.
+  Desde el 12 nov 2026 lo elegido va en azul, el del aro de las cajas de texto (--campo-aro), como lo
+  demás azul de las ventanas.
 -->
 <script lang="ts">
   import Icono from '../../../diseno/Icono.svelte';
@@ -71,8 +73,8 @@
   }
 
   .rol[aria-checked='true'] {
-    background: var(--tinta);
-    color: var(--sobre-tinta);
+    background: var(--campo-aro);
+    color: var(--sobre-acento);
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -93,8 +95,8 @@
 
   .rol[aria-checked='true'] .cajita {
     border: 0;
-    background: var(--sobre-tinta);
-    color: var(--tinta);
+    background: var(--sobre-acento);
+    color: var(--campo-aro);
   }
 
   .pista {

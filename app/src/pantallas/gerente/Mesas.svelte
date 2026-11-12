@@ -4,14 +4,19 @@
   la pieza 5 (maqueta Cortes y reportes 7J6LvYWiktRnGxNugbuaoe): salen de mesas_ahora, igual que
   Mesas ahora en Inicio, con cuántas están ocupadas y lo que falta por cobrar (lo suma Postgres).
   Si las cuentas no se pudieron leer, van guiones: nunca un «Disponible» inventado. Arriba: el
-  título, el chip con cuántas mesas hay y Nueva mesa. Abajo, la tarjeta de vidrio con la tabla:
-  cada mesa con su lugar, su nombre, su estado, desde cuándo está abierta, su cuenta, las flechas,
-  el lápiz y el bote. Encima, las ventanas.
+  título, el chip con cuántas mesas hay y Nueva mesa. Abajo, la tabla: cada mesa con su lugar, su
+  nombre, su estado, desde cuándo está abierta, su cuenta, las flechas, el lápiz y el bote. Encima,
+  las ventanas.
 
   Lee las mesas de la sucursal al abrir y después de cada cambio, y las cuentas también cada vez
   que cambia una (tiempo real) y al regresar a la pestaña. Las flechas cambian la tabla
   en cuanto se pulsan y se guardan al instante; si Postgres no pudo, sale el aviso de abajo
   (aviso() de Flet) y se vuelve a leer lo que de verdad quedó.
+
+  Con el diseño de Mi menú (11 nov 2026, maqueta planes/maquetas/mesas.html): sin la tarjeta blanca, la
+  nota y el conteo sueltos sobre el fondo y la tabla en su marco, como las de Mi menú; el puntito de
+  Ocupada en verde, como en Mesas ahora. Las filas entran en cascada al llegar la primera vez
+  (diseno/cascada.ts); al releer se quedan quietas.
 -->
 <script lang="ts">
   import { onMount, tick } from 'svelte';
@@ -19,12 +24,12 @@
   import BarraArriba from '../../diseno/BarraArriba.svelte';
   import Boton from '../../diseno/Boton.svelte';
   import BotonCuadro from '../../diseno/BotonCuadro.svelte';
+  import { cascada } from '../../diseno/cascada';
   import Confirmar from '../../diseno/Confirmar.svelte';
   import Esqueleto from '../../diseno/Esqueleto.svelte';
   import Icono from '../../diseno/Icono.svelte';
   import NotaTabla from '../../diseno/NotaTabla.svelte';
   import Tabla from '../../diseno/Tabla.svelte';
-  import Tarjeta from '../../diseno/Tarjeta.svelte';
   import { ALGO_SALIO_PANEL, esDeRed, Fallo, SIN_CONEXION } from '../../lib/errores';
   import { anchos, filasDeLaUltimaVez, recordarFilas } from '../../lib/esqueletos';
   import { dinero, plural } from '../../lib/formato';
@@ -108,8 +113,12 @@
   onMount(() => {
     // «Agregar mesa» de la búsqueda de Inicio: al terminar de leer, su ventana.
     const abrir = abrirNueva?.() ?? false;
-    leer().then(() => {
-      if (abrir && lectura.estado === 'listo') ventana = { tipo: 'mesa', mesa: null };
+    leer().then(async () => {
+      if (lectura.estado !== 'listo') return;
+      // Las filas entran en cascada al llegar la primera vez, como en Mi menú; al releer se quedan quietas.
+      await tick();
+      cascada(tarjeta);
+      if (abrir) ventana = { tipo: 'mesa', mesa: null };
     });
     const dejar = escuchar(supabase, sucursal.id, ['ventas'], () => {
       clearTimeout(espera);
@@ -172,7 +181,7 @@
 </BarraArriba>
 
 <main class="cuerpo" bind:this={tarjeta}>
-  <Tarjeta como="section" class="tarjeta-mesas" aria-label="Mesas">
+  <section class="seccion" aria-label="Mesas">
     <div class="herramientas">
       <p class="nota">Las mesas que tu equipo elige al tomar un pedido, en este orden. Muévelas con las flechas.</p>
       <span class="crece"></span>
@@ -184,7 +193,8 @@
       columnas="minmax(0, 1fr) 150px 150px 120px 168px"
       relleno="0 16px"
       altoFila={64}
-      encabezados={[{ texto: 'MESA' }, { texto: 'ESTADO' }, { texto: 'ABIERTA' }, { texto: 'CUENTA' }, { texto: '' }]}
+      marco
+      encabezados={[{ texto: 'Mesa' }, { texto: 'Estado' }, { texto: 'Abierta' }, { texto: 'Cuenta' }, { texto: '' }]}
     >
       {#if lectura.estado === 'leyendo'}
         <!-- El esqueleto: con su forma y sin sus botones. -->
@@ -268,7 +278,7 @@
         {/each}
       {/if}
     </Tabla>
-  </Tarjeta>
+  </section>
 </main>
 
 {#if mesas && ventana?.tipo === 'mesa'}
@@ -308,17 +318,18 @@
     bottom: var(--vista-abajo);
   }
 
-  .cuerpo > :global(.tarjeta-mesas) {
+  /* Sin tarjeta, como Mi menú: lo de arriba suelto sobre el fondo y la tabla en su marco, 16 abajo. */
+  .seccion {
     height: 100%;
-    padding: 20px;
     display: flex;
     flex-direction: column;
-    gap: 14px;
+    gap: 16px;
   }
 
+  /* 48, como las de Mi menú. */
   .herramientas {
     flex: none;
-    min-height: 40px;
+    min-height: 48px;
     display: flex;
     align-items: center;
     gap: 12px;
@@ -396,7 +407,7 @@
     height: 8px;
     flex: none;
     border-radius: 4px;
-    background: var(--tinta);
+    background: var(--verde);
   }
 
   .marca.libre {

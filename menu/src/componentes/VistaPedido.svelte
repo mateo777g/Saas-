@@ -15,7 +15,7 @@
   import { dinero } from '@app/lib/formato';
   import { urlImagen, type Producto } from '../lib/datos';
   import type { Formas } from '../lib/formas';
-  import { quieto } from '../lib/movimiento';
+  import { quieto, rueda } from '../lib/movimiento';
   import { enlaceWhatsApp, mensajeWhatsApp, precioUnitario, type Cliente, type EnCarrito, type Hecho, type Tipo } from '../lib/pedido';
   import type { Moneda } from '../lib/preferencias';
   import { enSuLengua, type Lengua, type Textos } from '../lib/textos';
@@ -73,7 +73,7 @@
     hueco: HTMLDivElement | undefined;
     hecho: Hecho | null;
     alCantidad: (i: number, cambio: number) => void;
-    alAbrirRenglon: (i: number) => void;
+    alAbrirRenglon: (i: number, desde: HTMLElement) => void;
     alHacer: () => void;
     alEnviar: () => void;
     alMenu: () => void;
@@ -167,22 +167,6 @@
     a.onfinish = () => {
       quitando = false;
       alCantidad(i, d);
-    };
-  }
-
-  // El número que cambia (la cantidad y el total) entra de abajo si subió y de arriba si bajó.
-  function rueda(el: HTMLElement, valor: number) {
-    let antes = valor;
-    return {
-      update(nuevo: number) {
-        if (nuevo !== antes && !quieto()) {
-          el.animate([{ transform: `translateY(${nuevo > antes ? 8 : -8}px)`, opacity: 0 }, { transform: 'none', opacity: 1 }], {
-            duration: 220,
-            easing: 'cubic-bezier(0.22, 1, 0.36, 1)',
-          });
-        }
-        antes = nuevo;
-      },
     };
   }
 
@@ -344,7 +328,7 @@
             {@const ops = opcionesTexto(r)}
             {@const cat = iconos.get(r.producto_id)}
             <div class="f-ped-linea" class:fuera>
-              <button type="button" class="f-ped-q" disabled={fuera} onclick={() => alAbrirRenglon(i)}>
+              <button type="button" class="f-ped-q" disabled={fuera} onclick={(e) => alAbrirRenglon(i, e.currentTarget.closest<HTMLElement>('.f-ped-linea') ?? e.currentTarget)}>
                 {#if p?.imagen_ruta}
                   <img src={urlImagen(p.imagen_ruta)} alt="" loading="lazy" decoding="async" />
                 {:else}

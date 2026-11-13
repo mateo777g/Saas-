@@ -813,6 +813,169 @@
   .f-ped-exito.entra *, .f-campo.falta input, .f-ped-puntos i { animation: none !important; }
 }
 
+/* El producto (encuesta 41): tapa todo, la barra de abajo también. */
+.f-prod { position: absolute; inset: 0; z-index: 7; overflow: hidden; background: var(--m-fondo); color: var(--m-texto); }
+.f-prod-desliza { position: absolute; inset: 0; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: none; padding-bottom: 96px; }
+.f-prod.sin-pie .f-prod-desliza { padding-bottom: 28px; }
+.f-prod-desliza::-webkit-scrollbar { display: none; }
+.f-prod-foto { position: relative; height: 330px; overflow: hidden; background: var(--m-chip); }
+.f-prod-foto img { width: 100%; height: 100%; display: block; object-fit: cover; will-change: transform; }
+.f-prod-foto::after { content: ''; position: absolute; inset: 0; pointer-events: none; background: linear-gradient(to bottom, rgba(0, 0, 0, 0.3), transparent 26%, transparent 52%, var(--m-fondo)); }
+.f-prod-cuerpo { position: relative; display: flex; flex-direction: column; gap: 26px; margin-top: -22px; padding: 0 20px 24px; }
+.f-prod.sin-foto .f-prod-cuerpo { margin-top: 0; padding-top: 108px; }
+.f-prod-intro { display: flex; flex-direction: column; gap: 6px; }
+.f-prod-intro h2 { margin: 0; font-size: 30px; font-weight: 800; letter-spacing: -0.8px; line-height: 1.12; text-wrap: balance; }
+.f-prod-precio { font-size: 18px; font-weight: 800; font-variant-numeric: tabular-nums; }
+.f-prod-precio small { font-size: 12px; font-weight: 600; color: var(--m-suave); }
+.f-prod-desc { margin: 4px 0 0; font-size: 15px; line-height: 1.55; color: var(--m-suave); }
+.f-prod-grupo { display: flex; flex-direction: column; gap: 12px; }
+.f-prod-gcabeza { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.f-prod-gcabeza > div { display: flex; flex-direction: column; gap: 2px; }
+.f-prod-gcabeza b { font-size: 17px; font-weight: 800; letter-spacing: -0.3px; }
+.f-prod-gcabeza > div > span { font-size: 13px; color: var(--m-suave); }
+/* La etiqueta: «Obligatorio» en gris; ya elegida, «✓ Listo» en verde; si quiere agregar sin elegir, tiembla. */
+.f-prod-etiqueta {
+  flex: none; display: inline-flex; align-items: center; gap: 4px; height: 26px; padding: 0 10px; border-radius: 13px; background: var(--m-chip); color: var(--m-texto);
+  font-size: 12px; font-weight: 800; transition: background 0.25s ease, color 0.25s ease;
+}
+.f-prod-etiqueta.listo { background: color-mix(in oklab, #1f9d55 14%, var(--m-fondo)); color: #17804a; }
+.menu[data-tema='oscuro'] .f-prod-etiqueta.listo { color: #4cc483; }
+.f-prod-etiqueta.avisa { background: color-mix(in oklab, var(--m-acento) 18%, var(--m-fondo)); color: var(--m-asis); animation: f-avisa 0.6s cubic-bezier(0.36, 0.07, 0.19, 0.97); }
+@keyframes f-avisa { 0%, 100% { transform: none; } 20%, 60% { transform: translateX(-4px) scale(1.06); } 40%, 80% { transform: translateX(4px) scale(1.06); } }
+.f-prod-ops { display: flex; flex-direction: column; gap: 8px; }
+.f-prod-op {
+  display: flex; align-items: center; gap: 12px; width: 100%; min-height: 54px; padding: 0 16px 0 14px; border: 1px solid var(--m-linea); border-radius: 14px;
+  background: var(--m-hoja); color: var(--m-texto); font: inherit; text-align: left; cursor: pointer;
+  transition: border-color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease, transform 0.15s ease;
+}
+.f-prod-op:active { transform: scale(0.985); }
+/* La elegida, solo con su borde fuerte del color del negocio, sin tinte por dentro (12 nov 2026, el developer). */
+.f-prod-op[aria-checked='true'] { border-color: var(--m-acento); box-shadow: inset 0 0 0 1px var(--m-acento); }
+.f-prod-op.solo { cursor: default; }
+/* Todas juntas: cada grupo y la nota, en su tarjeta gris, como «Tus datos» de Tu pedido (12 nov 2026, el developer: «si no,
+   parece que toda esa data es de algo junto y no por partes»). Adentro, las opciones, la caja de la nota y «Obligatorio»
+   van en el fondo para que se distingan. Solo en esta forma: Por pasos no cambia. */
+.f-prod.juntas .f-prod-cuerpo { gap: 12px; }
+.f-prod.juntas .f-prod-intro { margin-bottom: 10px; }
+.f-prod.juntas :is(.f-prod-cuerpo > .f-prod-grupo, .f-prod-cuerpo > .f-campo) { padding: 14px 14px 14px; border-radius: 16px; background: var(--m-chip); }
+.f-prod.juntas .f-prod-grupo .f-prod-op, .f-prod.juntas .f-prod-cuerpo > .f-campo input { background: var(--m-fondo); }
+.f-prod.juntas .f-prod-grupo .f-prod-etiqueta:not(.listo, .avisa) { background: var(--m-fondo); }
+.f-prod.juntas .f-prod-gcabeza { padding: 0 2px; }
+.f-prod-op .n { flex: 1; min-width: 0; font-size: 15px; font-weight: 650; }
+.f-prod-op .x { flex: none; font-size: 14px; font-weight: 700; color: var(--m-suave); font-variant-numeric: tabular-nums; }
+.f-prod-op[aria-checked='true'] .x { color: var(--m-texto); }
+.f-prod-marca { flex: none; width: 22px; height: 22px; display: grid; place-items: center; border: 1.5px solid var(--m-linea-fuerte); border-radius: 7px; color: var(--m-sobre-acento); transition: border-color 0.2s ease, background 0.2s ease; }
+.f-prod-marca.redonda { border-radius: 50%; }
+.f-prod-marca svg, .f-prod-marca i { transform: scale(0); transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+.f-prod-marca i { width: 10px; height: 10px; border-radius: 50%; background: var(--m-acento); }
+[aria-checked='true'] > .f-prod-marca { border-color: var(--m-acento); }
+[aria-checked='true'] > .f-prod-marca:not(.redonda) { background: var(--m-acento); }
+[aria-checked='true'] > .f-prod-marca svg, [aria-checked='true'] > .f-prod-marca i { transform: scale(1); }
+/* «‹» de vidrio sobre la foto; al subir, sale la barra con el nombre y «‹» pasa a la letra. */
+.f-prod-atras {
+  position: absolute; left: 14px; top: 50px; z-index: 3; width: 40px; height: 40px; display: grid; place-items: center; padding: 0; border: 0; border-radius: 20px;
+  background: rgba(0, 0, 0, 0.4); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); color: #fff; transition: background 0.2s ease, color 0.2s ease;
+}
+.f-prod.con-barra .f-prod-atras { background: transparent; color: var(--m-texto); -webkit-backdrop-filter: none; backdrop-filter: none; }
+.f-prod-barra {
+  position: absolute; left: 0; right: 0; top: 0; z-index: 2; height: 90px; padding: 50px 64px 0; display: flex; align-items: center; justify-content: center;
+  background: var(--m-fondo); border-bottom: 1px solid var(--m-linea); opacity: 0; transform: translateY(-6px); pointer-events: none; transition: opacity 0.22s ease, transform 0.22s ease;
+}
+.f-prod-barra b { font-size: 16px; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.f-prod.con-barra .f-prod-barra { opacity: 1; transform: none; }
+.f-prod-pie { position: absolute; left: 0; right: 0; bottom: 0; z-index: 3; display: flex; align-items: center; gap: 10px; padding: 12px 16px 16px; border-top: 1px solid var(--m-linea); background: var(--m-fondo); }
+.f-prod-agregar {
+  flex: 1; min-width: 0; height: 52px; padding: 0 14px; border: 0; border-radius: 14px; background: var(--m-acento); color: var(--m-sobre-acento); font: inherit;
+  font-size: 15px; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; transition: opacity 0.2s ease, transform 0.15s ease;
+}
+.f-prod-agregar:active { transform: scale(0.98); }
+.f-prod-agregar[aria-disabled='true'] { opacity: 0.35; }
+/* La hora del teléfono de la maqueta, sobre la foto o sobre la barra del producto. */
+.menu.f-con-prod > .tel-reloj { z-index: 8; color: #fff; transition: color 0.2s ease; }
+.menu.f-con-prod.f-prod-con-barra > .tel-reloj { color: var(--m-texto); }
+
+@media (prefers-reduced-motion: reduce) {
+  .f-ped-dom, .f-prod-op, .f-prod-marca, .f-prod-marca svg, .f-prod-marca i, .f-prod-barra, .f-prod-atras, .f-prod-etiqueta, .f-paso button, .f-ped-tipo, .f-ped-tipos-luz, .f-campo input { transition: none; }
+  .f-ped-exito.entra *, .f-campo.falta input, .f-prod-etiqueta.avisa, .f-ped-puntos i { animation: none !important; }
+  .f-ped-exito.entra .f-exito-marca path { stroke-dashoffset: 0; }
+}
+
+/* ─── La ventana del producto: sus formas (11 nov 2026, encuestas 45 y 46) ───
+   El alto de la hora del teléfono (en las piezas de las filas no hay: 0). */
+.f-prod-atras { top: calc(var(--f-reloj, 40px) + 10px); }
+.f-prod-barra { height: calc(var(--f-reloj, 40px) + 50px); padding-top: calc(var(--f-reloj, 40px) + 10px); }
+/* El título arriba en pantalla completa: la barra con «‹» y el nombre se queda siempre, y la foto va debajo de ella. */
+.f-prod.tit-arriba .f-prod-barra { justify-content: flex-start; padding-left: 62px; padding-right: 20px; }
+.f-prod.tit-arriba .f-prod-barra b { font-size: 19px; letter-spacing: -0.4px; }
+.f-prod.tit-arriba:not(.ventana) .f-prod-desliza { padding-top: calc(var(--f-reloj, 40px) + 50px); }
+.f-prod.tit-arriba:not(.ventana) .f-prod-foto::after { background: linear-gradient(to bottom, transparent 52%, var(--m-fondo)); }
+/* La Ventana (la de Krispis): sube desde abajo sobre un velo y deja ver tu menú arriba; su cabeza con el nombre y la X
+   redonda, la foto adentro con sus márgenes, y abajo el − n + en su caja y el botón con el precio a la derecha. */
+.f-prod-velo { position: absolute; inset: 0; z-index: 6; background: rgba(0, 0, 0, 0.45); }
+.f-prod.ventana { top: calc(var(--f-reloj, 40px) + 56px); border-radius: 20px 20px 0 0; box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.18); }
+.f-prod.ventana .f-prod-desliza { padding-top: 64px; }
+.f-prod-cabeza {
+  position: absolute; left: 0; right: 0; top: 0; z-index: 2; height: 64px; display: flex; align-items: center; gap: 12px; padding: 0 12px 0 20px;
+  background: var(--m-fondo); border-bottom: 1px solid transparent; transition: border-color 0.22s ease;
+}
+.f-prod-cabeza b { min-width: 0; font-size: 19px; font-weight: 800; letter-spacing: -0.4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; opacity: 0; transform: translateY(6px); transition: opacity 0.22s ease, transform 0.22s ease; }
+.f-prod.ventana.con-barra .f-prod-cabeza { border-bottom-color: var(--m-linea); }
+.f-prod.ventana.con-barra .f-prod-cabeza b { opacity: 1; transform: none; }
+.f-prod-cerrar {
+  flex: none; margin-left: auto; width: 40px; height: 40px; display: grid; place-items: center; padding: 0; border: 0; border-radius: 20px;
+  background: var(--m-chip); color: var(--m-texto); cursor: pointer; transition: transform 0.15s ease;
+}
+.f-prod-cerrar:active { transform: scale(0.9); }
+.f-prod.ventana .f-prod-foto { height: auto; aspect-ratio: 4 / 3; margin: 4px 16px 0; border-radius: 14px; }
+.f-prod.ventana .f-prod-foto::after { display: none; }
+.f-prod.ventana .f-prod-cuerpo { margin-top: 0; padding-top: 18px; }
+.f-prod.ventana.sin-foto .f-prod-cuerpo { padding-top: 8px; }
+.f-prod.ventana .f-paso { border-radius: 14px; }
+.f-prod.ventana .f-paso button { border-radius: 10px; }
+.f-prod-agregar.dos { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 0 18px; }
+.f-prod-agregar.dos span:first-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.f-prod-agregar.dos span:last-child { flex: none; font-variant-numeric: tabular-nums; }
+/* En la fila «Título» de la vista, sin el pie. */
+.f-prod.sin-pie-pieza .f-prod-pie { display: none; }
+.f-prod.sin-pie-pieza .f-prod-desliza { padding-bottom: 28px; }
+
+/* Por pasos (la de Krispis): una píldora por grupo que se desliza de lado, con su puntito (ámbar mientras falta, gris si
+   es opcional y no lo has visto, la palomita verde al estar listo) y la del paso en el que vas con el contorno del color
+   de tu menú; el avance «1 de 2 listos»; y el grupo de ese paso con sus flechas ‹ ›, que entra del lado al que vas. */
+.f-pasos { display: flex; flex-direction: column; gap: 14px; }
+.f-pasos-chips { position: relative; display: flex; gap: 8px; margin: 0 -20px; padding: 4px 20px; overflow-x: auto; scrollbar-width: none; overscroll-behavior-x: contain; }
+.f-pasos-chips::-webkit-scrollbar { display: none; }
+.f-pasos-chip {
+  flex: none; display: inline-flex; align-items: center; gap: 8px; height: 44px; max-width: 200px; padding: 0 16px 0 14px; border: 1px solid var(--m-linea-fuerte); border-radius: 22px;
+  background: var(--m-hoja); color: var(--m-texto); font: inherit; font-size: 14px; font-weight: 650; cursor: pointer; transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.15s ease;
+}
+.f-pasos-chip .t { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.f-pasos-chip:active { transform: scale(0.96); }
+.f-pasos-chip[aria-selected='true'] { border-color: var(--m-acento); box-shadow: 0 0 0 1px var(--m-acento), 0 0 0 4px color-mix(in oklab, var(--m-acento) 16%, transparent); }
+.f-pasos-chip.avisa { animation: f-avisa 0.6s cubic-bezier(0.36, 0.07, 0.19, 0.97); }
+.f-pasos-punto { flex: none; width: 10px; height: 10px; display: grid; place-items: center; border-radius: 50%; background: var(--m-linea-fuerte); color: #fff; transition: width 0.25s ease, height 0.25s ease, background 0.25s ease; }
+.f-pasos-punto[data-estado='falta'] { background: #e8a317; }
+.f-pasos-punto[data-estado='listo'] { width: 16px; height: 16px; background: #1f9d55; }
+.f-pasos.solo .f-pasos-punto { display: none; }
+.f-pasos-avance { display: flex; align-items: center; gap: 12px; }
+.f-pasos-barra { flex: 1; height: 6px; border-radius: 3px; background: var(--m-chip); overflow: hidden; }
+/* El avance va en el verde de las palomitas de «listo», no en el color del negocio (12 nov 2026, el developer). */
+.f-pasos-barra i { display: block; width: 0; height: 100%; border-radius: inherit; background: #1f9d55; transition: width 0.45s cubic-bezier(0.22, 1, 0.36, 1); }
+.f-pasos-cuenta { flex: none; font-size: 13px; font-weight: 600; color: var(--m-suave); font-variant-numeric: tabular-nums; }
+.f-pasos-marco { padding-top: 16px; border-top: 1px solid var(--m-linea); overflow-x: clip; }
+.f-pasos-marco .f-prod-gcabeza b { font-size: 19px; letter-spacing: -0.4px; }
+.f-pasos-flechas { flex: none; display: flex; gap: 2px; margin-right: -8px; }
+.f-pasos-flechas button {
+  width: 40px; height: 40px; display: grid; place-items: center; padding: 0; border: 0; border-radius: 12px; background: none; color: var(--m-texto); cursor: pointer;
+  transition: background 0.15s ease, transform 0.15s ease, opacity 0.2s ease;
+}
+.f-pasos-flechas button:active:not(:disabled) { transform: scale(0.88); background: var(--m-chip); }
+.f-pasos-flechas button:disabled { opacity: 0.3; cursor: default; }
+@media (prefers-reduced-motion: reduce) {
+  .f-prod-cabeza, .f-prod-cabeza b, .f-prod-cerrar, .f-pasos-chip, .f-pasos-punto, .f-pasos-barra i, .f-pasos-flechas button { transition: none; }
+  .f-pasos-chip.avisa { animation: none; }
+}
+
 /* ─── En la página de verdad ───
    En la maqueta el teléfono era la pantalla; aquí la página es larga, así que lo que tapa (Ajustes y su velo) va fijo a
    la pantalla, y Ajustes no pasa del ancho de la columna del menú en la compu. */
@@ -831,3 +994,16 @@
 .f-ped.f-asis-chica { padding-bottom: calc(56px + env(safe-area-inset-bottom, 0px)); }
 .f-ped.f-asis-pildora { padding-bottom: calc(78px + env(safe-area-inset-bottom, 0px)); }
 .f-ped.f-asis-pildora.f-asis-chica { padding-bottom: calc(70px + env(safe-area-inset-bottom, 0px)); }
+/* El producto, igual: fijo a la pantalla, encima de la barra de abajo (la tapa) y del ancho de la columna en la compu. La
+   hora del teléfono de la maqueta aquí es lo de arriba del celular: «‹» queda a 14 de arriba, como la barra del menú. Lo de
+   abajo del celular (la rayita del iPhone) se suma al pie. */
+.f-prod { position: fixed; max-width: 520px; margin: 0 auto; --f-reloj: calc(4px + var(--arriba-seguro)); }
+.f-prod-velo { position: fixed; }
+.f-prod-desliza { padding-bottom: calc(96px + env(safe-area-inset-bottom, 0px)); }
+.f-prod.sin-pie .f-prod-desliza { padding-bottom: calc(28px + env(safe-area-inset-bottom, 0px)); }
+.f-prod-pie { padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px)); }
+/* El globo de «· en tu pedido», arriba de la barra de abajo también con la rayita del iPhone. */
+.menu .globo.f-sobre-app { bottom: calc(82px + env(safe-area-inset-bottom, 0px)); }
+.menu .globo.f-sobre-pildora { bottom: calc(90px + env(safe-area-inset-bottom, 0px)); }
+.menu .globo.f-sobre-app.f-sobre-chica { bottom: calc(72px + env(safe-area-inset-bottom, 0px)); }
+.menu .globo.f-sobre-pildora.f-sobre-chica { bottom: calc(82px + env(safe-area-inset-bottom, 0px)); }

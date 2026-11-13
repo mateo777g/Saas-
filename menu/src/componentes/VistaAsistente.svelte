@@ -50,7 +50,7 @@
     t: Textos;
     barra: Snippet;
     alPreguntar: (pregunta: string, hueco: HTMLElement) => void;
-    alAbrirProducto: (p: Producto) => void;
+    alAbrirProducto: (p: Producto, desde: HTMLElement) => void;
   } = $props();
 
   const ICONO_PASO: Record<ClavePaso, string> = { buscar: 'lupa', recomendar: 'ia', escribir: 'crear' };
@@ -351,7 +351,7 @@
               {#if lasTarjetas.length}
                 <div class="f-asis-tarjetas">
                   {#each lasTarjetas as p (p.id)}
-                    <button type="button" class="f-asis-tarjeta" onclick={() => alAbrirProducto(p)}>
+                    <button type="button" class="f-asis-tarjeta" onclick={(e) => alAbrirProducto(p, e.currentTarget)}>
                       {#if p.imagen_ruta}<img src={urlImagen(p.imagen_ruta)} alt="" loading="lazy" decoding="async" />{/if}
                       <span class="t">
                         <b>{enSuLengua(p.nombre, p.nombre_en, lengua)}</b>

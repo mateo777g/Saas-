@@ -47,3 +47,20 @@ export function velo(_el: Element, { intro }: { intro: boolean }) {
   if (quieto()) return { duration: 0 };
   return { duration: intro ? 220 : 200, css: (t: number) => `opacity: ${t}` };
 }
+
+// El número que cambia (la cantidad del − n +, el total) entra de abajo si subió y de arriba si bajó: Tu pedido y el
+// producto.
+export function rueda(el: HTMLElement, valor: number) {
+  let antes = valor;
+  return {
+    update(nuevo: number) {
+      if (nuevo !== antes && !quieto()) {
+        el.animate([{ transform: `translateY(${nuevo > antes ? 8 : -8}px)`, opacity: 0 }, { transform: 'none', opacity: 1 }], {
+          duration: 220,
+          easing: 'cubic-bezier(0.22, 1, 0.36, 1)',
+        });
+      }
+      antes = nuevo;
+    },
+  };
+}

@@ -31,11 +31,10 @@
   import VentanaInfo from './componentes/VentanaInfo.svelte';
   import VistaAsistente from './componentes/VistaAsistente.svelte';
   import VistaPedido from './componentes/VistaPedido.svelte';
-  import HojaProducto from './componentes/HojaProducto.svelte';
+  import VistaProducto from './componentes/VistaProducto.svelte';
   import Icono from './componentes/Icono.svelte';
   import TarjetaBusca from './componentes/TarjetaBusca.svelte';
   import TarjetaProducto from './componentes/TarjetaProducto.svelte';
-  import Visor from './componentes/Visor.svelte';
   import { Platica } from './lib/asistente.svelte';
   import { leerMenu, urlImagen, type MenuPublico, type Producto } from './lib/datos';
   import { leerFormas, type Pestana } from './lib/formas';
@@ -59,6 +58,7 @@
     type Renglon,
     type Tipo,
   } from './lib/pedido';
+  import { quieto } from './lib/movimiento';
   import { guardarPreferencias, leerPreferencias, lenguaDelCelular, type Moneda } from './lib/preferencias';
   import { enSuLengua, enSuLenguaElNo, esLimite, TEXTOS, textoEstado, type Lengua } from './lib/textos';
   import { adelantarToken, pedirToken, type Adelantado } from './lib/turnstile';
@@ -161,10 +161,11 @@
   );
 
   // ─── Lo que se abre encima ───
-  // Una pila: desde «Tu pedido» se abre la hoja de un renglón y, al cerrarla, se vuelve al pedido. Tu pedido es una
-  // vista: enseña la lista, «sin nada», «sin pedidos» o el pedido mandado, según el caso.
+  // Una pila: desde «Tu pedido» se abre el producto de un renglón y, al cerrarlo, se vuelve al pedido. Tu pedido es una
+  // vista: enseña la lista, «sin nada», «sin pedidos» o el pedido mandado, según el caso. El producto guarda lo que lo
+  // abrió: de ahí crece y ahí regresa.
   type Encima =
-    | { tipo: 'producto'; producto: Producto; foto: boolean; editando: number | null }
+    | { tipo: 'producto'; producto: Producto; editando: number | null; desde: HTMLElement | null }
     | { tipo: 'info'; desde: HTMLElement }
     | { tipo: 'ajustes' }
     | { tipo: 'pedido' }
@@ -176,11 +177,6 @@
   function abrir(e: Encima) {
     history.pushState({ menuEncima: true }, '');
     pila.push(e);
-  }
-
-  function verFoto() {
-    if (encima?.tipo !== 'producto') return;
-    abrir({ ...encima, foto: true });
   }
 
   // Mientras llega el «atrás» que la cierra, un segundo toque en la X o en el velo no hace nada: si
@@ -261,8 +257,23 @@
 
   // El «+» ya no suma de una vez: siempre abre el producto, donde se agrega («Tu menú en línea», 12 de
   // noviembre de 2026, el developer: «si no, está medio confuso así»).
-  function abrirProducto(p: Producto) {
-    abrir({ tipo: 'producto', producto: p, foto: false, editando: null });
+  function abrirProducto(p: Producto, desde: HTMLElement | null) {
+    abrir({ tipo: 'producto', producto: p, editando: null, desde });
+  }
+
+  // Al agregar desde el menú o el asistente, cuando el producto ya se cerró, un globo arriba de la barra de abajo dice
+  // que ya está en tu pedido (2 s), como en la maqueta; desde Tu pedido no hace falta: ahí se ve.
+  let globo = $state<string | null>(null);
+  let relojGlobo: ReturnType<typeof setTimeout> | undefined;
+  function avisarGlobo(texto: string) {
+    clearTimeout(relojGlobo);
+    relojGlobo = setTimeout(
+      () => {
+        globo = texto;
+        relojGlobo = setTimeout(() => (globo = null), 2000);
+      },
+      quieto() ? 0 : 300,
+    );
   }
 
   function alAgregar(p: Producto, r: Renglon, editando: number | null) {
@@ -276,6 +287,7 @@
       hecho = null;
       guardarHecho(slug, null);
     }
+    if (!conPedido) avisarGlobo(enSuLengua(p.nombre, p.nombre_en, lengua) + t.enTuPedido);
     cerrar();
   }
 
@@ -286,9 +298,9 @@
     cambiarCarrito(cantidad < 1 ? carrito.filter((_, j) => j !== i) : carrito.map((x, j) => (j === i ? { ...x, cantidad: Math.min(99, cantidad) } : x)));
   }
 
-  function abrirRenglon(i: number) {
+  function abrirRenglon(i: number, desde: HTMLElement) {
     const p = productos.get(carrito[i].producto_id);
-    if (p) abrir({ tipo: 'producto', producto: p, foto: false, editando: i });
+    if (p) abrir({ tipo: 'producto', producto: p, editando: i, desde });
   }
 
   // «Tu pedido»: lo que escribe, recordado en este celular para la próxima vez.
@@ -431,6 +443,11 @@
     }
     return { icono: 'apagado', texto: t.noRecibimos };
   });
+
+  function aparece(_el: Element) {
+    if (quieto()) return { duration: 0 };
+    return { duration: 180, css: (x: number) => `opacity: ${x}` };
+  }
 
   // ─── Lo de abajo («Tu menú en línea»): Menú, Pedido y Asistente ───
   // Sin WhatsApp no sale Pedido y sin asistente no sale Asistente; si solo queda Menú, no sale nada. Si el
@@ -675,8 +692,8 @@
                   {moneda}
                   {t}
                   lleva={lleva(h.p.id)}
-                  alAbrir={() => abrirProducto(h.p)}
-                  alMas={recibe ? () => abrirProducto(h.p) : null}
+                  alAbrir={(desde) => abrirProducto(h.p, desde)}
+                  alMas={recibe ? (desde) => abrirProducto(h.p, desde) : null}
                 />
               {/each}
             {:else}
@@ -715,8 +732,8 @@
                         {moneda}
                         {t}
                         lleva={lleva(p.id)}
-                        alAbrir={() => abrirProducto(p)}
-                        alMas={recibe ? () => abrirProducto(p) : null}
+                        alAbrir={(desde) => abrirProducto(p, desde)}
+                        alMas={recibe ? (desde) => abrirProducto(p, desde) : null}
                       />
                     {/each}
                   </div>
@@ -728,8 +745,8 @@
                       {moneda}
                       {t}
                       lleva={lleva(p.id)}
-                      alAbrir={() => abrirProducto(p)}
-                      alMas={recibe ? () => abrirProducto(p) : null}
+                      alAbrir={(desde) => abrirProducto(p, desde)}
+                      alMas={recibe ? (desde) => abrirProducto(p, desde) : null}
                     />
                   {/each}
                 {/if}
@@ -758,7 +775,7 @@
         {t}
         barra={barraDeVista}
         alPreguntar={preguntarAlAsistente}
-        alAbrirProducto={(p) => abrir({ tipo: 'producto', producto: p, foto: false, editando: null })}
+        alAbrirProducto={abrirProducto}
       />
     {/if}
 
@@ -793,39 +810,40 @@
       />
     {/if}
 
-    {#if encima?.tipo === 'producto'}
-      {@const editando = encima.editando}
-      {@const producto = encima.producto}
-      <!-- Abierta desde la plática o desde Tu pedido, va encima de su vista, con su velo. -->
-      <div class="encima" class:sobre-vista={conPlatica || conPedido}>
-        {#key encima}
-          <HojaProducto
-            {producto}
-            {lengua}
-            {moneda}
-            {t}
-            {recibe}
-            inicial={editando === null ? null : (carrito[editando] ?? null)}
-            alVerFoto={verFoto}
-            alAgregar={(r) => alAgregar(producto, r, editando)}
-            alCerrar={cerrar}
-          />
-        {/key}
-        {#if encima.foto && encima.producto.imagen_ruta}
-          <Visor
-            ruta={encima.producto.imagen_ruta}
-            nombre={enSuLengua(encima.producto.nombre, encima.producto.nombre_en, lengua)}
-            descripcion={enSuLengua(encima.producto.descripcion, encima.producto.descripcion_en, lengua)}
-            {t}
-            alCerrar={cerrar}
-          />
-        {/if}
-      </div>
-    {:else if encima?.tipo === 'info'}
+    <!-- La vista del producto tapa todo, la barra de abajo también: desde el menú, la plática o Tu pedido. Va en un
+         {#each} de uno para que, mientras se va, siga leyendo su renglón, que ya salió de la pila. -->
+    {#each encima?.tipo === 'producto' ? [encima] : [] as abierto (abierto)}
+      <VistaProducto
+        producto={abierto.producto}
+        {formas}
+        {lengua}
+        {moneda}
+        {t}
+        {recibe}
+        inicial={abierto.editando === null ? null : (carrito[abierto.editando] ?? null)}
+        desde={abierto.desde}
+        alAgregar={(r) => alAgregar(abierto.producto, r, abierto.editando)}
+        alCerrar={cerrar}
+      />
+    {/each}
+    {#if encima?.tipo === 'info'}
       <VentanaInfo {menu} {t} {lengua} desde={encima.desde} alCerrar={cerrar} />
     {/if}
     {#if encima?.tipo === 'ajustes'}
       <Ajustes {lengua} {moneda} {conDolares} {t} alLengua={elegirLengua} alMoneda={elegirMoneda} alCerrar={cerrar} />
+    {/if}
+
+    {#if globo}
+      <div
+        class="globo"
+        class:f-sobre-app={formas.abajo === 'barra'}
+        class:f-sobre-pildora={formas.abajo === 'pildora'}
+        class:f-sobre-chica={!formas.abajo_con_nombres}
+        role="status"
+        transition:aparece
+      >
+        <Icono nombre="check" tamano={14} grosor={2} />{globo}
+      </div>
     {/if}
   {/if}
 </div>
@@ -837,20 +855,29 @@
     margin: 0 auto;
   }
 
-  .encima {
-    display: contents;
+  /* El globo de «· en tu pedido» (el de siempre; formas.css lo sube arriba de la barra de abajo). */
+  .globo {
+    position: fixed;
+    left: 50%;
+    bottom: 112px;
+    transform: translateX(-50%);
+    z-index: 6;
+    height: 40px;
+    padding: 0 16px;
+    border-radius: 20px;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: #232323;
+    color: #ffffff;
+    font-size: 13px;
+    font-weight: 700;
+    white-space: nowrap;
+    box-shadow: 0 12px 30px var(--m-sombra);
   }
 
-  .sobre-vista :global(.velo) {
-    z-index: 9;
-  }
-
-  .sobre-vista :global(.hoja) {
-    z-index: 10;
-  }
-
-  .sobre-vista :global(.visor) {
-    z-index: 11;
+  .globo :global(svg) {
+    color: #4cc26f;
   }
 
   .raya {

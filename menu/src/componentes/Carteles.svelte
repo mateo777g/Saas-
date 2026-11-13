@@ -42,7 +42,7 @@
     t: Textos;
     // La ventana de la «i» crece desde aquí; mientras está abierta, la propia ventana esconde esta «i».
     alInfo: (desde: HTMLElement) => void;
-    alProducto: (p: Producto) => void;
+    alProducto: (p: Producto, desde: HTMLElement) => void;
   } = $props();
 
   let tira: HTMLDivElement;
@@ -81,7 +81,7 @@
     {#each carteles as c, i (c.ruta + ':' + i)}
       {#if c.producto}
         {@const p = c.producto}
-        <button type="button" class="cartel f-cartel-prod" aria-label={enSuLengua(p.nombre, p.nombre_en, lengua)} onclick={() => alProducto(p)}>
+        <button type="button" class="cartel f-cartel-prod" aria-label={enSuLengua(p.nombre, p.nombre_en, lengua)} onclick={(e) => alProducto(p, e.currentTarget)}>
           <img src={urlImagen(c.ruta)} alt="" loading={i === 0 ? 'eager' : 'lazy'} draggable="false" />
           {#if formas.carteles_producto === 'nombre'}
             <span class="f-cp-texto">

@@ -28,8 +28,9 @@
     t: Textos;
     categoria?: string;
     lleva?: number;
-    alAbrir: () => void;
-    alMas: (() => void) | null;
+    // Lo que se tocó (la fila), para que el producto crezca de ahí.
+    alAbrir: (desde: HTMLElement) => void;
+    alMas: ((desde: HTMLElement) => void) | null;
   } = $props();
 
   const nombre = $derived(enSuLengua(producto.nombre, producto.nombre_en, lengua));
@@ -41,11 +42,11 @@
   class="producto"
   role="button"
   tabindex="0"
-  onclick={alAbrir}
+  onclick={(e) => alAbrir(e.currentTarget)}
   onkeydown={(e) => {
     if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) {
       e.preventDefault();
-      alAbrir();
+      alAbrir(e.currentTarget);
     }
   }}
 >
@@ -69,7 +70,7 @@
             aria-label={producto.grupos.length ? t.elegirA(nombre) : t.agregarA(nombre)}
             onclick={(e) => {
               e.stopPropagation();
-              alMas();
+              alMas(e.currentTarget.closest<HTMLElement>('.producto') ?? e.currentTarget);
             }}
           >
             {#if lleva}{lleva}{:else}<Icono nombre="mas" tamano={16} />{/if}

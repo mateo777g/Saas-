@@ -173,10 +173,39 @@ export class Platica {
   borrador = $state('');
   noContesto = $state(false);
   readonly #slug: string;
+  // En la vista previa del panel (parte C2) no se lee ni se guarda nada en el navegador: la plática de muestra no se
+  // revuelve con la de verdad del mismo menú.
+  readonly #guardar: boolean;
 
-  constructor(slug: string) {
+  constructor(slug: string, guardar = true) {
     this.#slug = slug;
-    this.mensajes = leerPlatica(slug);
+    this.#guardar = guardar;
+    this.mensajes = guardar ? leerPlatica(slug) : [];
+  }
+
+  // La vista previa del panel: sus pasos y una respuesta de muestra, sin el Worker ni la revisión de Cloudflare (nada se
+  // gasta ni se cuenta). El compás de la maqueta: el primer paso a los 0.45 s y cada uno 0.8 s.
+  async simular(pregunta: string, texto: string, productos: number[]) {
+    if (!pregunta || this.pendiente !== null) return;
+    this.pendiente = pregunta;
+    this.pasos = [];
+    this.nuevo = null;
+    this.noContesto = false;
+    const espera = (ms: number) => new Promise((listo) => setTimeout(listo, ms));
+    const claves: ClavePaso[] = productos.length ? ['buscar', 'recomendar', 'escribir'] : ['buscar', 'escribir'];
+    const inicio = performance.now();
+    await espera(450);
+    for (const clave of claves) {
+      this.pasos = [...this.pasos, { clave, hecho: false }];
+      await espera(800);
+      this.pasos = this.pasos.map((p) => (p.clave === clave ? { ...p, hecho: true } : p));
+    }
+    await espera(300);
+    const segundos = Math.max(1, Math.round((performance.now() - inicio) / 1000));
+    this.mensajes = [...this.mensajes, { rol: 'cliente', texto: pregunta }, { rol: 'asistente', texto, productos, segundos, pasos: claves }];
+    this.nuevo = this.mensajes.length - 1;
+    this.pendiente = null;
+    this.pasos = [];
   }
 
   // Regresa el motivo de un «no» (sin IA o un límite), para que el menú se vuelva a leer sin IA.
@@ -206,7 +235,8 @@ export class Platica {
             pasos: this.pasos.map((p) => p.clave),
           }
         : { rol: 'aviso', motivo: r.motivo };
-      this.mensajes = guardarPlatica(this.#slug, [...this.mensajes, { rol: 'cliente', texto: pregunta }, llego]);
+      const todos: Mensaje[] = [...this.mensajes, { rol: 'cliente', texto: pregunta }, llego];
+      this.mensajes = this.#guardar ? guardarPlatica(this.#slug, todos) : todos;
       this.nuevo = this.mensajes.length - 1;
       return r.ok ? null : r.motivo;
     } catch (error) {

@@ -1002,6 +1002,9 @@
 .f-prod-desliza { padding-bottom: calc(96px + env(safe-area-inset-bottom, 0px)); }
 .f-prod.sin-pie .f-prod-desliza { padding-bottom: calc(28px + env(safe-area-inset-bottom, 0px)); }
 .f-prod-pie { padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px)); }
+/* El reloj del teléfono de la vista previa del panel (parte C2): como en la maqueta (vista.css, `.tml-lado .tel-reloj`),
+   sobre la barra y debajo de los velos de Ajustes y de la «i»; con el producto abierto, encima de él (arriba). */
+.menu > .tel-reloj { position: fixed; left: 34px; top: 21px; z-index: 5; font-size: 14px; font-weight: 700; line-height: normal; color: var(--m-sobre-barra); pointer-events: none; }
 /* El globo de «· en tu pedido», arriba de la barra de abajo también con la rayita del iPhone. */
 .menu .globo.f-sobre-app { bottom: calc(82px + env(safe-area-inset-bottom, 0px)); }
 .menu .globo.f-sobre-pildora { bottom: calc(90px + env(safe-area-inset-bottom, 0px)); }

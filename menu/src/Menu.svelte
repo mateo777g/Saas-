@@ -5,8 +5,11 @@
   que se quedan pegadas al bajar; luego sus productos. Se vuelve a leer al regresar a la pestaña y
   cada 5 minutos, para que «Abierto» y lo agotado estén al día.
 
-  Con ?muestra=menu|barra es la vista previa de «Tu menú en línea» en el panel (lib/muestra.ts):
-  siempre en español y en pesos, sin poder tocarse, y pinta lo que el panel le mande sin guardar.
+  Con ?muestra=menu|barra es la vista previa de «Tu menú en línea» en el panel (lib/muestra.ts): nace en español y en
+  pesos, y pinta lo que el panel le mande sin guardar. La tira (barra) no se toca. El teléfono (menu), desde la parte C2
+  (13 nov 2026), se toca como lo toca un cliente, sin mandar pedidos ni preguntas de verdad y sin leer ni guardar nada
+  en el navegador; lleva el reloj del teléfono, va a la pieza que cambió y, en el modo Producto, tiene un producto
+  abierto que cambia al momento con sus formas.
 
   Con la 6b (maqueta G2nxGb3xBgiPEYrDb6CgcW) se pide: el «+» de cada producto, «Ver tu pedido» abajo y
   «Tu pedido». Desde el 9 de noviembre de 2026 (maqueta 3smEgFNCNVBkLMukDTdXWw) es un solo botón,
@@ -41,9 +44,10 @@
   import { guardarEsqueleto, leerEsqueleto, medirEsqueleto } from './lib/esqueleto';
   import { esperarFotos, fotosDeArriba } from './lib/fotos';
   import { leerFormas, type Pestana } from './lib/formas';
-  import { avisarAlPanel, escucharPanel, modoMuestra, type Pintura } from './lib/muestra';
+  import { avisarAlPanel, escucharPanel, irAPieza, modoMuestra, type Cambio, type ModoPanel, type Pintura } from './lib/muestra';
   import {
     abrirWhatsApp,
+    centavos,
     enlaceWhatsApp,
     guardarCarrito,
     guardarCliente,
@@ -57,6 +61,7 @@
     NoSeMando,
     precioUnitario,
     type EnCarrito,
+    type Guardado,
     type Hecho,
     type Renglon,
     type Tipo,
@@ -70,6 +75,10 @@
   // El slug es lo primero del camino: pidemenu.mx/fonda-don-chuy.
   const slug = decodeURIComponent(location.pathname.split('/').filter(Boolean)[0] ?? '');
   const muestra = modoMuestra();
+  // El teléfono de la vista previa: arriba va su reloj, como en un iPhone (la maqueta dibuja el menú a 390 × 849 con 36
+  // de arriba, lo de los comparar_*.py).
+  const enTelefono = muestra === 'menu';
+  if (enTelefono) document.documentElement.style.setProperty('--arriba-seguro', '36px');
 
   let menu = $state<MenuPublico | null>(null);
   let paso = $state<'leyendo' | 'listo' | 'apagado' | 'sinred'>('leyendo');
@@ -98,14 +107,15 @@
   const moneda = $derived<Moneda>(conDolares ? monedaElegida : 'mxn');
   const t = $derived(TEXTOS[lengua]);
 
+  // En la vista previa se cambian ahí mismo y se olvidan: el navegador de Don Chuy no recuerda nada de su teléfono.
   function elegirLengua(l: Lengua) {
     lengua = l;
-    guardarPreferencias({ lengua, moneda: monedaElegida });
+    if (!muestra) guardarPreferencias({ lengua, moneda: monedaElegida });
   }
 
   function elegirMoneda(m: Moneda) {
     monedaElegida = m;
-    guardarPreferencias({ lengua, moneda: monedaElegida });
+    if (!muestra) guardarPreferencias({ lengua, moneda: monedaElegida });
   }
 
   // ─── Leer ───
@@ -132,6 +142,10 @@
           abrir({ tipo: 'pedido' });
         }
       }
+      if (datos && primera && enTelefono) {
+        recordarEsqueleto();
+        if (modoPanel === 'producto') abrirDeMuestra();
+      }
       if (muestra) {
         await tick();
         avisarAlPanel({ fragmentless: 'menu-listo' });
@@ -147,10 +161,14 @@
   // cuando ya llegaron las fotos de arriba, porque al llegar un logo todavía no sabe su ancho.
   let columna = $state<HTMLElement>();
 
+  // En la vista previa no se guarda: se le manda al panel, que lo pinta con sus colores en la pantalla del teléfono
+  // mientras lee (y lo recuerda él), medido solo de lo que se ve en la pantalla y sin nada abierto encima.
   function recordar() {
-    if (!raiz || !columna || scrollY > 0 || consulta || lupaAbierta) return;
+    if (!raiz || !columna || scrollY > 0 || consulta || lupaAbierta || (enTelefono && pila.length)) return;
     try {
-      guardarEsqueleto(slug, medirEsqueleto(raiz, columna, raiz.querySelector<HTMLElement>('nav.f-app'), Math.ceil(innerHeight * 1.25)));
+      const abajo = raiz.querySelector<HTMLElement>('nav.f-app');
+      if (enTelefono) avisarAlPanel({ fragmentless: 'esqueleto', esqueleto: medirEsqueleto(raiz, columna, abajo, innerHeight) });
+      else guardarEsqueleto(slug, medirEsqueleto(raiz, columna, abajo, Math.ceil(innerHeight * 1.25)));
     } catch (error) {
       console.error('[menu] no se pudo medir el esqueleto del menú:', error);
     }
@@ -210,9 +228,11 @@
   let pila = $state<Encima[]>([]);
   const encima = $derived(pila.at(-1) ?? null);
 
-  // Cada hoja deja su paso en el historial, para que «atrás» del celular la cierre y no se salga.
+  // Cada hoja deja su paso en el historial, para que «atrás» del celular la cierre y no se salga. En la vista previa no:
+  // el teléfono vive dentro del panel, y su historial es el de la pestaña del panel (el «atrás» del navegador cerraría
+  // cosas dentro del teléfono en lugar de salir de la vista).
   function abrir(e: Encima) {
-    history.pushState({ menuEncima: true }, '');
+    if (!muestra) history.pushState({ menuEncima: true }, '');
     pila.push(e);
   }
 
@@ -221,6 +241,7 @@
   let cerrando = false;
 
   function cerrar() {
+    if (muestra) return void pila.pop();
     if (cerrando) return;
     cerrando = true;
     history.back();
@@ -230,6 +251,10 @@
   // la pila como debe quedar: vacía con «Menú», o solo la pestaña nueva.
   let alRegresar: Encima[] | null = null;
   function regresarA(nueva: Encima[]) {
+    if (muestra) {
+      pila = nueva;
+      return;
+    }
     if (cerrando) return;
     const pasos = pila.length - nueva.length;
     if (pasos <= 0) {
@@ -252,9 +277,10 @@
   }
 
   // ─── El pedido (parte 6b) ───
-  // Pide solo quien está en el menú de verdad (no la vista previa del panel) mientras Postgres dice
-  // que recibe: con teléfono, dentro del horario y sin pausa.
-  const recibe = $derived(!muestra && !!menu?.recibe_pedidos);
+  // Pide quien está en el menú de verdad mientras Postgres dice que recibe: con teléfono, dentro del horario y sin pausa.
+  // En el teléfono de la vista previa basta con el teléfono (el WhatsApp), a cualquier hora y aunque esté en pausa, para
+  // que Don Chuy vea siempre su menú con el «+», Tu pedido y «Agregar al pedido»; el pedido no se manda (simularPedido).
+  const recibe = $derived(enTelefono ? !!menu?.restaurante.telefono : !muestra && !!menu?.recibe_pedidos);
   const productos = $derived(new Map((menu?.categorias ?? []).flatMap((c) => c.productos).map((p) => [p.id, p])));
   // El ícono de la categoría de cada producto (el cuadro de Tu pedido cuando no tiene foto).
   const iconos = $derived(new Map((menu?.categorias ?? []).flatMap((c) => c.productos.map((p) => [p.id, c.icono] as const))));
@@ -282,7 +308,12 @@
   function cambiarCarrito(nuevo: EnCarrito[]) {
     carrito = nuevo;
     clave = crypto.randomUUID();
-    guardarCarrito(slug, carrito);
+    if (!muestra) guardarCarrito(slug, carrito);
+  }
+
+  // El pedido mandado se recuerda en el celular; el de la vista previa, no.
+  function recordarHecho(h: Hecho | null) {
+    if (!muestra) guardarHecho(slug, h);
   }
 
   // Lo mismo con las mismas opciones y nota se suma en un renglón (hasta 99).
@@ -322,7 +353,7 @@
     // Un pedido nuevo: el que ya se mandó deja de enseñarse (como en la maqueta).
     if (hecho) {
       hecho = null;
-      guardarHecho(slug, null);
+      recordarHecho(null);
     }
     if (!conPedido) avisarGlobo(enSuLengua(p.nombre, p.nombre_en, lengua) + t.enTuPedido);
     cerrar();
@@ -340,8 +371,8 @@
     if (p) abrir({ tipo: 'producto', producto: p, editando: i, desde });
   }
 
-  // «Tu pedido»: lo que escribe, recordado en este celular para la próxima vez.
-  const recordadoCliente = leerCliente();
+  // «Tu pedido»: lo que escribe, recordado en este celular para la próxima vez (en la vista previa, las cajas vacías).
+  const recordadoCliente = muestra ? { nombre: '', telefono: '', direccion: '', referencias: '' } : leerCliente();
   let cliente = $state({ ...recordadoCliente, pagaCon: '' });
   let tipo = $state<Tipo>('para_llevar');
   let avisoPedido = $state<{ titulo?: string; texto: string } | null>(null);
@@ -356,10 +387,11 @@
 
   // La revisión de Cloudflare corre al abrirse «Tu pedido» (cuando aparece su hueco), no al tocar el
   // botón: así el toque solo espera al Worker (lib/turnstile.ts, «Por adelantado»).
+  // En la vista previa no corre: ahí nada se manda.
   let revision: Adelantado | null = null;
   $effect(() => {
     const donde = hueco;
-    if (!donde) return;
+    if (!donde || muestra) return;
     const r = adelantarToken(donde, untrack(() => lengua));
     revision = r;
     return () => {
@@ -461,13 +493,48 @@
     guardarHecho(slug, hecho);
   }
 
+  // La vista previa del panel: «Mandando tu pedido…» y luego «Pedido enviado», como en el teléfono de la maqueta, sin la
+  // revisión de Cloudflare, sin el Worker y sin WhatsApp. Nada se guarda. El número es el de muestra de la maqueta.
+  const PEDIDO_DE_MUESTRA = 27;
+  async function simularPedido() {
+    if (!menu || ocupado) return;
+    avisoPedido = null;
+    limite = false;
+    ocupado = true;
+    await new Promise((listo) => setTimeout(listo, quieto() ? 300 : 1100));
+    const dom = tipo === 'domicilio';
+    const van = carrito.filter((r) => productos.has(r.producto_id));
+    const renglones: Guardado['renglones'] = van.map((r) => {
+      const p = productos.get(r.producto_id)!;
+      const opciones = p.grupos.flatMap((g) =>
+        g.opciones.filter((o) => r.opciones.includes(o.id)).map((o) => ({ grupo: g.nombre, opcion: o.nombre, precio_extra: o.precio_extra })),
+      );
+      return { nombre: p.nombre, cantidad: r.cantidad, importe: centavos(precioUnitario(p, r.opciones) * r.cantidad), opciones, nota: r.nota || null };
+    });
+    const pedido: Guardado = {
+      numero: PEDIDO_DE_MUESTRA,
+      tipo,
+      cliente_nombre: cliente.nombre.trim(),
+      cliente_telefono: cliente.telefono.replace(/[\s().-]/g, ''),
+      cliente_direccion: dom ? cliente.direccion.trim() : null,
+      cliente_referencias: dom ? cliente.referencias.trim() || null : null,
+      paga_con: dom && cliente.pagaCon.trim() ? Number(cliente.pagaCon.trim()) : null,
+      total: centavos(renglones.reduce((s, r) => s + r.importe, 0)),
+      renglones,
+    };
+    hecho = { pedido, ids: van.map((r) => ({ producto_id: r.producto_id, opciones: r.opciones })), fecha: menu.ahora.fecha, enviado: true };
+    cambiarCarrito([]);
+    cliente.pagaCon = '';
+    ocupado = false;
+  }
+
   // «Pedido enviado» se queda hasta que sale de Tu pedido (a Menú, al asistente o con «atrás»); «Falta un paso» se
   // queda hasta que lo manda, porque su botón es el que abre WhatsApp.
   const conPedido = $derived(pila.some((e) => e.tipo === 'pedido'));
   $effect(() => {
     if (conPedido || !hecho?.enviado) return;
     hecho = null;
-    guardarHecho(slug, null);
+    recordarHecho(null);
   });
 
   // Por qué no se reciben pedidos: se ve al abrir Pedido.
@@ -528,10 +595,19 @@
 
   // ─── El asistente (parte 6c) ───
   // La plática no vive en su hoja: si ella la cierra mientras piensa, la respuesta llega igual.
-  const platica = new Platica(slug);
+  const platica = new Platica(slug, !muestra);
   const conPlatica = $derived(pila.some((e) => e.tipo === 'asistente'));
 
+  // Todos los productos, en el orden del menú (sin el orden que eligió el cliente).
+  const enOrden = () => (menu?.categorias ?? []).flatMap((c) => c.productos);
+
   async function preguntarAlAsistente(pregunta: string, hueco: HTMLElement) {
+    // En la vista previa contesta de muestra, con las tarjetas de sus dos primeros productos con foto: así Don Chuy ve
+    // cómo se ven, sin gastar de su sobre.
+    if (muestra) {
+      const conFoto = enOrden().filter((p) => p.imagen_ruta).slice(0, 2).map((p) => p.id);
+      return platica.simular(pregunta, t.respuestaDeMuestra, conFoto);
+    }
     const motivo = await platica.preguntar(pregunta, { lengua, moneda, revision: () => pedirToken(hueco, lengua) });
     // Se acabó su sobre a media plática: la caja se apaga ya y el menú se vuelve a leer.
     if (motivo === 'sin_ia' && menu) {
@@ -539,6 +615,56 @@
       cargar(true);
     }
   }
+
+  // ─── El teléfono de la vista previa (parte C2) ───
+  // El modo Producto del panel: un producto abierto que cambia al momento con sus formas; si Don Chuy lo cierra, una
+  // forma nueva lo vuelve a abrir, y al regresar a Tu menú se cierra. Se elige solo: el primero del menú con opciones y
+  // foto (si no hay, con opciones; luego con foto; luego el primero).
+  let modoPanel: ModoPanel = 'menu';
+  let prodConBarra = $state(false);
+
+  function abrirDeMuestra() {
+    const todos = enOrden();
+    const p = todos.find((x) => x.grupos.length && x.imagen_ruta) ?? todos.find((x) => x.grupos.length) ?? todos.find((x) => x.imagen_ruta) ?? todos[0];
+    if (p) abrir({ tipo: 'producto', producto: p, editando: null, desde: null });
+  }
+
+  function alModo(m: ModoPanel) {
+    if (!enTelefono) return;
+    modoPanel = m;
+    pila = [];
+    if (m === 'producto' && menu) abrirDeMuestra();
+  }
+
+  // Al elegir una forma, el teléfono va a esa pieza (lib/muestra.ts); los colores y el tema no lo mueven.
+  async function alPintar(p: Pintura, cambio: Cambio | null) {
+    pintura = p;
+    if (!cambio || !enTelefono || !raiz || !menu) return;
+    if (cambio.startsWith('producto_') && modoPanel === 'producto' && encima?.tipo !== 'producto') abrirDeMuestra();
+    await tick();
+    irAPieza(raiz, cambio);
+  }
+
+  // El panel sabe si hay algo abierto en el teléfono: su Escape cierra primero sus ventanas y luego lo del teléfono.
+  $effect(() => {
+    if (enTelefono) avisarAlPanel({ fragmentless: 'encima', abierto: pila.length > 0 });
+  });
+
+  // El reloj del teléfono (el «14:32» de la maqueta): la hora del restaurante, que llega con el menú, y sigue andando.
+  let reloj = $state('');
+  $effect(() => {
+    const hora = enTelefono ? menu?.ahora.hora : null;
+    if (!hora) return;
+    const [h, m] = hora.split(':').map(Number);
+    const leida = performance.now();
+    const poner = () => {
+      const min = (h * 60 + m + Math.floor((performance.now() - leida) / 60000)) % 1440;
+      reloj = `${Math.floor(min / 60)}:${String(min % 60).padStart(2, '0')}`;
+    };
+    poner();
+    const cada = setInterval(poner, 10000);
+    return () => clearInterval(cada);
+  });
 
   // ─── Las categorías al bajar ───
   let activa = $state<number | null>(null);
@@ -632,10 +758,14 @@
     };
     document.addEventListener('visibilitychange', alVolver);
     const dejarDeEscuchar = muestra
-      ? escucharPanel(
-          (p) => (pintura = p),
-          () => cargar(true),
-        )
+      ? escucharPanel({
+          alPintar,
+          alRecargar: () => cargar(true),
+          alModo,
+          alCerrar: () => {
+            if (encima) cerrar();
+          },
+        })
       : () => {};
     return () => {
       clearInterval(reloj);
@@ -665,8 +795,10 @@
   class:f-info-abajo={formas.info_lugar === 'abajo'}
   data-tema={tema}
   style={estiloMenu(color, colorBarra, fondo)}
+  class:f-con-prod={enTelefono && encima?.tipo === 'producto'}
+  class:f-prod-con-barra={enTelefono && encima?.tipo === 'producto' && prodConBarra}
   bind:this={raiz}
-  inert={muestra !== null}
+  inert={muestra === 'barra'}
 >
   {#if paso === 'apagado'}
     <Aviso titulo={t.apagado} texto={t.apagadoTexto} />
@@ -690,7 +822,7 @@
         {formas}
         {conCarteles}
         {t}
-        arriba={muestra === 'barra' ? '14px' : muestra === 'menu' ? '50px' : 'calc(14px + var(--arriba-seguro))'}
+        arriba={muestra === 'barra' ? '14px' : 'calc(14px + var(--arriba-seguro))'}
         lupaAbierta={enVista ? false : lupaAbierta}
         ajustesAbierto={encima?.tipo === 'ajustes'}
         alLengua={elegirLengua}
@@ -865,7 +997,8 @@
         {hecho}
         {alCantidad}
         alAbrirRenglon={abrirRenglon}
-        alHacer={hacer}
+        alHacer={muestra ? simularPedido : hacer}
+        deMuestra={!!muestra}
         {alEnviar}
         alMenu={() => alPestana('menu')}
         alAsistente={() => alPestana('asistente')}
@@ -886,6 +1019,8 @@
         desde={abierto.desde}
         alAgregar={(r) => alAgregar(abierto.producto, r, abierto.editando)}
         alCerrar={cerrar}
+        vivas={enTelefono}
+        bind:barraArriba={prodConBarra}
       />
     {/each}
     {#if encima?.tipo === 'info'}
@@ -906,6 +1041,10 @@
       >
         <Icono nombre="check" tamano={14} grosor={2} />{globo}
       </div>
+    {/if}
+
+    {#if enTelefono && reloj}
+      <div class="tel-reloj" aria-hidden="true">{reloj}</div>
     {/if}
   {/if}
 </div>

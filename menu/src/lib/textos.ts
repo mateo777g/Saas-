@@ -70,6 +70,8 @@ export const TEXTOS = {
     unoMas: 'Uno más',
     quitar: 'Quitar',
     enTuPedido: ' · en tu pedido',
+    // La vista previa del panel (parte C2): el asistente no contesta de verdad.
+    respuestaDeMuestra: 'Esta es la vista previa: aquí no contesto de verdad. Así se ve mi respuesta cuando tus clientes me preguntan.',
     // El producto como vista completa («Tu menú en línea», maqueta v44): «‹», la etiqueta de cada grupo y los pasos.
     regresar: 'Regresar',
     obligatorio: 'Obligatorio',
@@ -207,6 +209,7 @@ export const TEXTOS = {
     unoMas: 'One more',
     quitar: 'Remove',
     enTuPedido: ' · in your order',
+    respuestaDeMuestra: "This is the preview: I don't really answer here. This is how my answer looks when your customers ask me.",
     regresar: 'Back',
     obligatorio: 'Required',
     listo: 'Done',

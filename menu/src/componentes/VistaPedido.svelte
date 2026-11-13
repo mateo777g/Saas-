@@ -49,6 +49,7 @@
     alEnviar,
     alMenu,
     alAsistente,
+    deMuestra = false,
   }: {
     renglones: EnCarrito[];
     productos: Map<number, Producto>;
@@ -78,6 +79,8 @@
     alEnviar: () => void;
     alMenu: () => void;
     alAsistente: () => void;
+    // La vista previa del panel (parte C2): el pedido no existe, así que «Abrir WhatsApp otra vez» no abre nada.
+    deMuestra?: boolean;
   } = $props();
 
   let cuerpo = $state<HTMLDivElement>();
@@ -476,7 +479,7 @@
     <div class="f-ped-pie f-exito-pie entra">
       {#if hecho.enviado}
         <p>{t.noSeAbrio}</p>
-        <a class="f-ped-ir suave" href={enlace} target="_blank" rel="noopener"><Icono nombre="mensaje" tamano={17} grosor={1.8} />{t.otraVez}</a>
+        <a class="f-ped-ir suave" href={enlace} target="_blank" rel="noopener" onclick={(e) => deMuestra && e.preventDefault()}><Icono nombre="mensaje" tamano={17} grosor={1.8} />{t.otraVez}</a>
       {:else}
         <a class="f-ped-boton" href={enlace} target="_blank" rel="noopener" onclick={alEnviar}
           ><Icono nombre="mensaje" tamano={18} grosor={1.9} /><span>{t.enviar}</span></a

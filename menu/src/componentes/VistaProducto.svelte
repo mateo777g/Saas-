@@ -36,6 +36,8 @@
     desde,
     alAgregar,
     alCerrar,
+    vivas = false,
+    barraArriba = $bindable(false),
   }: {
     producto: Producto;
     formas: Formas;
@@ -49,18 +51,25 @@
     desde: HTMLElement | null;
     alAgregar: (r: Renglon) => void;
     alCerrar: () => void;
+    // La vista previa del panel (parte C2): las formas cambian con el producto abierto, al momento.
+    vivas?: boolean;
+    // Para el reloj del teléfono de la vista previa: si arriba va la barra con el nombre (en pantalla completa).
+    barraArriba?: boolean;
   } = $props();
 
-  // Las formas y el producto se leen una vez, al abrir: la vista no cambia de forma con ella abierta.
-  const { ventana, arriba, grupos, pasos, foto, inicio, origen } = untrack(() => ({
-    ventana: formas.producto_ventana === 'ventana',
-    arriba: formas.producto_titulo === 'arriba',
+  // Las formas y el producto se leen una vez, al abrir: la vista no cambia de forma con ella abierta (en la vista previa
+  // del panel, sí).
+  const { grupos, foto, inicio, origen, alAbrir } = untrack(() => ({
     grupos: producto.grupos,
-    pasos: formas.producto_opciones === 'pasos' && producto.grupos.length > 0,
     foto: producto.imagen_ruta,
     inicio: inicial,
     origen: desde,
+    alAbrir: formas,
   }));
+  const f = $derived(vivas ? formas : alAbrir);
+  const ventana = $derived(f.producto_ventana === 'ventana');
+  const arriba = $derived(f.producto_titulo === 'arriba');
+  const pasos = $derived(f.producto_opciones === 'pasos' && grupos.length > 0);
 
   const nombre = $derived(enSuLengua(producto.nombre, producto.nombre_en, lengua));
   const descripcion = $derived(enSuLengua(producto.descripcion, producto.descripcion_en, lengua));
@@ -104,7 +113,23 @@
   let chips = $state<HTMLDivElement>();
   let marco = $state<HTMLDivElement>();
   // Sin foto, o con el título arriba, la barra (o la cabeza) siempre lleva el nombre.
-  let conBarra = $state(!foto || arriba);
+  let conBarra = $state(untrack(() => !foto || arriba));
+
+  // En la vista previa, al cambiar la ventana o el título con el producto abierto, la barra se vuelve a medir (y en la
+  // Ventana la foto no va más lenta).
+  $effect(() => {
+    if (!vivas) return;
+    void ventana;
+    void arriba;
+    untrack(() => {
+      conBarra = !foto || arriba;
+      if (ventana && imagen) imagen.style.transform = '';
+      tick().then(alDeslizar);
+    });
+  });
+  $effect(() => {
+    barraArriba = !ventana && conBarra;
+  });
   // El grupo cuya etiqueta avisa que falta (tiembla y se queda en el color del menú hasta que se elige).
   let avisa = $state<number | null>(null);
 

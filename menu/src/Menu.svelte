@@ -27,6 +27,7 @@
   import Buscador from './componentes/Buscador.svelte';
   import Carteles from './componentes/Carteles.svelte';
   import Categorias from './componentes/Categorias.svelte';
+  import Esqueleto from './componentes/Esqueleto.svelte';
   import Fila from './componentes/Fila.svelte';
   import VentanaInfo from './componentes/VentanaInfo.svelte';
   import VistaAsistente from './componentes/VistaAsistente.svelte';
@@ -37,6 +38,8 @@
   import TarjetaProducto from './componentes/TarjetaProducto.svelte';
   import { Platica } from './lib/asistente.svelte';
   import { leerMenu, urlImagen, type MenuPublico, type Producto } from './lib/datos';
+  import { guardarEsqueleto, leerEsqueleto, medirEsqueleto } from './lib/esqueleto';
+  import { esperarFotos, fotosDeArriba } from './lib/fotos';
   import { leerFormas, type Pestana } from './lib/formas';
   import { avisarAlPanel, escucharPanel, modoMuestra, type Pintura } from './lib/muestra';
   import {
@@ -73,6 +76,12 @@
   // Lo que el panel manda pintar sin guardar (solo en la vista previa).
   let pintura = $state<Pintura | null>(null);
 
+  // El esqueleto mientras llega el menú (12 nov 2026): el que recuerda este navegador si se midió con este mismo ancho
+  // de columna; si no, el general. La vista previa del panel no lleva este (el suyo es de la parte C2).
+  const recordadoEsqueleto = muestra ? null : leerEsqueleto(slug);
+  const recuerdo =
+    recordadoEsqueleto && Math.abs(recordadoEsqueleto.ancho - Math.min(document.documentElement.clientWidth, 520)) <= 1 ? recordadoEsqueleto : null;
+
   const recordado = muestra ? {} : leerPreferencias();
   let lengua = $state<Lengua>(muestra ? 'es' : (recordado.lengua ?? lenguaDelCelular()));
   let monedaElegida = $state<Moneda>(muestra ? 'mxn' : (recordado.moneda ?? 'mxn'));
@@ -106,12 +115,16 @@
       paso = 'apagado';
       return;
     }
+    // «Intentar otra vez» enseña otra vez el esqueleto mientras lee.
+    if (!deFondo && !menu) paso = 'leyendo';
     try {
       const datos = await leerMenu(slug);
       const primera = !menu;
       menu = datos;
       paso = datos ? 'listo' : 'apagado';
+      if (!datos && !muestra) guardarEsqueleto(slug, null);
       if (datos && primera && !muestra) {
+        recordarEsqueleto();
         carrito = leerCarrito(slug);
         const h = leerHecho(slug, datos.ahora.fecha);
         if (h) {
@@ -127,6 +140,30 @@
       console.error('[menu] no se pudo leer el menú:', error);
       if (!deFondo || !menu) paso = 'sinred';
     }
+  }
+
+  // ─── El esqueleto que recuerda este navegador ───
+  // Se mide del menú ya armado (lib/esqueleto.ts), con la página hasta arriba y sin buscar: al llegar, y otra vez
+  // cuando ya llegaron las fotos de arriba, porque al llegar un logo todavía no sabe su ancho.
+  let columna = $state<HTMLElement>();
+
+  function recordar() {
+    if (!raiz || !columna || scrollY > 0 || consulta || lupaAbierta) return;
+    try {
+      guardarEsqueleto(slug, medirEsqueleto(raiz, columna, raiz.querySelector<HTMLElement>('nav.f-app'), Math.ceil(innerHeight * 1.25)));
+    } catch (error) {
+      console.error('[menu] no se pudo medir el esqueleto del menú:', error);
+    }
+  }
+
+  async function recordarEsqueleto() {
+    await tick();
+    recordar();
+    if (!columna) return;
+    await fotosDeArriba(columna, 8000);
+    // Lo que acaba de llegar aparece en 0.3 s: se mide ya quieto, y cuando el celular no está ocupado (Safari no tiene
+    // requestIdleCallback).
+    setTimeout(() => ('requestIdleCallback' in window ? requestIdleCallback(recordar, { timeout: 2000 }) : recordar()), 400);
   }
 
   // ─── Buscar y ordenar ───
@@ -537,11 +574,24 @@
   // ─── La página ───
   let raiz = $state<HTMLElement>();
 
+  // Mientras se ve el esqueleto, la página y lo de arriba del celular van de sus colores: los que recuerda, o el blanco
+  // y el gris de la barra del general.
+  const conEsqueleto = $derived(paso === 'leyendo' && !menu && muestra === null);
+
   $effect(() => {
     document.title = menu?.restaurante.nombre ?? (paso === 'apagado' ? t.apagado : 'Menú');
     document.documentElement.lang = lengua;
-    document.documentElement.style.background = fondo ?? (tema === 'oscuro' ? '#0f0f0f' : '#ffffff');
-    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', colorBarra ?? color ?? (tema === 'oscuro' ? '#1f1f1f' : '#121212'));
+    document.documentElement.style.background = conEsqueleto
+      ? (recuerdo?.fondo ?? '#ffffff')
+      : (fondo ?? (tema === 'oscuro' ? '#0f0f0f' : '#ffffff'));
+    document
+      .querySelector('meta[name="theme-color"]')
+      ?.setAttribute(
+        'content',
+        conEsqueleto
+          ? (recuerdo?.barra?.fondo ?? recuerdo?.fondo ?? '#f4f4f4')
+          : (colorBarra ?? color ?? (tema === 'oscuro' ? '#1f1f1f' : '#121212')),
+      );
   });
 
   // El logo es el ícono de la pestaña.
@@ -574,6 +624,8 @@
 
   onMount(() => {
     cargar();
+    // Cada foto late en su lugar hasta que llega.
+    const soltarFotos = raiz ? esperarFotos(raiz) : () => {};
     const reloj = setInterval(() => cargar(true), CADA);
     const alVolver = () => {
       if (!document.hidden) cargar(true);
@@ -589,6 +641,7 @@
       clearInterval(reloj);
       document.removeEventListener('visibilitychange', alVolver);
       dejarDeEscuchar();
+      soltarFotos();
     };
   });
 </script>
@@ -600,6 +653,10 @@
     if (e.key === 'Escape' && encima) cerrar();
   }}
 />
+
+{#if conEsqueleto}
+  <Esqueleto {recuerdo} texto={t.cargando} />
+{/if}
 
 <div
   class="menu"
@@ -644,7 +701,12 @@
       />
     {/snippet}
     {#snippet barraDeVista()}{@render barra(true)}{/snippet}
-    <div class="columna" class:f-con-app={pestanas.length > 0} class:f-con-app-chica={pestanas.length > 0 && !formas.abajo_con_nombres}>
+    <div
+      class="columna"
+      class:f-con-app={pestanas.length > 0}
+      class:f-con-app-chica={pestanas.length > 0 && !formas.abajo_con_nombres}
+      bind:this={columna}
+    >
       {@render barra(false)}
 
       {#if muestra === 'barra'}

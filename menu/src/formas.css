@@ -1007,3 +1007,12 @@
 .menu .globo.f-sobre-pildora { bottom: calc(90px + env(safe-area-inset-bottom, 0px)); }
 .menu .globo.f-sobre-app.f-sobre-chica { bottom: calc(72px + env(safe-area-inset-bottom, 0px)); }
 .menu .globo.f-sobre-pildora.f-sobre-chica { bottom: calc(82px + env(safe-area-inset-bottom, 0px)); }
+/* Cada foto, mientras llega (los esqueletos del menú digital, 12 nov 2026; en la maqueta, vista.css): su caja late en
+   el gris del menú y la imagen todavía no se ve; lib/fotos.ts le pone y le quita la clase. Un logo todavía no sabe su
+   ancho: mientras, es un cuadro de su alto. */
+.menu img.f-foto-espera { object-position: -9999px 0 !important; background: color-mix(in oklab, var(--m-texto) 9%, var(--m-fondo)) !important; animation: f-late 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+.menu .barra:not(.f-centro) .logo img.f-foto-espera { width: 48px; height: 48px; }
+.menu .f-centro .f-medio .logo img.f-foto-espera { width: 64px; }
+.menu .f-info-logo img.f-foto-espera { width: 72px; height: 72px; }
+@keyframes f-late { 50% { opacity: 0.5; } }
+@media (prefers-reduced-motion: reduce) { .menu img.f-foto-espera { animation: none; } }

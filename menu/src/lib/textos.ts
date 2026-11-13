@@ -54,6 +54,8 @@ export const TEXTOS = {
     sinRed: 'No se pudo abrir el menú',
     sinRedTexto: 'Revisa tu internet e inténtalo otra vez.',
     reintentar: 'Intentar otra vez',
+    // Para el lector de pantalla, mientras llega el menú (los esqueletos).
+    cargando: 'Cargando el menú…',
     // El pedido (parte 6b)
     agregarA: (n: string) => `Agregar ${n}`,
     elegirA: (n: string) => `Elegir ${n}`,
@@ -191,6 +193,7 @@ export const TEXTOS = {
     sinRed: "We couldn't open the menu",
     sinRedTexto: 'Check your internet connection and try again.',
     reintentar: 'Try again',
+    cargando: 'Loading the menu…',
     agregarA: (n: string) => `Add ${n}`,
     elegirA: (n: string) => `Choose ${n}`,
     agregar: 'Add to order',

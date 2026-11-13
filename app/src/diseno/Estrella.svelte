@@ -3,7 +3,7 @@
   AyS4xUfa5XmDaPJG1iqSgw): sus dos piezas, siempre en degradado, nunca de un color plano, y siempre
   sola, sin cuadro. Cada fondo lleva su versión oficial: «blanco» sobre un fondo claro, «azul» sobre un
   color oscuro, «negro» sobre negro y «gris» en la etiqueta del login. «panel» sigue al tema con
-  --estrella-1…4 de colores.css: la naranja en claro y la de fondo negro en oscuro.
+  --estrella-1…4 de colores.css: la de fondo negro, la azul, en los dos temas (en claro era la naranja hasta el 13 nov 2026).
 -->
 <script lang="ts" module>
   export type FondoEstrella = 'blanco' | 'azul' | 'negro' | 'gris' | 'panel';

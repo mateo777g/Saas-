@@ -16,7 +16,8 @@
   --grafica: #1355e8;                  /* las gráficas de Inicio: azul en claro */
   --azul: #1355e8;
   --sombra-menu: rgba(0, 0, 0, 0.12);  /* la lista de la búsqueda y el menú del «+» */
-  --acento: #e8622a;                   /* naranja del logo: insignia "IA", Conectar Mercado Pago */
+  --acento: #1355e8;                   /* azul del logo: insignia "IA", Conectar Mercado Pago (era naranja hasta el 13 nov 2026) */
+  --acento-login: #e8622a;             /* las manchas del login siguen naranjas en claro: son de lo que no se toca */
   --sobre-acento: #ffffff;
   --vidrio: rgba(255, 255, 255, 0.8);  /* blanco al 80 % + desenfoque 18 */
   --vidrio-linea: rgba(0, 0, 0, 0.078);
@@ -48,28 +49,28 @@
   --sobre-tinta-linea: rgba(255, 255, 255, 0.24); /* el borde de su botón Elegir todos */
   --velo: rgba(0, 0, 0, 0.35);         /* detrás de una ventana */
   --sombra-anuncio: rgba(0, 0, 0, 0.22); /* el anuncio terminado en Crear contenido */
-  --estrella-1: #bd3a02;               /* la estrella naranja: de la punta de abajo a la de arriba */
-  --estrella-2: #e8622a;
-  --estrella-3: #ff9c32;
-  --estrella-4: #ffdea8;
-  --punto-panel: #e8612a;              /* los puntos del «Pensando…» */
-  --pensando-acento: var(--acento);    /* el icono del paso que va corriendo */
+  --estrella-1: #1b3fb5;               /* la estrella azul, la de fondo negro, también en claro (13 nov 2026) */
+  --estrella-2: #1f5ef0;
+  --estrella-3: #4fa3ff;
+  --estrella-4: #9fe6ff;
+  --punto-panel: #1355e8;              /* los puntos del «Pensando…»: el azul de la marca (el developer, 13 nov 2026) */
+  --pensando-acento: #1355e8;          /* el icono del paso que va corriendo */
   --mandar: var(--tinta);              /* el botón de mandar del agente: negro en claro */
   --sobre-mandar: var(--sobre-tinta);
   --burbuja: rgba(0, 0, 0, 0.08);      /* la burbuja de la pregunta en el agente */
-  /* La línea de colores bajo la frase del agente y las chispas que suelta su punta. */
-  --raya: linear-gradient(90deg, transparent, hsl(240, 55%, 55%) 14%, hsl(262, 55%, 56%) 26%, hsl(327, 50%, 54%) 40%, hsl(5, 62%, 58%) 52%, hsl(22, 72%, 56%) 63%, hsl(42, 75%, 52%) 74%, #fffaf0 88%, #fffaf0 100%);
-  --chispa: #fffaf0;
+  /* La línea bajo la frase del agente y las chispas que suelta su punta: los azules de la estrella (13 nov 2026). */
+  --raya: linear-gradient(90deg, transparent, var(--estrella-2) 18%, var(--estrella-3) 48%, var(--estrella-4) 76%, var(--estrella-4) 100%);
+  --chispa: var(--estrella-4);
   --chispa-2: #ffffff;
-  /* El brillo detrás de la caja del agente: en claro, capas rectas (azul, lila, rosa, durazno y naranja fuerte) recortadas con la forma del oscuro. */
-  --brillo-opacidad: 0.65;
+  /* El brillo detrás de la caja del agente: desde el 13 nov 2026 también en claro el azul del oscuro (antes, capas de azul,
+     lila, rosa, durazno y naranja), con un toque blanco arriba a la izquierda en vez de la sombra. */
+  --brillo-opacidad: 1;
   --brillo-capas:
     radial-gradient(ellipse 280px 185px at 595px 364px, rgba(255, 255, 255, 0.45), transparent),
-    linear-gradient(to bottom, rgb(148, 201, 233) 140px, rgb(172, 192, 226) 260px, rgb(202, 179, 214) 380px, rgb(226, 176, 207) 470px, rgb(238, 174, 202) 540px, rgb(243, 172, 165) 640px, rgb(245, 170, 120) 720px, rgb(245, 160, 80) 790px, rgb(245, 130, 40) 860px, rgb(245, 100, 15) 930px);
-  --brillo-mascara:
-    radial-gradient(ellipse 420px 300px at 1007px 394px, rgba(0, 0, 0, 0.405), rgba(0, 0, 0, 0.27) 40%, rgba(0, 0, 0, 0.08) 75%, transparent),
-    radial-gradient(ellipse 560px 420px at 770px 520px, rgba(0, 0, 0, 0.19), rgba(0, 0, 0, 0.135) 40%, rgba(0, 0, 0, 0.054) 75%, transparent),
-    radial-gradient(ellipse 650px 330px at 770px 657px, rgba(0, 0, 0, 0.934), rgba(0, 0, 0, 0.883) 12.5%, rgba(0, 0, 0, 0.772) 25%, rgba(0, 0, 0, 0.635) 37.5%, rgba(0, 0, 0, 0.459) 50%, rgba(0, 0, 0, 0.27) 62.5%, rgba(0, 0, 0, 0.135) 75%, rgba(0, 0, 0, 0.062) 87.5%, transparent);
+    radial-gradient(ellipse 420px 300px at 1007px 394px, rgba(19, 85, 232, 0.15), rgba(19, 85, 232, 0.1) 40%, rgba(19, 85, 232, 0.03) 75%, transparent),
+    radial-gradient(ellipse 560px 420px at 770px 520px, rgba(19, 85, 232, 0.07), rgba(19, 85, 232, 0.05) 40%, rgba(19, 85, 232, 0.02) 75%, transparent),
+    radial-gradient(ellipse 650px 330px at 770px 657px, rgba(19, 85, 232, 0.346), rgba(19, 85, 232, 0.327) 12.5%, rgba(19, 85, 232, 0.286) 25%, rgba(19, 85, 232, 0.235) 37.5%, rgba(19, 85, 232, 0.17) 50%, rgba(19, 85, 232, 0.1) 62.5%, rgba(19, 85, 232, 0.05) 75%, rgba(19, 85, 232, 0.023) 87.5%, transparent);
+  --brillo-mascara: none;
 }
 
 :root[data-tema='oscuro'] {
@@ -83,6 +84,7 @@
   --azul: #4f86f7;
   --sombra-menu: rgba(0, 0, 0, 0.5);
   --acento: #1355e8;                   /* azul del logo */
+  --acento-login: var(--acento);
   --sobre-acento: #ffffff;
   --vidrio: rgba(14, 14, 14, 0.78);
   --vidrio-linea: rgba(255, 255, 255, 0.09);

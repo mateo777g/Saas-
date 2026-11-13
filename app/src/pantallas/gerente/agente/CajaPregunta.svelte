@@ -208,11 +208,6 @@
   export function enfocar() {
     campo?.focus();
   }
-
-  // De dónde sale la burbuja de la pregunta al mandarla.
-  export function medir(): DOMRect | null {
-    return (abierta ? campo : caja)?.getBoundingClientRect() ?? null;
-  }
 </script>
 
 {#snippet mas()}

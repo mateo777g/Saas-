@@ -2,7 +2,7 @@
   boton() de diseno.py y los botones grandes del login y de la suscripción terminada.
     tono      linea: borde fino, sin relleno (los secundarios)
               tinta: el principal (negro en claro, blanco en oscuro)
-              acento: naranja en claro, azul en oscuro (Conectar Mercado Pago, Renovar)
+              acento: azul (Conectar Mercado Pago, Renovar)
               verde: el que guarda o agrega en las ventanas del panel del gerente, como el «Arrow Fill
                 Button» de Hyperiux (Mi menú, versión 8): rectángulo de 44 con un cuadrito blanco a la derecha;
                 con el mouse encima, al tocarlo (450 ms) o con el teclado, el blanco crece hasta llenarlo,

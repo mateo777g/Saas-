@@ -1,7 +1,7 @@
 /*
   El brillo de las búsquedas (el haz) en el estilo Cristal (libreta 4, «El estilo Cristal»; maqueta FiHkjmT1meyTu7zuU3En2n):
-  en Cristal oscuro, el haz del tema oscuro en blanco plateado; en Cristal claro, el azul del tema oscuro con la sombra
-  del claro. En Simple no cambia nada: todo cuelga de :root[data-estilo='cristal'].
+  en Cristal oscuro, el haz del tema oscuro en blanco plateado; en el tema claro (Cristal y, desde el 13 nov 2026, también
+  Simple), el azul del tema oscuro con la sombra del claro. Simple oscuro no cambia.
   NO SE EDITA A MANO: lo escribe planes/trabajo/estilo-cristal/haz_cristal_para_app.py desde haz.css.
   Viene de border-beam (https://www.npmjs.com/package/border-beam), con licencia MIT: Copyright (c) 2026 Jakub Antalik.
 */
@@ -53,13 +53,13 @@
        radial-gradient(ellipse calc(42px * var(--haz-w)) calc(40px * var(--haz-h)) at calc(var(--haz-x) * 100%) 100%, rgba(247, 251, 255, 0.3) 0%, rgba(247, 251, 255, 0.12) 25%, rgba(247, 251, 255, 0.03) 55%, transparent 80%);
 }
 
-/* Cristal claro: el azul del tema oscuro, con la sombra del claro. */
-:root[data-tema='claro'][data-estilo='cristal'] .haz {
+/* El tema claro (Cristal y Simple): el azul del tema oscuro, con la sombra del claro. */
+:root[data-tema='claro'][data-estilo] .haz {
   position: relative;
   border-radius: 999px;
   overflow: hidden;
 }
-:root[data-tema='claro'][data-estilo='cristal'] .haz.activo {
+:root[data-tema='claro'][data-estilo] .haz.activo {
   animation:
     haz-travel-oscuro 3.1s linear infinite,
     haz-edge-fade-oscuro 3.1s linear infinite,
@@ -68,7 +68,7 @@
     haz-spike2-oscuro 5.3s ease-in-out infinite,
     haz-fade-in-oscuro 0.6s ease forwards;
 }
-:root[data-tema='claro'][data-estilo='cristal'] .haz.apagando {
+:root[data-tema='claro'][data-estilo] .haz.apagando {
   animation:
     haz-travel-oscuro 3.1s linear infinite,
     haz-edge-fade-oscuro 3.1s linear infinite,
@@ -77,8 +77,8 @@
     haz-spike2-oscuro 5.3s ease-in-out infinite,
     haz-fade-out-oscuro 0.5s ease forwards;
 }
-:root[data-tema='claro'][data-estilo='cristal'] .haz.activo::after,
-:root[data-tema='claro'][data-estilo='cristal'] .haz.apagando::after {
+:root[data-tema='claro'][data-estilo] .haz.activo::after,
+:root[data-tema='claro'][data-estilo] .haz.apagando::after {
   content: "";
   position: absolute;
   inset: 0;
@@ -125,8 +125,8 @@
   opacity: calc(var(--haz-opacity) * var(--haz-edge) * 1.14 * var(--haz-stroke-opacity, 1) * var(--haz-strength, 1));
   animation: haz-hue-shift-oscuro 12s ease-in-out infinite;
 }
-:root[data-tema='claro'][data-estilo='cristal'] .haz.activo::before,
-:root[data-tema='claro'][data-estilo='cristal'] .haz.apagando::before {
+:root[data-tema='claro'][data-estilo] .haz.activo::before,
+:root[data-tema='claro'][data-estilo] .haz.apagando::before {
   content: "";
   position: absolute;
   inset: 0;
@@ -163,7 +163,7 @@
   clip-path: inset(0 round 999px);
   animation: haz-hue-shift-oscuro 12s ease-in-out infinite;
 }
-:root[data-tema='claro'][data-estilo='cristal'] .haz .haz-flor {
+:root[data-tema='claro'][data-estilo] .haz .haz-flor {
   display: none;
   position: absolute;
   inset: 0;
@@ -195,15 +195,15 @@
   z-index: 3;
   opacity: 0;
 }
-:root[data-tema='claro'][data-estilo='cristal'] .haz.activo .haz-flor,
-:root[data-tema='claro'][data-estilo='cristal'] .haz.apagando .haz-flor {
+:root[data-tema='claro'][data-estilo] .haz.activo .haz-flor,
+:root[data-tema='claro'][data-estilo] .haz.apagando .haz-flor {
   display: block;
   opacity: calc(var(--haz-opacity) * var(--haz-edge) * 0.8 * var(--haz-bloom-opacity, 1) * var(--haz-strength, 1));
   animation: haz-hue-shift-bloom-oscuro 8s ease-in-out infinite;
 }
-:root[data-tema='claro'][data-estilo='cristal'] .haz.pausado,
-:root[data-tema='claro'][data-estilo='cristal'] .haz.pausado::after,
-:root[data-tema='claro'][data-estilo='cristal'] .haz.pausado::before,
-:root[data-tema='claro'][data-estilo='cristal'] .haz.pausado .haz-flor {
+:root[data-tema='claro'][data-estilo] .haz.pausado,
+:root[data-tema='claro'][data-estilo] .haz.pausado::after,
+:root[data-tema='claro'][data-estilo] .haz.pausado::before,
+:root[data-tema='claro'][data-estilo] .haz.pausado .haz-flor {
   animation-play-state: paused !important;
 }

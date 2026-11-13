@@ -13,9 +13,9 @@
     queda fija abajo.
   Cada número de una respuesta sale de una herramienta de Postgres: aquí no se cuenta nada.
 
-  Mientras piensa (maqueta AyS4xUfa5XmDaPJG1iqSgw): la pregunta vuela de la caja a su lugar, salen los
-  puntos, los segundos y cada paso real que manda el Worker, y al llegar la respuesta se doblan en
-  «Pensé 6 s ›». El botón de mandar es «Detener»: la pregunta se queda con «La detuviste» y vuelve a
+  Mientras piensa (maqueta AyS4xUfa5XmDaPJG1iqSgw): la pregunta sale en seco en su lugar (el developer, 13 nov
+  2026: el vuelo desde la caja la deformaba en el camino), salen los puntos, los segundos y cada paso real que
+  manda el Worker, y al llegar la respuesta se doblan en «Pensé 6 s ›». El botón de mandar es «Detener»: la pregunta se queda con «La detuviste» y vuelve a
   la caja; nunca se le manda al agente y, lo ya gastado, el Worker lo anota. Lo que decidí yo sobre
   todo esto, en planes/trabajo/estrella/vista.md.
 
@@ -112,7 +112,7 @@
   let placeholder = $state(PH_BIENVENIDA);
   let vista = $state<HTMLElement | null>(null);
   let abajo = $state<HTMLDivElement | null>(null);
-  let caja = $state<{ enfocar: () => void; medir: () => DOMRect | null } | null>(null);
+  let caja = $state<{ enfocar: () => void } | null>(null);
   // La caja de la bienvenida: abierta, salen las ideas. En la conversación, la caja lleva la suya.
   let cajaAbierta = $state(false);
   let bienvenida = $state<HTMLDivElement | null>(null);
@@ -174,26 +174,6 @@
     });
   });
 
-  // La burbuja de la pregunta vuela desde la caja hasta su lugar (la referencia de los pasos: 560 ms, su curva).
-  async function volarDesde(desde: DOMRect | null) {
-    await tick();
-    const burbujas = vista?.querySelectorAll('.burbuja');
-    const burbuja = burbujas?.[burbujas.length - 1] as HTMLElement | undefined;
-    if (!desde || !burbuja || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-    const lugar = burbuja.getBoundingClientRect();
-    if (!lugar.width || !lugar.height) return;
-    burbuja.style.transformOrigin = '0 0';
-    burbuja.animate(
-      [
-        {
-          transform: `translate(${desde.left - lugar.left}px, ${desde.top - lugar.top}px) scale(${desde.width / lugar.width}, ${Math.min(desde.height, 60) / lugar.height})`,
-        },
-        { transform: 'translate(0px, 0px) scale(1, 1)' },
-      ],
-      { duration: 560, easing: 'cubic-bezier(0.22, 1, 0.36, 1)' },
-    );
-  }
-
   // Se queda en la conversación con lo que alcanzó a hacer. Solo se guarda en el Historial si la
   // conversación ya tiene alguna respuesta: la fecha y la hora del restaurante llegan con ellas.
   function quedoDetenida(p: Pedido, base: Conversacion, tardo: number) {
@@ -221,7 +201,6 @@
 
   async function enviar(p: Pedido) {
     if (ocupado || sinTope) return;
-    const desde = caja?.medir() ?? null;
     const base: Conversacion = actual ?? { id: crypto.randomUUID(), titulo: p.visible, fecha: '', hora: '', turnos: [] };
     actual = base;
     fallo = null;
@@ -237,7 +216,6 @@
     const reloj = setInterval(() => (segundos = Math.floor((performance.now() - inicio) / 1000)), 250);
     let alLlegar = 0;
     irALaPregunta();
-    volarDesde(desde);
 
     try {
       const r = await preguntar(sucursal.id, p.pregunta, base.turnos, {

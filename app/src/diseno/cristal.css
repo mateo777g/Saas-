@@ -59,12 +59,16 @@
    vería nada que desenfocar. */
 :root[data-estilo='cristal'][data-tema='oscuro'] {
   --fondo: #000000;
+  --punto-panel: #ffffff;               /* los puntos y el icono del «Pensando…» del agente: blancos (13 nov 2026) */
+  --pensando-acento: #ffffff;
   --campo-fondo: rgba(255, 255, 255, 0.07);
   --campo-encima: rgba(255, 255, 255, 0.11);
   --velo: rgba(0, 0, 0, 0.45);
 }
 :root[data-estilo='cristal'][data-tema='claro'] {
   --fondo: #d4d7dd;
+  --punto-panel: #1355e8;               /* y en claro, el azul de la marca */
+  --pensando-acento: #1355e8;
   --grafica: #3f9b5a;
   --campo-fondo: rgba(255, 255, 255, 0.78);
   --campo-encima: rgba(255, 255, 255, 0.92);

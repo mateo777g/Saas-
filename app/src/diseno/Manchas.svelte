@@ -2,7 +2,7 @@
   La mitad derecha del login (sesion_view.py) y de la suscripción terminada: las manchas con
   grano, "Moderniza Tu Negocio" y la etiqueta de vidrio "Fragmentless · Panel web". Son de los
   no negociables: solo puede cambiar su letra. Oscuras en los dos temas; las manchas son del
-  color del acento (naranjas en claro, azules en oscuro).
+  color de --acento-login (naranjas en claro, azules en oscuro; el panel es azul en los dos desde el 13 nov 2026).
 
   Las manchas son el shader original del que salió el diseño: GrainGradient de Paper Shaders
   (forma "corners"), con los mismos valores del componente de 21st.dev que trajo el developer.
@@ -29,7 +29,7 @@
 
   // Blanco, acento, acento, blanco, como el original (allá el acento era naranja #FC7819).
   function colores() {
-    const acento = getComputedStyle(document.documentElement).getPropertyValue('--acento').trim();
+    const acento = getComputedStyle(document.documentElement).getPropertyValue('--acento-login').trim();
     return ['#FFFFFF', acento, acento, '#FFFFFF'].map(getShaderColorFromString);
   }
 

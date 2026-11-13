@@ -1,7 +1,8 @@
 <!--
   El brillo de border-beam alrededor de una caja de búsqueda (maqueta 4B6Qhre6dkK3pJgXtryyEV v3): prende al
-  entrar a la caja (picarla o Ctrl K) en 0.6 s, sigue mientras escribes y se apaga en 0.5 s al salir. Naranja en
-  claro y azul en oscuro. Su CSS vive en haz.css (border-beam, licencia MIT, Copyright (c) 2026 Jakub Antalik).
+  entrar a la caja (picarla o Ctrl K) en 0.6 s, sigue mientras escribes y se apaga en 0.5 s al salir. Azul en los
+  dos temas: en claro, haz-cristal.css le pone el azul del oscuro con la sombra del claro (era naranja hasta el 13 nov
+  2026). Su CSS vive en haz.css (border-beam, licencia MIT, Copyright (c) 2026 Jakub Antalik).
 -->
 <script lang="ts">
   import type { Snippet } from 'svelte';

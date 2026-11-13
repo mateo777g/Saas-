@@ -1,17 +1,37 @@
 <!--
   «Buscar en el menú» y el botón de ordenar (maqueta de la 6a, estados «Buscar» y «Ordenar»). Lo que
   se escribe busca en los nombres y las descripciones, en español y en inglés; la X lo borra.
+
+  Desde «Tu menú en línea» (maqueta UDArhiEZceT7rmSKxqRA5r): la caja gris (la de siempre) o la blanca,
+  más marcada (también la de la lupa con el logo al centro), y «Ordenar por» ya no abre una hoja: su
+  botón saca debajo una listita como la del mundito, con el ícono de cada orden.
 -->
 <script lang="ts">
+  import { ICONOS_ORDEN } from '../lib/iconos';
   import type { Textos } from '../lib/textos';
   import Icono from './Icono.svelte';
+  import ListaBoton from './ListaBoton.svelte';
 
-  let { busqueda = $bindable(), t, alOrdenar }: { busqueda: string; t: Textos; alOrdenar: () => void } = $props();
+  let {
+    busqueda = $bindable(),
+    orden,
+    blanca = false,
+    t,
+    campo = $bindable(),
+    alOrdenar,
+  }: {
+    busqueda: string;
+    orden: number;
+    blanca?: boolean;
+    t: Textos;
+    campo?: HTMLInputElement;
+    alOrdenar: (i: number) => void;
+  } = $props();
 
-  let campo: HTMLInputElement;
+  const ordenes = $derived(t.ordenes.map((texto, i) => ({ valor: String(i), texto, icono: ICONOS_ORDEN[i] })));
 </script>
 
-<div class="fila">
+<div class="fila" class:f-blanca={blanca}>
   <label class="buscar">
     <Icono nombre="buscar" tamano={18} />
     <input bind:this={campo} bind:value={busqueda} type="search" placeholder={t.buscar} aria-label={t.buscar} autocomplete="off" enterkeyhint="search" />
@@ -22,12 +42,18 @@
         aria-label={t.limpiar}
         onclick={() => {
           busqueda = '';
-          campo.focus();
+          campo?.focus();
         }}><Icono nombre="cerrar" tamano={16} /></button
       >
     {/if}
   </label>
-  <button type="button" class="cuadro" aria-label={t.ordenar} onclick={alOrdenar}><Icono nombre="ordenar" tamano={19} /></button>
+  <ListaBoton clase="f-ordenar" opciones={ordenes} elegida={String(orden)} etiqueta={t.ordenar} alElegir={(v) => alOrdenar(Number(v))}>
+    {#snippet boton({ abierta, alternar })}
+      <button type="button" class="cuadro" aria-label={t.ordenar} aria-haspopup="listbox" aria-expanded={abierta} onclick={alternar}
+        ><Icono nombre="ordenar" tamano={19} /></button
+      >
+    {/snippet}
+  </ListaBoton>
 </div>
 
 <style>

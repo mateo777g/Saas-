@@ -18,26 +18,29 @@
 -->
 <script lang="ts">
   import { onMount, tick, untrack } from 'svelte';
-  import { estiloColor } from '@app/lib/color';
+  import { estiloMenu } from '@app/lib/color';
   import { dinero } from '@app/lib/formato';
+  import Abajo from './componentes/Abajo.svelte';
+  import Ajustes from './componentes/Ajustes.svelte';
   import Aviso from './componentes/Aviso.svelte';
   import Barra from './componentes/Barra.svelte';
-  import BarraPedido from './componentes/BarraPedido.svelte';
-  import Burbuja from './componentes/Burbuja.svelte';
   import Buscador from './componentes/Buscador.svelte';
   import Carteles from './componentes/Carteles.svelte';
+  import Categorias from './componentes/Categorias.svelte';
   import Fila from './componentes/Fila.svelte';
+  import Hoja from './componentes/Hoja.svelte';
   import HojaAsistente from './componentes/HojaAsistente.svelte';
   import HojaHecho from './componentes/HojaHecho.svelte';
   import HojaInfo from './componentes/HojaInfo.svelte';
-  import HojaOrdenar from './componentes/HojaOrdenar.svelte';
   import HojaPedido from './componentes/HojaPedido.svelte';
   import HojaProducto from './componentes/HojaProducto.svelte';
   import Icono from './componentes/Icono.svelte';
-  import Pestanas from './componentes/Pestanas.svelte';
+  import TarjetaBusca from './componentes/TarjetaBusca.svelte';
+  import TarjetaProducto from './componentes/TarjetaProducto.svelte';
   import Visor from './componentes/Visor.svelte';
   import { Platica } from './lib/asistente.svelte';
   import { leerMenu, urlImagen, type MenuPublico, type Producto } from './lib/datos';
+  import { leerFormas, type Pestana } from './lib/formas';
   import { avisarAlPanel, escucharPanel, modoMuestra, type Pintura } from './lib/muestra';
   import {
     abrirWhatsApp,
@@ -78,6 +81,10 @@
 
   const tema = $derived(pintura?.tema ?? menu?.restaurante.tema ?? 'claro');
   const color = $derived(pintura ? pintura.color : (menu?.restaurante.color ?? null));
+  // «Tu menú en línea»: el color de la barra, el fondo y las formas (lo que no mande el panel, como está guardado).
+  const colorBarra = $derived(pintura?.colorBarra !== undefined ? pintura.colorBarra : (menu?.restaurante.color_barra ?? null));
+  const fondo = $derived(pintura?.fondo !== undefined ? pintura.fondo : (menu?.restaurante.fondo ?? null));
+  const formas = $derived(pintura?.formas ?? leerFormas(menu?.restaurante.formas));
   // MXN / USD siempre sale: el dólar es uno para todos y lo pone el Worker cada día (Mi menú). Si un día
   // faltara, el menú solo enseña pesos.
   const conDolares = $derived((menu?.restaurante.tipo_cambio_usd ?? null) !== null);
@@ -159,8 +166,8 @@
   // Una pila: desde «Tu pedido» se abre la hoja de un renglón y, al cerrarla, se vuelve al pedido.
   type Encima =
     | { tipo: 'producto'; producto: Producto; foto: boolean; editando: number | null }
-    | { tipo: 'ordenar' }
     | { tipo: 'info' }
+    | { tipo: 'ajustes' }
     | { tipo: 'pedido' }
     | { tipo: 'hecho' }
     | { tipo: 'asistente' };
@@ -188,8 +195,28 @@
     history.back();
   }
 
+  // Las pestañas de abajo regresan varios pasos de una vez (cada hoja tiene el suyo en el historial) y dejan
+  // la pila como debe quedar: vacía con «Menú», o solo la pestaña nueva.
+  let alRegresar: Encima[] | null = null;
+  function regresarA(nueva: Encima[]) {
+    if (cerrando) return;
+    const pasos = pila.length - nueva.length;
+    if (pasos <= 0) {
+      pila = nueva;
+      return;
+    }
+    cerrando = true;
+    alRegresar = nueva;
+    history.go(-pasos);
+  }
+
   function alAtras() {
     cerrando = false;
+    if (alRegresar) {
+      pila = alRegresar;
+      alRegresar = null;
+      return;
+    }
     pila.pop();
   }
 
@@ -198,6 +225,10 @@
   // que recibe: con teléfono, dentro del horario y sin pausa.
   const recibe = $derived(!muestra && !!menu?.recibe_pedidos);
   const productos = $derived(new Map((menu?.categorias ?? []).flatMap((c) => c.productos).map((p) => [p.id, p])));
+  // Cada cartel con su producto, si es uno de Mi menú (Postgres solo manda los que salen en el menú).
+  const carteles = $derived(
+    (menu?.carteles ?? []).map((c) => ({ ruta: c.ruta, producto: c.producto_id === null ? null : (productos.get(c.producto_id) ?? null) })),
+  );
 
   let carrito = $state<EnCarrito[]>([]);
   // Un producto que ya no viene en el menú (se agotó, o lo quitaron) sale tachado.
@@ -210,13 +241,6 @@
   );
   const cuantos = $derived(carrito.reduce((s, r) => s + r.cantidad, 0));
   const pesos = (n: number) => `${moneda === 'usd' ? 'MX' : ''}${dinero(n)}`;
-  const totalCarrito = $derived(
-    Math.round(
-      vistaCarrito
-        .filter((r) => !r.aviso?.fuera)
-        .reduce((s, r) => s + precioUnitario(productos.get(r.producto_id)!, r.opciones) * r.cantidad, 0) * 100,
-    ) / 100,
-  );
   const lleva = (id: number) => carrito.reduce((s, r) => s + (r.producto_id === id ? r.cantidad : 0), 0);
 
   // La clave del pedido cambia con cada cambio, como el borrador de Pepe: tocar dos veces «Pedir por
@@ -235,16 +259,10 @@
     return lista.map((x, i) => (i === igual ? { ...x, cantidad: Math.min(99, x.cantidad + r.cantidad) } : x));
   }
 
-  let globo = $state<string | null>(null);
-  let reloj: ReturnType<typeof setTimeout> | undefined;
-
-  // El «+»: sin opciones agrega 1 al momento y lo dice abajo; con opciones abre su hoja.
-  function alMas(p: Producto) {
-    if (p.grupos.length) return abrir({ tipo: 'producto', producto: p, foto: false, editando: null });
-    cambiarCarrito(sumar(carrito, { producto_id: p.id, cantidad: 1, opciones: [], nota: '' }, p));
-    globo = enSuLengua(p.nombre, p.nombre_en, lengua) + t.enTuPedido;
-    clearTimeout(reloj);
-    reloj = setTimeout(() => (globo = null), 2000);
+  // El «+» ya no suma de una vez: siempre abre el producto, donde se agrega («Tu menú en línea», 12 de
+  // noviembre de 2026, el developer: «si no, está medio confuso así»).
+  function abrirProducto(p: Producto) {
+    abrir({ tipo: 'producto', producto: p, foto: false, editando: null });
   }
 
   function alAgregar(p: Producto, r: Renglon, editando: number | null) {
@@ -396,8 +414,8 @@
     cerrar();
   }
 
-  // Abajo: «Ver tu pedido», o por qué no se reciben pedidos.
-  const avisoAbajo = $derived.by((): { icono: 'reloj' | 'apagado'; texto: string } | null => {
+  // Por qué no se reciben pedidos: se ve al abrir Pedido.
+  const avisoPedidos = $derived.by((): { icono: 'reloj' | 'apagado'; texto: string } | null => {
     if (!menu || recibe) return null;
     const e = menu.estado;
     if (!menu.pedidos_pausados && menu.restaurante.telefono && e && !e.abierto) {
@@ -406,7 +424,39 @@
     }
     return { icono: 'apagado', texto: t.noRecibimos };
   });
-  const conAbajo = $derived(!muestra && !!menu && (avisoAbajo !== null || carrito.length > 0));
+
+  // ─── Lo de abajo («Tu menú en línea»): Menú, Pedido y Asistente ───
+  // Sin WhatsApp no sale Pedido y sin asistente no sale Asistente; si solo queda Menú, no sale nada.
+  const pestanas = $derived.by((): Pestana[] => {
+    if (!menu || muestra === 'barra') return [];
+    const lista: Pestana[] = ['menu'];
+    if (menu.restaurante.telefono) lista.push('pedido');
+    if (menu.asistente_contesta) lista.push('asistente');
+    return lista.length > 1 ? lista : [];
+  });
+  const pestanaActiva = $derived.by((): Pestana => {
+    if (pila.some((e) => e.tipo === 'asistente')) return 'asistente';
+    if (pila.some((e) => e.tipo === 'pedido' || e.tipo === 'hecho')) return 'pedido';
+    return 'menu';
+  });
+
+  function alPestana(p: Pestana) {
+    if (p === 'menu') return regresarA([]);
+    if (p === pestanaActiva) return;
+    // Una pestaña sustituye a la otra: lo que hubiera encima se reemplaza.
+    const nueva: Encima = p === 'asistente' ? { tipo: 'asistente' } : hecho && !carrito.length ? { tipo: 'hecho' } : { tipo: 'pedido' };
+    if (pila.length) regresarA([nueva]);
+    else abrir(nueva);
+  }
+
+  // ─── Ajustes y la lupa (con el logo al centro) ───
+  let lupaAbierta = $state(false);
+  let campoLupa = $state<HTMLInputElement>();
+
+  function alLupa() {
+    lupaAbierta = !lupaAbierta;
+    if (lupaAbierta) setTimeout(() => campoLupa?.focus({ preventScroll: true }), 120);
+  }
 
   // ─── El asistente (parte 6c) ───
   // La plática no vive en su hoja: si ella la cierra mientras piensa, la respuesta llega igual.
@@ -425,7 +475,9 @@
   // ─── Las categorías al bajar ───
   let activa = $state<number | null>(null);
   let pausaHasta = 0;
-  const ALTO_PESTANAS = 49;
+  // Lo que tapan las categorías pegadas arriba: cambia con su forma (las pestañas, 49; los círculos, más).
+  let navCategorias = $state<HTMLElement>();
+  const altoCategorias = () => navCategorias?.offsetHeight ?? 49;
 
   $effect(() => {
     if (activa === null || !categorias.some((c) => c.id === activa)) activa = categorias[0]?.id ?? null;
@@ -437,7 +489,7 @@
     const alFondo = window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 2;
     let actual = categorias[0].id;
     for (const el of document.querySelectorAll<HTMLElement>('[data-seccion]')) {
-      if (el.getBoundingClientRect().top <= ALTO_PESTANAS + 8) actual = Number(el.dataset.seccion);
+      if (el.getBoundingClientRect().top <= altoCategorias() + 8) actual = Number(el.dataset.seccion);
     }
     activa = alFondo && window.scrollY > 0 ? categorias[categorias.length - 1].id : actual;
   }
@@ -448,7 +500,7 @@
     activa = id;
     pausaHasta = Date.now() + 900;
     // Como en la maqueta («Bajando»): la sección queda 4 abajo de las pestañas.
-    window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - ALTO_PESTANAS - 4, behavior: 'smooth' });
+    window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - altoCategorias() - 4, behavior: 'smooth' });
   }
 
   // ─── La página ───
@@ -457,8 +509,8 @@
   $effect(() => {
     document.title = menu?.restaurante.nombre ?? (paso === 'apagado' ? t.apagado : 'Menú');
     document.documentElement.lang = lengua;
-    document.documentElement.style.background = tema === 'oscuro' ? '#0f0f0f' : '#ffffff';
-    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', color ?? (tema === 'oscuro' ? '#1f1f1f' : '#121212'));
+    document.documentElement.style.background = fondo ?? (tema === 'oscuro' ? '#0f0f0f' : '#ffffff');
+    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', colorBarra ?? color ?? (tema === 'oscuro' ? '#1f1f1f' : '#121212'));
   });
 
   // El logo es el ícono de la pestaña.
@@ -518,14 +570,24 @@
   }}
 />
 
-<div class="menu" data-tema={tema} style={estiloColor(color)} bind:this={raiz} inert={muestra !== null}>
+<div
+  class="menu"
+  class:f-con-fondo={!!fondo}
+  class:f-con-barra={!!colorBarra}
+  class:f-info-abajo={formas.info_lugar === 'abajo'}
+  data-tema={tema}
+  style={estiloMenu(color, colorBarra, fondo)}
+  bind:this={raiz}
+  inert={muestra !== null}
+>
   {#if paso === 'apagado'}
     <Aviso titulo={t.apagado} texto={t.apagadoTexto} />
   {:else if paso === 'sinred'}
     <Aviso titulo={t.sinRed} texto={t.sinRedTexto} boton={t.reintentar} alBoton={() => cargar()} />
   {:else if menu}
     {@const r = menu.restaurante}
-    <div class="columna" class:con-abajo={conAbajo} class:con-burbuja={muestra !== 'barra'}>
+    {@const conCarteles = muestra !== 'barra' && carteles.length > 0}
+    <div class="columna" class:f-con-app={pestanas.length > 0} class:f-con-app-chica={pestanas.length > 0 && !formas.abajo_con_nombres}>
       <Barra
         nombre={r.nombre}
         logo={r.logo_ruta}
@@ -534,17 +596,50 @@
         {lengua}
         {moneda}
         {conDolares}
+        {formas}
+        {conCarteles}
         {t}
         arriba={muestra === 'barra' ? '14px' : muestra === 'menu' ? '50px' : 'calc(14px + var(--arriba-seguro))'}
+        {lupaAbierta}
+        ajustesAbierto={encima?.tipo === 'ajustes'}
         alLengua={elegirLengua}
         alMoneda={elegirMoneda}
         alInfo={() => abrir({ tipo: 'info' })}
+        {alLupa}
+        alAjustes={() => abrir({ tipo: 'ajustes' })}
       />
 
       {#if muestra === 'barra'}
-        <Pestanas categorias={menu.categorias} activa={menu.categorias[0]?.id ?? null} {lengua} {t} pegadas={false} />
+        <Categorias categorias={menu.categorias} activa={menu.categorias[0]?.id ?? null} forma={formas.categorias} {lengua} {t} pegadas={false} />
       {:else}
-        <Buscador bind:busqueda {t} alOrdenar={() => abrir({ tipo: 'ordenar' })} />
+        <!-- Las tres piezas de en medio, en el orden que eligió. Mientras busca, solo la búsqueda. -->
+        {#each formas.orden as pieza (pieza)}
+          {#if pieza === 'carteles' && conCarteles && !consulta}
+            <Carteles
+              {carteles}
+              {formas}
+              estado={textoEstado(menu.estado, lengua)}
+              abierto={!!menu.estado?.abierto}
+              {lengua}
+              {moneda}
+              {t}
+              alInfo={() => abrir({ tipo: 'info' })}
+              alProducto={abrirProducto}
+            />
+          {:else if pieza === 'busqueda'}
+            {#if formas.barra === 'centro'}
+              <div class="f-lupa-caja" class:abierta={lupaAbierta || !!consulta} inert={!lupaAbierta && !consulta}>
+                <div><Buscador bind:busqueda bind:campo={campoLupa} {orden} blanca {t} alOrdenar={(i) => (orden = i)} /></div>
+              </div>
+            {:else if formas.busqueda === 'tarjeta'}
+              <TarjetaBusca bind:busqueda {orden} {t} alOrdenar={(i) => (orden = i)} />
+            {:else}
+              <Buscador bind:busqueda {orden} blanca={formas.busqueda === 'blanca'} {t} alOrdenar={(i) => (orden = i)} />
+            {/if}
+          {:else if pieza === 'categorias' && !consulta}
+            <Categorias {categorias} {activa} forma={formas.categorias} {lengua} {t} bind:nav={navCategorias} alElegir={irA} />
+          {/if}
+        {/each}
 
         {#if consulta}
           <div class="raya"></div>
@@ -559,8 +654,8 @@
                   {moneda}
                   {t}
                   lleva={lleva(h.p.id)}
-                  alAbrir={() => abrir({ tipo: 'producto', producto: h.p, foto: false, editando: null })}
-                  alMas={recibe ? () => alMas(h.p) : null}
+                  alAbrir={() => abrirProducto(h.p)}
+                  alMas={recibe ? () => abrirProducto(h.p) : null}
                 />
               {/each}
             {:else}
@@ -571,23 +666,52 @@
             {/if}
           </div>
         {:else}
-          {#if menu.carteles.length}<Carteles rutas={menu.carteles.map((c) => c.ruta)} {t} />{/if}
-          <Pestanas {categorias} {activa} {lengua} {t} alElegir={irA} />
-          <div class="contenido">
+          <div
+            class="contenido"
+            class:f-intercalado={formas.productos === 'intercalado'}
+            class:f-dos={formas.productos === 'dos_en_dos'}
+            class:f-clasicas={formas.productos === 'clasicas'}
+          >
             {#each categorias as c (c.id)}
+              {@const nombre = enSuLengua(c.nombre, c.nombre_en, lengua)}
               <section class="seccion" data-seccion={c.id}>
-                <h2 class="seccion-titulo"><Icono categoria={c.icono} tamano={20} />{enSuLengua(c.nombre, c.nombre_en, lengua)}</h2>
-                {#each c.productos as p (p.id)}
-                  <Fila
-                    producto={p}
-                    {lengua}
-                    {moneda}
-                    {t}
-                    lleva={lleva(p.id)}
-                    alAbrir={() => abrir({ tipo: 'producto', producto: p, foto: false, editando: null })}
-                    alMas={recibe ? () => alMas(p) : null}
-                  />
-                {/each}
+                <!-- El título va aparte de cómo se acomodan los productos: con su ícono, solo el nombre, o grande con la
+                     raya del color que se desvanece. -->
+                {#if formas.titulos === 'raya'}
+                  <h2 class="f-titulo-grande">{nombre}</h2>
+                  <div class="f-raya-titulo"></div>
+                {:else}
+                  <h2 class="seccion-titulo">{#if formas.titulos === 'icono'}<Icono categoria={c.icono} tamano={20} />{/if}{nombre}</h2>
+                {/if}
+                {#if formas.productos === 'dos_en_dos' || formas.productos === 'clasicas'}
+                  <div class="f-rejilla">
+                    {#each c.productos as p (p.id)}
+                      <TarjetaProducto
+                        producto={p}
+                        forma={formas.productos}
+                        icono={c.icono}
+                        {lengua}
+                        {moneda}
+                        {t}
+                        lleva={lleva(p.id)}
+                        alAbrir={() => abrirProducto(p)}
+                        alMas={recibe ? () => abrirProducto(p) : null}
+                      />
+                    {/each}
+                  </div>
+                {:else}
+                  {#each c.productos as p (p.id)}
+                    <Fila
+                      producto={p}
+                      {lengua}
+                      {moneda}
+                      {t}
+                      lleva={lleva(p.id)}
+                      alAbrir={() => abrirProducto(p)}
+                      alMas={recibe ? () => abrirProducto(p) : null}
+                    />
+                  {/each}
+                {/if}
               </section>
             {/each}
           </div>
@@ -595,14 +719,8 @@
       {/if}
     </div>
 
-    {#if conAbajo}
-      <BarraPedido {cuantos} total={pesos(totalCarrito)} aviso={avisoAbajo} {t} alAbrir={() => abrir({ tipo: 'pedido' })} />
-    {/if}
-    {#if muestra !== 'barra'}
-      <Burbuja {color} {tema} conBarra={conAbajo} {t} alAbrir={() => abrir({ tipo: 'asistente' })} />
-    {/if}
-    {#if globo}
-      <div class="globo" role="status"><Icono nombre="check" tamano={14} />{globo}</div>
+    {#if pestanas.length}
+      <Abajo {pestanas} activa={pestanaActiva} cuantos={recibe ? cuantos : 0} {formas} {t} alElegir={alPestana} />
     {/if}
 
     {#if conPlatica}
@@ -648,18 +766,18 @@
           />
         {/if}
       </div>
-    {:else if encima?.tipo === 'ordenar'}
-      <HojaOrdenar
-        {orden}
-        {t}
-        alElegir={(i) => {
-          orden = i;
-          cerrar();
-        }}
-        alCerrar={cerrar}
-      />
     {:else if encima?.tipo === 'info'}
       <HojaInfo {menu} {t} alCerrar={cerrar} />
+    {:else if encima?.tipo === 'pedido' && (!recibe || !carrito.length)}
+      <!-- Pedido sin pedidos, o sin nada todavía: la hoja chica con lo que pasa. -->
+      <Hoja etiqueta={t.tuPedido} alCerrar={cerrar}>
+        <div class="f-hoja-aviso">
+          <div class="f-aviso">
+            <span><Icono nombre={avisoPedidos ? avisoPedidos.icono : 'bolsa-app'} tamano={20} /></span>{avisoPedidos ? avisoPedidos.texto : t.vacio}
+          </div>
+          {#if avisoPedidos}<p>{t.avisoPedido}</p>{/if}
+        </div>
+      </Hoja>
     {:else if encima?.tipo === 'pedido'}
       <HojaPedido
         renglones={vistaCarrito}
@@ -695,6 +813,9 @@
         {alVolver}
       />
     {/if}
+    {#if encima?.tipo === 'ajustes'}
+      <Ajustes {lengua} {moneda} {conDolares} {t} alLengua={elegirLengua} alMoneda={elegirMoneda} alCerrar={cerrar} />
+    {/if}
   {/if}
 </div>
 
@@ -703,20 +824,6 @@
   .columna {
     max-width: 520px;
     margin: 0 auto;
-  }
-
-  /* Lugar para «Ver tu pedido» abajo. */
-  .columna.con-abajo .contenido {
-    padding-bottom: 112px;
-  }
-
-  /* Y para la burbuja del asistente, sola o arriba de «Ver tu pedido». */
-  .columna.con-burbuja .contenido {
-    padding-bottom: calc(100px + env(safe-area-inset-bottom, 0px));
-  }
-
-  .columna.con-abajo.con-burbuja .contenido {
-    padding-bottom: calc(176px + env(safe-area-inset-bottom, 0px));
   }
 
   .encima {
@@ -733,30 +840,6 @@
 
   .sobre-platica :global(.visor) {
     z-index: 11;
-  }
-
-  .globo {
-    position: fixed;
-    left: 50%;
-    bottom: 112px;
-    transform: translateX(-50%);
-    z-index: 6;
-    height: 40px;
-    padding: 0 16px;
-    border-radius: 20px;
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    background: #232323;
-    color: #ffffff;
-    font-size: 13px;
-    font-weight: 700;
-    white-space: nowrap;
-    box-shadow: 0 12px 30px var(--m-sombra);
-  }
-
-  .globo :global(svg) {
-    color: #4cc26f;
   }
 
   .raya {

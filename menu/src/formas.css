@@ -1,0 +1,458 @@
+/* ─── Las formas del menú en línea («Tu menú en línea», 10 al 12 de noviembre de 2026) ───
+   Copiadas de la maqueta aprobada (UDArhiEZceT7rmSKxqRA5r, v59; su fuente es
+   planes/trabajo/rediseno/maqueta-tu-menu/partes/menu.css): ahí se pusieron encima del menú de verdad, así que
+   aquí también van encima de los estilos de cada componente, con las mismas variables --m-*. Cada forma la
+   eligen las clases f-* que ponen los componentes según restaurante.formas (lib/formas.ts). */
+.menu {
+  --m-linea-fuerte: rgba(0, 0, 0, 0.13);
+  /* Las tarjetas y las rayas toman su tono del fondo (Lo que decidí yo 4). */
+  --m-tarjeta: color-mix(in oklab, var(--m-texto) 3%, var(--m-fondo));
+  --f-raya: var(--m-acento);
+  --f-alto: 2 / 3;
+  position: relative;
+}
+.menu[data-tema='oscuro'] { --m-linea-fuerte: rgba(255, 255, 255, 0.15); }
+/* Las Clásicas y las Píldoras tienen sus propios colores (detalle 18 de la v1): blanco puro con letra negra en claro, el
+   oscuro de las hojas en oscuro. No los cambian ni el color de la barra ni un fondo propio. */
+.menu { --f-blanco: #ffffff; --f-blanco-texto: #121212; }
+.menu[data-tema='oscuro'] { --f-blanco: #161616; --f-blanco-texto: #f3f3f0; }
+/* Con un fondo propio, sus grises salen de él. */
+.menu.f-con-fondo {
+  --m-chip: color-mix(in oklab, var(--m-texto) 7%, var(--m-fondo));
+  --m-hoja: color-mix(in oklab, var(--m-texto) 2%, var(--m-fondo));
+}
+/* Con un color de barra propio, las cajas y tarjetas que van sobre el fondo se pintan de ese color, con sus letras y sus
+   rayas sacadas de él (detalle 8 de la v1): la búsqueda (la caja gris, la tarjeta y la de la lupa), las categorías en
+   tarjeta y en círculo, y las tarjetas de dos en dos sin foto. La caja blanca se queda blanca; lo de abajo y las hojas,
+   como estaban. Sin color de barra, nada cambia. */
+.menu.f-con-barra :is(.f-tarjeta-busca, .f-cats-tarjeta, .fila:not(.f-blanca), .f-circ-dibujo, .f-tarjeta) {
+  --m-texto: var(--m-sobre-barra);
+  --m-suave: var(--m-barra-suave);
+  --m-tenue: var(--m-barra-suave);
+  --m-linea: color-mix(in oklab, var(--m-sobre-barra) 10%, transparent);
+  --m-linea-fuerte: color-mix(in oklab, var(--m-sobre-barra) 16%, transparent);
+  --m-tarjeta: var(--m-barra);
+  --m-chip: var(--m-barra);
+  /* Lo que va dentro de la tarjeta de búsqueda (su cuadro, la caja y los órdenes), un tono arriba del de la barra. */
+  --m-fondo: color-mix(in oklab, var(--m-sobre-barra) 7%, var(--m-barra));
+}
+.menu.f-con-barra :is(.f-tarjeta-busca, .f-cats-tarjeta) { background: var(--m-barra); }
+
+/* ─── La barra: el logo no va en un cuadro (11 nov 2026, como el de Krispis): mide hasta 48 de alto y lo ancho que pida,
+   hasta 190. Uno cuadrado queda de 48 × 48 como hoy; uno de 2 a 1, de 96 × 48; uno de 6 a 1, de 190 × 30. ─── */
+.menu .barra.f-sin-nombre .nombre { font-size: 0; }
+.menu .barra:not(.f-centro) .logo { width: auto; max-width: 190px; }
+.menu .barra:not(.f-centro) .logo img { width: auto; height: auto; max-width: 190px; max-height: 48px; }
+/* El idioma y la moneda suben al renglón del logo cuando caben (detalle 6 de la v1): con un nombre corto o con «Solo el
+   logo». Si no caben, bajan a la derecha como hoy y el nombre usa todo el ancho. Sin contar letras: lo decide flex-wrap. */
+.menu .barra:not(.f-centro) { flex-direction: row; flex-wrap: wrap; align-items: center; }
+.menu .barra:not(.f-centro) .marca { flex: 0 1 auto; min-width: 0; }
+.menu .barra:not(.f-centro) .nombre { flex: 0 1 auto; }
+.menu .barra:not(.f-centro) .fila2 { margin-left: auto; }
+
+/* El logo al centro (detalle 10 de la v1): la lupa a la izquierda, el logo (y el nombre) en medio y el engrane a la
+   derecha. La «i» y si está abierto se fueron al cartel (detalle 5). */
+.menu .barra.f-centro { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; column-gap: 10px; row-gap: 0; }
+.f-centro .f-izq { justify-self: start; display: flex; flex-direction: column; align-items: flex-start; gap: 9px; min-width: 0; }
+.f-centro .f-izq-botones { display: flex; gap: 8px; }
+.f-centro .f-medio { display: flex; flex-direction: column; align-items: center; gap: 7px; text-align: center; max-width: 170px; }
+.f-centro .f-medio .logo { width: auto; height: 64px; }
+.f-centro .f-medio .logo img { height: 64px; width: auto; max-width: 170px; object-fit: contain; border-radius: 16px; }
+.f-centro .f-nombre-centro { grid-column: 1 / -1; flex: none; margin-top: 10px; text-align: center; font-size: 16px; line-height: 1.25; }
+.f-centro .f-medio.sin-logo { min-height: 30px; }
+.f-centro .f-medio.sin-logo ~ .f-nombre-centro { margin-top: 6px; font-size: 20px; }
+.f-centro .f-der { justify-self: end; display: flex; flex-direction: column; align-items: flex-end; gap: 7px; }
+.f-centro .f-lupa, .f-engrane {
+  width: 40px; height: 40px; padding: 0; display: inline-flex; align-items: center; justify-content: center; border: 0; border-radius: 12px;
+  background: transparent; color: var(--m-sobre-barra); transition: box-shadow 0.2s ease;
+}
+.f-engrane[aria-expanded='true'] { box-shadow: inset 0 0 0 1.5px var(--m-barra-suave); }
+
+/* Ajustes: sale de la derecha (de donde está el engrane) sobre un velo, con el movimiento de las hojas del menú. */
+.f-aj-velo { position: absolute; inset: 0; z-index: 9; background: var(--m-velo); }
+.f-aj {
+  position: absolute; top: 0; right: 0; bottom: 0; z-index: 10; width: min(310px, 82%); display: flex; flex-direction: column; gap: 22px;
+  padding: 56px 18px 24px; background: var(--m-hoja); color: var(--m-texto); border-radius: 24px 0 0 24px; box-shadow: -16px 0 40px var(--m-sombra);
+}
+.f-aj-cabeza { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.f-aj-cabeza b { font-size: 22px; font-weight: 800; letter-spacing: -0.4px; }
+.f-aj-cerrar { width: 36px; height: 36px; flex: none; padding: 0; border: 0; border-radius: 18px; background: var(--m-chip); color: var(--m-texto); display: flex; align-items: center; justify-content: center; }
+.f-aj-grupo { display: flex; flex-direction: column; gap: 8px; }
+.f-aj-etiqueta { font-size: 12.5px; font-weight: 700; color: var(--m-tenue); }
+.f-aj .f-boton-lista { display: block; }
+.f-aj-boton {
+  width: 100%; height: 52px; display: flex; align-items: center; gap: 12px; padding: 0 14px; border: 0; border-radius: 14px; background: var(--m-chip);
+  color: var(--m-texto); font-family: var(--jakarta); font-size: 15px; font-weight: 700; text-align: left; transition: box-shadow 0.2s ease;
+}
+.f-aj-boton svg { flex: none; display: block; }
+.f-aj-valor { flex: 1; min-width: 0; }
+.f-aj-flecha { flex: none; display: flex; color: var(--m-tenue); transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+.f-boton-lista.abierta .f-aj-flecha { transform: rotate(180deg); }
+.f-aj .f-boton-lista.abierta > button { box-shadow: inset 0 0 0 1.5px var(--m-acento); }
+.f-aj .f-lista { left: 0; right: 0; width: auto; }
+@media (prefers-reduced-motion: reduce) { .f-aj-flecha { transition: none; } }
+.f-centro .abierto { flex: none; display: grid; grid-template-columns: 7px auto; column-gap: 7px; row-gap: 1px; align-items: center; white-space: nowrap; font-size: 11.5px; }
+.f-centro .abierto .f-segundo { grid-column: 2; font-weight: 500; }
+
+/* El mundito y las monedas: un botón en el gris de la barra, con su listita debajo. */
+.f-boton-lista { position: relative; flex: none; }
+.f-idioma, .f-moneda, .f-lupa {
+  height: 30px; display: inline-flex; align-items: center; gap: 6px; padding: 0 9px 0 7px; border: 0; border-radius: 9px;
+  background: var(--m-barra-chip); color: var(--m-sobre-barra); font-family: var(--mono); font-size: 11.5px; font-weight: 600; letter-spacing: 0.04em;
+  transition: box-shadow 0.2s ease;
+}
+.f-lupa { width: 30px; padding: 0; justify-content: center; }
+/* El mundito y las monedas, con sus letras pero sin el gris detrás ni la flechita (detalle 3 de la v1), y la «i» sin
+   su círculo (detalle 4). */
+.f-idioma, .f-moneda { padding: 0 6px; background: transparent; }
+.menu header.barra .redondo { background: transparent; }
+.f-idioma svg, .f-moneda svg, .f-lupa svg { flex: none; display: block; }
+/* El cuadrito del idioma y de la moneda (11 nov 2026, como el «EN» del menú de Krispis): un solo botón de 40 × 40 con las
+   letras de lo que no se está viendo. Con los colores propios de las Píldoras y las Clásicas (detalle 25: blanco puro con
+   letra negra en claro, el oscuro de las hojas en oscuro; no los cambia el color de la barra) y su sombra apenas visible.
+   Se hunde al tocarlo y sus letras nuevas entran de abajo con el rebote de lo que se abre. */
+.f-cuadro {
+  width: 40px; height: 40px; flex: none; display: inline-flex; align-items: center; justify-content: center; padding: 0; border: 0;
+  border-radius: 11px; background: var(--f-blanco); color: var(--f-blanco-texto); box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  font-family: 'Plus Jakarta Sans', sans-serif; font-size: 13px; font-weight: 700; letter-spacing: 0.02em; overflow: hidden; cursor: pointer;
+  transition: transform 0.18s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+.f-cuadro:active { transform: scale(0.92); }
+.f-cuadro span { display: block; }
+.f-cuadro.entra span { animation: f-cuadro-entra 0.34s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+@keyframes f-cuadro-entra { from { transform: translateY(15px); opacity: 0; } to { transform: none; opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .f-cuadro { transition: none; } .f-cuadro.entra span { animation: none; } }
+.f-boton-lista.abierta > button, .f-lupa[aria-expanded='true'] { box-shadow: inset 0 0 0 1.5px var(--m-barra-suave); }
+
+.f-lista { position: absolute; right: 0; top: calc(100% + 8px); z-index: 8; width: 206px; pointer-events: none; }
+.f-lista-fondo {
+  position: absolute; left: 0; right: 0; top: 0; height: 0; border-radius: 14px; background: var(--m-hoja); border: 1px solid var(--m-linea-fuerte);
+  box-shadow: 0 16px 34px var(--m-sombra); opacity: 0; transition: height 0.518s var(--resorte-fondo), opacity 0.25s ease;
+}
+.f-lista-ops { position: relative; padding: 5px; display: flex; flex-direction: column; gap: 2px; }
+.f-op {
+  height: 46px; display: flex; align-items: center; gap: 12px; padding: 0 10px; border: 0; border-radius: 10px; background: transparent;
+  color: var(--m-texto); font-family: var(--jakarta); font-size: 15px; font-weight: 600; text-align: left;
+  opacity: 0; transform: translateY(calc(-1 * var(--y))) scale(0.8);
+  transition: transform 0.607s var(--resorte-opcion) var(--dc), opacity 0.3s ease var(--dc), background 0.15s ease;
+}
+.f-op:hover { background: var(--m-chip); }
+.f-op .f-op-texto { flex: 1; min-width: 0; }
+.f-op .f-op-marca { flex: none; color: var(--m-acento); opacity: 0; }
+.f-op.elegida .f-op-marca { opacity: 1; }
+.f-op.elegida { font-weight: 800; }
+.f-bandera { width: 26px; height: 18px; flex: none; border-radius: 4px; overflow: hidden; box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.12); display: block; }
+.f-bandera svg { display: block; width: 100%; height: 100%; }
+.f-boton-lista.abierta .f-lista { pointer-events: auto; }
+.f-boton-lista.abierta .f-lista-fondo { height: var(--alto); opacity: 1; }
+.f-boton-lista.abierta .f-op {
+  opacity: 1; transform: none;
+  transition: transform 0.607s var(--resorte-opcion) calc(var(--i) * 45ms), opacity 0.3s ease calc(var(--i) * 45ms), background 0.15s ease;
+}
+/* «Ordenar por» (12 nov 2026): la cajita del mundito debajo del botón ⇅ de la búsqueda, con el ícono de cada orden en lugar
+   de la bandera. Su botón, mientras está abierta, con el aro de las letras de tu menú. Dentro de la caja de la lupa (logo
+   al centro) la cajita no se corta. */
+.f-ordenar .f-lista { width: 200px; }
+.f-op-icono { width: 26px; flex: none; display: flex; justify-content: center; color: var(--m-suave); }
+.f-op.elegida .f-op-icono { color: var(--m-texto); }
+.f-op-icono svg { display: block; }
+.menu .f-ordenar.abierta > button.cuadro { box-shadow: inset 0 0 0 1.5px var(--m-suave); }
+.f-lupa-caja.abierta > div:has(.f-boton-lista.abierta) { overflow: visible; }
+
+/* ─── Los carteles a pantalla completa: de orilla a orilla, pegados a la barra, con una raya arriba y otra abajo, la
+   sombra abajo y los puntitos encima ─── */
+.menu .carteles.f-completo { padding: 0; position: relative; }
+.f-completo .tira { border-radius: 0; }
+.f-completo::before, .f-completo::after { content: ''; position: absolute; left: 0; right: 0; height: 2px; background: var(--f-raya); z-index: 1; }
+.f-completo::before { top: 0; }
+.f-completo::after { bottom: 0; }
+.f-completo .f-sombra { position: absolute; left: 0; right: 0; bottom: 0; height: 46%; background: linear-gradient(to bottom, transparent, rgba(0, 0, 0, 0.55)); pointer-events: none; }
+.f-completo .puntos { position: absolute; left: 0; right: 0; bottom: 14px; padding: 0; }
+.f-completo .puntos i { background: rgba(255, 255, 255, 0.5); }
+.f-completo .puntos i.si { background: #ffffff; }
+
+/* ─── La «i» y si está abierto, dentro del cartel (detalle 5 de la v1): una cápsula de vidrio oscuro a la derecha,
+   a 10 de la orilla del cartel (a 12 a pantalla completa), arriba o abajo (el interruptor de la maqueta). La barra se
+   queda sin ellos. ─── */
+.menu .carteles { position: relative; }
+.menu .fila2.f-sin-abierto { justify-content: flex-end; }
+.f-cartel-info {
+  position: absolute; right: 26px; top: 24px; z-index: 2; display: flex; align-items: center; gap: 10px; padding: 7px 9px 7px 11px;
+  border: 0; border-radius: 14px; background: rgba(12, 12, 12, 0.5); -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px);
+  color: #ffffff; font-family: var(--jakarta); text-align: left;
+}
+/* El otro estilo: solo la «i», en un círculo con el mismo vidrio oscuro de la cápsula (antes iba en el color de la
+   barra, pero muchos anuncios salen con fondo azul y no se notaba). */
+.f-cartel-info.f-ci-icono { width: 34px; height: 34px; padding: 0; justify-content: center; border-radius: 17px; }
+.f-completo .f-cartel-info { right: 12px; top: 14px; }
+/* Los bajitos (detalle 15 de la v1): de 3 a 1 y con las esquinas muy suaves; sus márgenes y sus puntitos, como los de
+   esquinas. La «i» un poco más pegada a la orilla, porque el cartel es bajito. */
+.menu .carteles.f-bajito .tira { aspect-ratio: 3 / 1; border-radius: 26px; }
+.f-bajito .f-cartel-info { right: 24px; top: 22px; }
+.f-info-abajo .f-bajito .f-cartel-info { top: auto; bottom: 24px; }
+.f-info-abajo .f-cartel-info { top: auto; bottom: 26px; }
+.f-info-abajo .f-completo .f-cartel-info { top: auto; bottom: 12px; }
+.f-ci-textos { display: flex; flex-direction: column; gap: 1px; white-space: nowrap; }
+.f-ci-estado { display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 700; line-height: 1.25; }
+.f-ci-estado i { width: 7px; height: 7px; flex: none; border-radius: 4px; background: #4cc26f; }
+.f-cartel-info.cerrado .f-ci-estado i { background: rgba(255, 255, 255, 0.55); }
+.f-ci-segundo { padding-left: 13px; font-size: 11px; font-weight: 500; line-height: 1.25; color: rgba(255, 255, 255, 0.78); }
+.f-cartel-info svg { flex: none; display: block; }
+/* Mientras su ventana está abierta, la «i» se vuelve la ventana: no se ve en el cartel. */
+.f-cartel-info.f-ci-fuera { visibility: hidden; }
+
+/* ─── La ventana de la «i» (12 nov 2026; v55, el developer): flota al centro, separada de arriba y de abajo, sobre el velo
+   del producto. Arriba al centro solo el logo y si está abierto; abajo tres pestañas como las de las categorías (su ícono,
+   su nombre y la raya del color de tu menú, que aquí se desliza), y solo se ve la elegida: la dirección con «Cómo llegar»,
+   el WhatsApp con «Escribir por WhatsApp» o el horario con hoy en su pastilla, como la de «¿Cómo lo recibes?». Su caja
+   (.f-info-fondo) es la que crece desde la «i». ─── */
+.f-info-velo { position: absolute; inset: 0; z-index: 6; background: rgba(0, 0, 0, 0.45); }
+.f-info { position: absolute; inset: 0; z-index: 7; display: grid; place-items: center; padding: 0 14px; pointer-events: none; color: var(--m-texto); }
+.f-info-caja { position: relative; width: 100%; max-height: calc(100% - 2 * (var(--f-reloj, 40px) + 56px)); display: flex; flex-direction: column; pointer-events: auto; }
+.f-info-fondo { position: absolute; inset: 0; transform-origin: 0 0; border-radius: 24px; background: var(--m-fondo); box-shadow: 0 20px 50px rgba(0, 0, 0, 0.25); }
+.f-info-dentro { position: relative; min-height: 0; display: flex; flex-direction: column; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: none; border-radius: 24px; }
+.f-info-dentro::-webkit-scrollbar { display: none; }
+.f-info-cerrar {
+  position: absolute; top: 12px; right: 12px; z-index: 1; width: 40px; height: 40px; display: grid; place-items: center; padding: 0; border: 0; border-radius: 20px;
+  background: var(--m-chip); color: var(--m-texto); cursor: pointer; transition: transform 0.15s ease;
+}
+.f-info-cerrar:active { transform: scale(0.9); }
+.f-info-cabeza { display: flex; flex-direction: column; align-items: center; padding: 28px 56px 18px; text-align: center; }
+.f-info-logo { height: 72px; display: flex; align-items: center; justify-content: center; }
+.f-info-logo img { display: block; max-height: 72px; max-width: 72px; border-radius: 16px; }
+.f-info-logo.largo img { max-height: 52px; max-width: 200px; }
+.f-info-cabeza h2 { margin: 6px 0 0; font-size: 22px; font-weight: 800; letter-spacing: -0.4px; line-height: 1.2; text-wrap: balance; }
+.f-info-estado {
+  display: inline-flex; align-items: center; gap: 6px; height: 30px; margin-top: 14px; padding: 0 12px; border-radius: 15px; background: var(--m-chip);
+  font-size: 13px; font-weight: 500; color: var(--m-suave); white-space: nowrap;
+}
+.f-info-estado i { width: 8px; height: 8px; flex: none; border-radius: 4px; background: #1f9d55; }
+.menu[data-tema='oscuro'] .f-info-estado i { background: #4cc26f; }
+.menu .f-info-estado.cerrado i { background: var(--m-tenue); }
+.f-info-estado b { font-weight: 700; color: var(--m-texto); }
+/* Las pestañas: las de las categorías del menú (Pestanas.svelte) al centro; la raya va aparte para deslizarse. */
+.f-info-pestanas { position: relative; flex: none; display: flex; justify-content: center; gap: 24px; padding: 0 16px; border-bottom: 1px solid var(--m-linea); }
+.f-info-pestana {
+  height: 48px; display: flex; align-items: center; gap: 7px; padding: 0 1px; border: 0; background: transparent; color: var(--m-suave);
+  font: inherit; font-size: 14px; font-weight: 600; white-space: nowrap; cursor: pointer; transition: color 0.2s ease;
+}
+.f-info-pestana[aria-selected='true'] { color: var(--m-texto); font-weight: 800; }
+.f-info-raya {
+  position: absolute; left: 0; bottom: -1px; height: 3px; border-radius: 2px; background: var(--m-acento);
+  transition: transform 0.52s var(--resorte-fondo), width 0.52s var(--resorte-fondo);
+}
+.f-info-cuerpo { flex: none; overflow: hidden; }
+.f-info-panel { display: flex; flex-direction: column; gap: 12px; padding: 16px 16px 18px; }
+.f-info-tarjeta { display: flex; flex-direction: column; gap: 3px; padding: 14px 16px; border-radius: 16px; background: var(--m-chip); }
+.f-info-k { font-size: 12.5px; font-weight: 700; color: var(--m-suave); }
+.f-info-v { font-size: 16px; font-weight: 600; line-height: 1.45; }
+.f-info-v.mono { font-family: var(--mono); font-size: 16px; font-weight: 500; }
+/* Su botón, a lo ancho y de contorno, como «Ver el menú» de Tu pedido: sin color, no grita. */
+.f-info-ir {
+  height: 46px; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 0 16px; border: 0; border-radius: 14px;
+  background: transparent; color: var(--m-texto); box-shadow: inset 0 0 0 1px var(--m-linea-fuerte);
+  font: inherit; font-size: 14.5px; font-weight: 700; cursor: pointer; transition: transform 0.15s ease;
+}
+.f-info-ir:active { transform: scale(0.98); }
+.f-info-tarjeta.horario { padding: 8px 8px; }
+.f-info-dias { display: flex; flex-direction: column; }
+.f-info-dia { display: flex; justify-content: space-between; align-items: center; gap: 12px; height: 34px; padding: 0 10px; border-radius: 10px; font-size: 14px; }
+.f-info-dia span:last-child { font-family: var(--mono); font-size: 13px; font-variant-numeric: tabular-nums; }
+.f-info-dia.hoy { background: var(--m-fondo); box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1), 0 0 0 1px var(--m-linea); font-weight: 800; }
+.menu[data-tema='oscuro'] .f-info-dia.hoy { background: color-mix(in oklab, var(--m-texto) 16%, var(--m-fondo)); }
+.f-info-dia.hoy span:last-child { font-weight: 600; }
+.f-info-dia.cerr span:last-child { color: var(--m-tenue); font-family: inherit; font-size: 14px; }
+@media (prefers-reduced-motion: reduce) { .f-info-raya { transition: none; } }
+
+/* ─── La búsqueda ─── */
+/* La caja blanca y más marcada. */
+.menu .fila.f-blanca .buscar, .menu .fila.f-blanca .cuadro {
+  background: var(--m-hoja); border: 1px solid var(--m-linea-fuerte); color: var(--m-suave);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05), 0 6px 16px rgba(0, 0, 0, 0.06);
+}
+.menu[data-tema='oscuro'] .fila.f-blanca .buscar, .menu[data-tema='oscuro'] .fila.f-blanca .cuadro { box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35); }
+.menu .fila.f-blanca input::placeholder { color: var(--m-suave); }
+
+/* La tarjeta que se despliega (la caja y los órdenes en botoncitos), con el rebote de la caja del agente. */
+.f-tarjeta-busca { margin: 14px 16px 0; border: 1px solid var(--m-linea-fuerte); border-radius: 18px; background: var(--m-tarjeta); overflow: hidden; }
+.f-bt-cabeza { width: 100%; display: flex; align-items: center; gap: 12px; padding: 11px 14px 11px 11px; border: 0; background: transparent; color: var(--m-texto); text-align: left; }
+.f-bt-cuadro { position: relative; width: 46px; height: 46px; flex: none; display: flex; align-items: center; justify-content: center; border-radius: 13px; border: 1px solid var(--m-linea-fuerte); background: var(--m-fondo); }
+.f-bt-orden { position: absolute; right: -5px; bottom: -5px; width: 21px; height: 21px; border-radius: 11px; display: flex; align-items: center; justify-content: center; background: var(--m-acento); color: var(--m-sobre-acento); box-shadow: 0 0 0 2px var(--m-tarjeta); }
+.f-bt-textos { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.f-bt-textos b { font-size: 15px; font-weight: 800; }
+.f-bt-textos span { font-size: 12.5px; color: var(--m-suave); }
+.f-bt-flecha { flex: none; color: var(--m-suave); transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+.f-tarjeta-busca.abierta .f-bt-flecha { transform: rotate(180deg); }
+.f-bt-cuerpo { display: grid; grid-template-rows: 0fr; transition: grid-template-rows 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+.f-tarjeta-busca.abierta .f-bt-cuerpo { grid-template-rows: 1fr; }
+.f-bt-dentro { min-height: 0; overflow: hidden; }
+.f-bt-dentro > div { border-top: 1px solid var(--m-linea); margin: 0 12px; padding: 14px 0 14px; opacity: 0; transform: translateY(-6px); transition: opacity 0.2s ease, transform 0.2s ease; }
+.f-tarjeta-busca.abierta .f-bt-dentro > div { opacity: 1; transform: none; transition: opacity 0.3s ease 0.08s, transform 0.3s ease 0.08s; }
+.f-bt-caja { height: 44px; display: flex; align-items: center; gap: 10px; padding: 0 16px; border-radius: 22px; border: 1px solid var(--m-linea-fuerte); background: var(--m-fondo); color: var(--m-tenue); font-size: 14px; font-weight: 500; }
+.f-bt-titulo { display: block; margin: 16px 2px 10px; font-size: 14px; font-weight: 800; }
+.f-ordenes { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; margin: 0 -12px; padding: 0 12px; }
+.f-ordenes::-webkit-scrollbar { display: none; }
+.f-orden { height: 38px; flex: none; display: inline-flex; align-items: center; gap: 7px; padding: 0 14px 0 12px; border-radius: 19px; border: 1px solid var(--m-linea-fuerte); background: var(--m-fondo); color: var(--m-texto); font-size: 13px; font-weight: 600; white-space: nowrap; transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease; }
+.f-orden svg { flex: none; }
+.f-orden[aria-pressed='true'] { background: var(--m-acento); border-color: var(--m-acento); color: var(--m-sobre-acento); font-weight: 800; }
+
+/* La lupa de la barra con el logo al centro: la caja blanca sale abajo de los carteles al tocarla (detalle 13 de la
+   v1), con espacio abajo para que su sombra no se corte. */
+.f-lupa-caja > div > .fila.f-blanca { padding-bottom: 12px; }
+.f-lupa-caja { display: grid; grid-template-rows: 0fr; transition: grid-template-rows 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+.f-lupa-caja.abierta { grid-template-rows: 1fr; }
+.f-lupa-caja > div { min-height: 0; overflow: hidden; }
+.f-lupa-caja > div > .fila { opacity: 0; transition: opacity 0.2s ease; }
+.f-lupa-caja.abierta > div > .fila { opacity: 1; transition: opacity 0.3s ease 0.08s; }
+
+/* ─── Las categorías ─── */
+.f-cats { position: relative; z-index: 2; display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; padding: 12px 16px; background: var(--m-fondo); }
+.f-cats::-webkit-scrollbar { display: none; }
+.f-cats.pegadas { position: sticky; top: 0; }
+.f-rect { height: 40px; flex: none; display: inline-flex; align-items: center; padding: 0 16px; border-radius: 11px; border: 1px solid var(--m-linea-fuerte); background: transparent; color: var(--m-suave); font-size: 14px; font-weight: 600; white-space: nowrap; transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease; }
+.f-rect svg { flex: none; margin: 0 7px 0 -3px; }
+/* Píldoras (detalle 17 de la v1): blancas, con su ícono a la izquierda y una sombra apenas visible; la elegida en el
+   color, como en las demás formas. */
+.f-pil {
+  height: 40px; flex: none; display: inline-flex; align-items: center; gap: 8px; padding: 0 16px 0 12px; border: 0; border-radius: 20px;
+  background: var(--f-blanco); color: var(--f-blanco-texto); box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05); font-size: 14px; font-weight: 600; white-space: nowrap;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+.f-pil svg { flex: none; }
+.f-pil.activa { background: var(--m-acento); color: var(--m-sobre-acento); font-weight: 800; }
+.f-rect.activa { background: var(--m-acento); border-color: var(--m-acento); color: var(--m-sobre-acento); font-weight: 800; }
+/* En su tarjeta: la tira de rectángulos dentro de un cuadro con borde. */
+.f-cats.f-en-tarjeta { padding: 10px 16px 12px; }
+.f-cats-tarjeta { flex: 1; min-width: 0; display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; padding: 12px; border: 1px solid var(--m-linea-fuerte); border-radius: 16px; background: var(--m-tarjeta); }
+.f-cats-tarjeta::-webkit-scrollbar { display: none; }
+/* Círculos con su ícono o con la foto de su primer producto. */
+.f-cats.f-circulos { gap: 16px; padding: 14px 16px 12px; border-bottom: 1px solid var(--m-linea); }
+.f-circ { flex: none; width: 66px; display: flex; flex-direction: column; align-items: center; gap: 7px; border: 0; padding: 0; background: transparent; color: var(--m-suave); font-size: 12.5px; font-weight: 600; }
+.f-circ-dibujo { width: 62px; height: 62px; border-radius: 50%; overflow: hidden; display: flex; align-items: center; justify-content: center; background: var(--m-chip); color: var(--m-texto); transition: box-shadow 0.2s ease; }
+.f-circ-dibujo img { width: 100%; height: 100%; object-fit: cover; }
+.f-circ.activa { color: var(--m-texto); font-weight: 800; }
+.f-circ.activa .f-circ-dibujo { box-shadow: 0 0 0 2.5px var(--m-fondo), 0 0 0 5px var(--m-acento); }
+
+/* ─── Los productos de dos en dos: el nombre grande de la categoría con su raya que se desvanece, y tarjetas con la foto
+   entera, el «+» en un cuadrito de vidrio y abajo, al centro, el nombre y el precio en un vidrio oscuro ─── */
+.f-titulo-grande { margin: 6px 0 0; font-size: 28px; font-weight: 800; letter-spacing: -0.6px; line-height: 1.15; }
+.f-raya-titulo { height: 3px; width: 62%; margin: 10px 0 16px; border-radius: 2px; background: linear-gradient(to right, var(--m-acento), transparent); }
+/* Con los productos en renglones (a lo largo o intercalado), el renglón ya trae su espacio arriba (detalle 12). */
+.contenido:not(.f-dos):not(.f-clasicas) .f-raya-titulo { margin-bottom: 2px; }
+/* Clásicas (detalle 16 de la v1): la tarjeta de siempre, en el blanco de las hojas con una sombra suave; la foto arriba,
+   cuadrada y dentro de la tarjeta; abajo, a la izquierda, el nombre y el precio, y el «+» a la derecha del precio. */
+.f-clasicas .seccion { padding-top: 26px; }
+.f-clasica {
+  min-width: 0; display: flex; flex-direction: column; gap: 9px; padding: 8px 8px 12px; border-radius: 22px; border: 0;
+  background: var(--f-blanco); color: var(--f-blanco-texto); box-shadow: 0 6px 18px rgba(0, 0, 0, 0.06); cursor: pointer; /* sin borde (detalle 17) */
+}
+.f-clasica img { display: block; width: 100%; aspect-ratio: 1 / 1; object-fit: cover; border-radius: 16px; background: var(--m-chip); }
+.f-clasica b { padding: 0 6px; font-size: 15px; font-weight: 700; line-height: 1.3; letter-spacing: -0.2px; display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.f-clasica-abajo { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 0 6px; min-height: 32px; }
+.f-clasica-abajo > span { font-size: 15px; font-weight: 800; font-variant-numeric: tabular-nums; }
+.f-clasica-abajo small { display: block; font-size: 10.5px; font-weight: 600; color: var(--m-tenue); }
+.f-mas-c {
+  width: 32px; height: 32px; flex: none; padding: 0; border: 0; border-radius: 16px; display: flex; align-items: center; justify-content: center;
+  background: var(--m-acento); color: var(--m-sobre-acento); font-size: 13px; font-weight: 800; font-variant-numeric: tabular-nums;
+}
+.f-mas-c.lleva { box-shadow: 0 0 0 3px var(--f-blanco), 0 0 0 4.5px var(--m-acento); }
+.f-rejilla { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.f-tarjeta { position: relative; aspect-ratio: var(--f-alto); border-radius: 16px; overflow: hidden; border: 2px solid var(--m-acento); background: var(--m-chip); cursor: pointer; }
+.f-tarjeta > img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.f-tarjeta .f-sin-foto { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: var(--m-tenue); }
+.f-tarjeta .f-mas {
+  position: absolute; top: 8px; right: 8px; width: 42px; height: 42px; border-radius: 12px; display: flex; align-items: center; justify-content: center;
+  border: 1px solid rgba(255, 255, 255, 0.24); background: rgba(18, 18, 18, 0.3); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
+  color: color-mix(in oklab, var(--m-acento) 45%, #ffffff); font-size: 15px; font-weight: 800; padding: 0;
+}
+.f-tarjeta .f-mas.lleva { background: var(--m-acento); border-color: var(--m-acento); color: var(--m-sobre-acento); }
+.f-tarjeta .f-vidrio {
+  position: absolute; left: 8px; right: 8px; bottom: 8px; padding: 10px 10px 9px; border-radius: 12px; text-align: center;
+  background: rgba(24, 24, 24, 0.5); -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px); color: #ffffff;
+  display: flex; flex-direction: column; gap: 5px;
+}
+.f-tarjeta .f-vidrio b { font-size: 14.5px; font-weight: 600; line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 3; line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.f-tarjeta .f-vidrio span { font-size: 15.5px; font-weight: 800; color: color-mix(in oklab, var(--m-acento) 45%, #ffffff); font-variant-numeric: tabular-nums; }
+.f-tarjeta .f-vidrio small { display: block; font-size: 10.5px; font-weight: 600; color: rgba(255, 255, 255, 0.7); }
+.f-dos .seccion { padding-top: 26px; }
+
+/* ─── Intercalado (detalle 11 de la v1): como a lo largo, pero cada producto cambia de lado. En cada categoría el primero
+   lleva la foto a la derecha, el segundo a la izquierda (como hoy), y así. El renglón se voltea entero: el nombre
+   pegado a la foto, y el precio y el «+» del lado contrario. ─── */
+.menu .contenido.f-intercalado .producto:nth-child(odd of .producto) { flex-direction: row-reverse; text-align: right; }
+.menu .contenido.f-intercalado .producto:nth-child(odd of .producto) .renglon,
+.menu .contenido.f-intercalado .producto:nth-child(odd of .producto) .abajo { flex-direction: row-reverse; }
+.menu .contenido.f-intercalado .producto:nth-child(odd of .producto) .precio { text-align: left; }
+.menu .contenido.f-intercalado .producto:nth-child(odd of .producto) .mas { margin-left: 0; margin-right: auto; }
+
+/* ─── Abajo como una app: Menú · Pedido · Asistente, del color del fondo ─── */
+.f-app {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 4; max-width: 520px; margin: 0 auto; height: calc(66px + env(safe-area-inset-bottom, 0px));
+  padding: 0 8px env(safe-area-inset-bottom, 0px); display: flex; background: var(--m-fondo); border-top: 1px solid var(--m-linea);
+}
+.f-app button { flex: 1; min-width: 0; border: 0; padding: 0; background: transparent; color: var(--m-suave); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; font-size: 11px; font-weight: 600; }
+.f-app button.activa { color: var(--m-acento); font-weight: 800; }
+.f-app .f-app-icono { position: relative; height: 26px; display: flex; align-items: center; }
+.f-app .f-app-cuenta { position: absolute; top: -5px; left: 15px; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px; background: var(--m-acento); color: var(--m-sobre-acento); font-size: 10.5px; font-weight: 800; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 0 2px var(--m-fondo); font-variant-numeric: tabular-nums; }
+.columna.f-con-app .contenido { padding-bottom: calc(96px + env(safe-area-inset-bottom, 0px)); }
+.menu .globo.f-sobre-app { bottom: 82px; }
+
+/* ─── La píldora flotando (detalle 2 de la v1): la misma barra, redonda y suelta del borde. El elegido lleva
+   detrás una pastilla del color del restaurante que se desliza con el resorte de las listas (220/28). ─── */
+.f-app.f-pildora {
+  left: 16px; right: 16px; bottom: calc(14px + env(safe-area-inset-bottom, 0px)); max-width: 488px; height: 64px; padding: 6px;
+  border: 1px solid var(--m-linea-fuerte); border-radius: 32px;
+  background: color-mix(in oklab, var(--m-fondo) 82%, transparent); -webkit-backdrop-filter: blur(16px) saturate(1.6); backdrop-filter: blur(16px) saturate(1.6);
+  box-shadow: 0 12px 30px var(--m-sombra);
+}
+.f-pildora button { position: relative; z-index: 1; border-radius: 26px; gap: 3px; }
+.f-pildora .f-app-luz {
+  position: absolute; left: 6px; top: 6px; bottom: 6px; width: calc((100% - 12px) / var(--n, 3)); border-radius: 26px;
+  background: color-mix(in oklab, var(--m-acento) 14%, transparent); translate: calc(var(--i, 0) * 100%) 0;
+  transition: translate 0.52s var(--resorte-fondo);
+}
+.menu .globo.f-sobre-pildora { bottom: 90px; }
+
+/* ─── Solo los íconos (detalle 9 de la v1): sin el nombre abajo, la barra y la píldora más bajitas. El nombre se queda
+   para el lector de pantalla. ─── */
+.f-app .f-app-texto { display: block; }
+.f-app.f-solo-iconos .f-app-texto { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.f-app.f-solo-iconos { height: calc(56px + env(safe-area-inset-bottom, 0px)); }
+.f-app.f-pildora.f-solo-iconos { height: 56px; }
+.columna.f-con-app-chica .contenido { padding-bottom: calc(86px + env(safe-area-inset-bottom, 0px)); }
+.menu .globo.f-sobre-app.f-sobre-chica { bottom: 72px; }
+.menu .globo.f-sobre-pildora.f-sobre-chica { bottom: 82px; }
+@media (prefers-reduced-motion: reduce) { .f-pildora .f-app-luz { transition: none; } }
+/* Pedido sin pedidos: la hoja chica con cuándo los reciben. */
+.f-hoja-aviso { padding: 6px 20px 26px; }
+.f-hoja-aviso .f-aviso { display: flex; align-items: center; gap: 12px; padding: 16px; border-radius: 16px; background: var(--m-chip); font-size: 14px; font-weight: 700; }
+.f-hoja-aviso .f-aviso span { color: var(--m-suave); display: flex; }
+.f-hoja-aviso p { margin: 12px 4px 0; font-size: 13px; line-height: 1.5; color: var(--m-suave); }
+
+/* Cada forma nueva se queda quieta con «reducir movimiento». */
+@media (prefers-reduced-motion: reduce) {
+  .f-lista-fondo, .f-op, .f-bt-flecha, .f-bt-cuerpo, .f-bt-dentro > div, .f-lupa-caja, .f-lupa-caja > div > .fila, .f-rect, .f-orden, .f-circ-dibujo { transition: none !important; }
+}
+
+/* Los carteles hechos con la foto de un producto (11 nov 2026): su foto de Mi menú recortada al centro y, si así lo
+   eligió, su nombre y su precio encima, abajo a la izquierda, sobre una sombra (los escribe el menú; la foto no se
+   toca). Al tocarlo se abre ese producto. */
+.menu .f-cartel-prod { position: relative; display: block; padding: 0; border: 0; background: none; font: inherit; cursor: pointer; overflow: hidden; }
+.f-cartel-prod img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.f-cp-texto {
+  position: absolute; left: 0; right: 0; bottom: 0; display: flex; flex-direction: column; align-items: flex-start; gap: 2px;
+  padding: 40px 16px 14px; text-align: left; color: #fff; background: linear-gradient(to top, rgba(0, 0, 0, 0.62), rgba(0, 0, 0, 0));
+}
+.f-cp-texto b { font-size: 18px; font-weight: 800; letter-spacing: -0.3px; line-height: 1.2; }
+.f-cp-texto span { font-size: 14px; font-weight: 600; opacity: 0.92; }
+.f-completo .f-cp-texto { padding-bottom: 30px; }
+.f-bajito .f-cp-texto { padding: 22px 16px 10px; }
+.f-bajito .f-cp-texto b { font-size: 16px; }
+.menu .f-resalta { animation: f-resalta 1.6s ease; border-radius: 14px; }
+@keyframes f-resalta { 0%, 55% { box-shadow: 0 0 0 3px var(--m-acento); } 100% { box-shadow: 0 0 0 3px transparent; } }
+@media (prefers-reduced-motion: reduce) { .menu .f-resalta { animation: none; box-shadow: 0 0 0 3px var(--m-acento); } }
+
+/* ─── En la página de verdad ───
+   En la maqueta el teléfono era la pantalla; aquí la página es larga, así que lo que tapa (Ajustes y su velo) va fijo a
+   la pantalla, y Ajustes no pasa del ancho de la columna del menú en la compu. */
+.f-aj-velo, .f-aj { position: fixed; }

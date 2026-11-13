@@ -61,8 +61,14 @@ export type MenuPublico = {
     logo_ruta: string | null;
     tema: TemaMenu;
     color: string | null;
+    // El color de la barra (también pinta las cajas sobre el fondo) y el fondo; null = el de siempre
+    // (migración tu_menu_en_linea).
+    color_barra: string | null;
+    fondo: string | null;
     tipo_cambio_usd: number | null;
     hace_envios: boolean;
+    // Las formas que eligió en «Tu menú en línea»; se leen con leerFormas() (lib/formas.ts).
+    formas: unknown;
   };
   // La fecha y la hora del restaurante, nunca las del celular.
   ahora: { fecha: string; dia: number; hora: string };

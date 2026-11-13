@@ -22,6 +22,10 @@
   --mono: 'JetBrains Mono', ui-monospace, 'Cascadia Mono', Consolas, monospace;
   /* Lo que tapa la barra de estado del celular cuando el menú llega hasta arriba (iPhone). */
   --arriba-seguro: env(safe-area-inset-top, 0px);
+  /* Los resortes de las listas que se abren, los mismos del panel (app/src/diseno/base.css): el fondo crece con
+     el primero y cada opción llega con el segundo. */
+  --resorte-fondo: linear(0, 0.0116, 0.042, 0.0856, 0.138, 0.1957, 0.2562, 0.3173, 0.3775, 0.4357, 0.4912, 0.5435, 0.5922, 0.6372, 0.6785, 0.7161, 0.7502, 0.7808, 0.8084, 0.8329, 0.8548, 0.8742, 0.8912, 0.9063, 0.9194, 0.931, 0.941, 0.9497, 0.9573, 0.9638, 0.9694, 0.9743, 0.9784, 0.9819, 0.985, 0.9875, 0.9897, 0.9915, 0.9931, 0.9943, 0.9954, 0.9963, 0.9971, 0.9977, 0.9982, 0.9986, 0.9989, 0.9992, 1);
+  --resorte-opcion: linear(0, 0.0158, 0.0565, 0.1141, 0.182, 0.2553, 0.3304, 0.4044, 0.4755, 0.5424, 0.6042, 0.6605, 0.7112, 0.7563, 0.7961, 0.8308, 0.8608, 0.8866, 0.9086, 0.9271, 0.9426, 0.9555, 0.9661, 0.9748, 0.9817, 0.9873, 0.9917, 0.9951, 0.9977, 0.9996, 1.001, 1.002, 1.0027, 1.0031, 1.0032, 1.0033, 1.0032, 1.0031, 1.0029, 1.0026, 1.0024, 1.0021, 1.0019, 1.0017, 1.0015, 1.0013, 1.0011, 1.0009, 1);
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
 }

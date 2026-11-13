@@ -47,6 +47,24 @@ export function estiloColor(hex: string | null): string {
   );
 }
 
+// Desde «Tu menú en línea» (migración tu_menu_en_linea, 12 de noviembre de 2026): el color de tu menú pinta
+// lo elegido, el «+», las rayas y los botones; la barra lleva su propio color (también las cajas que van
+// sobre el fondo), y si no lo eligió, el de tu menú; el fondo puede ser propio. Vacío = lo de siempre.
+export function estiloMenu(color: string | null, colorBarra: string | null, fondo: string | null): string {
+  let estilo = '';
+  if (color) estilo += `--m-acento:${color};--m-sobre-acento:${esClaro(color) ? '#121212' : '#ffffff'};`;
+  const barra = colorBarra ?? color;
+  if (barra) {
+    const claro = esClaro(barra);
+    estilo +=
+      `--m-barra:${barra};--m-sobre-barra:${claro ? '#121212' : '#ffffff'};` +
+      `--m-barra-chip:${claro ? 'rgba(0,0,0,0.10)' : 'rgba(255,255,255,0.18)'};` +
+      `--m-barra-suave:${claro ? 'rgba(18,18,18,0.72)' : 'rgba(255,255,255,0.78)'};`;
+  }
+  if (fondo) estilo += `--m-fondo:${fondo};`;
+  return estilo;
+}
+
 // Tono de 0 a 360, saturación y brillo de 0 a 1.
 export function hsvAHex(h: number, s: number, v: number): string {
   const f = (n: number) => {

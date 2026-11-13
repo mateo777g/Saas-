@@ -14,6 +14,7 @@
     lengua,
     t,
     pegadas = true,
+    nav = $bindable(),
     alElegir,
   }: {
     categorias: Categoria[];
@@ -22,13 +23,14 @@
     t: Textos;
     // En la tira de la ventana del color no se pegan: no hay nada que bajar.
     pegadas?: boolean;
+    // Para medir cuánto tapa al bajar (Menu.svelte).
+    nav?: HTMLElement;
     alElegir?: (id: number) => void;
   } = $props();
 
-  let nav: HTMLElement;
-
   // La marcada siempre se ve en la fila, aunque haya que recorrerla.
   $effect(() => {
+    if (!nav) return;
     const boton = nav.querySelector<HTMLElement>(`[data-categoria="${activa}"]`);
     if (!boton) return;
     const izq = boton.offsetLeft - 16;

@@ -423,11 +423,6 @@
 .menu .globo.f-sobre-app.f-sobre-chica { bottom: 72px; }
 .menu .globo.f-sobre-pildora.f-sobre-chica { bottom: 82px; }
 @media (prefers-reduced-motion: reduce) { .f-pildora .f-app-luz { transition: none; } }
-/* Pedido sin pedidos: la hoja chica con cuándo los reciben. */
-.f-hoja-aviso { padding: 6px 20px 26px; }
-.f-hoja-aviso .f-aviso { display: flex; align-items: center; gap: 12px; padding: 16px; border-radius: 16px; background: var(--m-chip); font-size: 14px; font-weight: 700; }
-.f-hoja-aviso .f-aviso span { color: var(--m-suave); display: flex; }
-.f-hoja-aviso p { margin: 12px 4px 0; font-size: 13px; line-height: 1.5; color: var(--m-suave); }
 
 /* Cada forma nueva se queda quieta con «reducir movimiento». */
 @media (prefers-reduced-motion: reduce) {
@@ -642,6 +637,182 @@
   .f-puntos i:nth-child(3) { transform: translate(12px, 0); animation: f-latido 1.2s ease-in-out 0.4s infinite; }
 }
 
+/* ─── Tu pedido y el producto como vistas completas (encuestas 41 a 44) ───
+   Lo que se elige lleva el contorno del color de tu menú (como el aro de las cajas del panel, pero del color del negocio);
+   los datos que van juntos, en su gris; los botones grandes del color de tu menú, clarito mientras no se pueden usar. */
+.f-ped { position: absolute; inset: 0; z-index: 2; display: flex; flex-direction: column; padding-bottom: 66px; background: var(--m-fondo); color: var(--m-texto); }
+.f-ped.f-asis-chica { padding-bottom: 56px; }
+.f-ped.f-asis-pildora { padding-bottom: 78px; }
+.f-ped.f-asis-pildora.f-asis-chica { padding-bottom: 70px; }
+.f-ped > .barra { flex: none; }
+.f-ped-cuerpo { position: relative; }
+.f-ped-dentro { display: flex; flex-direction: column; gap: 24px; padding: 18px 16px 22px; }
+.f-ped-cabeza { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.f-ped-cabeza h2 { margin: 0; font-size: 26px; font-weight: 800; letter-spacing: -0.6px; }
+.f-ped-cabeza span { font-size: 13px; font-weight: 600; color: var(--m-suave); }
+/* Los renglones de Tu pedido, como una lista (12 nov 2026, el developer: «más como de tabla… que se entienda que es una
+   lista… la opción para eliminar o añadir más, mejor a la derecha»): todos en una tarjeta gris, separados por una raya que
+   empieza después de la foto; a la izquierda la foto, el nombre, sus opciones y su nota, y abajo su precio (con lo que cuesta
+   cada uno si lleva más de uno); a la derecha, centrado, el − n +. Tocar el renglón abre su producto, como antes. */
+.f-ped-lineas { display: flex; flex-direction: column; margin-top: -8px; padding: 0 14px; border-radius: 16px; background: var(--m-chip); }
+.f-ped-linea { position: relative; display: flex; align-items: center; gap: 12px; padding: 12px 0; overflow: hidden; }
+.f-ped-linea + .f-ped-linea::before { content: ''; position: absolute; top: 0; left: 64px; right: 0; border-top: 1px solid var(--m-linea-fuerte); }
+.f-ped-q { flex: 1; display: flex; align-items: center; gap: 12px; min-width: 0; padding: 0; border: 0; background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.f-ped-q img { width: 52px; height: 52px; flex: none; border-radius: 12px; object-fit: cover; background: var(--m-hoja); }
+.f-ped-q .t { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.f-ped-q b { font-size: 15px; font-weight: 700; line-height: 1.3; }
+.f-ped-q .d { font-size: 13px; line-height: 1.35; color: var(--m-suave); }
+.f-ped-linea .imp { margin-top: 3px; font-size: 15px; font-weight: 800; font-variant-numeric: tabular-nums; }
+.f-ped-linea .imp small { font-size: 12.5px; font-weight: 600; color: var(--m-suave); }
+.f-ped-linea .f-paso { flex: none; background: var(--m-fondo); }
+
+/* El − n +: el número que cambia entra de abajo o de arriba (guion.js, rodar). */
+.f-paso { display: inline-flex; align-items: center; flex: none; height: 52px; padding: 0 5px; border: 1px solid var(--m-linea-fuerte); border-radius: 26px; background: var(--m-hoja); }
+.f-paso button { width: 40px; height: 40px; display: grid; place-items: center; padding: 0; border: 0; border-radius: 20px; background: none; color: var(--m-texto); transition: background 0.15s ease, transform 0.15s ease; }
+.f-paso button:active:not(:disabled) { transform: scale(0.88); background: var(--m-chip); }
+.f-paso button:disabled { opacity: 0.3; cursor: default; }
+.f-paso .n { display: inline-block; min-width: 26px; text-align: center; font-size: 16px; font-weight: 800; font-variant-numeric: tabular-nums; }
+.f-paso.chico { height: 36px; padding: 0 2px; border-radius: 18px; }
+.f-paso.chico button { width: 32px; height: 32px; border-radius: 16px; }
+.f-paso.chico .n { min-width: 22px; font-size: 14px; }
+
+/* ¿Cómo lo recibes?: un interruptor de dos (12 nov 2026, el developer: «parecen de juguete… algo más simple, un switch…
+   ocupan mucho espacio»). Una franja gris con las dos opciones; la elegida, en una pastilla del fondo que se desliza con el
+   resorte de las listas, como la luz de la píldora de abajo. Sin íconos ni color. */
+.f-ped-seccion { display: flex; flex-direction: column; gap: 12px; }
+.f-ped-seccion h3 { margin: 0; font-size: 17px; font-weight: 800; letter-spacing: -0.3px; }
+.f-ped-tipos { position: relative; display: grid; grid-template-columns: 1fr 1fr; padding: 4px; border-radius: 14px; background: var(--m-chip); }
+.f-ped-tipos-luz {
+  position: absolute; left: 4px; top: 4px; bottom: 4px; width: calc(50% - 4px); border-radius: 10px; background: var(--m-fondo);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1), 0 0 0 1px var(--m-linea); transition: translate 0.52s var(--resorte-fondo);
+}
+.menu[data-tema='oscuro'] .f-ped-tipos-luz { background: color-mix(in oklab, var(--m-texto) 16%, var(--m-fondo)); }
+.f-ped.dom .f-ped-tipos-luz { translate: 100% 0; }
+.f-ped-tipo {
+  position: relative; z-index: 1; height: 40px; border: 0; border-radius: 10px; background: none; color: var(--m-suave);
+  font: inherit; font-size: 14.5px; font-weight: 700; cursor: pointer; transition: color 0.2s ease;
+}
+.f-ped-tipo[aria-pressed='true'] { color: var(--m-texto); }
+
+/* Tus datos, juntos en su gris (como «Los campos que van juntos» del panel); lo de a domicilio se despliega. Las cajas,
+   como las del panel: sin borde, su sombra suave y, al escribir, el aro del color de tu menú. */
+.f-ped-campos { display: flex; flex-direction: column; padding: 14px 16px 16px; border-radius: 16px; background: var(--m-chip); }
+.f-ped-dom { display: grid; grid-template-rows: 0fr; opacity: 0; transition: grid-template-rows 0.4s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.3s ease; }
+.f-ped.dom .f-ped-dom { grid-template-rows: 1fr; opacity: 1; }
+.f-ped-dom > div { min-height: 0; overflow: hidden; }
+.f-ped-dom-campos { display: flex; flex-direction: column; gap: 14px; padding: 14px 2px 2px; margin: 0 -2px -2px; }
+/* A domicilio, las otras dos tarjetas (a dónde y cómo pagas) bajan 12 de la del nombre; cerradas no dejan hueco. */
+.f-ped-tarjetas { display: flex; flex-direction: column; }
+.f-ped-tu { gap: 14px; }
+.f-ped-dom-tarjetas { display: flex; flex-direction: column; gap: 12px; padding-top: 12px; }
+.f-ped-dom-tarjetas .f-ped-campos { gap: 14px; }
+.f-campo label { display: block; margin: 0 0 6px 2px; font-size: 12.5px; font-weight: 700; color: var(--m-suave); }
+.f-campo input {
+  width: 100%; height: 48px; padding: 0 14px; border: 0; border-radius: 12px; outline: none; background: var(--m-hoja); color: var(--m-texto); font: inherit; font-size: 16px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06), 0 0 0 1px var(--m-linea); transition: box-shadow 0.15s ease;
+}
+.f-campo input::placeholder { color: var(--m-tenue); opacity: 1; }
+.f-campo input:focus { box-shadow: 0 0 0 2px var(--m-acento); }
+.f-campo.falta input { box-shadow: 0 0 0 2px var(--m-acento); animation: f-sacude 0.42s cubic-bezier(0.36, 0.07, 0.19, 0.97); }
+@keyframes f-sacude { 20%, 60% { transform: translateX(-5px); } 40%, 80% { transform: translateX(5px); } }
+
+/* El resumen como un ticket (12 nov 2026, el developer: «un poco simple… tampoco algo con muchos colores»): en el gris de las
+   tarjetas, sin borde; arriba el subtotal con cuántos productos (y el envío a domicilio), luego una raya punteada con dos
+   muescas a los lados del fondo de tu menú, como el corte de un ticket, y el total grande. El total rueda al cambiar. */
+.f-ped-resumen { position: relative; display: flex; flex-direction: column; gap: 10px; padding: 18px 18px 16px; border-radius: 16px; background: var(--m-chip); }
+.f-ped-res-renglon { display: flex; justify-content: space-between; gap: 12px; font-size: 14px; color: var(--m-suave); font-variant-numeric: tabular-nums; }
+.f-ped-res-corte { position: relative; height: 0; margin: 6px -18px; border-top: 1.5px dashed var(--m-linea-fuerte); }
+.f-ped-res-corte::before, .f-ped-res-corte::after { content: ''; position: absolute; top: -11px; width: 20px; height: 20px; border-radius: 50%; background: var(--m-fondo); }
+.f-ped-res-corte::before { left: -10px; }
+.f-ped-res-corte::after { right: -10px; }
+.f-ped-resumen .t { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; color: var(--m-texto); }
+.f-ped-resumen .t > span:first-child { font-size: 15px; font-weight: 700; }
+.f-ped-total { display: flex; align-items: baseline; gap: 2px; }
+.f-ped-total b { display: inline-block; font-size: 28px; font-weight: 800; letter-spacing: -0.6px; font-variant-numeric: tabular-nums; }
+.f-ped-resumen small { font-size: 13px; font-weight: 600; color: var(--m-suave); }
+.f-ped-resumen .aprox { display: flex; justify-content: flex-end; margin-top: -6px; font-size: 12.5px; color: var(--m-suave); }
+.f-ped:not(.dom) .f-ped-envio, .f-ped:not(.dom) .f-ped-mas-envio { display: none; }
+/* La nota de WhatsApp, al centro y sin su ícono (12 nov 2026, el developer). */
+.f-ped-pista { margin: -10px 12px 0; font-size: 12.5px; line-height: 1.5; color: var(--m-suave); text-align: center; text-wrap: balance; }
+
+/* El botón fijo, arriba de la barra de abajo. */
+.f-ped-pie { flex: none; padding: 10px 12px 12px; border-top: 1px solid var(--m-linea); background: var(--m-fondo); }
+.f-ped-boton {
+  width: 100%; height: 52px; display: flex; align-items: center; justify-content: center; gap: 9px; padding: 0 16px; border: 0; border-radius: 14px;
+  background: var(--m-acento); color: var(--m-sobre-acento); font: inherit; font-size: 15.5px; font-weight: 800; transition: opacity 0.2s ease, transform 0.15s ease;
+}
+.f-ped-boton:active { transform: scale(0.98); }
+.f-ped-boton[aria-disabled='true'] { opacity: 0.35; }
+.f-ped-puntos { display: inline-flex; gap: 4px; }
+.f-ped-puntos i { width: 6px; height: 6px; border-radius: 50%; background: currentColor; animation: f-ped-brinca 1s ease-in-out infinite; }
+.f-ped-puntos i:nth-child(2) { animation-delay: 0.15s; }
+.f-ped-puntos i:nth-child(3) { animation-delay: 0.3s; }
+@keyframes f-ped-brinca { 0%, 60%, 100% { transform: none; opacity: 0.5; } 30% { transform: translateY(-4px); opacity: 1; } }
+
+/* Sin nada, o sin pedidos: su aviso al centro con a dónde ir. */
+.f-ped-vacio { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; padding: 24px 36px; text-align: center; }
+.f-ped-vacio-ic { width: 72px; height: 72px; display: grid; place-items: center; margin-bottom: 6px; border-radius: 24px; background: color-mix(in oklab, var(--m-acento) 12%, var(--m-fondo)); color: var(--m-asis); }
+.f-ped-vacio h2 { margin: 0; font-size: 20px; font-weight: 800; letter-spacing: -0.3px; }
+.f-ped-vacio p { margin: 0; font-size: 14.5px; line-height: 1.5; color: var(--m-suave); }
+.f-ped-vacio-botones { display: flex; flex-direction: column; gap: 8px; width: 100%; max-width: 260px; margin-top: 10px; }
+.f-ped-ir {
+  height: 46px; display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 0 18px; border: 0; border-radius: 14px;
+  background: var(--m-acento); color: var(--m-sobre-acento); font: inherit; font-size: 14.5px; font-weight: 800; transition: transform 0.15s ease;
+}
+.f-ped-ir:active { transform: scale(0.98); }
+.f-ped-ir.suave { background: transparent; color: var(--m-texto); box-shadow: inset 0 0 0 1px var(--m-linea-fuerte); }
+/* Sin nada todavía (12 nov 2026): como la bienvenida del asistente. El título grande sube, la carita de línea sale después
+   con el rebote de lo que se abre y parpadea una vez; el botón, corto y de contorno. */
+.f-ped-vacio.nada { gap: 8px; padding: 24px 32px 40px; }
+.f-ped-vacio.nada h2 { font-size: 26px; letter-spacing: -0.6px; line-height: 1.15; text-wrap: balance; animation: f-frase-sube 0.55s cubic-bezier(0.22, 1, 0.36, 1) 0.1s both; }
+.f-ped-vacio.nada p { max-width: 250px; font-size: 15px; text-wrap: balance; animation: f-frase-sube 0.55s cubic-bezier(0.22, 1, 0.36, 1) 0.18s both; }
+.f-carita { width: 56px; height: 56px; margin: 18px 0 14px; color: var(--m-tenue); animation: f-carita 0.42s cubic-bezier(0.175, 0.885, 0.32, 1.275) 0.36s both; }
+@keyframes f-carita { from { opacity: 0; transform: translateY(10px) scale(0.85); } }
+.f-carita .ojo { transform-box: fill-box; transform-origin: center; animation: f-parpadea 0.32s ease 1.3s; }
+@keyframes f-parpadea { 50% { transform: scaleY(0.1); } }
+.f-ped-ir.corto { height: 42px; padding: 0 16px 0 14px; font-size: 14px; animation: f-frase-sube 0.55s cubic-bezier(0.22, 1, 0.36, 1) 0.44s both; }
+@media (prefers-reduced-motion: reduce) { .f-ped-vacio.nada h2, .f-ped-vacio.nada p, .f-carita, .f-carita .ojo, .f-ped-ir.corto { animation: none; } }
+.f-ped-texto { padding: 10px; border: 0; background: none; color: var(--m-suave); font: inherit; font-size: 14px; font-weight: 700; }
+
+/* Mandado (12 nov 2026, el developer: «parece de juguete»): tranquila como la de sin nada. Arriba la palomita de línea en
+   verde (el de «listo») que se dibuja, el título grande y su texto, que suben; luego lo que pediste como el ticket de Tu
+   pedido; abajo, fijo, «¿No se abrió WhatsApp?» con «Abrir WhatsApp otra vez». */
+.f-ped-exito { display: flex; flex-direction: column; gap: 26px; padding: 34px 16px 22px; }
+.f-exito-arriba { display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center; }
+.f-exito-ic { width: 56px; height: 56px; margin-bottom: 10px; color: #1f9d55; }
+.menu[data-tema='oscuro'] .f-exito-ic { color: #4cc26f; }
+.f-exito-ic .aro { transform-box: fill-box; transform-origin: center; transform: rotate(-90deg); }
+.f-ped-exito h2 { margin: 0; font-size: 26px; font-weight: 800; letter-spacing: -0.6px; line-height: 1.15; text-wrap: balance; }
+.f-exito-arriba p { margin: 0; font-size: 15px; line-height: 1.5; color: var(--m-suave); }
+.f-exito-tit { display: flex; justify-content: space-between; gap: 12px; margin-bottom: 2px; font-size: 13px; font-weight: 700; color: var(--m-suave); }
+.f-exito-l { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; font-size: 15px; font-variant-numeric: tabular-nums; }
+.f-exito-l .n { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.f-exito-l .n b { font-weight: 800; }
+.f-exito-l .n small { font-size: 13px; color: var(--m-suave); }
+.f-exito-l > span:last-child { flex: none; font-weight: 700; }
+.f-ped-resumen .f-ped-total small { margin-left: 4px; }
+.f-exito-pie { display: flex; flex-direction: column; gap: 8px; }
+.f-exito-pie p { margin: 0; font-size: 12.5px; color: var(--m-suave); text-align: center; }
+.f-exito-pie .f-ped-ir { width: 100%; height: 50px; }
+/* Al llegar: la palomita se dibuja (el aro y luego la palomita), los textos suben como la frase del asistente, el ticket
+   después y el pie sube de abajo. */
+.f-ped-exito.entra .f-exito-ic .aro { stroke-dasharray: 120; stroke-dashoffset: 120; animation: f-exito-traza 0.6s cubic-bezier(0.65, 0, 0.35, 1) 0.05s forwards; }
+.f-ped-exito.entra .f-exito-ic .pal { stroke-dasharray: 24; stroke-dashoffset: 24; animation: f-exito-traza 0.32s cubic-bezier(0.65, 0, 0.35, 1) 0.5s forwards; }
+@keyframes f-exito-traza { to { stroke-dashoffset: 0; } }
+.f-ped-exito.entra h2 { animation: f-frase-sube 0.55s cubic-bezier(0.22, 1, 0.36, 1) 0.12s both; }
+.f-ped-exito.entra .f-exito-arriba p { animation: f-frase-sube 0.55s cubic-bezier(0.22, 1, 0.36, 1) 0.2s both; }
+.f-ped-exito.entra .f-exito-ticket { animation: f-frase-sube 0.55s cubic-bezier(0.22, 1, 0.36, 1) 0.32s both; }
+.f-exito-pie.entra { animation: f-exito-pie 0.5s cubic-bezier(0.22, 1, 0.36, 1) 0.42s both; }
+@keyframes f-exito-pie { from { transform: translateY(100%); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) {
+  .f-ped-exito.entra .f-exito-ic .aro, .f-ped-exito.entra .f-exito-ic .pal { animation: none; stroke-dashoffset: 0; }
+  .f-ped-exito.entra h2, .f-ped-exito.entra .f-exito-arriba p, .f-ped-exito.entra .f-exito-ticket, .f-exito-pie.entra { animation: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .f-ped-dom, .f-paso button, .f-ped-tipo, .f-ped-tipos-luz, .f-campo input { transition: none; }
+  .f-ped-exito.entra *, .f-campo.falta input, .f-ped-puntos i { animation: none !important; }
+}
+
 /* ─── En la página de verdad ───
    En la maqueta el teléfono era la pantalla; aquí la página es larga, así que lo que tapa (Ajustes y su velo) va fijo a
    la pantalla, y Ajustes no pasa del ancho de la columna del menú en la compu. */
@@ -655,3 +826,8 @@
 .f-asis.f-asis-chica { padding-bottom: calc(56px + env(safe-area-inset-bottom, 0px)); }
 .f-asis.f-asis-pildora { padding-bottom: calc(78px + env(safe-area-inset-bottom, 0px)); }
 .f-asis.f-asis-pildora.f-asis-chica { padding-bottom: calc(70px + env(safe-area-inset-bottom, 0px)); }
+/* Tu pedido, igual que el asistente. */
+.f-ped { position: fixed; z-index: 3; max-width: 520px; margin: 0 auto; padding-bottom: calc(66px + env(safe-area-inset-bottom, 0px)); }
+.f-ped.f-asis-chica { padding-bottom: calc(56px + env(safe-area-inset-bottom, 0px)); }
+.f-ped.f-asis-pildora { padding-bottom: calc(78px + env(safe-area-inset-bottom, 0px)); }
+.f-ped.f-asis-pildora.f-asis-chica { padding-bottom: calc(70px + env(safe-area-inset-bottom, 0px)); }

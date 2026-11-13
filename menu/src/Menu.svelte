@@ -28,11 +28,9 @@
   import Carteles from './componentes/Carteles.svelte';
   import Categorias from './componentes/Categorias.svelte';
   import Fila from './componentes/Fila.svelte';
-  import Hoja from './componentes/Hoja.svelte';
-  import HojaHecho from './componentes/HojaHecho.svelte';
-  import HojaPedido from './componentes/HojaPedido.svelte';
   import VentanaInfo from './componentes/VentanaInfo.svelte';
   import VistaAsistente from './componentes/VistaAsistente.svelte';
+  import VistaPedido from './componentes/VistaPedido.svelte';
   import HojaProducto from './componentes/HojaProducto.svelte';
   import Icono from './componentes/Icono.svelte';
   import TarjetaBusca from './componentes/TarjetaBusca.svelte';
@@ -118,7 +116,7 @@
         const h = leerHecho(slug, datos.ahora.fecha);
         if (h) {
           hecho = h;
-          abrir({ tipo: 'hecho' });
+          abrir({ tipo: 'pedido' });
         }
       }
       if (muestra) {
@@ -163,13 +161,13 @@
   );
 
   // ─── Lo que se abre encima ───
-  // Una pila: desde «Tu pedido» se abre la hoja de un renglón y, al cerrarla, se vuelve al pedido.
+  // Una pila: desde «Tu pedido» se abre la hoja de un renglón y, al cerrarla, se vuelve al pedido. Tu pedido es una
+  // vista: enseña la lista, «sin nada», «sin pedidos» o el pedido mandado, según el caso.
   type Encima =
     | { tipo: 'producto'; producto: Producto; foto: boolean; editando: number | null }
     | { tipo: 'info'; desde: HTMLElement }
     | { tipo: 'ajustes' }
     | { tipo: 'pedido' }
-    | { tipo: 'hecho' }
     | { tipo: 'asistente' };
   let pila = $state<Encima[]>([]);
   const encima = $derived(pila.at(-1) ?? null);
@@ -225,6 +223,8 @@
   // que recibe: con teléfono, dentro del horario y sin pausa.
   const recibe = $derived(!muestra && !!menu?.recibe_pedidos);
   const productos = $derived(new Map((menu?.categorias ?? []).flatMap((c) => c.productos).map((p) => [p.id, p])));
+  // El ícono de la categoría de cada producto (el cuadro de Tu pedido cuando no tiene foto).
+  const iconos = $derived(new Map((menu?.categorias ?? []).flatMap((c) => c.productos.map((p) => [p.id, c.icono] as const))));
   // Cada cartel con su producto, si es uno de Mi menú (Postgres solo manda los que salen en el menú).
   const carteles = $derived(
     (menu?.carteles ?? []).map((c) => ({ ruta: c.ruta, producto: c.producto_id === null ? null : (productos.get(c.producto_id) ?? null) })),
@@ -271,14 +271,19 @@
     // Al cambiar un renglón, se queda en su lugar.
     if (editando !== null && lista.length > resto.length) lista.splice(editando, 0, lista.pop()!);
     cambiarCarrito(lista);
+    // Un pedido nuevo: el que ya se mandó deja de enseñarse (como en la maqueta).
+    if (hecho) {
+      hecho = null;
+      guardarHecho(slug, null);
+    }
     cerrar();
   }
 
+  // Sin nada, Tu pedido se queda abierto con su carita.
   function alCantidad(i: number, cambio: number) {
     const r = carrito[i];
     const cantidad = r.cantidad + cambio;
     cambiarCarrito(cantidad < 1 ? carrito.filter((_, j) => j !== i) : carrito.map((x, j) => (j === i ? { ...x, cantidad: Math.min(99, cantidad) } : x)));
-    if (!carrito.length) cerrar();
   }
 
   function abrirRenglon(i: number) {
@@ -369,7 +374,6 @@
           guardarHecho(slug, hecho);
         }
         cliente.pagaCon = '';
-        pila[pila.length - 1] = { tipo: 'hecho' };
       } else if (respuesta.motivo === 'no_recibe') {
         avisoPedido = { texto: t.noRecibimos };
         rev.renovar();
@@ -408,11 +412,14 @@
     guardarHecho(slug, hecho);
   }
 
-  function alVolver() {
+  // «Pedido enviado» se queda hasta que sale de Tu pedido (a Menú, al asistente o con «atrás»); «Falta un paso» se
+  // queda hasta que lo manda, porque su botón es el que abre WhatsApp.
+  const conPedido = $derived(pila.some((e) => e.tipo === 'pedido'));
+  $effect(() => {
+    if (conPedido || !hecho?.enviado) return;
     hecho = null;
     guardarHecho(slug, null);
-    cerrar();
-  }
+  });
 
   // Por qué no se reciben pedidos: se ve al abrir Pedido.
   const avisoPedidos = $derived.by((): { icono: 'reloj' | 'apagado'; texto: string } | null => {
@@ -437,7 +444,7 @@
   });
   const pestanaActiva = $derived.by((): Pestana => {
     if (pila.some((e) => e.tipo === 'asistente')) return 'asistente';
-    if (pila.some((e) => e.tipo === 'pedido' || e.tipo === 'hecho')) return 'pedido';
+    if (conPedido) return 'pedido';
     return 'menu';
   });
 
@@ -445,7 +452,7 @@
     if (p === 'menu') return regresarA([]);
     if (p === pestanaActiva) return;
     // Una pestaña sustituye a la otra: lo que hubiera encima se reemplaza.
-    const nueva: Encima = p === 'asistente' ? { tipo: 'asistente' } : hecho && !carrito.length ? { tipo: 'hecho' } : { tipo: 'pedido' };
+    const nueva: Encima = p === 'asistente' ? { tipo: 'asistente' } : { tipo: 'pedido' };
     if (pila.length) regresarA([nueva]);
     else abrir(nueva);
   }
@@ -573,7 +580,7 @@
   onpopstate={alAtras}
   onscroll={alBajar}
   onkeydown={(e) => {
-    if (e.key === 'Escape' && encima && !(encima.tipo === 'hecho' && !hecho?.enviado)) cerrar();
+    if (e.key === 'Escape' && encima) cerrar();
   }}
 />
 
@@ -755,11 +762,42 @@
       />
     {/if}
 
+    {#if conPedido}
+      <VistaPedido
+        renglones={vistaCarrito}
+        {productos}
+        {iconos}
+        {lengua}
+        {moneda}
+        {formas}
+        {t}
+        barra={barraDeVista}
+        cerrado={avisoPedidos}
+        conAsistente={pestanas.includes('asistente')}
+        haceEnvios={r.hace_envios}
+        tipoCambio={r.tipo_cambio_usd}
+        telefono={r.telefono ?? ''}
+        bind:tipo
+        bind:cliente
+        aviso={avisoPedido}
+        {limite}
+        {ocupado}
+        bind:hueco
+        {hecho}
+        {alCantidad}
+        alAbrirRenglon={abrirRenglon}
+        alHacer={hacer}
+        {alEnviar}
+        alMenu={() => alPestana('menu')}
+        alAsistente={() => alPestana('asistente')}
+      />
+    {/if}
+
     {#if encima?.tipo === 'producto'}
       {@const editando = encima.editando}
       {@const producto = encima.producto}
-      <!-- Abierta desde la plática, va encima de ella, con su velo. -->
-      <div class="encima" class:sobre-platica={conPlatica}>
+      <!-- Abierta desde la plática o desde Tu pedido, va encima de su vista, con su velo. -->
+      <div class="encima" class:sobre-vista={conPlatica || conPedido}>
         {#key encima}
           <HojaProducto
             {producto}
@@ -785,50 +823,6 @@
       </div>
     {:else if encima?.tipo === 'info'}
       <VentanaInfo {menu} {t} {lengua} desde={encima.desde} alCerrar={cerrar} />
-    {:else if encima?.tipo === 'pedido' && (!recibe || !carrito.length)}
-      <!-- Pedido sin pedidos, o sin nada todavía: la hoja chica con lo que pasa. -->
-      <Hoja etiqueta={t.tuPedido} alCerrar={cerrar}>
-        <div class="f-hoja-aviso">
-          <div class="f-aviso">
-            <span><Icono nombre={avisoPedidos ? avisoPedidos.icono : 'bolsa-app'} tamano={20} /></span>{avisoPedidos ? avisoPedidos.texto : t.vacio}
-          </div>
-          {#if avisoPedidos}<p>{t.avisoPedido}</p>{/if}
-        </div>
-      </Hoja>
-    {:else if encima?.tipo === 'pedido'}
-      <HojaPedido
-        renglones={vistaCarrito}
-        {productos}
-        {lengua}
-        {moneda}
-        {t}
-        haceEnvios={menu.restaurante.hace_envios}
-        tipoCambio={menu.restaurante.tipo_cambio_usd}
-        bind:tipo
-        bind:cliente
-        aviso={avisoPedido}
-        {limite}
-        telefono={menu.restaurante.telefono ?? ''}
-        {ocupado}
-        bind:hueco
-        {alCantidad}
-        alAbrirRenglon={abrirRenglon}
-        alHacer={hacer}
-        alCerrar={cerrar}
-      />
-    {:else if encima?.tipo === 'hecho' && hecho}
-      <HojaHecho
-        pedido={hecho.pedido}
-        ids={hecho.ids ?? []}
-        {productos}
-        enviado={hecho.enviado}
-        telefono={menu.restaurante.telefono ?? ''}
-        {lengua}
-        {moneda}
-        {t}
-        {alEnviar}
-        {alVolver}
-      />
     {/if}
     {#if encima?.tipo === 'ajustes'}
       <Ajustes {lengua} {moneda} {conDolares} {t} alLengua={elegirLengua} alMoneda={elegirMoneda} alCerrar={cerrar} />
@@ -847,15 +841,15 @@
     display: contents;
   }
 
-  .sobre-platica :global(.velo) {
+  .sobre-vista :global(.velo) {
     z-index: 9;
   }
 
-  .sobre-platica :global(.hoja) {
+  .sobre-vista :global(.hoja) {
     z-index: 10;
   }
 
-  .sobre-platica :global(.visor) {
+  .sobre-vista :global(.visor) {
     z-index: 11;
   }
 

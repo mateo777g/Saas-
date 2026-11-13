@@ -18,6 +18,7 @@
   import { Tween } from 'svelte/motion';
   import { DURA_FLECHA, resorteFlecha, trazosFlecha } from '../../diseno/flecha';
   import Icono from '../../diseno/Icono.svelte';
+  import { pica, vidrio } from '../../diseno/vidrio';
   import { fecha } from '../../lib/formato';
   import type { Sucursal } from '../../lib/gerente';
 
@@ -87,6 +88,8 @@
   <button
     type="button"
     class="boton"
+    use:vidrio={'boton'}
+    use:pica={1.08}
     aria-expanded={abierta}
     aria-controls={idLista}
     bind:this={boton}
@@ -99,7 +102,7 @@
     >
   </button>
 
-  <div class="fondo" class:abierta aria-hidden="true" style:--alto="{alto}px"></div>
+  <div class="fondo" class:abierta aria-hidden="true" style:--alto="{alto}px" use:vidrio={'hoja'}></div>
   <div class="lista" class:abierta class:midiendo id={idLista} inert={!abierta} bind:this={lista} bind:offsetHeight={alto}>
       <span class="etiqueta titulo">TUS SUCURSALES ACTIVAS</span>
       {#if sucursales.length === 1}

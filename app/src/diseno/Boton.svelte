@@ -33,6 +33,7 @@
   import Icono from './Icono.svelte';
   import { ICONOS } from './iconos';
   import { pista } from './pista';
+  import { enBarra, pica, vidrio } from './vidrio';
 
   let {
     etiqueta,
@@ -63,6 +64,10 @@
     onclick?: (e: MouseEvent) => void;
     [dato: `aria-${string}`]: string | undefined;
   } = $props();
+
+  // En Cristal, el de contorno de la barra de arriba («Ocultar varios») es vidrio (diseno/vidrio.ts); la acción
+  // principal («Nuevo producto», en tinta) sigue sólida.
+  const deBarra = enBarra();
 
   const lado = $derived(tamano === 'chico' ? 14 : 16);
   const FLECHA = '<path d="M5 12h14"></path><path d="M13 6l6 6-6 6"></path>';
@@ -172,6 +177,8 @@
     class:apagado
     class:chip
     use:pista={ayuda}
+    use:vidrio={deBarra && tono === 'linea' ? 'control' : null}
+    use:pica={deBarra && tono === 'linea' ? 1.05 : null}
     disabled={apagado || cargando || exito}
     {onclick}
     {...resto}
@@ -625,6 +632,34 @@
   .alarga:disabled {
     opacity: 0.5;
     cursor: default;
+  }
+
+  /* Cristal: el verde de guardar y el rojo de eliminar se quedan, con un brillo arriba (libreta 4, «El estilo
+     Cristal»; maqueta FiHkjmT1meyTu7zuU3En2n, sección 9). */
+  :global(:root[data-estilo='cristal']) .boton.verde {
+    background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0) 55%);
+  }
+
+  :global(:root[data-estilo='cristal'][data-tema='oscuro']) .boton.verde {
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.35),
+      0 8px 22px -8px rgba(63, 155, 90, 0.6);
+  }
+
+  :global(:root[data-estilo='cristal'][data-tema='claro']) .boton.verde {
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.35),
+      0 8px 22px -8px rgba(63, 155, 90, 0.5);
+  }
+
+  :global(:root[data-estilo='cristal'][data-tema='oscuro']) .boton.flujo:not(.lleno) {
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0)), rgba(212, 71, 62, 0.08);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  }
+
+  :global(:root[data-estilo='cristal'][data-tema='claro']) .boton.flujo:not(.lleno) {
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0.15)), rgba(212, 71, 62, 0.06);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8);
   }
 
   @media (prefers-reduced-motion: reduce) {

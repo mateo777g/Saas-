@@ -74,8 +74,26 @@
     min-height: 0;
   }
 
+  /* Cristal (libreta 4, «El estilo Cristal»): el fondo es negro con tres manchas grises grandes y suaves (en claro, un
+     gris claro con tres manchas blancas) y su grano fino. Va en el fondo del marco, así que no se desliza con la vista:
+     queda quieto como un fondo de pantalla, y el vidrio de encima lo deja ver borroso. Plegar la barra es con resorte. */
+  :global(:root[data-estilo='cristal'][data-tema='oscuro']) .marco {
+    background-color: var(--fondo);
+    background-image: var(--grano), var(--manchas);
+  }
+
+  :global(:root[data-estilo='cristal'][data-tema='claro']) .marco {
+    background-color: var(--fondo);
+    background-image: var(--grano-claro), var(--fondo-cristal-claro);
+  }
+
+  :global(:root[data-estilo='cristal']) .marco {
+    transition: grid-template-columns 0.62s var(--resorte-escala);
+  }
+
   @media (prefers-reduced-motion: reduce) {
-    .marco {
+    .marco,
+    :global(:root[data-estilo='cristal']) .marco {
       transition: none;
     }
   }

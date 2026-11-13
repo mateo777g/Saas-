@@ -16,6 +16,7 @@
   import { Tween } from 'svelte/motion';
   import { DURA_FLECHA, resorteFlecha, trazosFlecha } from './flecha';
   import IconoCategoria from './IconoCategoria.svelte';
+  import { vidrio } from './vidrio';
 
   let {
     valor = $bindable(),
@@ -167,7 +168,7 @@
       ><path d={l1}></path><path d={l2}></path></svg
     >
   </button>
-  <div class="lista-fondo"></div>
+  <div class="lista-fondo" use:vidrio={'hoja'}></div>
   <div class="lista-opciones" role="listbox" aria-label={nombre} bind:this={caja} inert={!abierta}>
     {#each opciones as o, j (o.valor)}
       {@const si = o.valor === valor}
@@ -403,6 +404,33 @@
     margin-left: auto;
     flex: none;
     color: var(--texto);
+  }
+
+  /* Cristal: lo que se abre encima es una hoja de vidrio (su receta en cristal.css). Como el botón es un relleno
+     transparente, la hoja va detrás de él y de las opciones: crece desde el botón, y abierta es una sola pieza con el
+     campo arriba, como en Simple. */
+  :global(:root[data-estilo='cristal']) .lista-fondo {
+    top: 0;
+    height: 44px;
+    border-radius: 12px;
+  }
+
+  :global(:root[data-estilo='cristal']) .lista.abierta .lista-fondo {
+    height: calc(var(--alto) + 43px);
+  }
+
+  :global(:root[data-estilo='cristal']) .lista.abierta .lista-boton {
+    background: transparent;
+  }
+
+  :global(:root[data-estilo='cristal']) .lista.abierta .lista-boton::after {
+    content: '';
+    position: absolute;
+    left: 10px;
+    right: 10px;
+    bottom: 0;
+    height: 1px;
+    background: var(--linea);
   }
 
   @media (prefers-reduced-motion: reduce) {

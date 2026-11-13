@@ -23,7 +23,11 @@
   import Boton from './Boton.svelte';
   import CajaError from './CajaError.svelte';
   import Icono from './Icono.svelte';
+  import { quitarDeBarra, vidrio } from './vidrio';
   import { seMueven, ventanaSale, veloSale } from './ventanaSeMueve';
+
+  // En Cristal es una hoja de vidrio grueso, como Ventana; lo de adentro nunca es vidrio.
+  quitarDeBarra();
 
   const ESPERA_EXITO = 1600;
 
@@ -119,7 +123,7 @@
     if (e.target === dialogo) cancelar();
   }}
 >
-  <div class="ventana" class:centrada={peligro && !miniatura} in:ventanaSale|global={mueve} out:ventanaSale|global={mueve}>
+  <div class="ventana" class:centrada={peligro && !miniatura} use:vidrio={'hoja'} in:ventanaSale|global={mueve} out:ventanaSale|global={mueve}>
     {#if miniatura}
       <img class="mini" src={miniatura.src} alt="" style:height="{miniatura.alto}px" />
     {:else if peligro}
@@ -209,6 +213,11 @@
     border: 1px solid var(--linea);
     border-radius: 26px;
     box-shadow: 0 24px 60px var(--sombra);
+  }
+
+  /* Cristal: la hoja de vidrio grueso (su receta en cristal.css) lleva su canto. */
+  :global(:root[data-estilo='cristal']) .ventana {
+    position: relative;
   }
 
   .icono {

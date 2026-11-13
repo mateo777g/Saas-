@@ -6,6 +6,8 @@
 <script lang="ts">
   import type { Snippet } from 'svelte';
   import './haz.css';
+  import './haz-cristal.css';
+  import { pica } from './vidrio';
 
   let { children }: { children: Snippet } = $props();
 
@@ -31,7 +33,8 @@
   }
 </script>
 
-<div class="haz" class:activo class:apagando onfocusin={alEntrar} onfocusout={alSalir}>
+<!-- En Cristal, al picar la búsqueda crece tantito con resorte (1.5 %; diseno/vidrio.ts). -->
+<div class="haz" class:activo class:apagando onfocusin={alEntrar} onfocusout={alSalir} use:pica={1.015}>
   {@render children()}
   <div class="haz-flor" aria-hidden="true"></div>
 </div>

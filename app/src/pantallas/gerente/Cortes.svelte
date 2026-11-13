@@ -23,6 +23,7 @@
   import { leerReporte, type Cancelacion, type Descuento, type OtroCambio, type ReporteDia } from '../../lib/reportes';
   import { supabase } from '../../lib/supabase';
   import CajaSucursales from './CajaSucursales.svelte';
+  import HoraCorte from './cortes/HoraCorte.svelte';
   import { quienLoHizo } from './cortes/quien';
   import Turno from './cortes/Turno.svelte';
 
@@ -37,6 +38,8 @@
   // El día que se ve; vacío, hoy (lo decide Postgres con la hora de corte).
   let dia = $state<string | null>(null);
   let lectura = $state<Lectura>({ estado: 'leyendo' });
+  // La hora de corte de la sucursal, de la última lectura: el botón de la barra no la pierde al cambiar de día.
+  let horaCorte = $state<number | null>(null);
 
   const reporte = $derived(lectura.estado === 'listo' ? lectura.reporte : null);
   const esHoy = $derived(dia === null || (reporte !== null && reporte.dia === reporte.hoy));
@@ -52,7 +55,10 @@
     const esta = ++vuelta;
     try {
       const r = await leerReporte(sucursal.id, dia);
-      if (esta === vuelta) lectura = { estado: 'listo', reporte: r };
+      if (esta === vuelta) {
+        lectura = { estado: 'listo', reporte: r };
+        horaCorte = r.hora_corte;
+      }
     } catch (error) {
       console.error('[cortes] no se pudo leer reporte_del_dia:', error);
       if (esta === vuelta) lectura = { estado: 'error', deRed: esDeRed(error) };
@@ -181,6 +187,8 @@
       <button type="button" class="boton-chico" onclick={() => ir(null)}><Icono nombre="hoy" tamano={14} />Hoy</button>
     {/if}
   {/snippet}
+  <!-- La hora de corte vive aquí desde el 12 nov 2026 (salió de Ajustes): justo antes de la sucursal. -->
+  <HoraCorte restauranteId={sucursal.id} hora={horaCorte} alGuardar={leer} />
   <CajaSucursales {sucursales} actual={sucursal} {alElegir} />
 </BarraArriba>
 

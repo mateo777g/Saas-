@@ -22,6 +22,7 @@
   import IconoCategoria from '../../../diseno/IconoCategoria.svelte';
   import NotaTabla from '../../../diseno/NotaTabla.svelte';
   import Tabla from '../../../diseno/Tabla.svelte';
+  import { vidrio } from '../../../diseno/vidrio';
   import { urlFoto } from '../../../lib/fotos';
   import { dinero, plural } from '../../../lib/formato';
   import type { Menu, Producto } from '../../../lib/menu';
@@ -129,7 +130,7 @@
 
 <div class="herramientas">
   <Haz>
-    <label class="buscador">
+    <label class="buscador" use:vidrio={'control'}>
       <Icono nombre="buscar" tamano={18} />
       <input
         type="search"
@@ -282,6 +283,11 @@
 
   .buscador:focus-within {
     border-color: var(--linea-fuerte);
+  }
+
+  /* Cristal: la búsqueda es vidrio (su receta en cristal.css), con su canto. */
+  :global(:root[data-estilo='cristal']) .buscador {
+    position: relative;
   }
 
   .buscador input {

@@ -10,6 +10,7 @@
 @import '@fontsource/jetbrains-mono/500.css';
 @import '@fontsource/outfit/200.css';
 @import './colores.css';
+@import './cristal.css';
 
 /* Los resortes del dock de Mi menú (los de framer-motion: escala 550/30, 0.55 s; altura 500/25,
    0.65 s), en un solo lugar: el dock y la barra lateral plegada los usan. Y los de la lista que se abre

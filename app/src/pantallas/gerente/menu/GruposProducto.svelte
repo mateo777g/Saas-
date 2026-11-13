@@ -16,6 +16,7 @@
   import { DURA_FLECHA, resorteFlecha, trazosFlecha } from '../../../diseno/flecha';
   import Icono from '../../../diseno/Icono.svelte';
   import { pista } from '../../../diseno/pista';
+  import { vidrio } from '../../../diseno/vidrio';
   import { dinero } from '../../../lib/formato';
   import type { Grupo } from '../../../lib/menu';
   import { reglaCorta } from '../../../lib/opciones';
@@ -155,7 +156,8 @@
     </p>
 
     {#if libres.length}
-      <div class="fondo" class:abierta aria-hidden="true" style:--alto="{Math.min(alto, 300)}px"></div>
+      <!-- En Cristal, una hoja de vidrio (su receta en cristal.css). -->
+      <div class="fondo" class:abierta aria-hidden="true" style:--alto="{Math.min(alto, 300)}px" use:vidrio={'hoja'}></div>
       <div class="lista" class:abierta class:midiendo id={idLista} inert={!abierta} bind:this={lista} bind:offsetHeight={alto}>
         <span class="etiqueta titulo">TUS GRUPOS</span>
         {#each libres as g, j (g.id)}

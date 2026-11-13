@@ -28,6 +28,7 @@
     type DatosGerente,
     type Sucursal,
   } from '../lib/gerente';
+  import { leerMercadoPago, type EstadoMercadoPago } from '../lib/mercadoPago';
   import { VigiaPedidos } from '../lib/pedidos.svelte';
   import { SIN_PANEL } from '../lib/sesion';
   import { supabase } from '../lib/supabase';
@@ -139,6 +140,28 @@
   });
   $effect(() => {
     if (vigia) vigia.oirListas = vista !== 'pos';
+  });
+
+  // La conexión de la sucursal con su Mercado Pago (lib/mercadoPago.ts): si se cayó, Inicio pone su franja ámbar, y
+  // «Conectar otra vez» abre Ajustes con la cajita de Mercado Pago abierta. Si no se pudo leer, no hay franja.
+  let estadoMercadoPago = $state<EstadoMercadoPago | null>(null);
+  let abrirMercadoPago = $state(false);
+  $effect(() => {
+    if (vigilada === null) return;
+    const restauranteId = vigilada;
+    let fuera = false;
+    estadoMercadoPago = null;
+    leerMercadoPago(restauranteId)
+      .then((e) => {
+        if (!fuera) estadoMercadoPago = e;
+      })
+      .catch((error) => console.error('[gerente] no se pudo leer la conexión con Mercado Pago; Inicio va sin franja:', error));
+    return () => {
+      fuera = true;
+    };
+  });
+  $effect(() => {
+    if (vista !== 'ajustes') abrirMercadoPago = false;
   });
 
   async function leer() {
@@ -342,6 +365,11 @@
           alElegir={elegir}
           alAbrir={(que) => (vista = que)}
           alIr={irA}
+          {estadoMercadoPago}
+          alConectarMercadoPago={() => {
+            abrirMercadoPago = true;
+            vista = 'ajustes';
+          }}
         />
       {/key}
     {:else if vista === 'cortes'}
@@ -371,11 +399,11 @@
         <Biblioteca sucursal={actual} sucursales={datos.sucursales} alElegir={elegir} alIr={(a) => (vista = a)} />
       {/key}
     {:else}
-      <!-- La hora de corte es de la sucursal; el chip dice de cuál. -->
+      <!-- Mercado Pago es de la sucursal; el chip dice de cuál. -->
       <BarraArriba titulo="Ajustes" estado={{ texto: actual.nombre, vivo: true }} />
       <main class="cuerpo">
         {#key actual.id}
-          <Ajustes sucursal={actual} />
+          <Ajustes sucursal={actual} {abrirMercadoPago} />
         {/key}
       </main>
     {/if}

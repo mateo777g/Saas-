@@ -10,6 +10,7 @@
 -->
 <script lang="ts" generics="T extends string">
   import Icono from './Icono.svelte';
+  import { vidrio } from './vidrio';
 
   let {
     opciones,
@@ -24,7 +25,7 @@
   } = $props();
 </script>
 
-<div class="dock" role="group" aria-label={etiqueta}>
+<div class="dock" role="group" aria-label={etiqueta} use:vidrio={'control'}>
   {#each opciones as o (o.valor)}
     <button type="button" class="dock-boton" aria-pressed={o.valor === elegida} aria-label={o.texto} onclick={() => alElegir(o.valor)}>
       <span class="dock-icono"><Icono nombre={o.icono} trazos={o.trazos} tamano={18} /></span>
@@ -92,6 +93,22 @@
 
   .dock-boton[aria-pressed='true'] {
     background: var(--chip);
+  }
+
+  /* Cristal: el dock es vidrio (su receta en cristal.css) y su sección elegida, una gota de vidrio como la del menú. */
+  :global(:root[data-estilo='cristal'][data-tema='oscuro']) .dock-boton[aria-pressed='true'] {
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0.06));
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.3),
+      inset 0 0 0 1px rgba(255, 255, 255, 0.1);
+  }
+
+  :global(:root[data-estilo='cristal'][data-tema='claro']) .dock-boton[aria-pressed='true'] {
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0.6));
+    box-shadow:
+      inset 0 1px 0 #ffffff,
+      inset 0 0 0 1px rgba(255, 255, 255, 0.8),
+      0 4px 12px -6px var(--cl-sombra);
   }
 
   .dock-boton:focus-visible {

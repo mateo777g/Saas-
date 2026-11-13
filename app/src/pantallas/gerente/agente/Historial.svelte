@@ -18,6 +18,7 @@
   import Confirmar from '../../../diseno/Confirmar.svelte';
   import Icono from '../../../diseno/Icono.svelte';
   import { pista } from '../../../diseno/pista';
+  import { vidrio } from '../../../diseno/vidrio';
   import type { Conversacion } from '../../../lib/agente';
   import { diaConNombre } from '../../../lib/formato';
   import type { Sucursal } from '../../../lib/gerente';
@@ -259,7 +260,8 @@
       inert={!menuVisible && !midiendo}
       onkeydown={teclaDelMenu}
     >
-      <div class="menu-fondo" aria-hidden="true"></div>
+      <!-- En Cristal, una hoja de vidrio (su receta en cristal.css). -->
+      <div class="menu-fondo" aria-hidden="true" use:vidrio={'hoja'}></div>
       <div class="fecha renglon" style:--y={salida(0).y} style:--da={salida(0).da} style:--dc={salida(0).dc}>{cuando(c)}</div>
       <hr />
       <button type="button" role="menuitem" class="renglon" style:--y={salida(1).y} style:--da={salida(1).da} style:--dc={salida(1).dc} onclick={() => fijar(c)}

@@ -8,6 +8,7 @@
 <script lang="ts">
   import Icono from './Icono.svelte';
   import { pista } from './pista';
+  import { enBarra, pica, vidrio } from './vidrio';
 
   let {
     icono,
@@ -29,6 +30,9 @@
     onclick?: (e: MouseEvent) => void;
     [dato: `data-${string}`]: string | number;
   } = $props();
+
+  // En Cristal, en la barra de arriba es vidrio y al picarlo crece con resorte (diseno/vidrio.ts).
+  const deBarra = enBarra();
 </script>
 
 <button
@@ -36,6 +40,8 @@
   class="cuadro"
   class:grande
   use:pista={ayuda}
+  use:vidrio={deBarra ? 'boton' : null}
+  use:pica={deBarra ? 1.08 : null}
   aria-label={etiqueta ?? ayuda}
   disabled={apagado}
   {onclick}

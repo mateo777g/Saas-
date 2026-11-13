@@ -963,6 +963,32 @@
     background: var(--fondo);
   }
 
+  /* Cristal: sin franja lisa sobre las manchas; lo que sube por detrás de la caja se desvanece como bajo la barra de
+     arriba (diseno/BarraArriba.svelte), al revés. */
+  :global(:root[data-estilo='cristal']) .abajo {
+    background: transparent;
+  }
+
+  :global(:root[data-estilo='cristal']) .abajo::before {
+    content: '';
+    position: absolute;
+    inset: -18px 0 0;
+    z-index: -1;
+    pointer-events: none;
+    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
+    -webkit-mask-image: linear-gradient(transparent, #000 45%);
+    mask-image: linear-gradient(transparent, #000 45%);
+  }
+
+  :global(:root[data-estilo='cristal'][data-tema='oscuro']) .abajo::before {
+    background: linear-gradient(rgba(0, 0, 0, 0), rgba(0, 0, 0, 0.55));
+  }
+
+  :global(:root[data-estilo='cristal'][data-tema='claro']) .abajo::before {
+    background: linear-gradient(rgba(255, 255, 255, 0), rgba(255, 255, 255, 0.5));
+  }
+
   .ancho {
     max-width: 656px;
     margin: 0 auto;

@@ -1,0 +1,223 @@
+/*
+  El estilo «Cristal» (libreta 4, «El estilo Cristal», 12 de noviembre de 2026; maqueta FiHkjmT1meyTu7zuU3En2n, fuente
+  planes/maquetas/estilo-cristal.html). Un estilo solo cambia materiales, nunca la estructura: todo lo de aquí cuelga de
+  <html data-estilo="cristal">, y con «Simple» la app queda como siempre.
+
+  La regla es la de Apple: lo que se pica es vidrio y brilla; lo que se lee es contenido y va de material. Aquí vive lo
+  que es de todos:
+  · los valores (--cristal-* del oscuro, --cl-* del claro), elegidos mirando en la maqueta;
+  · los colores del panel que cambian en Cristal (--fondo, los campos, las gráficas del claro);
+  · el material de las tarjetas (.tarjeta y .tarjeta-panel, la de diseno/Tarjeta.svelte);
+  · las recetas del vidrio, por tipo: cada pieza dice qué vidrio es con use:vidrio (diseno/vidrio.ts), que le pone
+    data-vidrio="menu | boton | control | busqueda | hoja"; aquí van su fondo, su canto de luz y la luz del mouse;
+  · el rebote al picar (data-pica, de use:pica).
+  Lo que es de una sola pieza (la gota del menú, el desvanecido de la barra de arriba, las esquinas) va en su componente,
+  colgado de :global(:root[data-estilo='cristal']…), para que Svelte conserve sus clases.
+*/
+
+:root {
+  /* El oscuro. */
+  --mancha: 168, 168, 168;
+  --manchas:
+    radial-gradient(34% 42% at 36% 18%, rgba(var(--mancha), 0.56), rgba(var(--mancha), 0.38) 25%, rgba(var(--mancha), 0.17) 52%, rgba(var(--mancha), 0.05) 78%, transparent 100%),
+    radial-gradient(28% 46% at 92% 64%, rgba(var(--mancha), 0.46), rgba(var(--mancha), 0.31) 25%, rgba(var(--mancha), 0.14) 52%, rgba(var(--mancha), 0.04) 78%, transparent 100%),
+    radial-gradient(34% 36% at 46% 110%, rgba(var(--mancha), 0.42), rgba(var(--mancha), 0.28) 25%, rgba(var(--mancha), 0.12) 52%, rgba(var(--mancha), 0.035) 78%, transparent 100%);
+  /* El grano: ruido fino en gris, un mosaico de 160 px que se repite sin costuras. */
+  --grano: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)' opacity='0.11'/%3E%3C/svg%3E");
+  --cristal-tinte: rgba(16, 16, 16, 0.34);            /* el material: tarjetas y tablas */
+  --cristal-canto: rgba(255, 255, 255, 0.34);
+  --cristal-linea: rgba(255, 255, 255, 0.1);
+  --cristal-sombra: rgba(0, 0, 0, 0.6);
+  --cristal-tinte-control: rgba(16, 16, 16, 0.2);     /* los controles llevan menos tinte que las tarjetas */
+  --cristal-barras-vidrio: rgba(14, 14, 14, 0.42);    /* el menú flotante */
+  --cristal-ventana: rgba(20, 20, 20, 0.6);           /* las ventanas: vidrio grueso */
+  --cristal-relleno: rgba(255, 255, 255, 0.045);      /* los grupos de campos dentro de una ventana, los renglones */
+  --cristal-esqueleto: rgba(255, 255, 255, 0.075);
+
+  /* El claro: el oscuro al revés («Gris con blanco»). */
+  --cl-tinte: rgba(255, 255, 255, 0.5);
+  --cl-linea: rgba(255, 255, 255, 0.7);
+  --cl-canto: rgba(255, 255, 255, 1);
+  --cl-sombra: rgba(0, 0, 0, 0.15);
+  --cl-control: rgba(255, 255, 255, 0.3);
+  --cl-barras: rgba(255, 255, 255, 0.42);
+  --cl-ventana: rgba(255, 255, 255, 0.74);
+  --cl-relleno: rgba(118, 118, 128, 0.1);
+  --cl-esqueleto: rgba(30, 40, 60, 0.075);
+  --grano-claro: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)' opacity='0.06'/%3E%3C/svg%3E");
+  --fondo-cristal-claro:
+    radial-gradient(34% 42% at 36% 18%, #ffffff, rgba(255, 255, 255, 0.8) 25%, rgba(255, 255, 255, 0.38) 52%, rgba(255, 255, 255, 0.1) 78%, transparent 100%),
+    radial-gradient(28% 46% at 92% 64%, rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0.66) 25%, rgba(255, 255, 255, 0.3) 52%, rgba(255, 255, 255, 0.08) 78%, transparent 100%),
+    radial-gradient(34% 36% at 46% 110%, rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.6) 25%, rgba(255, 255, 255, 0.26) 52%, rgba(255, 255, 255, 0.07) 78%, transparent 100%),
+    linear-gradient(180deg, #d4d7dd, #c8ccd3);
+}
+
+/* ── Los colores que cambian ── El fondo de las vistas es el del marco (Marco.svelte le pone las manchas y el grano);
+   los campos son rellenos claros transparentes; en claro, las gráficas van en el verde del oscuro. */
+/* El velo de atrás de una ventana solo oscurece, menos que en Simple: si también borrara, la ventana de vidrio ya no
+   vería nada que desenfocar. */
+:root[data-estilo='cristal'][data-tema='oscuro'] {
+  --fondo: #000000;
+  --campo-fondo: rgba(255, 255, 255, 0.07);
+  --campo-encima: rgba(255, 255, 255, 0.11);
+  --velo: rgba(0, 0, 0, 0.45);
+}
+:root[data-estilo='cristal'][data-tema='claro'] {
+  --fondo: #d4d7dd;
+  --grafica: #3f9b5a;
+  --campo-fondo: rgba(255, 255, 255, 0.78);
+  --campo-encima: rgba(255, 255, 255, 0.92);
+  --velo: rgba(0, 0, 0, 0.2);
+}
+
+/* ── El material: las tarjetas son contenido (elegido entre material y cristal). El vidrio desenfocado con su tinte y
+   su sombra, sin brillo ni canto y quietas al pasar el mouse; esquinas de 22, como los widgets del iPhone. ── */
+:root[data-estilo='cristal'][data-tema='oscuro'] :is(.tarjeta, .tarjeta-panel) {
+  background: var(--cristal-tinte);
+  -webkit-backdrop-filter: blur(26px) saturate(150%);
+  backdrop-filter: blur(26px) saturate(150%);
+  border: 1px solid var(--cristal-linea);
+  border-radius: 22px;
+  box-shadow: 0 18px 40px -14px var(--cristal-sombra);
+}
+:root[data-estilo='cristal'][data-tema='claro'] :is(.tarjeta, .tarjeta-panel) {
+  background: var(--cl-tinte);
+  -webkit-backdrop-filter: blur(26px) saturate(160%);
+  backdrop-filter: blur(26px) saturate(160%);
+  border: 1px solid var(--cl-linea);
+  border-radius: 22px;
+  box-shadow: 0 18px 40px -14px var(--cl-sombra);
+}
+
+/* ── El vidrio, por tipo ──
+   menu: la barra lateral flotante · boton: los botones de la barra de arriba · control: las búsquedas de las vistas, los
+   filtros y el dock · busqueda: la búsqueda grande de Inicio · hoja: las ventanas y lo que se abre encima. */
+
+/* La luz que sigue al mouse (diseno/vidrio.ts mueve --luz-x, --luz-y, --luz-a y --luz-r): un brillo suave por dentro y,
+   en el canto, la línea de luz que se junta de ese lado. En claro, más fuerte, para que se note sobre vidrio blanco. */
+:root[data-estilo='cristal'] [data-vidrio] {
+  --luz-brillo: radial-gradient(circle calc(var(--luz-r, 0px) + 1px) at var(--luz-x, 50%) var(--luz-y, 0%), rgba(255, 255, 255, calc(var(--luz-a, 0) * var(--luz-fuerza))), transparent);
+  --luz-canto: radial-gradient(circle calc(var(--luz-r, 0px) * 0.7 + 1px) at var(--luz-x, 50%) var(--luz-y, 0%), rgba(255, 255, 255, var(--luz-a, 0)), transparent);
+}
+:root[data-estilo='cristal'][data-tema='oscuro'] [data-vidrio] { --luz-fuerza: 0.15; }
+:root[data-estilo='cristal'][data-tema='claro'] [data-vidrio] { --luz-fuerza: 0.55; }
+
+/* El canto de luz de 1 px, más claro arriba a la izquierda. Cada pieza de vidrio va con position: relative (o absolute),
+   que pone ella. */
+:root[data-estilo='cristal'] [data-vidrio]::before {
+  content: "";
+  position: absolute;
+  inset: var(--canto-fuera, -1px);
+  z-index: 1;
+  border-radius: inherit;
+  padding: 1px;
+  pointer-events: none;
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+}
+:root[data-estilo='cristal'][data-tema='oscuro'] [data-vidrio]::before {
+  background: var(--luz-canto), linear-gradient(var(--canto-angulo, 120deg), var(--cristal-canto), transparent var(--canto-hasta, 24%), transparent 70%, rgba(255, 255, 255, var(--canto-abajo, 0.12)));
+}
+:root[data-estilo='cristal'][data-tema='claro'] [data-vidrio]::before {
+  background: var(--luz-canto), linear-gradient(130deg, var(--cl-canto), rgba(255, 255, 255, 0.35) 26%, rgba(255, 255, 255, 0.2) 70%, rgba(255, 255, 255, 0.75));
+}
+[data-vidrio='menu'] { --canto-fuera: 0px; --canto-angulo: 160deg; --canto-hasta: 26%; --canto-abajo: 0.1; }
+[data-vidrio='busqueda'] { --canto-angulo: 100deg; --canto-hasta: 22%; }
+
+/* menu */
+:root[data-estilo='cristal'][data-tema='oscuro'] [data-vidrio='menu'] {
+  border: 0;
+  background: var(--luz-brillo), linear-gradient(170deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.015) 40%), var(--cristal-barras-vidrio);
+  -webkit-backdrop-filter: blur(30px) saturate(160%);
+  backdrop-filter: blur(30px) saturate(160%);
+  box-shadow: inset 0 0 0 1px var(--cristal-linea), 0 18px 40px -14px var(--cristal-sombra);
+}
+:root[data-estilo='cristal'][data-tema='claro'] [data-vidrio='menu'] {
+  border: 0;
+  background: var(--luz-brillo), linear-gradient(170deg, rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0.12) 40%), var(--cl-barras);
+  -webkit-backdrop-filter: blur(30px) saturate(180%);
+  backdrop-filter: blur(30px) saturate(180%);
+  box-shadow: inset 0 0 0 1px var(--cl-linea), 0 18px 40px -14px var(--cl-sombra);
+}
+
+/* boton (la barra de arriba: actualizar, la sucursal, «Ocultar varios», la hora de corte) */
+:root[data-estilo='cristal'][data-tema='oscuro'] [data-vidrio='boton'] {
+  background: var(--luz-brillo), linear-gradient(180deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.03)), var(--cristal-tinte-control);
+  -webkit-backdrop-filter: blur(16px) saturate(160%);
+  backdrop-filter: blur(16px) saturate(160%);
+  border-color: var(--cristal-linea);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.16), 0 6px 16px -8px var(--cristal-sombra);
+}
+:root[data-estilo='cristal'][data-tema='oscuro'] [data-vidrio='boton']:hover:not(:disabled) {
+  background: var(--luz-brillo), linear-gradient(180deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0.05)), var(--cristal-tinte-control);
+}
+
+/* control (las búsquedas de las vistas, los filtros, el dock) y busqueda (la grande de Inicio) */
+:root[data-estilo='cristal'][data-tema='oscuro'] :is([data-vidrio='control'], [data-vidrio='busqueda']) {
+  background: var(--luz-brillo), linear-gradient(180deg, rgba(255, 255, 255, 0.09), rgba(255, 255, 255, 0.025)), var(--cristal-tinte-control);
+  -webkit-backdrop-filter: blur(20px) saturate(160%);
+  backdrop-filter: blur(20px) saturate(160%);
+  border-color: var(--cristal-linea);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.16), 0 10px 26px -12px var(--cristal-sombra);
+}
+:root[data-estilo='cristal'][data-tema='oscuro'] [data-vidrio='busqueda'] { box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.16), 0 12px 30px -12px var(--cristal-sombra); }
+:root[data-estilo='cristal'][data-tema='oscuro'] [data-vidrio='busqueda']:focus-within { border-color: rgba(255, 255, 255, 0.24); }
+
+/* En claro, todos los controles son el mismo vidrio blanco. */
+:root[data-estilo='cristal'][data-tema='claro'] :is([data-vidrio='boton'], [data-vidrio='control'], [data-vidrio='busqueda']) {
+  background: var(--luz-brillo), linear-gradient(180deg, rgba(255, 255, 255, 0.55), rgba(255, 255, 255, 0.18)), var(--cl-control);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  backdrop-filter: blur(20px) saturate(180%);
+  border-color: var(--cl-linea);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9), 0 8px 20px -10px var(--cl-sombra);
+}
+:root[data-estilo='cristal'][data-tema='claro'] [data-vidrio='boton']:hover:not(:disabled) {
+  background: var(--luz-brillo), linear-gradient(180deg, rgba(255, 255, 255, 0.72), rgba(255, 255, 255, 0.3)), var(--cl-control);
+}
+:root[data-estilo='cristal'][data-tema='claro'] [data-vidrio='busqueda']:focus-within { border-color: rgba(255, 255, 255, 0.95); }
+
+/* hoja (las ventanas, y lo que se abre encima): vidrio grueso, que deja ver poco de atrás para que el formulario se lea.
+   Por dentro nada es vidrio: lo que pinta con --fondo (los grupos de campos, «Ver inglés») pasa a un relleno claro
+   transparente. */
+:root[data-estilo='cristal'][data-tema='oscuro'] [data-vidrio='hoja'] {
+  --fondo: var(--cristal-relleno);
+  background: var(--luz-brillo), linear-gradient(165deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.015) 40%), var(--cristal-ventana);
+  -webkit-backdrop-filter: blur(40px) saturate(170%);
+  backdrop-filter: blur(40px) saturate(170%);
+  border-color: var(--cristal-linea);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14), 0 30px 80px -20px rgba(0, 0, 0, 0.8);
+}
+:root[data-estilo='cristal'][data-tema='claro'] [data-vidrio='hoja'] {
+  --fondo: var(--cl-relleno);
+  background: var(--luz-brillo), linear-gradient(165deg, rgba(255, 255, 255, 0.6), rgba(255, 255, 255, 0.18) 40%), var(--cl-ventana);
+  -webkit-backdrop-filter: blur(40px) saturate(180%);
+  backdrop-filter: blur(40px) saturate(180%);
+  border-color: var(--cl-linea);
+  box-shadow: inset 0 1px 0 #ffffff, 0 30px 80px -20px rgba(20, 30, 50, 0.35);
+}
+
+/* Una hoja dentro de otra (una lista que se abre dentro de una ventana): nunca vidrio sobre vidrio. Además el navegador
+   no la deja ver a través de la ventana (su desenfoque no alcanza lo de atrás y el texto se transparenta), así que va de
+   material grueso, casi opaco y un poco más claro que la ventana, con su mismo canto y su sombra. */
+:root[data-estilo='cristal'][data-tema='oscuro'] [data-vidrio='hoja'] [data-vidrio='hoja'] {
+  background: var(--luz-brillo), linear-gradient(165deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.015) 40%), rgb(34, 34, 36);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+:root[data-estilo='cristal'][data-tema='claro'] [data-vidrio='hoja'] [data-vidrio='hoja'] {
+  background: var(--luz-brillo), linear-gradient(165deg, rgba(255, 255, 255, 0.6), rgba(255, 255, 255, 0.18) 40%), rgb(248, 248, 250);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+/* ── El rebote al picar (use:pica): crece con resorte (los botones 8 %, los controles 5 %, la búsqueda 1.5 %) y
+   regresa al soltar. Reemplaza el «se aprieta» de Simple. ── */
+:root[data-estilo='cristal'] [data-pica] { transition: scale 0.548s var(--resorte-escala), opacity 150ms; }
+:root[data-estilo='cristal'] [data-pica]:active { transform: none; }
+:root[data-estilo='cristal'] [data-pica][data-picado] { scale: var(--pica); }
+
+@media (prefers-reduced-motion: reduce) {
+  :root[data-estilo='cristal'] [data-pica] { transition: none; }
+  :root[data-estilo='cristal'] [data-pica][data-picado] { scale: none; }
+}

@@ -179,6 +179,44 @@
     background: var(--solido);
   }
 
+  /* Cristal: la tabla es contenido y va de material, como las tarjetas (libreta 4, «El estilo Cristal»): vidrio
+     tranquilo, sin canto ni luz, y sus renglones dejan de ser sólidos (un relleno claro transparente detrás de todos). */
+  :global(:root[data-estilo='cristal'][data-tema='oscuro']) .tabla.marco {
+    background: var(--cristal-tinte);
+    -webkit-backdrop-filter: blur(26px) saturate(150%);
+    backdrop-filter: blur(26px) saturate(150%);
+    border: 1px solid var(--cristal-linea);
+    box-shadow: 0 18px 40px -14px var(--cristal-sombra);
+  }
+
+  :global(:root[data-estilo='cristal'][data-tema='claro']) .tabla.marco {
+    background: var(--cl-tinte);
+    -webkit-backdrop-filter: blur(26px) saturate(160%);
+    backdrop-filter: blur(26px) saturate(160%);
+    border: 1px solid var(--cl-linea);
+    box-shadow: 0 18px 40px -14px var(--cl-sombra);
+  }
+
+  :global(:root[data-estilo='cristal'][data-tema='oscuro']) .tabla.marco .cuerpo {
+    background: var(--cristal-relleno);
+  }
+
+  :global(:root[data-estilo='cristal'][data-tema='claro']) .tabla.marco .cuerpo {
+    background: rgba(255, 255, 255, 0.32);
+  }
+
+  :global(:root[data-estilo='cristal']) .tabla.marco .cuerpo > :global(:is(.fila, .nota)) {
+    background: transparent;
+  }
+
+  :global(:root[data-estilo='cristal'][data-tema='oscuro']) .tabla.marco .cuerpo > :global(:is(.fila:not(.quieta):hover, .fila[aria-pressed='true'])) {
+    background: rgba(255, 255, 255, 0.05);
+  }
+
+  :global(:root[data-estilo='cristal'][data-tema='claro']) .tabla.marco .cuerpo > :global(:is(.fila:not(.quieta):hover, .fila[aria-pressed='true'])) {
+    background: rgba(255, 255, 255, 0.4);
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .tabla.marco .cuerpo > :global(.fila) {
       transition: none;

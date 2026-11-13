@@ -45,6 +45,16 @@
     }
   }
 
+  /* Cristal: los esqueletos son contenido y van de material (libreta 4): el mismo latido, con un relleno blanco
+     transparente sobre el material (en claro, oscuro transparente), un poco más que --chip para que se vea. */
+  :global(:root[data-estilo='cristal'][data-tema='oscuro']) .esqueleto {
+    background: var(--cristal-esqueleto);
+  }
+
+  :global(:root[data-estilo='cristal'][data-tema='claro']) .esqueleto {
+    background: var(--cl-esqueleto);
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .esqueleto {
       animation: none;

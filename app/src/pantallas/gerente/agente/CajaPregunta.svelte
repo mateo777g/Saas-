@@ -22,6 +22,7 @@
   import { DURA_FLECHA, resorteFlecha } from '../../../diseno/flecha';
   import Icono from '../../../diseno/Icono.svelte';
   import { pista } from '../../../diseno/pista';
+  import { vidrio } from '../../../diseno/vidrio';
   import { PERIODOS_REPORTE, type PeriodoReporte } from '../../../lib/reporte';
 
   let {
@@ -234,7 +235,8 @@
       style:--alto="{altoMenu}px"
       inert={!menuAbierto}
     >
-      <div class="menu-fondo" aria-hidden="true"></div>
+      <!-- En Cristal, una hoja de vidrio (su receta en cristal.css). -->
+      <div class="menu-fondo" aria-hidden="true" use:vidrio={'hoja'}></div>
       <div class="menu-renglones" bind:this={menu} bind:offsetHeight={altoMenu}>
         {#each [null, ...PERIODOS_REPORTE] as p, j (p?.valor ?? 'titulo')}
           {@const k = menuArriba ? N_MENU - 1 - j : j}
@@ -272,6 +274,7 @@
     class:en-chat={modo === 'chat'}
     class:escribiendo
     style:height={altoCampo === null ? null : `${altoCampo + ALTO_PIE}px`}
+    use:vidrio={'busqueda'}
     bind:this={caja}
     onmousedown={alApretar}
   >
@@ -346,6 +349,12 @@
 
   .caja-pregunta:focus-within {
     border-color: var(--linea-fuerte);
+  }
+
+  /* Cristal: la caja es vidrio, como la búsqueda de Inicio que salió de ella (su receta en cristal.css). Como píldora
+     recorta lo de adentro, así que su canto va por dentro. */
+  :global(:root[data-estilo='cristal']) .caja-pregunta {
+    --canto-fuera: 0px;
   }
 
   .pildora-texto {

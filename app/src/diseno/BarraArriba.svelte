@@ -10,6 +10,11 @@
 -->
 <script lang="ts">
   import type { Snippet } from 'svelte';
+  import { ponerEnBarra } from './vidrio';
+
+  // En Cristal, lo que se pica aquí es vidrio (los botones de solo ícono, la sucursal, «Ocultar varios»): se lo dice a
+  // sus piezas (diseno/vidrio.ts).
+  ponerEnBarra();
 
   let {
     titulo,
@@ -143,5 +148,39 @@
   .barra :global(.cuadro > svg) {
     width: 18px;
     height: 18px;
+  }
+
+  /* Cristal: la barra es transparente. Lo que pasa por debajo se borra y se oscurece (en claro, se aclara) poco a
+     poco; el desvanecido corre a todo lo ancho, también por detrás del menú flotante (300 px a la izquierda; el marco
+     recorta lo que sobra), para que junto al menú no quede una raya. El menú va encima (z-index 3 sobre este 2). Solo
+     lo que se pica va en vidrio; el título, la pastilla y la hora van sin vidrio. */
+  :global(:root[data-estilo='cristal']) .barra {
+    background: transparent;
+    border-bottom-color: transparent;
+  }
+
+  :global(:root[data-estilo='cristal']) .barra::before {
+    content: '';
+    position: absolute;
+    inset: 0 0 -18px -300px;
+    z-index: -1;
+    pointer-events: none;
+    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
+    -webkit-mask-image: linear-gradient(#000 55%, transparent);
+    mask-image: linear-gradient(#000 55%, transparent);
+  }
+
+  :global(:root[data-estilo='cristal'][data-tema='oscuro']) .barra::before {
+    background: linear-gradient(rgba(0, 0, 0, 0.55), rgba(0, 0, 0, 0));
+  }
+
+  :global(:root[data-estilo='cristal'][data-tema='claro']) .barra::before {
+    background: linear-gradient(rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0));
+  }
+
+  /* Los botones de vidrio de aquí llevan su canto con position: relative (el dock ya va con absolute). */
+  :global(:root[data-estilo='cristal']) .barra :global([data-vidrio='boton']) {
+    position: relative;
   }
 </style>

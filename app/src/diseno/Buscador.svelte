@@ -15,6 +15,7 @@
   import { tick } from 'svelte';
   import Haz from './Haz.svelte';
   import Icono from './Icono.svelte';
+  import { vidrio } from './vidrio';
 
   let {
     vistas,
@@ -130,7 +131,7 @@
 
 <div class="buscador" class:abierta class:ya class:flotante={!!alCerrar}>
   <Haz>
-    <label class="campo">
+    <label class="campo" use:vidrio={'busqueda'}>
       <Icono nombre="r-buscar" tamano={18} />
       <input
         bind:this={campo}
@@ -164,7 +165,7 @@
   </Haz>
 
   <!-- Siempre está puesta: cerrada no se ve ni se puede picar, y así puede salir en fila al abrir. -->
-  <div class="lista aparece" style:--i={0}>
+  <div class="lista aparece" style:--i={0} use:vidrio={'hoja'}>
     <div class="lista-cuerpo" id="resultados-busqueda" bind:this={cuerpo} role="listbox" aria-label="Resultados">
       {#if !todos.length}
         <div class="vacia">No hay una vista ni una acción con «{texto.trim()}».</div>
@@ -226,6 +227,27 @@
 
   .campo:focus-within {
     border-color: var(--linea-fuerte);
+  }
+
+  /* Cristal: la búsqueda es vidrio, el lugar natural del vidrio en iOS (como la barra de Safari); su receta en
+     cristal.css. Sus teclas «Ctrl K», de vidrio también. */
+  :global(:root[data-estilo='cristal']) .campo {
+    position: relative;
+  }
+
+  /* Los resultados se abren encima: una hoja de vidrio. Recorta lo que se desliza, así que su canto va por dentro. */
+  :global(:root[data-estilo='cristal']) .lista {
+    --canto-fuera: 0px;
+  }
+
+  :global(:root[data-estilo='cristal'][data-tema='oscuro']) kbd {
+    background: rgba(255, 255, 255, 0.06);
+    border-color: rgba(255, 255, 255, 0.12);
+  }
+
+  :global(:root[data-estilo='cristal'][data-tema='claro']) kbd {
+    background: rgba(255, 255, 255, 0.5);
+    border-color: rgba(0, 0, 0, 0.08);
   }
 
   input {

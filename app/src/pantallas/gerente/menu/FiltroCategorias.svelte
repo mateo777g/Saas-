@@ -14,6 +14,7 @@
   import { DURA_FLECHA, resorteFlecha, trazosFlecha } from '../../../diseno/flecha';
   import Icono from '../../../diseno/Icono.svelte';
   import IconoCategoria from '../../../diseno/IconoCategoria.svelte';
+  import { pica, vidrio } from '../../../diseno/vidrio';
   import type { Categoria, Producto } from '../../../lib/menu';
 
   let {
@@ -90,6 +91,8 @@
   <button
     type="button"
     class="boton"
+    use:vidrio={'control'}
+    use:pica={1.05}
     bind:this={boton}
     aria-expanded={abierta}
     aria-controls={idLista}
@@ -108,7 +111,7 @@
     >
   </button>
 
-  <div class="fondo" aria-hidden="true"></div>
+  <div class="fondo" aria-hidden="true" use:vidrio={'hoja'}></div>
   <div class="lista" id={idLista} inert={!abierta} bind:offsetHeight={alto}>
     <span class="etiqueta titulo">CATEGORÍAS</span>
     {@render opcion(0, () => elegir(null), filtro === null, 'Todas', productos.length, null)}
@@ -122,6 +125,11 @@
   .filtro {
     position: relative;
     display: flex;
+  }
+
+  /* Cristal: el botón es vidrio (su receta en cristal.css) y la lista abre en una hoja de vidrio. */
+  :global(:root[data-estilo='cristal']) .boton {
+    position: relative;
   }
 
   /* boton() de diseno.py, el secundario; abierto, con chip. De 48 desde la tabla nueva (8 nov 2026), parejo con la búsqueda,

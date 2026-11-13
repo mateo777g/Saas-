@@ -18,10 +18,13 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import BarraArriba from '../../diseno/BarraArriba.svelte';
+  import Boton from '../../diseno/Boton.svelte';
   import BotonCuadro from '../../diseno/BotonCuadro.svelte';
+  import Icono from '../../diseno/Icono.svelte';
   import { esDeRed } from '../../lib/errores';
   import { diaConNombre, saludoPorHora } from '../../lib/formato';
   import type { Sucursal } from '../../lib/gerente';
+  import type { EstadoMercadoPago } from '../../lib/mercadoPago';
   import { escuchar } from '../../lib/pos';
   import {
     leerCifrasDeInicio,
@@ -48,6 +51,8 @@
     alElegir,
     alAbrir,
     alIr,
+    estadoMercadoPago = null,
+    alConectarMercadoPago,
   }: {
     sucursal: Sucursal;
     sucursales: Sucursal[];
@@ -58,6 +63,9 @@
     alElegir: (sucursal: Sucursal) => void;
     alAbrir: (que: 'pos' | 'caja' | 'cocina') => void;
     alIr: (destino: Destino) => void;
+    // La franja ámbar de arriba sale solo si la conexión con Mercado Pago se cayó (lib/mercadoPago.ts).
+    estadoMercadoPago?: EstadoMercadoPago | null;
+    alConectarMercadoPago?: () => void;
   } = $props();
 
   type Lectura<T> = { estado: 'leyendo' } | { estado: 'listo'; datos: T } | { estado: 'error'; deRed: boolean };
@@ -149,6 +157,14 @@
 
 <main class="vista">
   <div class="inicio">
+    {#if estadoMercadoPago?.estado === 'desconectado'}
+      <!-- Solo para el gerente, arriba de la fecha y el saludo; se va sola al conectar otra vez (ajustes.md, encuesta 3). -->
+      <div class="aviso-mp" role="status">
+        <Icono nombre="alerta" tamano={18} />
+        <span><b>Tu Mercado Pago se desconectó.</b> Mientras tanto, la terminal se cobra a mano.</span>
+        <Boton etiqueta="Conectar otra vez" tono="tinta" tamano="chico" onclick={alConectarMercadoPago} />
+      </div>
+    {/if}
     <div class="saludo">
       <span class="etiqueta fecha">{diaConNombre(sucursal.hoy)}</span>
       <h1>{saludoPorHora(sucursal.hora)}, {nombre}.<span class="debajo">Así va tu negocio hoy.</span></h1>
@@ -256,5 +272,70 @@
     grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
     gap: 12px;
     margin-top: 12px;
+  }
+
+  /* La franja ámbar de Mercado Pago (maqueta FiHkjmT1meyTu7zuU3En2n, versión 36): a lo ancho de la columna. En
+     Cristal es material con su ámbar. */
+  .aviso-mp {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    box-sizing: border-box;
+    margin: 0 0 22px;
+    padding: 10px 10px 10px 16px;
+    border: 1px solid rgba(233, 181, 25, 0.38);
+    border-radius: 14px;
+    background: var(--amarillo-fondo);
+    font-size: 13px;
+    font-weight: 500;
+    line-height: 1.45;
+    color: var(--suave);
+    animation: aviso-llega 0.3s ease;
+  }
+
+  .aviso-mp > :global(svg) {
+    flex: none;
+    color: var(--amarillo-texto);
+  }
+
+  .aviso-mp b {
+    color: var(--texto);
+    font-weight: 600;
+  }
+
+  .aviso-mp > :global(.boton) {
+    margin-left: auto;
+    flex: none;
+  }
+
+  @keyframes aviso-llega {
+    from {
+      opacity: 0;
+    }
+  }
+
+  :global(:root[data-estilo='cristal'][data-tema='oscuro']) .aviso-mp {
+    background: linear-gradient(rgba(233, 181, 25, 0.13), rgba(233, 181, 25, 0.13)), var(--cristal-tinte);
+    -webkit-backdrop-filter: blur(26px) saturate(150%);
+    backdrop-filter: blur(26px) saturate(150%);
+    border-color: rgba(233, 181, 25, 0.3);
+    border-radius: 18px;
+    box-shadow: 0 18px 40px -14px var(--cristal-sombra);
+  }
+
+  :global(:root[data-estilo='cristal'][data-tema='claro']) .aviso-mp {
+    background: linear-gradient(rgba(233, 181, 25, 0.16), rgba(233, 181, 25, 0.16)), var(--cl-tinte);
+    -webkit-backdrop-filter: blur(26px) saturate(160%);
+    backdrop-filter: blur(26px) saturate(160%);
+    border-color: rgba(233, 181, 25, 0.38);
+    border-radius: 18px;
+    box-shadow: 0 18px 40px -14px var(--cl-sombra);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .aviso-mp {
+      animation: none;
+    }
   }
 </style>

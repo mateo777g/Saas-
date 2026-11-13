@@ -1,174 +1,223 @@
 <!--
-  Ajustes del gerente, portado de panel/views/ajustes_view.py (maqueta aprobada:
-  https://claude.ai/artifact/QNMone8zhHWvzae5aVHG2f) con lo que cambió al dejar Flet: ya no hay
-  carpeta de exportación (libreta 4, decidido el 9 de octubre de 2026) y por ahora solo queda el
-  tema (decidido el 11 de octubre). La tarjeta Tema conserva su ancho de Flet (2 de 5, ahora a la
-  izquierda). En el panel del gerente, el hueco de la derecha es la hora de corte de la sucursal
-  (pieza 5, decidido el 18 de octubre de 2026; maqueta Cortes y reportes 7J6LvYWiktRnGxNugbuaoe): la
-  guarda fijar_hora_corte, queda en la bitácora y también cambia a qué día pertenecen las ventas
-  pasadas.
+  Ajustes, en cajitas que se abren (12 de noviembre de 2026; maqueta FiHkjmT1meyTu7zuU3En2n, «Vista: Ajustes», aprobada
+  en su versión 36; decisiones en planes/trabajo/estilo-cristal/ajustes.md y libreta 4, «Ajustes, en cajitas que se
+  abren»). Una columna al centro, como Inicio: «TUS AJUSTES» con su nota y una cajita por tema, que llegan cerradas;
+  cada cabecera dice cómo está. Las que vengan se agregan abajo. La usan los tres paneles: Fragmentless y los
+  distribuidores tienen solo Interfaz; el gerente, también Mercado Pago, que es de la sucursal.
 
-  El tema se guarda en este navegador (lib/tema.ts) y se ve al momento en todo el panel. La barra
-  de arriba (con su chip) la pone el panel. Desde el 12 de octubre de 2026 la usan tal cual los
-  paneles de Fragmentless y del distribuidor, sin sucursal y sin hora de corte.
+  · Interfaz: el tema (el botón del sol que se vuelve luna) y el estilo, Simple o Cristal. Los dos se guardan en este
+    navegador (lib/tema.ts, lib/estilo.ts) y cambian todo el panel al momento. A la derecha, la ventanita de muestra,
+    como la de «Modo de color» de la app de Claude (el developer, 12 nov 2026, noche; antes era el Inicio a un tercio):
+    una ventana chiquita con dos rayitas y un punto del acento, en el tema que se tiene. En Simple es lisa; en Cristal
+    es de vidrio, y detrás va el fondo de Cristal con una sola mancha al centro, para que se vea el vidrio.
+  · Mercado Pago: sin conectar, conectado (la cuenta y desde cuándo) o «Se desconectó». La conexión de verdad la hace
+    la sesión de la terminal (lib/mercadoPago.ts); hasta entonces cada sucursal sale «Sin conectar» (el developer, 12 nov
+    2026: «que se vea ya»). Desde la franja de Inicio, llega abierta (`abrirMercadoPago`).
+
+  La hora de corte ya no va aquí: se fue a Cortes y reportes (encuesta del 12 nov 2026).
 -->
 <script lang="ts">
   import { onMount } from 'svelte';
   import Boton from '../../diseno/Boton.svelte';
+  import BotonTema from '../../diseno/BotonTema.svelte';
   import CajaError from '../../diseno/CajaError.svelte';
+  import Cajita from '../../diseno/Cajita.svelte';
   import Esqueleto from '../../diseno/Esqueleto.svelte';
   import Icono from '../../diseno/Icono.svelte';
-  import Lista from '../../diseno/Lista.svelte';
-  import Selector from '../../diseno/Selector.svelte';
-  import Tarjeta from '../../diseno/Tarjeta.svelte';
-  import { ALGO_SALIO_PANEL, esDeRed, Fallo, SIN_CONEXION } from '../../lib/errores';
+  import { esDeRed, SIN_CONEXION } from '../../lib/errores';
+  import { cambiarEstilo, estiloActual, type Estilo } from '../../lib/estilo';
   import type { Sucursal } from '../../lib/gerente';
-  import { fijarHoraCorte, leerHoraCorte } from '../../lib/reportes';
-  import { cambiarTema, temaActual, type Tema } from '../../lib/tema';
+  import { leerMercadoPago, SE_PUEDE_CONECTAR, type EstadoMercadoPago } from '../../lib/mercadoPago';
+  import { vidrio } from '../../diseno/vidrio';
+  import { cambiarTema, temaActual } from '../../lib/tema';
 
-  let { sucursal }: { sucursal?: Sucursal } = $props();
-
-  // En el orden de Flet: Oscuro primero.
-  const TEMAS: { valor: Tema; texto: string; icono: string }[] = [
-    { valor: 'oscuro', texto: 'Oscuro', icono: 'luna' },
-    { valor: 'claro', texto: 'Claro', icono: 'sol' },
-  ];
+  let {
+    sucursal,
+    abrirMercadoPago = false,
+  }: {
+    sucursal?: Sucursal;
+    abrirMercadoPago?: boolean;
+  } = $props();
 
   let tema = $state(temaActual());
+  let estilo = $state(estiloActual());
+  let interfaz = $state(false);
+  // svelte-ignore state_referenced_locally
+  let mercadoPago = $state(abrirMercadoPago);
+  let caja = $state<HTMLElement | null>(null);
 
-  function elegir(nuevo: Tema) {
-    if (nuevo === tema) return;
-    tema = nuevo;
-    cambiarTema(nuevo);
+  const NOMBRE: Record<Estilo, string> = { simple: 'Simple', cristal: 'Cristal' };
+  const PISTA: Record<Estilo, string> = {
+    simple: 'Liso, como siempre. Solo cambia cómo se ve: todo sigue en su lugar.',
+    cristal: 'De vidrio, con una luz que sigue al mouse. Solo cambia cómo se ve: todo sigue en su lugar.',
+  };
+
+  function alternarTema() {
+    tema = tema === 'claro' ? 'oscuro' : 'claro';
+    cambiarTema(tema);
   }
 
-  // ─── La hora de corte (solo con sucursal) ───
-  const HORAS = Array.from({ length: 24 }, (_, h) => h);
-  let guardada = $state<number | null>(null);
-  let hora = $state<number | null>(null);
-  let paso = $state<'guardando' | 'listo' | null>(null);
-  let error = $state<string | null>(null);
+  function elegirEstilo(nuevo: Estilo) {
+    if (nuevo === estilo) return;
+    estilo = nuevo;
+    cambiarEstilo(nuevo);
+  }
 
-  onMount(async () => {
-    if (!sucursal) return;
-    try {
-      guardada = hora = await leerHoraCorte(sucursal.id);
-    } catch (falla) {
-      console.error('[ajustes] no se pudo leer la hora de corte:', falla);
-      error = esDeRed(falla) ? SIN_CONEXION : 'No se pudo leer la hora de corte. Intenta de nuevo en un momento.';
+  // ─── Mercado Pago (solo con sucursal) ───
+  let estadoMp = $state<EstadoMercadoPago | null>(null);
+  let errorMp = $state<string | null>(null);
+
+  onMount(() => {
+    // Desde la franja de Inicio: que se vea la cajita de Mercado Pago.
+    if (abrirMercadoPago && caja) {
+      const quieto = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+      setTimeout(() => caja?.scrollIntoView({ block: 'nearest', behavior: quieto ? 'auto' : 'smooth' }), 60);
     }
+    if (!sucursal) return;
+    leerMercadoPago(sucursal.id)
+      .then((e) => (estadoMp = e))
+      .catch((falla) => {
+        console.error('[ajustes] no se pudo leer la conexión con Mercado Pago:', falla);
+        errorMp = esDeRed(falla) ? SIN_CONEXION : 'No se pudo leer tu conexión con Mercado Pago. Intenta de nuevo en un momento.';
+      });
   });
 
-  async function guardar() {
-    if (!sucursal || hora === null) return;
-    paso = 'guardando';
-    error = null;
-    try {
-      await fijarHoraCorte(sucursal.id, hora);
-    } catch (falla) {
-      if (!(falla instanceof Fallo)) console.error('[ajustes] no se pudo guardar la hora de corte:', falla);
-      error = falla instanceof Fallo ? falla.message : ALGO_SALIO_PANEL;
-      paso = null;
-      return;
-    }
-    guardada = hora;
-    paso = 'listo';
-    setTimeout(() => (paso = null), 1600);
+  function conectar() {
+    // Todavía no hay a dónde llevar: lo conecta la sesión de la terminal (lib/mercadoPago.ts).
+    if (!SE_PUEDE_CONECTAR) return;
   }
 
-  // El ejemplo de la tarjeta, con la hora que está elegida.
-  function ejemplo(h: number): { hora: string; resto: string } {
-    if (h === 0) return { hora: '0:00', resto: ', cada día va de medianoche a medianoche.' };
-    const cuenta = h > 1 ? '0:40' : '0:20';
-    return {
-      hora: `${h}:00`,
-      resto: `, lo que se abre antes de las ${h}:00 cuenta en el día anterior: una cuenta del sábado a las ${cuenta} es del viernes.`,
-    };
+  // «12 de noviembre de 2026» y «12 de noviembre a las 14:32», de lo que diga la base.
+  const MESES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+  function diaLargo(iso: string, conAno: boolean) {
+    const [a, m, d] = iso.slice(0, 10).split('-').map(Number);
+    return `${d} de ${MESES[m - 1]}${conAno ? ` de ${a}` : ''}`;
   }
 </script>
 
-<Tarjeta como="section" class="ajustes" aria-label="Tus ajustes">
-  <div class="cabeza">
-    <span class="etiqueta">TUS AJUSTES</span>
-    <p class="nota">
-      {sucursal ? 'Configura los colores del panel y cuándo empieza el día de tu negocio.' : 'Configura los colores del panel.'}
-    </p>
-  </div>
-
-  <div class="fila">
-    <div class="tarjeta">
-      <div class="encabezado">
-        <span class="cuadro-icono"><Icono nombre="contraste" tamano={18} /></span>
-        <span class="titulos">
-          <span class="titulo">Tema</span>
-          <span class="nota">Los colores del panel: oscuro o claro.</span>
-        </span>
-      </div>
-      <div class="raya"></div>
-      <span class="etiqueta">COLORES DEL PANEL</span>
-      <div class="selector">
-        <Selector opciones={TEMAS} elegida={tema} alElegir={elegir} etiqueta="Tema" alto={38} lleno />
-      </div>
-      <p class="pie">
-        {sucursal ? 'Se guarda en este navegador y se ve al momento en todo el panel.' : 'El cambio se ve al momento en todo el panel.'}
+<div class="desliza">
+  <div class="ajustes">
+    <div class="cabeza">
+      <span class="etiqueta">TUS AJUSTES</span>
+      <p class="nota">
+        {sucursal ? 'Cómo se ve tu panel en esta compu y lo que conectas a esta sucursal.' : 'Cómo se ve tu panel en esta compu.'}
       </p>
     </div>
 
+    <Cajita icono="contraste" titulo="Interfaz" nota="Cómo se ve tu panel en este navegador." bind:abierta={interfaz}>
+      {#snippet resumen()}{tema === 'claro' ? 'Claro' : 'Oscuro'} · {NOMBRE[estilo]}{/snippet}
+      <div class="interfaz">
+        <div class="izquierda">
+          <div class="grupo">
+            <span class="etiqueta">TEMA</span>
+            <div class="control">
+              <BotonTema {tema} ayuda={tema === 'claro' ? 'Cambiar tu panel a oscuro' : 'Cambiar tu panel a claro'} alCambiar={alternarTema} />
+              <span class="tema-texto">Tu panel va en {tema}</span>
+            </div>
+            <p class="pista">Se guarda en este navegador y se ve al momento en todo el panel.</p>
+          </div>
+          <div class="grupo">
+            <span class="etiqueta">ESTILO</span>
+            <div class="formas" role="group" aria-label="Estilo">
+              {#each ['simple', 'cristal'] as const as e (e)}
+                <button type="button" class="forma" aria-pressed={estilo === e} onclick={() => elegirEstilo(e)}>{NOMBRE[e]}</button>
+              {/each}
+            </div>
+            <p class="pista">{PISTA[estilo]}</p>
+          </div>
+        </div>
+        <figure class="muestra">
+          <div class="muestra-fondo" aria-hidden="true">
+            <!-- En Cristal, la ventanita es una hoja de vidrio (su receta en cristal.css). -->
+            <div class="muestra-ventana" use:vidrio={'hoja'}>
+              <span class="rayita"></span>
+              <span class="rayita corta"></span>
+              <span class="punto-acento"></span>
+            </div>
+          </div>
+          <figcaption class="pista">Así se ve tu panel en {NOMBRE[estilo]} {tema}.</figcaption>
+        </figure>
+      </div>
+    </Cajita>
+
     {#if sucursal}
-      <div class="tarjeta corte">
-        <div class="encabezado">
-          <span class="cuadro-icono"><Icono nombre="reloj" tamano={18} /></span>
-          <span class="titulos">
-            <span class="titulo">Hora de corte</span>
-            <span class="nota">Cuándo empieza un día nuevo en tus ventas, tu caja y tus reportes.</span>
-          </span>
-        </div>
-        <div class="raya"></div>
-        <label class="etiqueta" for="hora-corte">EL DÍA EMPIEZA A LAS</label>
-        <div class="hora-fila">
-          {#if hora === null && !error}
-            <!-- El esqueleto de la primera lectura (regla «Los esqueletos»): la lista con su mismo tamaño. -->
-            <span class="solo-lector">Cargando tu hora de corte…</span>
-            <span class="hora-esqueleto" aria-hidden="true"><Esqueleto alto="44px" redondo="12px" /></span>
-          {:else}
-          <Lista id="hora-corte" bind:valor={hora} apagado={hora === null || paso !== null} opciones={HORAS.map((h) => ({ valor: h, texto: `${h}:00` }))} />
-          {/if}
-          <Boton
-            etiqueta={paso === 'guardando' ? 'Guardando…' : paso === 'listo' ? 'Guardado' : 'Guardar'}
-            icono="guardar"
-            tono="tinta"
-            apagado={hora === null || hora === guardada}
-            cargando={paso === 'guardando'}
-            exito={paso === 'listo'}
-            onclick={guardar}
-          />
-        </div>
-        {#if hora === null && !error}
-          <p class="ejemplo" aria-hidden="true">
-            <Esqueleto ancho="16px" alto="16px" />
-            <span class="ejemplo-esqueleto"><Esqueleto ancho="92%" alto="10px" /><Esqueleto ancho="24%" alto="10px" /></span>
-          </p>
-        {:else if hora !== null}
-          {@const e = ejemplo(hora)}
-          <p class="ejemplo"><Icono nombre="info" tamano={16} /><span>Con <b>{e.hora}</b>{e.resto}</span></p>
-        {/if}
-        {#if error}<div class="error"><CajaError mensaje={error} /></div>{/if}
-        <p class="pie">Es de esta sucursal y vale para todo tu equipo. Si la cambias, también cambia a qué día pertenecen las ventas pasadas.</p>
+      <div class="caja-mp" bind:this={caja}>
+        <Cajita icono="tarjeta" titulo="Mercado Pago" nota="De esta sucursal: {sucursal.nombre}." bind:abierta={mercadoPago}>
+          {#snippet resumen()}
+            {#if errorMp}
+              <span class="estado"><span class="punto"></span>No se pudo leer</span>
+            {:else if !estadoMp}
+              <Esqueleto ancho="96px" alto="12px" />
+            {:else if estadoMp.estado === 'conectado'}
+              <span class="estado"><span class="punto verde"></span>Conectado</span>
+            {:else if estadoMp.estado === 'desconectado'}
+              <span class="estado ambar"><span class="punto ambar"></span>Se desconectó</span>
+            {:else}
+              <span class="estado"><span class="punto"></span>Sin conectar</span>
+            {/if}
+          {/snippet}
+          <div class="mp">
+            {#if errorMp}
+              <CajaError mensaje={errorMp} />
+            {:else if !estadoMp}
+              <span class="solo-lector">Cargando tu conexión con Mercado Pago…</span>
+              <div class="mp-cargando" aria-hidden="true">
+                <Esqueleto ancho="92%" alto="10px" />
+                <Esqueleto ancho="64%" alto="10px" />
+                <span class="mp-esqueleto-boton"><Esqueleto ancho="190px" alto="40px" redondo="12px" /></span>
+              </div>
+            {:else if estadoMp.estado === 'conectado'}
+              <div class="cuenta">
+                <span class="cuenta-icono"><Icono nombre="check" tamano={18} /></span>
+                <span class="cuenta-texto">
+                  <b>Conectado a {estadoMp.cuenta}</b>
+                  <span>La cuenta de Mercado Pago de esta sucursal, desde el {diaLargo(estadoMp.desde, true)}.</span>
+                </span>
+              </div>
+              <p class="texto">El cobro llega solo a tu terminal Point, sin teclear el monto, y el dinero cae directo en tu cuenta: Fragmentless nunca lo toca.</p>
+              <div class="acciones"><Boton etiqueta="Desconectar" icono="desligar" tono="peligro" /></div>
+              <p class="pista">No se puede desconectar mientras un cobro espera en la terminal.</p>
+            {:else if estadoMp.estado === 'desconectado'}
+              <p class="aviso">
+                <Icono nombre="alerta" tamano={16} />
+                <span><b>Se desconectó el {diaLargo(estadoMp.cuando, false)} a las {estadoMp.cuando.slice(11, 16)}.</b> Mientras tanto, la terminal se cobra a mano: se teclea el monto y se anota como tarjeta.</span>
+              </p>
+              <div class="acciones"><Boton etiqueta="Conectar otra vez" icono="afuera" tono="tinta" onclick={conectar} /></div>
+              <p class="pista">Pasa, por ejemplo, si se quitó el permiso desde la app de Mercado Pago.</p>
+            {:else}
+              <p class="texto">
+                Conecta la cuenta de Mercado Pago de esta sucursal y el cobro llega solo a tu terminal Point, sin teclear el monto. El
+                dinero cae directo en tu cuenta: Fragmentless nunca lo toca.
+              </p>
+              <div class="acciones"><Boton etiqueta="Conectar Mercado Pago" icono="afuera" tono="tinta" onclick={conectar} /></div>
+              <p class="pista">Te lleva a Mercado Pago para que des el permiso, y regresas aquí. Cada sucursal conecta la suya.</p>
+            {/if}
+          </div>
+        </Cajita>
       </div>
     {/if}
   </div>
-</Tarjeta>
+</div>
 
 <style>
-  :global(.ajustes) {
-    padding: 20px;
+  .desliza {
+    position: absolute;
+    inset: 0;
+    overflow-y: auto;
+    scrollbar-gutter: stable;
+  }
+
+  .ajustes {
+    max-width: 940px;
+    margin: 0 auto;
+    padding: 24px 24px 40px;
     display: flex;
     flex-direction: column;
-    gap: 16px;
+    gap: 14px;
   }
 
   .cabeza {
-    padding: 4px 4px 0;
+    padding: 2px 4px 4px;
     display: flex;
     flex-direction: column;
     gap: 6px;
@@ -182,125 +231,361 @@
     color: var(--suave);
   }
 
-  .fila {
-    display: flex;
-    gap: 16px;
-    align-items: stretch;
+  /* Interfaz: a la izquierda el tema y el estilo; a la derecha, la ventanita de muestra. */
+  .interfaz {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 280px;
+    gap: 32px;
+    align-items: start;
   }
 
-  /* Su ancho de Flet: 2 de las 5 partes, contando los 16 entre tarjetas. */
-  .tarjeta {
-    flex: none;
+  .izquierda {
     min-width: 0;
-    width: calc((100% - 16px) * 2 / 5);
-    padding: 20px;
     display: flex;
     flex-direction: column;
-    background: var(--solido);
-    border: 1px solid var(--linea);
-    border-radius: 18px;
+    gap: 22px;
   }
 
-  .encabezado {
+  .grupo {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .pista {
+    margin: 0;
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 1.45;
+    color: var(--tenue);
+    text-wrap: pretty;
+  }
+
+  .control {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .tema-texto {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--suave);
+  }
+
+  /* Las formas, como las de «Tu menú en línea». */
+  .formas {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 3px;
+    padding: 3px;
+    border-radius: 12px;
+    background: var(--chip);
+  }
+
+  .forma {
+    position: relative;
+    height: 40px;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 8px;
+    border: 0;
+    border-radius: 9px;
+    background: transparent;
+    color: var(--suave);
+    font: 600 12.5px var(--jakarta);
+    white-space: nowrap;
+    cursor: pointer;
+    transition:
+      background-color 0.18s ease,
+      color 0.18s ease,
+      box-shadow 0.18s ease,
+      transform 0.15s ease;
+  }
+
+  .forma:hover {
+    color: var(--texto);
+  }
+
+  .forma:active {
+    transform: scale(0.97);
+  }
+
+  .forma:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px var(--campo-aro);
+  }
+
+  .forma[aria-pressed='true'] {
+    background: var(--solido);
+    color: var(--texto);
+    box-shadow: 0 1px 3px var(--sombra-segmento);
+  }
+
+  /* La ventanita de muestra, como la de «Modo de color» de la app de Claude: el fondo del panel y, encima, una ventana
+     con dos rayitas y un punto del acento. Quieta: es un dibujo. */
+  .muestra {
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .muestra figcaption {
+    text-align: center;
+  }
+
+  .muestra-fondo {
+    position: relative;
+    height: 172px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    border-radius: 16px;
+    background: var(--fondo);
+    box-shadow: 0 0 0 1px var(--linea-fuerte);
+    pointer-events: none;
+    user-select: none;
+  }
+
+  .muestra-ventana {
+    position: relative;
+    width: 200px;
+    height: 116px;
+    box-sizing: border-box;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    border: 1px solid var(--borde-tarjeta);
+    border-radius: 14px;
+    background: var(--solido);
+  }
+
+  .rayita {
+    width: 92px;
+    height: 6px;
+    border-radius: 3px;
+    background: color-mix(in srgb, var(--texto) 22%, transparent);
+  }
+
+  .rayita.corta {
+    width: 64px;
+  }
+
+  .punto-acento {
+    position: absolute;
+    right: 14px;
+    bottom: 14px;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: var(--acento);
+  }
+
+  /* Mercado Pago */
+  .estado {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .estado.ambar {
+    color: var(--amarillo-texto);
+  }
+
+  .punto {
+    width: 8px;
+    height: 8px;
+    flex: none;
+    border-radius: 50%;
+    background: var(--tenue);
+  }
+
+  .punto.verde {
+    background: var(--verde);
+  }
+
+  .punto.ambar {
+    background: var(--amarillo);
+  }
+
+  .mp,
+  .mp-cargando {
+    max-width: 640px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    animation: llega 0.2s ease;
+  }
+
+  .mp-cargando {
+    gap: 10px;
+  }
+
+  .mp-esqueleto-boton {
+    display: flex;
+    margin-top: 8px;
+  }
+
+  @keyframes llega {
+    from {
+      opacity: 0;
+    }
+  }
+
+  .cuenta {
     display: flex;
     align-items: center;
     gap: 12px;
+    padding: 12px 14px;
+    border-radius: 12px;
+    background: var(--chip);
   }
 
-  .cuadro-icono {
-    width: 36px;
-    height: 36px;
+  .cuenta-icono {
+    width: 32px;
+    height: 32px;
     flex: none;
     display: flex;
     align-items: center;
     justify-content: center;
-    border-radius: 11px;
-    background: var(--chip);
+    border-radius: 10px;
+    background: rgba(63, 155, 90, 0.16);
+    color: var(--verde);
   }
 
-  .titulos {
-    flex: 1;
+  .cuenta-texto {
     min-width: 0;
     display: flex;
     flex-direction: column;
-    gap: 3px;
+    gap: 2px;
+    font-size: 13px;
+    line-height: 1.4;
+    color: var(--suave);
   }
 
-  .titulo {
-    font-size: 14.5px;
+  .cuenta-texto b {
     font-weight: 700;
+    color: var(--texto);
   }
 
-  .raya {
-    height: 1px;
-    margin: 20px 0;
-    background: var(--linea);
+  .cuenta-texto span {
+    font-size: 12.5px;
+    font-weight: 500;
+    text-wrap: pretty;
   }
 
-  .selector {
-    margin-top: 8px;
-  }
-
-  .pie {
-    margin: 20px 0 0;
-    font-size: 12px;
+  .texto {
+    margin: 0;
+    font-size: 13px;
     font-weight: 500;
     line-height: 1.5;
-    color: var(--tenue);
+    color: var(--suave);
+    text-wrap: pretty;
   }
 
-  .tarjeta.corte {
-    flex: 1;
-    width: auto;
-  }
-
-  .hora-fila {
-    margin-top: 8px;
+  .acciones {
     display: flex;
     gap: 10px;
   }
 
-
-
-  /* Lo que mide la lista con «6:00»: así el botón no se mueve al llegar. */
-  .hora-esqueleto {
-    width: 82px;
-    flex: none;
-    display: flex;
-  }
-
-  .ejemplo-esqueleto {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    gap: 9px;
-    padding: 4px 0;
-  }
-
-  .ejemplo {
-    margin: 14px 0 0;
+  .aviso {
     display: flex;
     align-items: flex-start;
     gap: 10px;
+    margin: 0;
     padding: 11px 14px;
     border-radius: 12px;
-    background: var(--chip);
+    background: var(--amarillo-fondo);
     font-size: 12.5px;
     line-height: 1.5;
     color: var(--suave);
   }
 
-  .ejemplo :global(svg) {
+  .aviso :global(svg) {
     flex: none;
     margin-top: 2px;
+    color: var(--amarillo-texto);
   }
 
-  .ejemplo b {
-    font-weight: 600;
+  .aviso b {
     color: var(--texto);
+    font-weight: 600;
   }
 
-  .error {
-    margin-top: 14px;
+  /* Cristal: dentro de la cajita de material, rellenos transparentes (nunca vidrio sobre vidrio). La muestra: detrás, el
+     fondo de Cristal con una sola mancha al centro (la de cada tema, con su grano); encima, la ventanita de vidrio, con
+     una sombra a su medida. */
+  :global(:root[data-estilo='cristal'][data-tema='oscuro']) :is(.formas, .cuenta) {
+    background: rgba(255, 255, 255, 0.06);
+  }
+
+  :global(:root[data-estilo='cristal'][data-tema='oscuro']) .forma[aria-pressed='true'] {
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0.07));
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.18),
+      0 4px 12px -6px rgba(0, 0, 0, 0.6);
+  }
+
+  :global(:root[data-estilo='cristal'][data-tema='oscuro']) .muestra-fondo {
+    background:
+      var(--grano),
+      radial-gradient(62% 82% at 50% 50%, rgba(var(--mancha), 0.62), rgba(var(--mancha), 0.44) 30%, rgba(var(--mancha), 0.22) 58%, rgba(var(--mancha), 0.06) 84%, transparent 100%),
+      #000000;
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.12);
+  }
+
+  :global(:root[data-estilo='cristal'][data-tema='oscuro']) .muestra-ventana {
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.14),
+      0 14px 30px -12px rgba(0, 0, 0, 0.7);
+  }
+
+  :global(:root[data-estilo='cristal'][data-tema='oscuro']) .rayita {
+    background: rgba(255, 255, 255, 0.18);
+  }
+
+  :global(:root[data-estilo='cristal'][data-tema='claro']) :is(.formas, .cuenta) {
+    background: var(--cl-relleno);
+  }
+
+  :global(:root[data-estilo='cristal'][data-tema='claro']) .forma[aria-pressed='true'] {
+    background: rgba(255, 255, 255, 0.9);
+    box-shadow:
+      inset 0 1px 0 #ffffff,
+      0 4px 12px -6px var(--cl-sombra);
+  }
+
+  :global(:root[data-estilo='cristal'][data-tema='claro']) .muestra-fondo {
+    background:
+      var(--grano-claro),
+      radial-gradient(62% 82% at 50% 50%, #ffffff, rgba(255, 255, 255, 0.8) 30%, rgba(255, 255, 255, 0.38) 58%, rgba(255, 255, 255, 0.1) 84%, transparent 100%),
+      linear-gradient(180deg, #d4d7dd, #c8ccd3);
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.8);
+  }
+
+  :global(:root[data-estilo='cristal'][data-tema='claro']) .muestra-ventana {
+    box-shadow:
+      inset 0 1px 0 #ffffff,
+      0 14px 30px -12px rgba(20, 30, 50, 0.3);
+  }
+
+  :global(:root[data-estilo='cristal'][data-tema='claro']) .rayita {
+    background: rgba(30, 40, 60, 0.14);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .forma {
+      transition: none;
+    }
+
+    .mp,
+    .mp-cargando {
+      animation: none;
+    }
   }
 </style>

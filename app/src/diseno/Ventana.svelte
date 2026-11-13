@@ -21,7 +21,11 @@
 <script lang="ts">
   import { flushSync, onMount, type Snippet } from 'svelte';
   import BotonCuadro from './BotonCuadro.svelte';
+  import { quitarDeBarra, vidrio } from './vidrio';
   import { ABRE, CRECE, quieto, RESORTE_CSS, seMueven, ventanaSale, veloSale } from './ventanaSeMueve';
+
+  // En Cristal la ventana es una hoja de vidrio grueso (diseno/vidrio.ts); lo de adentro nunca es vidrio.
+  quitarDeBarra();
 
   let {
     etiqueta,
@@ -147,6 +151,7 @@
   <div
     bind:this={caja}
     class="ventana"
+    use:vidrio={'hoja'}
     class:mueve
     class:fijo={!!alto}
     style:width="{grande ? grande.ancho : ancho}px"
@@ -219,6 +224,11 @@
     border: 1px solid var(--linea);
     border-radius: 26px;
     box-shadow: 0 24px 60px var(--sombra);
+  }
+
+  /* Cristal: la hoja de vidrio grueso (su receta en cristal.css) lleva su canto. */
+  :global(:root[data-estilo='cristal']) .ventana {
+    position: relative;
   }
 
   /* En el gerente, nunca más alta que la pantalla. */

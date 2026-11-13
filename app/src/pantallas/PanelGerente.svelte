@@ -1,7 +1,8 @@
 <!--
   El panel del gerente (rediseño del 5 de noviembre de 2026; maqueta V64Pv4gmANPRZuJW5hTe5D): el marco
-  liso con la barra lateral por grupos (Inicio; OPERACIÓN; TU NEGOCIO; IA Y CONTENIDO; abajo, Ayuda, Ajustes
-  y la persona, que abre su Perfil) y cada vista con su propia barra de arriba. Al entrar al panel se
+  liso con la barra lateral (Inicio y, desde el 13 nov 2026, cuatro grupos que se abren: Operación, Tu negocio,
+  IA y contenido y Otros, con Ajustes y Ayuda; abajo, la persona, que abre su Perfil; barra-lateral-nueva.md)
+  y cada vista con su propia barra de arriba. Al entrar al panel se
   prepara el saludo del agente, para que salga al instante. «Abrir» en Inicio abre ahí mismo el punto de
   venta, la caja o la cocina, con su sesión (maqueta Mesero y cocina TYq97pKacRCYBqcvRp1bZ2). Ctrl K o la
   búsqueda chica de la barra abren, en Inicio, su búsqueda grande y, en cualquier otra vista, la misma búsqueda ahí
@@ -288,23 +289,48 @@
     plegarSola={barraDelAgente}
     opciones={[
       { valor: 'inicio', texto: 'Inicio', icono: 'r-inicio' },
-      { grupo: 'OPERACIÓN' },
-      { valor: 'pedidos', texto: 'Pedidos', icono: 'r-bolsa', insignia: vigia?.insignia || undefined },
-      { valor: 'mesas', texto: 'Mesas', icono: 'r-mesas' },
-      { valor: 'cortes', texto: 'Cortes y reportes', icono: 'r-corte' },
-      { grupo: 'TU NEGOCIO' },
-      { valor: 'restaurante', texto: 'Tu restaurante', icono: 'r-tienda' },
-      { valor: 'menu-en-linea', texto: 'Tu menú en línea', icono: 'r-celular' },
-      { valor: 'menu', texto: 'Mi menú', icono: 'r-menu' },
-      { valor: 'equipo', texto: 'Empleados', icono: 'r-usuarios' },
-      { grupo: 'IA Y CONTENIDO' },
-      { valor: 'agente', texto: 'Agente IA', icono: 'r-ia', insignia: 'IA' },
-      { valor: 'crear', texto: 'Crear anuncios', icono: 'r-crear', insignia: 'IA' },
-      { valor: 'biblioteca', texto: 'Mi biblioteca', icono: 'r-biblio' },
-    ]}
-    acciones={[
-      { valor: 'ayuda', texto: 'Ayuda', icono: 'r-ayuda' },
-      { valor: 'ajustes', texto: 'Ajustes', icono: 'r-ajustes' },
+      {
+        clave: 'operacion',
+        nombre: 'Operación',
+        icono: 'r-mesas',
+        // Cerrado, su título lleva lo mismo que Pedidos (cuántos esperan, o «Pausado»).
+        insignia: vigia?.insignia || undefined,
+        opciones: [
+          { valor: 'pedidos', texto: 'Pedidos', insignia: vigia?.insignia || undefined },
+          { valor: 'mesas', texto: 'Mesas' },
+          { valor: 'cortes', texto: 'Cortes y reportes' },
+        ],
+      },
+      {
+        clave: 'negocio',
+        nombre: 'Tu negocio',
+        icono: 'r-tienda',
+        opciones: [
+          { valor: 'restaurante', texto: 'Tu restaurante' },
+          { valor: 'menu-en-linea', texto: 'Tu menú en línea' },
+          { valor: 'menu', texto: 'Mi menú' },
+          { valor: 'equipo', texto: 'Empleados' },
+        ],
+      },
+      {
+        clave: 'ia',
+        nombre: 'IA y contenido',
+        icono: 'r-ia',
+        opciones: [
+          { valor: 'agente', texto: 'Agente IA', insignia: 'IA' },
+          { valor: 'crear', texto: 'Crear anuncios', insignia: 'IA' },
+          { valor: 'biblioteca', texto: 'Mi biblioteca' },
+        ],
+      },
+      {
+        clave: 'otros',
+        nombre: 'Otros',
+        icono: 'puntos',
+        opciones: [
+          { valor: 'ajustes', texto: 'Ajustes' },
+          { valor: 'ayuda', texto: 'Ayuda' },
+        ],
+      },
     ]}
     activa={vista === 'pos' || vista === 'caja' || vista === 'cocina' ? 'inicio' : vista}
     alElegir={alPulsar}

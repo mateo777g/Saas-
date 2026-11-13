@@ -66,8 +66,11 @@ function apagarTodo(menos: HTMLElement | null) {
   arrancar();
 }
 
+// Una lista cuyo vidrio va detrás de sus renglones (hermano, no padre: crece aparte) marca su caja con
+// data-vidrio-detras, y la luz de sus renglones es la de ese vidrio (la lista de la barra plegada).
 function vidrioBajo(e: PointerEvent): HTMLElement | null {
-  const el = (e.target as Element | null)?.closest?.('[data-vidrio]');
+  const t = e.target as Element | null;
+  const el = t?.closest?.('[data-vidrio]') ?? t?.closest?.('[data-vidrio-detras]')?.querySelector(':scope > [data-vidrio]');
   return el instanceof HTMLElement && luces.has(el) ? el : null;
 }
 

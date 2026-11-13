@@ -29,10 +29,10 @@
   import Categorias from './componentes/Categorias.svelte';
   import Fila from './componentes/Fila.svelte';
   import Hoja from './componentes/Hoja.svelte';
-  import HojaAsistente from './componentes/HojaAsistente.svelte';
   import HojaHecho from './componentes/HojaHecho.svelte';
   import HojaPedido from './componentes/HojaPedido.svelte';
   import VentanaInfo from './componentes/VentanaInfo.svelte';
+  import VistaAsistente from './componentes/VistaAsistente.svelte';
   import HojaProducto from './componentes/HojaProducto.svelte';
   import Icono from './componentes/Icono.svelte';
   import TarjetaBusca from './componentes/TarjetaBusca.svelte';
@@ -426,12 +426,13 @@
   });
 
   // ─── Lo de abajo («Tu menú en línea»): Menú, Pedido y Asistente ───
-  // Sin WhatsApp no sale Pedido y sin asistente no sale Asistente; si solo queda Menú, no sale nada.
+  // Sin WhatsApp no sale Pedido y sin asistente no sale Asistente; si solo queda Menú, no sale nada. Si el
+  // asistente se queda sin IA con su vista abierta, su pestaña se queda hasta que salga de ella (la vista lo avisa).
   const pestanas = $derived.by((): Pestana[] => {
     if (!menu || muestra === 'barra') return [];
     const lista: Pestana[] = ['menu'];
     if (menu.restaurante.telefono) lista.push('pedido');
-    if (menu.asistente_contesta) lista.push('asistente');
+    if (menu.asistente_contesta || conPlatica) lista.push('asistente');
     return lista.length > 1 ? lista : [];
   });
   const pestanaActiva = $derived.by((): Pestana => {
@@ -456,6 +457,12 @@
   function alLupa() {
     lupaAbierta = !lupaAbierta;
     if (lupaAbierta) setTimeout(() => campoLupa?.focus({ preventScroll: true }), 120);
+  }
+
+  // La lupa de la barra del asistente: regresa al menú y abre ahí la búsqueda.
+  function buscarDesdeVista() {
+    regresarA([]);
+    if (!lupaAbierta) alLupa();
   }
 
   // ─── El asistente (parte 6c) ───
@@ -587,12 +594,15 @@
   {:else if menu}
     {@const r = menu.restaurante}
     {@const conCarteles = muestra !== 'barra' && carteles.length > 0}
-    <div class="columna" class:f-con-app={pestanas.length > 0} class:f-con-app-chica={pestanas.length > 0 && !formas.abajo_con_nombres}>
+    {@const estadoBarra = textoEstado(menu.estado, lengua)}
+    {@const abiertoBarra = !!menu.estado?.abierto}
+    <!-- La barra del menú; la del asistente es la misma, y su lupa regresa al menú para buscar ahí. -->
+    {#snippet barra(enVista: boolean)}
       <Barra
         nombre={r.nombre}
         logo={r.logo_ruta}
-        estado={textoEstado(menu.estado, lengua)}
-        abierto={!!menu.estado?.abierto}
+        estado={estadoBarra}
+        abierto={abiertoBarra}
         {lengua}
         {moneda}
         {conDolares}
@@ -600,14 +610,18 @@
         {conCarteles}
         {t}
         arriba={muestra === 'barra' ? '14px' : muestra === 'menu' ? '50px' : 'calc(14px + var(--arriba-seguro))'}
-        {lupaAbierta}
+        lupaAbierta={enVista ? false : lupaAbierta}
         ajustesAbierto={encima?.tipo === 'ajustes'}
         alLengua={elegirLengua}
         alMoneda={elegirMoneda}
         alInfo={(desde) => abrir({ tipo: 'info', desde })}
-        {alLupa}
+        alLupa={enVista ? buscarDesdeVista : alLupa}
         alAjustes={() => abrir({ tipo: 'ajustes' })}
       />
+    {/snippet}
+    {#snippet barraDeVista()}{@render barra(true)}{/snippet}
+    <div class="columna" class:f-con-app={pestanas.length > 0} class:f-con-app-chica={pestanas.length > 0 && !formas.abajo_con_nombres}>
+      {@render barra(false)}
 
       {#if muestra === 'barra'}
         <Categorias categorias={menu.categorias} activa={menu.categorias[0]?.id ?? null} forma={formas.categorias} {lengua} {t} pegadas={false} />
@@ -724,17 +738,20 @@
     {/if}
 
     {#if conPlatica}
-      <HojaAsistente
+      <VistaAsistente
         {platica}
         {menu}
         {productos}
         {lengua}
         {moneda}
         {tema}
+        {color}
+        {fondo}
+        {formas}
         {t}
+        barra={barraDeVista}
         alPreguntar={preguntarAlAsistente}
         alAbrirProducto={(p) => abrir({ tipo: 'producto', producto: p, foto: false, editando: null })}
-        alCerrar={cerrar}
       />
     {/if}
 

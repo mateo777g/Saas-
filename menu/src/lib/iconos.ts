@@ -22,6 +22,8 @@ const PROPIOS: Record<string, string> = {
   lista: '<path d="M8 6h12"></path><path d="M8 12h12"></path><path d="M8 18h12"></path><path d="M4 6h.01"></path><path d="M4 12h.01"></path><path d="M4 18h.01"></path>',
   'bolsa-app': '<path d="M5.5 8h13l-1 12.5h-11z"></path><path d="M9 8V6.5a3 3 0 0 1 6 0V8"></path>',
   asistente: '<path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8L12 3Z"></path><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8L19 15Z"></path>',
+  // Mandar del asistente (la flecha hacia arriba de la maqueta, como el Agente IA).
+  sube: '<path d="M12 19V5"></path><path d="m5 12 7-7 7 7"></path>',
 };
 
 // Los íconos de los cuatro órdenes, en el orden de TEXTOS.ordenes.

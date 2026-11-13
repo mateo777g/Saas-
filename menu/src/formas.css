@@ -452,6 +452,196 @@
 @keyframes f-resalta { 0%, 55% { box-shadow: 0 0 0 3px var(--m-acento); } 100% { box-shadow: 0 0 0 3px transparent; } }
 @media (prefers-reduced-motion: reduce) { .menu .f-resalta { animation: none; box-shadow: 0 0 0 3px var(--m-acento); } }
 
+/* ─── El asistente como vista completa (encuestas 34 a 40): la frase de Grok y del Agente IA, la caja que se abre, las
+   ideas que salen en fila y la plática del Agente IA, en el fondo de tu menú. Su color (--m-asis) es el de tu menú,
+   acercado a la letra si casi no se ve sobre el fondo; la burbuja y mandar, el de tu menú tal cual. ─── */
+.menu { --m-asis: var(--m-acento); }
+.f-asis {
+  position: absolute; inset: 0; z-index: 2; display: flex; flex-direction: column; padding-bottom: 66px;
+  background: var(--m-fondo); color: var(--m-texto);
+  --raya-asis: linear-gradient(90deg, transparent, color-mix(in oklab, var(--m-asis) 55%, transparent) 16%, var(--m-asis) 46%, color-mix(in oklab, var(--m-asis) 45%, #fff) 74%, color-mix(in oklab, var(--m-asis) 8%, #fff) 86%, color-mix(in oklab, var(--m-asis) 8%, #fff) 100%);
+  --chispa: color-mix(in oklab, var(--m-asis) 50%, #fff); --chispa-2: var(--m-asis);
+}
+.menu[data-tema='oscuro'] .f-asis { --chispa-2: #fff; }
+.f-asis.f-asis-chica { padding-bottom: 56px; }
+.f-asis.f-asis-pildora { padding-bottom: 78px; }
+.f-asis.f-asis-pildora.f-asis-chica { padding-bottom: 70px; }
+.f-asis > .barra { flex: none; }
+.f-asis-cuerpo { flex: 1; min-height: 0; display: flex; flex-direction: column; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: none; }
+.f-asis-cuerpo::-webkit-scrollbar { display: none; }
+
+/* La bienvenida: la frase al centro de lo que queda arriba de las ideas, que ya guardan su lugar. */
+.f-asis-bienvenida { flex: 1; display: flex; flex-direction: column; padding: 0 12px 12px; }
+.f-asis-frase {
+  margin: auto 0; padding: 0 18px; text-align: center; text-wrap: balance; font-size: 30px; font-weight: 800; letter-spacing: -0.8px; line-height: 1.15;
+  animation: f-frase-sube 0.55s cubic-bezier(0.22, 1, 0.36, 1) 0.15s both;
+}
+@keyframes f-frase-sube { from { opacity: 0; transform: translateY(18px); } }
+/* La última palabra: una raya gris por la que pasa dos veces la raya del color de tu menú, que acaba de golpe en su tono
+   más claro, soltando chispas; luego se borra. Sin el brillo de la caja (encuesta 40), sale en cuanto sube la frase. */
+.f-asis-sub { position: relative; display: inline-block; }
+.f-asis-sub::after {
+  content: ''; position: absolute; left: 0; right: 0; bottom: -5px; height: 2.5px; border-radius: 2px;
+  background: var(--raya-asis) no-repeat, var(--m-linea-fuerte); background-size: 45% 100%, 100% 100%; background-position: -85% 0, 0 0;
+  animation: f-raya-pasa 1.3s ease-in-out 0.7s 2, f-raya-se-va 0.5s ease 3.3s forwards;
+}
+@keyframes f-raya-pasa { from { background-position: -85% 0, 0 0; } to { background-position: 185% 0, 0 0; } }
+@keyframes f-raya-se-va { to { opacity: 0; } }
+.f-chispas { position: absolute; left: 0; right: 0; bottom: -5px; height: 2.5px; pointer-events: none; clip-path: inset(-24px 0 -10px 0); }
+.f-chispas-van { position: absolute; inset: 0; animation: f-chispas-van 1.3s ease-in-out 0.7s 2 both; }
+@keyframes f-chispas-van { from { transform: translateX(-1.75%); } to { transform: translateX(146.75%); } }
+.f-chispas i {
+  position: absolute; left: 0; top: 0; width: 2px; height: 2px; border-radius: 50%; background: var(--chispa); box-shadow: 0 0 3px var(--chispa);
+  opacity: 0; animation: f-chispa 0.55s ease-out calc(0.7s + var(--d)) 5 both;
+}
+.f-chispas i:nth-child(even) { width: 1.5px; height: 1.5px; background: var(--chispa-2); box-shadow: 0 0 3px var(--chispa-2); }
+@keyframes f-chispa { 0% { opacity: 0; transform: translate(0, 0) scale(1); } 15% { opacity: 1; } 100% { opacity: 0; transform: translate(var(--x), var(--y)) scale(0.4); } }
+/* Al volver a dibujarla (otro idioma) ya no se anima: queda como acaba, sin raya. */
+.f-asis-bienvenida.quieta .f-asis-frase { animation: none; }
+.f-asis-bienvenida.quieta .f-asis-sub::after { animation: none; opacity: 0; }
+.f-asis-bienvenida.quieta .f-chispas { display: none; }
+
+/* Las ideas: no se ven en píldora; al abrir la caja salen de ella hacia arriba, una tras otra (220 ms + 80 ms × i), con
+   el rebote del Agente IA. Al cerrar se van juntas. */
+.f-asis-ideas { flex: none; display: flex; flex-direction: column; gap: 8px; padding-top: 18px; }
+.f-asis-ideas-titulo { padding: 0 4px 2px; font-size: 11px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: var(--m-tenue); }
+.f-asis-idea {
+  display: flex; align-items: center; gap: 11px; height: 50px; padding: 0 14px 0 8px; border: 1px solid var(--m-linea); border-radius: 14px;
+  background: var(--m-hoja); color: var(--m-texto); font: inherit; text-align: left; cursor: pointer;
+}
+.f-asis-idea-icono { width: 34px; height: 34px; flex: none; display: grid; place-items: center; border-radius: 10px; background: var(--m-chip); }
+.f-asis-idea-texto { flex: 1; min-width: 0; font-size: 14px; font-weight: 700; }
+.f-asis-idea > svg { flex: none; color: var(--m-tenue); }
+.f-asis-aparece { opacity: 0; visibility: hidden; transform: translateY(10px) scale(0.97); transition: opacity 0.15s ease, transform 0.15s ease, visibility 0s linear 0.15s; }
+.f-asis-bienvenida.abierta .f-asis-aparece {
+  --espera: calc(220ms + var(--i) * 80ms); opacity: 1; visibility: visible; transform: none;
+  transition: opacity 0.35s ease var(--espera), transform 0.45s cubic-bezier(0.175, 0.885, 0.32, 1.275) var(--espera), visibility 0s linear var(--espera);
+}
+
+/* Sin IA: el aviso en lugar de la frase, con su WhatsApp; la caja apagada. */
+.f-asis-sin { justify-content: center; align-items: center; gap: 16px; padding: 0 36px; text-align: center; }
+.f-asis-sin p { margin: 0; font-size: 15px; line-height: 1.55; color: var(--m-suave); }
+.f-asis-wa {
+  display: inline-flex; align-items: center; gap: 8px; height: 38px; padding: 0 16px; border: 1px solid var(--m-linea-fuerte); border-radius: 19px;
+  background: transparent; color: var(--m-texto); font: inherit; font-size: 13.5px; font-weight: 700;
+}
+
+/* La caja, justo arriba de la barra de abajo (encuesta 35): la píldora de hoy con su botón redondo del color de tu menú. */
+.f-asis-abajo { flex: none; display: flex; flex-direction: column; gap: 8px; padding: 6px 12px 10px; }
+.f-asis-caja {
+  position: relative; height: 116px; border: 1px solid var(--m-linea-fuerte); border-radius: 24px; background: var(--m-hoja); cursor: text;
+  transition: height 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), border-color 0.2s ease;
+}
+.f-asis-caja.pildora { height: 48px; }
+.f-asis-caja.escribiendo { transition: height 0.15s ease-out, border-color 0.2s ease; }
+.f-asis-caja:focus-within { border-color: color-mix(in oklab, var(--m-texto) 26%, transparent); }
+.f-asis-ph {
+  position: absolute; top: 0; left: 0; right: 0; height: 46px; padding: 0 18px; border: 0; border-radius: 24px; background: none;
+  color: var(--m-tenue); font: inherit; font-size: 16px; text-align: left; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: text;
+  transition: opacity 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+.f-asis-caja:not(.pildora) .f-asis-ph { opacity: 0; transform: translateY(4px) scale(1.05); pointer-events: none; }
+.f-asis-caja textarea {
+  position: absolute; top: 0; left: 0; right: 0; width: 100%; height: 68px; padding: 12px 18px 11px; border: 0; outline: none; resize: none;
+  overflow-y: hidden; background: none; color: var(--m-texto); font: inherit; font-size: 16px; line-height: 1.45;
+  transition: opacity 0.3s ease-out, transform 0.3s ease-out, height 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+.f-asis-caja.escribiendo textarea { transition: height 0.15s ease-out; }
+.f-asis-caja.pildora textarea { opacity: 0; transform: translateY(-4px) scale(0.95); pointer-events: none; }
+.f-asis-caja textarea::placeholder { color: var(--m-tenue); opacity: 1; }
+/* Mandar, como en el Agente IA: no se ve en la píldora; con la caja abierta y vacía va apagado, y en cuanto hay algo
+   escrito se prende del color de tu menú. */
+.f-asis-mandar {
+  position: absolute; right: 5px; bottom: 5px; width: 36px; height: 36px; display: grid; place-items: center; padding: 0; border: 0; border-radius: 18px;
+  background: var(--m-acento); color: var(--m-sobre-acento);
+  transition: background 0.15s ease, color 0.15s ease, opacity 0.3s ease, filter 0.3s ease, transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+.f-asis-mandar:active:not(:disabled) { transform: scale(0.92); transition-duration: 0.15s; }
+/* Apagado, del color de tu menú pero clarito (el 0.35 del botón de hoy del menú), para que se lea «bloqueado». */
+.f-asis-mandar:disabled { opacity: 0.35; cursor: default; }
+.f-asis-caja.pildora .f-asis-mandar { opacity: 0; filter: blur(4px); transform: translateY(8px); pointer-events: none; }
+.f-asis-caja.apagada { background: var(--m-chip); cursor: default; }
+.f-asis-caja.apagada .f-asis-ph { cursor: default; }
+.f-asis-marca { margin: 0; text-align: center; font-size: 11.5px; font-weight: 600; color: var(--m-tenue); }
+
+/* La plática, como la del Agente IA: un poco adentro de la caja (16 de cada lado), la burbuja con esquinas de 10. */
+.f-asis-chat { flex: none; display: flex; flex-direction: column; gap: 20px; padding: 18px 28px 14px; }
+.f-asis-ella {
+  align-self: flex-end; max-width: 80%; padding: 10px 16px; border-radius: 10px; background: var(--m-acento); color: var(--m-sobre-acento);
+  font-size: 15px; line-height: 1.45; white-space: pre-wrap; overflow-wrap: anywhere;
+}
+.f-asis-ella.entra { animation: f-ella-entra 0.32s cubic-bezier(0.22, 1, 0.36, 1) both; }
+@keyframes f-ella-entra { from { opacity: 0; transform: translateY(10px); } }
+.f-asis-resp { position: relative; display: flex; flex-direction: column; align-items: flex-start; gap: 12px; }
+.f-asis-md { display: flex; flex-direction: column; gap: 12px; }
+.f-asis-md p { margin: 0; font-size: 15px; line-height: 1.55; overflow-wrap: anywhere; }
+.f-asis-sale { animation: f-asis-sale 330ms ease-out both; }
+@keyframes f-asis-sale { from { opacity: 0; transform: translateY(6px); } }
+.f-asis-cursor { display: inline-block; width: 4px; height: 14px; margin-left: 4px; border-radius: 2px; background: var(--m-asis); vertical-align: -2px; animation: f-latido 1s ease-in-out infinite; }
+@keyframes f-latido { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
+.f-asis-bajan { position: absolute; left: 0; top: 7.5px; transition: top 0.26s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.15s ease; }
+.f-asis-bajan.se-van { opacity: 0; }
+.f-asis-pense { display: inline-flex; align-items: center; gap: 6px; padding: 0; border: 0; background: none; color: var(--m-suave); font: inherit; font-size: 13px; cursor: pointer; }
+.f-asis-pense svg { transition: transform 0.2s cubic-bezier(0.22, 1, 0.36, 1); }
+.f-asis-pense[aria-expanded='true'] svg { transform: rotate(90deg); }
+.f-asis-pense-lista { margin-top: -10px; }
+.f-asis-tarjetas { align-self: stretch; display: flex; flex-direction: column; border: 1px solid var(--m-linea); border-radius: 16px; overflow: hidden; background: var(--m-hoja); }
+.f-asis-tarjeta {
+  display: flex; align-items: center; gap: 12px; width: 100%; padding: 10px 12px 10px 10px; border: 0; border-bottom: 1px solid var(--m-linea);
+  background: transparent; color: var(--m-texto); font: inherit; text-align: left; cursor: pointer;
+}
+.f-asis-tarjeta:last-child { border-bottom: 0; }
+.f-asis-tarjeta img { width: 52px; height: 52px; flex: none; border-radius: 12px; object-fit: cover; background: var(--m-chip); }
+.f-asis-tarjeta .t { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.f-asis-tarjeta .t b { font-size: 14.5px; font-weight: 700; line-height: 1.3; }
+.f-asis-tarjeta .t span { font-size: 14px; font-weight: 800; font-variant-numeric: tabular-nums; }
+.f-asis-tarjeta > svg { flex: none; color: var(--m-tenue); }
+
+/* «Pensando…»: los puntitos chicos (4 px, la fila de 16) y el ícono del paso que corre, del color del asistente. */
+.f-asis-piensa { display: flex; gap: 10px; }
+.f-asis-piensa > .f-puntos { margin-top: 7.5px; }
+.f-asis-piensa-cuerpo { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.f-asis-piensa-cabeza { height: 30px; display: flex; align-items: center; }
+.f-asis-brillo {
+  font-size: 14px; font-weight: 500; color: transparent; -webkit-background-clip: text; background-clip: text; background-size: 250% 100%;
+  background-image: linear-gradient(90deg, var(--m-tenue) 0%, var(--m-tenue) 42%, var(--m-texto) 50%, var(--m-tenue) 58%, var(--m-tenue) 100%);
+  animation: f-brillo-texto 1.8s linear infinite;
+}
+@keyframes f-brillo-texto { from { background-position: 100% 0; } to { background-position: 0% 0; } }
+.f-asis-pasos { list-style: none; margin: 4px 0 0; padding: 0 0 0 26px; display: flex; flex-direction: column; }
+.f-asis-pasos li { position: relative; min-height: 32px; padding: 6px 0; display: flex; align-items: center; font-size: 13px; line-height: 1.45; color: var(--m-suave); }
+.f-asis-pasos li.en-curso { color: var(--m-texto); }
+.f-asis-pasos li::before, .f-asis-pasos li::after { content: ''; position: absolute; left: -20px; width: 1px; height: calc(50% - 10px); background: var(--m-tenue); opacity: 0.5; }
+.f-asis-pasos li::before { top: 0; }
+.f-asis-pasos li::after { bottom: 0; }
+.f-asis-pasos li:first-child::before, .f-asis-pasos li:last-child::after { display: none; }
+.f-asis-paso { position: absolute; left: -28px; top: 50%; width: 16px; height: 16px; margin-top: -8px; display: flex; align-items: center; justify-content: center; color: var(--m-texto); }
+.en-curso .f-asis-paso { color: var(--m-asis); }
+.en-curso .f-asis-paso svg { animation: f-latido 1.2s ease-in-out infinite; }
+.f-asis-pasos li.entra { animation: f-paso-entra 420ms cubic-bezier(0.22, 1, 0.36, 1) both; }
+@keyframes f-paso-entra { from { opacity: 0; transform: translateY(10px); } }
+.f-puntos { position: relative; display: block; flex: none; width: 30px; height: 30px; margin: 0 -15px -15px 0; transform: scale(0.5); transform-origin: 0 0; filter: url(#f-goo); }
+.f-giro { position: absolute; inset: 0; animation: f-giro 3.2s ease-in-out infinite; }
+.f-puntos i { position: absolute; left: 50%; top: 50%; width: 8px; height: 8px; margin: -4px 0 0 -4px; border-radius: 50%; background: var(--m-asis); }
+.f-puntos i:nth-child(1) { animation: f-punto-1 3.2s ease-in-out infinite; }
+.f-puntos i:nth-child(2) { animation: f-punto-2 3.2s ease-in-out infinite; }
+.f-puntos i:nth-child(3) { animation: f-punto-3 3.2s ease-in-out infinite; }
+@keyframes f-giro { 0%, 64% { transform: rotate(0deg); } 84%, 100% { transform: rotate(360deg); } }
+@keyframes f-punto-1 { 0% { transform: translate(-12px, 0) scale(1); } 5% { transform: translate(-12px, -7px) scale(1); } 11%, 28% { transform: translate(-12px, 0) scale(1); } 40%, 55% { transform: translate(0, 0) scale(1.5); } 64%, 84% { transform: translate(-7.5px, 5.5px) scale(0.75); } 96%, 100% { transform: translate(-12px, 0) scale(1); } }
+@keyframes f-punto-2 { 0%, 6% { transform: translate(0, 0) scale(1); } 11% { transform: translate(0, -7px) scale(1); } 17%, 28% { transform: translate(0, 0) scale(1); } 40%, 55% { transform: translate(0, 0) scale(1.5); } 64%, 84% { transform: translate(0, -8.5px) scale(0.75); } 96%, 100% { transform: translate(0, 0) scale(1); } }
+@keyframes f-punto-3 { 0%, 12% { transform: translate(12px, 0) scale(1); } 17% { transform: translate(12px, -7px) scale(1); } 23%, 28% { transform: translate(12px, 0) scale(1); } 40%, 55% { transform: translate(0, 0) scale(1.5); } 64%, 84% { transform: translate(7.5px, 5.5px) scale(0.75); } 96%, 100% { transform: translate(12px, 0) scale(1); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .f-asis-frase, .f-asis-ella.entra, .f-asis-sale, .f-asis-pasos li.entra, .f-asis-cursor, .en-curso .f-asis-paso svg, .f-giro { animation: none; }
+  .f-asis-sub::after { animation: none; opacity: 0; }
+  .f-chispas { display: none; }
+  .f-asis-aparece, .f-asis-bienvenida.abierta .f-asis-aparece, .f-asis-caja, .f-asis-caja textarea, .f-asis-ph, .f-asis-pense svg, .f-asis-mandar { transition: none; }
+  .f-asis-brillo { animation: none; color: var(--m-tenue); background: none; }
+  .f-puntos i:nth-child(1) { transform: translate(-12px, 0); animation: f-latido 1.2s ease-in-out infinite; }
+  .f-puntos i:nth-child(2) { animation: f-latido 1.2s ease-in-out 0.2s infinite; }
+  .f-puntos i:nth-child(3) { transform: translate(12px, 0); animation: f-latido 1.2s ease-in-out 0.4s infinite; }
+}
+
 /* ─── En la página de verdad ───
    En la maqueta el teléfono era la pantalla; aquí la página es larga, así que lo que tapa (Ajustes y su velo) va fijo a
    la pantalla, y Ajustes no pasa del ancho de la columna del menú en la compu. */
@@ -459,3 +649,9 @@
 /* La ventana de la «i» también, y en la compu no pasa del ancho de la columna (520 menos sus orillas de 14). */
 .f-info-velo, .f-info { position: fixed; }
 .f-info-caja { max-width: 492px; }
+/* El asistente: fijo a la pantalla, debajo de la barra de abajo (que se queda como pestañas) y del ancho de la
+   columna en la compu; lo de abajo del celular (la rayita del iPhone) se suma a lo que deja para la barra. */
+.f-asis { position: fixed; z-index: 3; max-width: 520px; margin: 0 auto; padding-bottom: calc(66px + env(safe-area-inset-bottom, 0px)); }
+.f-asis.f-asis-chica { padding-bottom: calc(56px + env(safe-area-inset-bottom, 0px)); }
+.f-asis.f-asis-pildora { padding-bottom: calc(78px + env(safe-area-inset-bottom, 0px)); }
+.f-asis.f-asis-pildora.f-asis-chica { padding-bottom: calc(70px + env(safe-area-inset-bottom, 0px)); }

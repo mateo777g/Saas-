@@ -72,9 +72,6 @@ button {
   /* La 6b: el verde de WhatsApp no cambia con el color de Don Chuy; el segmento elegido, sobre el gris. */
   --m-wa: #178a4a;
   --m-seg: #ffffff;
-  /* El «Pensando…» del asistente: los puntos, del mismo azul en los dos temas, y el paso que corre. */
-  --punto-menu: #1854e8;
-  --m-paso: #1355e8;
   background: var(--m-fondo);
   color: var(--m-texto);
   font-family: var(--jakarta);
@@ -99,7 +96,6 @@ button {
   --m-barra-suave: rgba(243, 243, 240, 0.7);
   --m-wa: #1f9d55;
   --m-seg: #2c2c2c;
-  --m-paso: #1f5ef0;
   color-scheme: dark;
 }
 

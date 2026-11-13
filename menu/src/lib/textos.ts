@@ -104,8 +104,10 @@ export const TEXTOS = {
     noSeMando: 'No pudimos mandar tu pedido. Intenta otra vez.',
     // El asistente (parte 6c; maqueta 2UPwZw31WrcYRZkH8jaT1Y)
     asistente: (n: string) => `Asistente de ${n}`,
-    saludo: (n: string) => `Hola, soy el asistente de ${n}. Pregúntame del menú, del horario o de los envíos.`,
     sugeridas: ['¿Qué me recomiendas?', '¿A qué hora cierran?', '¿Hacen envíos?'],
+    // La frase del asistente; su última palabra lleva la raya y las chispas.
+    frase: ['¿Qué se te antoja ', 'hoy?'],
+    ideas: 'Ideas para ti',
     escribe: 'Escribe tu pregunta',
     marcaIa: 'IA de Fragmentless · puede equivocarse',
     pensando: 'Pensando…',
@@ -219,8 +221,9 @@ export const TEXTOS = {
     noRecibimos: "We're not taking orders right now",
     noSeMando: "We couldn't send your order. Try again.",
     asistente: (n: string) => `Assistant for ${n}`,
-    saludo: (n: string) => `Hi, I'm the assistant for ${n}. Ask me about the menu, our hours or delivery.`,
     sugeridas: ['What do you recommend?', 'What time do you close?', 'Do you deliver?'],
+    frase: ['What are you craving ', 'today?'],
+    ideas: 'Ideas for you',
     escribe: 'Type your question',
     marcaIa: 'AI by Fragmentless · it can make mistakes',
     pensando: 'Thinking…',

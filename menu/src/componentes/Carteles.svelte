@@ -29,7 +29,6 @@
     lengua,
     moneda,
     t,
-    infoFuera = false,
     alInfo,
     alProducto,
   }: {
@@ -41,8 +40,7 @@
     lengua: Lengua;
     moneda: Moneda;
     t: Textos;
-    // Mientras su ventana está abierta, la «i» se vuelve la ventana: no se ve en el cartel.
-    infoFuera?: boolean;
+    // La ventana de la «i» crece desde aquí; mientras está abierta, la propia ventana esconde esta «i».
     alInfo: (desde: HTMLElement) => void;
     alProducto: (p: Producto) => void;
   } = $props();
@@ -108,7 +106,6 @@
     class="f-cartel-info"
     class:f-ci-icono={!capsula}
     class:cerrado={capsula && !abierto}
-    class:f-ci-fuera={infoFuera}
     aria-label={t.info}
     onclick={(e) => alInfo(e.currentTarget)}
   >

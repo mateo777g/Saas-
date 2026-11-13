@@ -26,6 +26,11 @@ const SALE = bezier(0.4, 0, 1, 1);
 
 export const quieto = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
 
+// El resorte de las ventanas del panel (300/30, masa 1, 0.5 s; el mismo de la maqueta): la de la «i» sale así del
+// centro cuando su «i» ya no se ve.
+export const RESORTE_VENTANA =
+  'linear(0, 0.0207, 0.0730, 0.1451, 0.2279, 0.3149, 0.4014, 0.4841, 0.5610, 0.6310, 0.6935, 0.7483, 0.7959, 0.8365, 0.8707, 0.8993, 0.9229, 0.9421, 0.9575, 0.9698, 0.9794, 0.9868, 0.9924, 0.9966, 0.9996, 1.0016, 1.0030, 1.0038, 1.0042, 1.0043, 1.0042, 1.0040, 1.0037, 1.0034, 1.0030, 1.0026, 1.0022, 1.0019, 1.0016, 1.0013, 1)';
+
 type Lado = 'derecha' | 'abajo';
 
 // La hoja o el panel que entra de un lado; `intro` es si entra (true) o sale.

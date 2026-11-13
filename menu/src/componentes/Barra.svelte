@@ -60,7 +60,8 @@
     ajustesAbierto?: boolean;
     alLengua: (l: Lengua) => void;
     alMoneda: (m: Moneda) => void;
-    alInfo: () => void;
+    // La ventana de la «i» crece desde el botón que la abrió.
+    alInfo: (desde: HTMLElement) => void;
     alLupa?: () => void;
     alAjustes?: () => void;
   } = $props();
@@ -81,7 +82,7 @@
 </script>
 
 {#snippet info()}
-  <button type="button" class="redondo" aria-label={t.info} onclick={alInfo}><Icono nombre="info" tamano={19} /></button>
+  <button type="button" class="redondo" aria-label={t.info} onclick={(e) => alInfo(e.currentTarget)}><Icono nombre="info" tamano={19} /></button>
 {/snippet}
 
 <header class="barra" class:f-centro={centro} class:f-sin-nombre={sinNombre} style:padding-top={arriba}>

@@ -31,8 +31,8 @@
   import Hoja from './componentes/Hoja.svelte';
   import HojaAsistente from './componentes/HojaAsistente.svelte';
   import HojaHecho from './componentes/HojaHecho.svelte';
-  import HojaInfo from './componentes/HojaInfo.svelte';
   import HojaPedido from './componentes/HojaPedido.svelte';
+  import VentanaInfo from './componentes/VentanaInfo.svelte';
   import HojaProducto from './componentes/HojaProducto.svelte';
   import Icono from './componentes/Icono.svelte';
   import TarjetaBusca from './componentes/TarjetaBusca.svelte';
@@ -166,7 +166,7 @@
   // Una pila: desde «Tu pedido» se abre la hoja de un renglón y, al cerrarla, se vuelve al pedido.
   type Encima =
     | { tipo: 'producto'; producto: Producto; foto: boolean; editando: number | null }
-    | { tipo: 'info' }
+    | { tipo: 'info'; desde: HTMLElement }
     | { tipo: 'ajustes' }
     | { tipo: 'pedido' }
     | { tipo: 'hecho' }
@@ -604,7 +604,7 @@
         ajustesAbierto={encima?.tipo === 'ajustes'}
         alLengua={elegirLengua}
         alMoneda={elegirMoneda}
-        alInfo={() => abrir({ tipo: 'info' })}
+        alInfo={(desde) => abrir({ tipo: 'info', desde })}
         {alLupa}
         alAjustes={() => abrir({ tipo: 'ajustes' })}
       />
@@ -623,7 +623,7 @@
               {lengua}
               {moneda}
               {t}
-              alInfo={() => abrir({ tipo: 'info' })}
+              alInfo={(desde) => abrir({ tipo: 'info', desde })}
               alProducto={abrirProducto}
             />
           {:else if pieza === 'busqueda'}
@@ -767,7 +767,7 @@
         {/if}
       </div>
     {:else if encima?.tipo === 'info'}
-      <HojaInfo {menu} {t} alCerrar={cerrar} />
+      <VentanaInfo {menu} {t} {lengua} desde={encima.desde} alCerrar={cerrar} />
     {:else if encima?.tipo === 'pedido' && (!recibe || !carrito.length)}
       <!-- Pedido sin pedidos, o sin nada todavía: la hoja chica con lo que pasa. -->
       <Hoja etiqueta={t.tuPedido} alCerrar={cerrar}>

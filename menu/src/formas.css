@@ -456,3 +456,6 @@
    En la maqueta el teléfono era la pantalla; aquí la página es larga, así que lo que tapa (Ajustes y su velo) va fijo a
    la pantalla, y Ajustes no pasa del ancho de la columna del menú en la compu. */
 .f-aj-velo, .f-aj { position: fixed; }
+/* La ventana de la «i» también, y en la compu no pasa del ancho de la columna (520 menos sus orillas de 14). */
+.f-info-velo, .f-info { position: fixed; }
+.f-info-caja { max-width: 492px; }

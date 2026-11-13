@@ -21,6 +21,7 @@
   import { Tween } from 'svelte/motion';
   import { DURA_FLECHA, resorteFlecha } from '../../../diseno/flecha';
   import Icono from '../../../diseno/Icono.svelte';
+  import Metal from '../../../diseno/Metal.svelte';
   import { pista } from '../../../diseno/pista';
   import { vidrio } from '../../../diseno/vidrio';
   import { PERIODOS_REPORTE, type PeriodoReporte } from '../../../lib/reporte';
@@ -59,6 +60,8 @@
   let campo = $state<HTMLTextAreaElement | null>(null);
   let envoltura = $state<HTMLDivElement | null>(null);
   let menuAbierto = $state(false);
+  // El botón de mandar, prendido: con algo que mandar, o «Detener».
+  const prendido = $derived(alDetener ? true : !ocupado && !!valor.trim());
   // En la conversación el menú sale hacia arriba; su título y sus 3 periodos salen uno tras otro.
   const menuArriba = $derived(modo === 'chat');
   const N_MENU = PERIODOS_REPORTE.length + 1;
@@ -305,9 +308,10 @@
       class:parando={!!alDetener}
       aria-label={alDetener ? 'Detener' : 'Mandar la pregunta'}
       use:pista={alDetener ? 'Detener' : 'Mandar'}
-      disabled={alDetener ? false : ocupado || !valor.trim()}
+      disabled={!prendido}
       onclick={alDetener ?? mandar}
     >
+      <Metal {prendido} />
       <span class="capa flecha"><Icono nombre="r-arriba" tamano={17} /></span>
       <span class="capa parar"><Icono nombre="detener" tamano={17} /></span>
     </button>
@@ -480,7 +484,9 @@
     place-items: center;
     padding: 0;
     border: 0;
-    border-radius: 10px; /* rectángulo como los botones de ícono (9 nov 2026) */
+    /* Redondo en Simple y en Cristal, también como «Detener» (el developer, 13 nov 2026): la excepción a «ningún botón
+       es círculo» (planes/trabajo/rediseno/reglas-diseno.md, «Los botones»). */
+    border-radius: 50%;
     background: var(--mandar);
     color: var(--sobre-mandar);
     transition:
@@ -494,6 +500,68 @@
     background: var(--chip);
     color: var(--tenue);
     cursor: default;
+  }
+
+  /* Cristal, prendido: el «Metallic button» (diseno/Metal.svelte pone el metal, la cara y la onda; aquí, su aro de
+     sombras quieto, encima y picado, y la flecha blanca con sombra encima del metal). Apagado sigue gris, como en
+     Simple. */
+  :global(:root[data-estilo='cristal']) .mandar:not(:disabled) {
+    background: transparent;
+    color: #ffffff;
+    border: 0;
+    overflow: hidden;
+    box-shadow:
+      0 0 0 1px rgba(0, 0, 0, 0.3),
+      0 36px 14px 0 rgba(0, 0, 0, 0.02),
+      0 20px 12px 0 rgba(0, 0, 0, 0.08),
+      0 9px 9px 0 rgba(0, 0, 0, 0.12),
+      0 2px 5px 0 rgba(0, 0, 0, 0.15);
+    transition:
+      box-shadow 0.15s cubic-bezier(0.4, 0, 0.2, 1),
+      transform 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  :global(:root[data-estilo='cristal']) .mandar:not(:disabled):hover {
+    box-shadow:
+      0 0 0 1px rgba(0, 0, 0, 0.4),
+      0 12px 6px 0 rgba(0, 0, 0, 0.05),
+      0 8px 5px 0 rgba(0, 0, 0, 0.1),
+      0 4px 4px 0 rgba(0, 0, 0, 0.15),
+      0 1px 2px 0 rgba(0, 0, 0, 0.2);
+  }
+
+  :global(:root[data-estilo='cristal']) .mandar:not(:disabled):active {
+    box-shadow:
+      0 0 0 1px rgba(0, 0, 0, 0.5),
+      0 1px 2px 0 rgba(0, 0, 0, 0.3);
+    transform: translateY(1px) scale(0.98);
+  }
+
+  :global(:root[data-estilo='cristal']) .mandar:not(:disabled) .capa {
+    z-index: 1;
+  }
+
+  :global(:root[data-estilo='cristal']) .mandar:not(:disabled) .capa :global(svg) {
+    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.5));
+  }
+
+  /* Cristal oscuro: el «Aro» (el MetalButton de Spectrum UI), con un halo suave del color del metal; como su botón, al
+     80 % con el mouse encima y a 0.97 al picar. */
+  :global(:root[data-estilo='cristal'][data-tema='oscuro']) .mandar:not(:disabled) {
+    box-shadow: 0 0 14px -3px rgba(136, 204, 255, 0.35);
+    transition:
+      transform 0.2s ease-out,
+      opacity 0.2s ease-out;
+  }
+
+  :global(:root[data-estilo='cristal'][data-tema='oscuro']) .mandar:not(:disabled):hover {
+    box-shadow: 0 0 14px -3px rgba(136, 204, 255, 0.35);
+    opacity: 0.8;
+  }
+
+  :global(:root[data-estilo='cristal'][data-tema='oscuro']) .mandar:not(:disabled):active {
+    box-shadow: 0 0 14px -3px rgba(136, 204, 255, 0.35);
+    transform: scale(0.97);
   }
 
   /* En la píldora no se ve, salvo «Detener». */
@@ -709,6 +777,7 @@
     .escribiendo textarea,
     .pista,
     .mandar,
+    :global(:root[data-estilo='cristal']) .mandar:not(:disabled),
     .capa,
     .menu-fondo,
     .renglon,

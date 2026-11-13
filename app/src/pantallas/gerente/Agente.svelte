@@ -37,6 +37,7 @@
   import CajaError from '../../diseno/CajaError.svelte';
   import Icono from '../../diseno/Icono.svelte';
   import Pensando from '../../diseno/Pensando.svelte';
+  import Pliegue from '../../diseno/Pliegue.svelte';
   import {
     cambiarConversacion,
     eliminarConversacion,
@@ -432,6 +433,8 @@
 </script>
 
 <div class="con-barra" class:abierta={barraAbierta}>
+<!-- Cristal: el fondo «Glass fold», solo en blanco; al mandar la primera pregunta se desvanece. -->
+<Pliegue visible={!actual} />
 <div class="lado">
 <BarraArriba titulo="Agente IA" estado={{ texto: 'Leyendo tus ventas en vivo', vivo: true }}>
   {#if !barraAbierta}<CajaSucursales {sucursales} actual={sucursal} {alElegir} />{/if}
@@ -615,6 +618,44 @@
     }
   }
 
+  /* ─── Cristal (el developer, 13 nov 2026; maqueta FiHkjmT1meyTu7zuU3En2n v48, «Vista: Agente IA»;
+     planes/trabajo/estilo-cristal/agente.md) ───
+     El fondo «Glass fold» (diseno/Pliegue) va detrás de la vista y de la barra de chats, que es de vidrio y lo deja ver
+     borroso. La barra de chats flota como la de la izquierda (agente/Historial): su columna crece 10 px para el aire, y
+     así por dentro sigue midiendo 288. El desvanecido de la barra de arriba corre también por detrás de ella (si no,
+     queda una raya). */
+  :global(:root[data-estilo='cristal']) .con-barra > .lado,
+  :global(:root[data-estilo='cristal']) .con-barra > :global(.barra-ia) {
+    position: relative;
+    z-index: 1;
+  }
+
+  :global(:root[data-estilo='cristal']) .con-barra.abierta {
+    grid-template-columns: minmax(0, 1fr) 298px;
+  }
+
+  :global(:root[data-estilo='cristal']) .con-barra.abierta > :global(.barra-ia) {
+    overflow: visible;
+  }
+
+  :global(:root[data-estilo='cristal']) .con-barra.abierta .lado > :global(.barra)::before {
+    right: -300px;
+  }
+
+  /* La línea y las chispas de la última palabra: en Cristal oscuro, blancas, como el brillo de la búsqueda de Inicio; en
+     Cristal claro, azul claro (el developer lo pidió menos fuerte que el azul de la estrella). */
+  :global(:root[data-estilo='cristal'][data-tema='oscuro']) .agente {
+    --raya: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.35) 18%, rgba(255, 255, 255, 0.75) 48%, #ffffff 76%, #ffffff 100%);
+    --chispa: #ffffff;
+    --chispa-2: #d9d9d9;
+  }
+
+  :global(:root[data-estilo='cristal'][data-tema='claro']) .agente {
+    --raya: linear-gradient(90deg, transparent, #4fa3ff 18%, #6db5ff 48%, #9acdff 76%, #9acdff 100%);
+    --chispa: #9acdff;
+    --chispa-2: #6db5ff;
+  }
+
   .vista {
     position: absolute;
     left: 0;
@@ -713,6 +754,11 @@
     -webkit-mask-image: var(--brillo-mascara);
     mask-image: var(--brillo-mascara);
     animation: brillo-entra 0.9s cubic-bezier(0.4, 0, 0.2, 1) 0.45s both;
+  }
+
+  /* En Cristal no hay brillo: es solo de Simple (el developer, 12 nov 2026); detrás va el fondo «Glass fold». */
+  :global(:root[data-estilo='cristal']) .brillo {
+    display: none;
   }
 
   @keyframes brillo-entra {
@@ -879,6 +925,35 @@
   .idea:disabled {
     opacity: 0.45;
     cursor: default;
+  }
+
+  /* Cristal: las ideas son de material, como las tarjetas de Inicio (cristal.css, «.tarjeta»: su tinte, su desenfoque,
+     su línea, sus esquinas de 22 y su sombra). Al pasar el mouse se aclaran tantito, como el renglón de las tablas de
+     material. Su entrada no cambia. */
+  :global(:root[data-estilo='cristal'][data-tema='oscuro']) .idea {
+    background: var(--cristal-tinte);
+    -webkit-backdrop-filter: blur(26px) saturate(150%);
+    backdrop-filter: blur(26px) saturate(150%);
+    border: 1px solid var(--cristal-linea);
+    border-radius: 22px;
+    box-shadow: 0 18px 40px -14px var(--cristal-sombra);
+  }
+
+  :global(:root[data-estilo='cristal'][data-tema='claro']) .idea {
+    background: var(--cl-tinte);
+    -webkit-backdrop-filter: blur(26px) saturate(160%);
+    backdrop-filter: blur(26px) saturate(160%);
+    border: 1px solid var(--cl-linea);
+    border-radius: 22px;
+    box-shadow: 0 18px 40px -14px var(--cl-sombra);
+  }
+
+  :global(:root[data-estilo='cristal'][data-tema='oscuro']) .idea:hover:not(:disabled) {
+    background: linear-gradient(rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.05)), var(--cristal-tinte);
+  }
+
+  :global(:root[data-estilo='cristal'][data-tema='claro']) .idea:hover:not(:disabled) {
+    background: linear-gradient(rgba(255, 255, 255, 0.4), rgba(255, 255, 255, 0.4)), var(--cl-tinte);
   }
 
   .idea-cabeza {

@@ -18,7 +18,7 @@
   import Confirmar from '../../../diseno/Confirmar.svelte';
   import Icono from '../../../diseno/Icono.svelte';
   import { pista } from '../../../diseno/pista';
-  import { vidrio } from '../../../diseno/vidrio';
+  import { pica, vidrio } from '../../../diseno/vidrio';
   import type { Conversacion } from '../../../lib/agente';
   import { diaConNombre } from '../../../lib/formato';
   import type { Sucursal } from '../../../lib/gerente';
@@ -208,10 +208,20 @@
 {/snippet}
 
 <aside class="barra-ia" aria-label="Conversaciones" inert={!abierta}>
-  <div class="dentro">
+  <!-- En Cristal, la barra flota de vidrio como la de la izquierda, y el reloj es vidrio como el botón de Actualizar de
+       Inicio (sus recetas en cristal.css). -->
+  <div class="dentro" use:vidrio={'menu'}>
     <div class="cabeza">
       <CajaSucursales {sucursales} actual={sucursal} {alElegir} />
-      <button type="button" class="cuadro" aria-label="Cerrar las conversaciones" use:pista={'Cerrar las conversaciones'} onclick={alCerrar}>
+      <button
+        type="button"
+        class="cuadro"
+        aria-label="Cerrar las conversaciones"
+        use:pista={'Cerrar las conversaciones'}
+        use:vidrio={'boton'}
+        use:pica={1.08}
+        onclick={alCerrar}
+      >
         <Icono nombre="r-reloj" tamano={18} />
       </button>
     </div>
@@ -646,6 +656,61 @@
 
   .menu-chat button.rojo {
     color: var(--rojo);
+  }
+
+  /* ─── Cristal (el developer, 13 nov 2026; maqueta FiHkjmT1meyTu7zuU3En2n v48, «Vista: Agente IA») ───
+     La barra flota de vidrio, como la de la izquierda: 10 px de las orillas y esquinas de 18 (su columna crece 10 px en
+     Agente.svelte, así que por dentro sigue midiendo 288). */
+  :global(:root[data-estilo='cristal']) .dentro {
+    position: relative;
+    height: calc(100% - 20px);
+    margin: 10px 10px 10px 0;
+    border-left: 0;
+    border-radius: 18px;
+  }
+
+  /* La lista de sucursales, otra vez 8 debajo de la cabeza y a ras del reloj. */
+  :global(:root[data-estilo='cristal']) .cabeza :global(.caja > .lista) {
+    top: 74px;
+    right: 22px;
+  }
+
+  /* El reloj, de vidrio como el botón de Actualizar de Inicio: 34 × 34, esquinas de 9, su canto y su sombra (la receta
+     «boton»). */
+  :global(:root[data-estilo='cristal']) .cuadro {
+    position: relative;
+    width: 34px;
+    height: 34px;
+    border-width: 1px;
+    border-style: solid;
+    border-radius: 9px;
+  }
+
+  /* La conversación abierta lleva la gota de la barra de la izquierda (en vez del gris liso); al pasar el mouse por las
+     demás y por «Nueva conversación», apenas un blanco. */
+  :global(:root[data-estilo='cristal'][data-tema='oscuro']) .conv[aria-current='true'] {
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0.05));
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.3),
+      inset 0 -1px 0 rgba(255, 255, 255, 0.06),
+      inset 0 0 0 1px rgba(255, 255, 255, 0.1),
+      0 6px 16px -6px rgba(0, 0, 0, 0.6);
+  }
+
+  :global(:root[data-estilo='cristal'][data-tema='claro']) .conv[aria-current='true'] {
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.88), rgba(255, 255, 255, 0.55));
+    box-shadow:
+      inset 0 1px 0 #ffffff,
+      inset 0 0 0 1px rgba(255, 255, 255, 0.75),
+      0 6px 16px -6px rgba(36, 52, 80, 0.3);
+  }
+
+  :global(:root[data-estilo='cristal'][data-tema='oscuro']) :is(.conv:not([aria-current='true']):hover, .nueva:hover) {
+    background: rgba(255, 255, 255, 0.06);
+  }
+
+  :global(:root[data-estilo='cristal'][data-tema='claro']) :is(.conv:not([aria-current='true']):hover, .nueva:hover) {
+    background: rgba(255, 255, 255, 0.45);
   }
 
   @media (prefers-reduced-motion: reduce) {

@@ -30,7 +30,8 @@
   --cristal-sombra: rgba(0, 0, 0, 0.6);
   --cristal-tinte-control: rgba(16, 16, 16, 0.2);     /* los controles llevan menos tinte que las tarjetas */
   --cristal-barras-vidrio: rgba(14, 14, 14, 0.42);    /* el menú flotante */
-  --cristal-ventana: rgba(20, 20, 20, 0.6);           /* las ventanas: vidrio grueso */
+  --cristal-ventana: rgba(20, 20, 20, 0.6);           /* lo que se abre encima: vidrio grueso */
+  --cristal-ventana-solida: rgba(24, 24, 24, 0.94);   /* las ventanas: casi sólidas (solo en oscuro) */
   --cristal-relleno: rgba(255, 255, 255, 0.045);      /* los grupos de campos dentro de una ventana, los renglones */
   --cristal-esqueleto: rgba(255, 255, 255, 0.075);
 
@@ -91,7 +92,7 @@
 
 /* ── El vidrio, por tipo ──
    menu: la barra lateral flotante · boton: los botones de la barra de arriba · control: las búsquedas de las vistas, los
-   filtros y el dock · busqueda: la búsqueda grande de Inicio · hoja: las ventanas y lo que se abre encima. */
+   filtros y el dock · busqueda: la búsqueda grande de Inicio · hoja: lo que se abre encima · ventana: las ventanas. */
 
 /* La luz que sigue al mouse (diseno/vidrio.ts mueve --luz-x, --luz-y, --luz-a y --luz-r): un brillo suave por dentro y,
    en el canto, la línea de luz que se junta de ese lado. En claro, más fuerte, para que se note sobre vidrio blanco. */
@@ -177,10 +178,9 @@
 }
 :root[data-estilo='cristal'][data-tema='claro'] [data-vidrio='busqueda']:focus-within { border-color: rgba(255, 255, 255, 0.95); }
 
-/* hoja (las ventanas, y lo que se abre encima): vidrio grueso, que deja ver poco de atrás para que el formulario se lea.
-   Por dentro nada es vidrio: lo que pinta con --fondo (los grupos de campos, «Ver inglés») pasa a un relleno claro
-   transparente. */
-:root[data-estilo='cristal'][data-tema='oscuro'] [data-vidrio='hoja'] {
+/* hoja (lo que se abre encima) y ventana: vidrio grueso, que deja ver poco de atrás para que se lea. Por dentro nada es
+   vidrio: lo que pinta con --fondo (los grupos de campos, «Ver inglés») pasa a un relleno claro transparente. */
+:root[data-estilo='cristal'][data-tema='oscuro'] :is([data-vidrio='hoja'], [data-vidrio='ventana']) {
   --fondo: var(--cristal-relleno);
   background: var(--luz-brillo), linear-gradient(165deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.015) 40%), var(--cristal-ventana);
   -webkit-backdrop-filter: blur(40px) saturate(170%);
@@ -188,7 +188,7 @@
   border-color: var(--cristal-linea);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14), 0 30px 80px -20px rgba(0, 0, 0, 0.8);
 }
-:root[data-estilo='cristal'][data-tema='claro'] [data-vidrio='hoja'] {
+:root[data-estilo='cristal'][data-tema='claro'] :is([data-vidrio='hoja'], [data-vidrio='ventana']) {
   --fondo: var(--cl-relleno);
   background: var(--luz-brillo), linear-gradient(165deg, rgba(255, 255, 255, 0.6), rgba(255, 255, 255, 0.18) 40%), var(--cl-ventana);
   -webkit-backdrop-filter: blur(40px) saturate(180%);
@@ -197,15 +197,24 @@
   box-shadow: inset 0 1px 0 #ffffff, 0 30px 80px -20px rgba(20, 30, 50, 0.35);
 }
 
+/* ventana (Ventana y Confirmar): en oscuro, la misma hoja pero casi sólida (el developer, 12 nov 2026, noche: detrás se
+   veían los colores de las fotos de la vista). Mucho más tinte y sin subir la saturación: lo de atrás apenas se adivina;
+   el canto, la luz del mouse y la sombra no cambian. En claro se queda la hoja de siempre (el developer: así le gusta). */
+:root[data-estilo='cristal'][data-tema='oscuro'] [data-vidrio='ventana'] {
+  background: var(--luz-brillo), linear-gradient(165deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.015) 40%), var(--cristal-ventana-solida);
+  -webkit-backdrop-filter: blur(40px);
+  backdrop-filter: blur(40px);
+}
+
 /* Una hoja dentro de otra (una lista que se abre dentro de una ventana): nunca vidrio sobre vidrio. Además el navegador
    no la deja ver a través de la ventana (su desenfoque no alcanza lo de atrás y el texto se transparenta), así que va de
    material grueso, casi opaco y un poco más claro que la ventana, con su mismo canto y su sombra. */
-:root[data-estilo='cristal'][data-tema='oscuro'] [data-vidrio='hoja'] [data-vidrio='hoja'] {
+:root[data-estilo='cristal'][data-tema='oscuro'] :is([data-vidrio='hoja'], [data-vidrio='ventana']) [data-vidrio='hoja'] {
   background: var(--luz-brillo), linear-gradient(165deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.015) 40%), rgb(34, 34, 36);
   -webkit-backdrop-filter: none;
   backdrop-filter: none;
 }
-:root[data-estilo='cristal'][data-tema='claro'] [data-vidrio='hoja'] [data-vidrio='hoja'] {
+:root[data-estilo='cristal'][data-tema='claro'] :is([data-vidrio='hoja'], [data-vidrio='ventana']) [data-vidrio='hoja'] {
   background: var(--luz-brillo), linear-gradient(165deg, rgba(255, 255, 255, 0.6), rgba(255, 255, 255, 0.18) 40%), rgb(248, 248, 250);
   -webkit-backdrop-filter: none;
   backdrop-filter: none;

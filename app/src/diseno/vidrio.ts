@@ -3,14 +3,14 @@
 // canto, la línea de luz que se junta de ese lado), prende y se apaga despacio, y al picar se ilumina donde picaste. El
 // contenido no brilla. Su CSS (cómo se ve cada tipo de vidrio) vive en cristal.css; en Simple nada de esto corre.
 //
-//   use:vidrio={'boton'}        la pieza es vidrio de ese tipo (menu, boton, control, busqueda, hoja); null = no es
+//   use:vidrio={'boton'}        la pieza es vidrio de ese tipo (menu, boton, control, busqueda, hoja, ventana); null = no es
 //   use:pica={1.08}             al picarla crece con resorte a esa escala y regresa al soltar
 //
 // Un solo escucha para toda la página (no uno por pieza): busca el vidrio bajo el mouse con closest('[data-vidrio]') y
 // le mueve sus variables cuadro por cuadro.
 import { getContext, setContext } from 'svelte';
 
-export type TipoVidrio = 'menu' | 'boton' | 'control' | 'busqueda' | 'hoja';
+export type TipoVidrio = 'menu' | 'boton' | 'control' | 'busqueda' | 'hoja' | 'ventana';
 
 type Luz = { x: number; y: number; a: number; r: number; metaA: number; metaR: number };
 

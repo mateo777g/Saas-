@@ -26,7 +26,7 @@
   import { quitarDeBarra, vidrio } from './vidrio';
   import { seMueven, ventanaSale, veloSale } from './ventanaSeMueve';
 
-  // En Cristal es una hoja de vidrio grueso, como Ventana; lo de adentro nunca es vidrio.
+  // En Cristal es vidrio casi sólido (tipo «ventana»), como Ventana; lo de adentro nunca es vidrio.
   quitarDeBarra();
 
   const ESPERA_EXITO = 1600;
@@ -123,7 +123,7 @@
     if (e.target === dialogo) cancelar();
   }}
 >
-  <div class="ventana" class:centrada={peligro && !miniatura} use:vidrio={'hoja'} in:ventanaSale|global={mueve} out:ventanaSale|global={mueve}>
+  <div class="ventana" class:centrada={peligro && !miniatura} use:vidrio={'ventana'} in:ventanaSale|global={mueve} out:ventanaSale|global={mueve}>
     {#if miniatura}
       <img class="mini" src={miniatura.src} alt="" style:height="{miniatura.alto}px" />
     {:else if peligro}

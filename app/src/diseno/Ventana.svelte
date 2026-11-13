@@ -24,7 +24,7 @@
   import { quitarDeBarra, vidrio } from './vidrio';
   import { ABRE, CRECE, quieto, RESORTE_CSS, seMueven, ventanaSale, veloSale } from './ventanaSeMueve';
 
-  // En Cristal la ventana es una hoja de vidrio grueso (diseno/vidrio.ts); lo de adentro nunca es vidrio.
+  // En Cristal la ventana es vidrio casi sólido (tipo «ventana», diseno/vidrio.ts); lo de adentro nunca es vidrio.
   quitarDeBarra();
 
   let {
@@ -151,7 +151,7 @@
   <div
     bind:this={caja}
     class="ventana"
-    use:vidrio={'hoja'}
+    use:vidrio={'ventana'}
     class:mueve
     class:fijo={!!alto}
     style:width="{grande ? grande.ancho : ancho}px"

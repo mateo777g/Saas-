@@ -320,6 +320,10 @@
 }
 .f-pil svg { flex: none; }
 .f-pil.activa { background: var(--m-acento); color: var(--m-sobre-acento); font-weight: 800; }
+/* En oscuro, como la tarjeta del sushi que mandó el developer (13 nov 2026): la sombra no se ve sobre lo oscuro, así
+   que van en el negro de esa tarjeta con un contorno gris de 1 px, sin sombra. La elegida, toda del color. */
+.menu[data-tema='oscuro'] .f-pil { --f-blanco: #101010; border: 1px solid #242424; box-shadow: none; }
+.menu[data-tema='oscuro'] .f-pil.activa { border-color: var(--m-acento); }
 .f-rect.activa { background: var(--m-acento); border-color: var(--m-acento); color: var(--m-sobre-acento); font-weight: 800; }
 /* En su tarjeta: la tira de rectángulos dentro de un cuadro con borde. */
 .f-cats.f-en-tarjeta { padding: 10px 16px 12px; }
@@ -356,6 +360,9 @@
   background: var(--m-acento); color: var(--m-sobre-acento); font-size: 13px; font-weight: 800; font-variant-numeric: tabular-nums;
 }
 .f-mas-c.lleva { box-shadow: 0 0 0 3px var(--f-blanco), 0 0 0 4.5px var(--m-acento); }
+/* En oscuro, como la tarjeta del sushi (13 nov 2026, el developer): el negro de esa tarjeta y su contorno gris de 1 px,
+   sin sombra (sobre lo oscuro no se veía). El aro del «+» que ya lleva toma el mismo negro. */
+.menu[data-tema='oscuro'] .f-clasica { --f-blanco: #101010; border: 1px solid #242424; box-shadow: none; }
 .f-rejilla { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .f-tarjeta { position: relative; aspect-ratio: var(--f-alto); border-radius: 16px; overflow: hidden; border: 2px solid var(--m-acento); background: var(--m-chip); cursor: pointer; }
 .f-tarjeta > img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }

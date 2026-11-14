@@ -496,8 +496,10 @@
 .f-asis-bienvenida.quieta .f-asis-sub::after { animation: none; opacity: 0; }
 .f-asis-bienvenida.quieta .f-chispas { display: none; }
 
-/* Las ideas: no se ven en píldora; al abrir la caja salen de ella hacia arriba, una tras otra (220 ms + 80 ms × i), con
-   el rebote del Agente IA. Al cerrar se van juntas. */
+/* Las ideas: a la vista en cuanto entras (el developer, 13 nov 2026, en su prueba en el celular). Salen después de la
+   frase, de abajo hacia arriba, una tras otra (350 ms + 80 ms × i), con el rebote del Agente IA. Al picar la caja (se
+   abre el teclado) se van juntas; si la caja vuelve a píldora, salen otra vez. Con el teclado abierto ya no guardan su
+   lugar, para que la frase quede al centro de lo que se ve. */
 .f-asis-ideas { flex: none; display: flex; flex-direction: column; gap: 8px; padding-top: 18px; }
 .f-asis-ideas-titulo { padding: 0 4px 2px; font-size: 11px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: var(--m-tenue); }
 .f-asis-idea {
@@ -507,11 +509,18 @@
 .f-asis-idea-icono { width: 34px; height: 34px; flex: none; display: grid; place-items: center; border-radius: 10px; background: var(--m-chip); }
 .f-asis-idea-texto { flex: 1; min-width: 0; font-size: 14px; font-weight: 700; }
 .f-asis-idea > svg { flex: none; color: var(--m-tenue); }
-.f-asis-aparece { opacity: 0; visibility: hidden; transform: translateY(10px) scale(0.97); transition: opacity 0.15s ease, transform 0.15s ease, visibility 0s linear 0.15s; }
-.f-asis-bienvenida.abierta .f-asis-aparece {
-  --espera: calc(220ms + var(--i) * 80ms); opacity: 1; visibility: visible; transform: none;
-  transition: opacity 0.35s ease var(--espera), transform 0.45s cubic-bezier(0.175, 0.885, 0.32, 1.275) var(--espera), visibility 0s linear var(--espera);
+.f-asis-aparece {
+  --espera: calc(350ms + var(--i) * 80ms);
+  animation: f-idea-sale-op 0.35s ease var(--espera) both, f-idea-sale 0.45s cubic-bezier(0.175, 0.885, 0.32, 1.275) var(--espera) both;
 }
+@keyframes f-idea-sale-op { from { opacity: 0; } }
+@keyframes f-idea-sale { from { transform: translateY(10px) scale(0.97); } }
+.f-asis-bienvenida.quieta .f-asis-aparece { animation: none; }
+.f-asis-bienvenida.abierta .f-asis-aparece {
+  animation: none; opacity: 0; visibility: hidden; transform: translateY(10px) scale(0.97);
+  transition: opacity 0.15s ease, transform 0.15s ease, visibility 0s linear 0.15s;
+}
+.f-asis.con-teclado .f-asis-ideas { display: none; }
 
 /* Sin IA: el aviso en lugar de la frase, con su WhatsApp; la caja apagada. */
 .f-asis-sin { justify-content: center; align-items: center; gap: 16px; padding: 0 36px; text-align: center; }
@@ -630,7 +639,8 @@
   .f-asis-frase, .f-asis-ella.entra, .f-asis-sale, .f-asis-pasos li.entra, .f-asis-cursor, .en-curso .f-asis-paso svg, .f-giro { animation: none; }
   .f-asis-sub::after { animation: none; opacity: 0; }
   .f-chispas { display: none; }
-  .f-asis-aparece, .f-asis-bienvenida.abierta .f-asis-aparece, .f-asis-caja, .f-asis-caja textarea, .f-asis-ph, .f-asis-pense svg, .f-asis-mandar { transition: none; }
+  .f-asis-aparece, .f-asis-bienvenida.abierta .f-asis-aparece { animation: none; transition: none; }
+  .f-asis-caja, .f-asis-caja textarea, .f-asis-ph, .f-asis-pense svg, .f-asis-mandar { transition: none; }
   .f-asis-brillo { animation: none; color: var(--m-tenue); background: none; }
   .f-puntos i:nth-child(1) { transform: translate(-12px, 0); animation: f-latido 1.2s ease-in-out infinite; }
   .f-puntos i:nth-child(2) { animation: f-latido 1.2s ease-in-out 0.2s infinite; }

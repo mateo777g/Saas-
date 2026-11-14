@@ -1,8 +1,9 @@
 <!--
   El asistente como vista completa («Tu menú en línea», maqueta v31 del 11 de noviembre de 2026, encuestas 34 a
   40). Se llega por la barra de abajo, que se queda a la vista como pestañas. Arriba la barra de tu menú; al centro
-  la frase con la raya y las chispas del Agente IA, del color de tu menú; abajo la caja en píldora, que al picarla
-  se abre con el rebote del Agente IA y saca las 3 ideas en fila. La plática es la del Agente IA: la burbuja del
+  la frase con la raya y las chispas del Agente IA, del color de tu menú, y las 3 ideas, que salen en fila al
+  entrar; abajo la caja en píldora, que al picarla se abre con el rebote del Agente IA (las ideas se van) y, con el
+  teclado del celular, queda justo encima de él (13 nov 2026). La plática es la del Agente IA: la burbuja del
   cliente del color de tu menú, «Pensando…» con los puntitos chicos y sus pasos, y la respuesta que sale renglón
   por renglón con los puntitos bajando, que luego se dobla en «Pensé 3 s ›».
   Lo que hacía la hoja de la 6c se queda (lib/asistente.svelte.ts, el Worker, la revisión de Cloudflare en su
@@ -163,6 +164,21 @@
   // Las ideas y mandar no le quitan el foco a la caja.
   const sinQuitarFoco = (e: MouseEvent) => e.preventDefault();
 
+  // ─── El teclado del celular (el developer, 13 nov 2026, en su prueba): tapaba la caja, porque lo fijo a la pantalla
+  // se queda detrás de él (y la caja se enfoca sin mover la página). Con el teclado abierto, la vista toma lo que queda
+  // visible de la pantalla (visualViewport) y la caja queda justo encima de él; la barra de abajo se queda detrás. ───
+  let visible = $state<{ arriba: number; alto: number } | null>(null);
+  function medirTeclado() {
+    const vv = window.visualViewport;
+    if (!vv) return;
+    const tapado = document.documentElement.clientHeight - vv.height;
+    const antes = visible;
+    // Más de 120 px tapados con la caja enfocada es el teclado; acercar la página con los dedos no cuenta.
+    visible = tapado > 120 && vv.scale < 1.05 && document.activeElement === campo ? { arriba: vv.offsetTop, alto: vv.height } : null;
+    if (visible && !antes) tick().then(() => alFondo(false));
+  }
+  const conTeclado = $derived(visible ? `top:${visible.arriba}px;height:${visible.alto}px;bottom:auto;padding-bottom:0;` : '');
+
   // ─── La plática ───
   function alFondo(suave: boolean) {
     if (cuerpo && hayPlatica) cuerpo.scrollTo({ top: cuerpo.scrollHeight, behavior: suave && !quieto() ? 'smooth' : 'auto' });
@@ -233,7 +249,12 @@
   onMount(() => {
     alFondo(false);
     if (abierta) medir();
+    const vv = window.visualViewport;
+    vv?.addEventListener('resize', medirTeclado);
+    vv?.addEventListener('scroll', medirTeclado);
     return () => {
+      vv?.removeEventListener('resize', medirTeclado);
+      vv?.removeEventListener('scroll', medirTeclado);
       quitarRevision();
       // Al volver, ya es una respuesta guardada: sale quieta.
       platica.nuevo = null;
@@ -277,8 +298,9 @@
   class="f-asis"
   class:f-asis-pildora={formas.abajo === 'pildora'}
   class:f-asis-chica={!formas.abajo_con_nombres}
+  class:con-teclado={!!visible}
   aria-label={t.asistente(nombre)}
-  style={estiloAsis}
+  style={estiloAsis + conTeclado}
   in:aparece
   out:seVa
   onfocusout={alSalir}
@@ -293,7 +315,7 @@
         {#if telefono}{@render botonWa()}{/if}
       </div>
     {:else if !hayPlatica}
-      <!-- La frase al centro de lo que queda arriba de las ideas, que ya guardan su lugar aunque no se vean. -->
+      <!-- La frase al centro de lo que queda arriba de las ideas, que se ven al entrar y se van al abrir la caja. -->
       <div class="f-asis-bienvenida" class:abierta>
         <h2 class="f-asis-frase">
           {t.frase[0]}<span class="f-asis-sub"
@@ -311,7 +333,7 @@
               type="button"
               class="f-asis-idea f-asis-aparece"
               style="--i:{2 - i}"
-              tabindex={abierta ? 0 : -1}
+              tabindex={abierta ? -1 : 0}
               onmousedown={sinQuitarFoco}
               onclick={() => preguntar(s)}
             >

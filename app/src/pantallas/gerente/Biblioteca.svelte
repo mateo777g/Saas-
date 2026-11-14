@@ -9,17 +9,22 @@
   Todos los gerentes de la sucursal ven todos sus anuncios. Lo lee todo de Postgres con
   mi_biblioteca al abrir, al volver a la pestaña, con cada cambio de sus anuncios por realtime y,
   mientras uno se hace, cada 30 segundos. Ver, descargar, borrar y ponerlo en el menú no gastan IA.
+
+  Con el rediseño (13 nov 2026, planes/trabajo/rediseno/biblioteca.md): el filtro va en el dock de Mi
+  menú, al centro de la barra de arriba; sin tarjeta, la nota y el conteo sueltos sobre el fondo y el
+  collage debajo; los anuncios entran en cascada al llegar y al cambiar de formato (quietos al releer).
 -->
 <script lang="ts">
-  import { onMount } from 'svelte';
+  import { onMount, tick } from 'svelte';
   import BarraArriba from '../../diseno/BarraArriba.svelte';
   import Boton from '../../diseno/Boton.svelte';
   import CajaError from '../../diseno/CajaError.svelte';
+  import { cascada } from '../../diseno/cascada';
   import Confirmar from '../../diseno/Confirmar.svelte';
+  import Dock from '../../diseno/Dock.svelte';
   import Esqueleto from '../../diseno/Esqueleto.svelte';
   import Icono from '../../diseno/Icono.svelte';
   import { pista } from '../../diseno/pista';
-  import Tarjeta from '../../diseno/Tarjeta.svelte';
   import {
     anuncios as cuantosAnuncios,
     cabeceraDelDia,
@@ -94,6 +99,13 @@
     cartel: listos.filter((a) => a.formato === 'cartel').length,
   });
   const columnas = $derived(Math.max(2, Math.min(6, Math.floor((ancho + HUECO) / ANCHO_COLUMNA))));
+  // Cuántos hay de lo que deja ver el dock, como «5 PRODUCTOS» en Mi menú: «7 ANUNCIOS», «3 POSTS», «1 CARTEL».
+  const conteo = $derived.by(() => {
+    if (filtro === 'todo') return cuantosAnuncios(cuenta.todo).toUpperCase();
+    const n = cuenta[filtro];
+    return n === 1 ? `1 ${FORMA[filtro].corto}` : `${n} ${FORMA[filtro].plural.toUpperCase()}`;
+  });
+  const vacia = $derived(!!datos && !listos.length && !haciendo);
 
   type Pieza = AnuncioListo | AnuncioHaciendo;
   // Un collage por día; el que se está haciendo va hasta arriba de HOY. Cada anuncio cae en la
@@ -148,7 +160,10 @@
       setTimeout(() => (recienListos = recienListos.filter((x) => x !== id)), 1000);
     }
     desde = nuevo ? (desde?.id === nuevo.id ? desde : { id: nuevo.id, ms: Date.now() - nuevo.segundos * 1000 }) : null;
+    const primera = !datos;
     datos = nuevos;
+    // La primera vez entran en cascada; al releer (en vivo, al volver, cada 30 s) se quedan quietos.
+    if (primera) entrarEnCascada();
     // Uno que se borró (la socia, o los 30 días) mientras estaba abierto en grande.
     if (visor !== null && !nuevos.anuncios.some((a) => a.id === visor)) visor = null;
   }
@@ -159,6 +174,20 @@
     if (f === filtro) return;
     filtro = f;
     cuerpo?.scrollTo({ top: 0 });
+    entrarEnCascada();
+  }
+
+  // La cascada de Mi menú (diseno/cascada.ts) en el orden en que se ven: el collage va por columnas, así que las piezas
+  // se ordenan de arriba abajo y de izquierda a derecha antes de dárselas (cascada recorre lo que le dé
+  // querySelectorAll y se detiene en la primera que ya no se ve).
+  async function entrarEnCascada() {
+    await tick();
+    if (!cuerpo) return;
+    const piezas = [...cuerpo.querySelectorAll<HTMLElement>('.pieza')]
+      .map((el) => ({ el, caja: el.getBoundingClientRect() }))
+      .sort((a, b) => a.caja.top - b.caja.top || a.caja.left - b.caja.left)
+      .map((p) => p.el);
+    cascada({ querySelectorAll: () => piezas } as unknown as ParentNode);
   }
 
   async function descargar(id: number) {
@@ -276,16 +305,22 @@
   estado={datos
     ? { texto: cuantosAnuncios(listos.length), vivo: listos.length > 0, hueco: listos.length === 0 }
     : { texto: errorLectura ? 'No se pudo leer' : 'Leyendo…', vivo: false }}
+  chipAntes
 >
-  {#if listos.length || haciendo}
-    <div class="filtro" role="group" aria-label="Qué ver">
-      {#each [['todo', 'Todo'], ['post', 'Posts'], ['historia', 'Historias'], ['cartel', 'Carteles']] as const as [valor, texto] (valor)}
-        <button type="button" aria-pressed={filtro === valor} onclick={() => elegirFiltro(valor)}>
-          {texto}<span class="cuenta">{cuenta[valor]}</span>
-        </button>
-      {/each}
-    </div>
-  {/if}
+  {#snippet junto()}
+    <!-- El dock de Mi menú: se ve siempre, para que la barra no brinque al llegar los datos. -->
+    <Dock
+      etiqueta="Qué formato ver"
+      opciones={[
+        { valor: 'todo', texto: 'Todo', icono: 'biblio' },
+        { valor: 'post', texto: 'Posts', icono: 'post' },
+        { valor: 'historia', texto: 'Historias', icono: 'historia' },
+        { valor: 'cartel', texto: 'Carteles', icono: 'cartel' },
+      ]}
+      elegida={filtro}
+      alElegir={elegirFiltro}
+    />
+  {/snippet}
   <Boton etiqueta="Crear anuncio" icono="ia" tono="tinta" onclick={() => alIr('crear')} />
   <CajaSucursales {sucursales} actual={sucursal} {alElegir} />
 </BarraArriba>
@@ -293,116 +328,127 @@
 {#if errorLectura && !datos}
   <main class="cuerpo-error"><CajaError mensaje={errorLectura} /></main>
 {:else}
-  <Tarjeta como="main" class="tarjeta-biblio">
-    <div class="cuerpo-biblio" bind:this={cuerpo} bind:clientWidth={ancho}>
-      {#if errorAccion}<CajaError mensaje={errorAccion} compacta />{/if}
-      {#if !datos}
-        <!-- El esqueleto de la primera lectura (regla «Los esqueletos»): un día con sus piezas en sus formas. -->
-        <span class="solo-lector">Cargando tus anuncios…</span>
-        <div class="dia" aria-hidden="true">
-          <Esqueleto ancho="64px" alto="10px" />
-          <span class="raya"></span>
-          <Esqueleto ancho="120px" alto="10px" />
-        </div>
-        <div class="collage" aria-hidden="true">
-          {#each Array.from({ length: columnas }, (_, n) => n) as n (n)}
-            <div class="columna">
-              <Esqueleto alto="auto" redondo="14px" proporcion={['4 / 5', '9 / 16', '16 / 9'][n % 3]} />
-            </div>
-          {/each}
-        </div>
-      {:else if datos && !listos.length && !haciendo}
-        <div class="vacio">
-          <div class="huecos">
-            <span class="hueco" style:height="90px"></span>
-            <span class="hueco" style:height="128px"><Icono nombre="biblio" tamano={22} /></span>
-            <span class="hueco" style:height="90px"></span>
-          </div>
-          <h2>Todavía no hay anuncios</h2>
-          <p>Cada anuncio que hagas en Crear anuncios se guarda aquí 30 días.</p>
-          <div class="boton-primero">
-            <Boton etiqueta="Crear mi primer anuncio" icono="ia" tono="tinta" onclick={() => alIr('crear')} />
-          </div>
-        </div>
-      {:else if datos && !visibles.length && !haciendoVisible && filtro !== 'todo'}
-        <div class="nota-filtro">
-          <b>Todavía no hay {FORMA[filtro].plural}.</b>
-          <span>Cambia a Todo para ver los demás.</span>
-        </div>
-      {:else}
-        {#each dias as d (d.dia)}
-          <div class="dia">
-            <span class="etq fuerte">{d.cabecera[0]}</span>
-            {#if d.cabecera[1]}<span class="etq">{d.cabecera[1]}</span>{/if}
+  <!-- Sin tarjeta, como Mi menú, Mesas y Empleados: la nota y el conteo sueltos sobre el fondo, y el collage debajo. -->
+  <main class="cuerpo">
+    {#if !vacia}
+      <div class="herramientas">
+        <p class="nota">Cada anuncio que hagas en Crear anuncios se guarda aquí 30 días.</p>
+        <span class="crece"></span>
+        {#if !datos}<span class="etiqueta"><Esqueleto ancho="72px" alto="10px" /></span>
+        {:else}<span class="etiqueta">{conteo}</span>{/if}
+      </div>
+    {/if}
+    {#if errorAccion}<CajaError mensaje={errorAccion} compacta />{/if}
+    <div class="desliza" bind:this={cuerpo}>
+      <div class="collage-todo" bind:clientWidth={ancho}>
+        {#if !datos}
+          <!-- El esqueleto de la primera lectura (regla «Los esqueletos»): un día con sus piezas en sus formas. -->
+          <span class="solo-lector">Cargando tus anuncios…</span>
+          <div class="dia" aria-hidden="true">
+            <Esqueleto ancho="64px" alto="10px" />
             <span class="raya"></span>
-            <span class="etq">{d.cuenta}</span>
+            <Esqueleto ancho="120px" alto="10px" />
           </div>
-          <div class="collage">
-            {#each d.cols as col, n (n)}
+          <div class="collage" aria-hidden="true">
+            {#each Array.from({ length: columnas }, (_, n) => n) as n (n)}
               <div class="columna">
-                {#each col as a (a.id)}
-                  {#if a.estado === 'haciendo'}
-                    <div class="pieza haciendo" style:aspect-ratio={FORMA[a.formato].razon} aria-label="Haciendo tu anuncio">
-                      <Cargador desde={desde?.id === a.id ? desde.ms : Date.now() - a.segundos * 1000} orilla={12} />
-                    </div>
-                  {:else}
-                    <div
-                      class="pieza"
-                      class:aparece={recienListos.includes(a.id)}
-                      role="button"
-                      tabindex="0"
-                      style:aspect-ratio={FORMA[a.formato].razon}
-                      aria-label="{listaDe(a.productos)}, {FORMA[a.formato].corto.toLowerCase()}, {creado(a, datos?.hoy ?? '')}"
-                      onclick={() => abrir(a.id)}
-                      onkeydown={(e) => alTeclearPieza(e, a.id)}
-                    >
-                      <img src={urlFoto(a.ruta)} alt="" loading="lazy" />
-                      <div class="capa">
-                        <div class="capa-textos">
-                          <b>{listaDe(a.productos)}</b>
-                          <span>{FORMA[a.formato].corto} · {a.hora}</span>
-                        </div>
-                        <div class="capa-botones">
-                          <button
-                            type="button"
-                            class="blanco"
-                            use:pista={'Descargar'}
-                            aria-label="Descargar"
-                            disabled={bajando === a.id}
-                            onclick={(e) => {
-                              e.stopPropagation();
-                              descargar(a.id);
-                            }}
-                          >
-                            {#if bajado === a.id}<span class="verde"><Icono nombre="check" tamano={16} /></span>{:else if bajando === a.id}<span
-                                class="rueda-chica"
-                              ></span>{:else}<Icono nombre="exportar" tamano={16} />{/if}
-                          </button>
-                          <button
-                            type="button"
-                            class="blanco"
-                            use:pista={'Eliminar'}
-                            aria-label="Eliminar"
-                            onclick={(e) => {
-                              e.stopPropagation();
-                              pedirEliminar(a);
-                            }}><Icono nombre="eliminar" tamano={16} /></button
-                          >
-                        </div>
-                      </div>
-                      {#if a.dias_restantes <= 7}
-                        <span class="vence"><Icono nombre="reloj" tamano={13} />{seBorra(a.dias_restantes)}</span>
-                      {/if}
-                    </div>
-                  {/if}
-                {/each}
+                <Esqueleto alto="auto" redondo="14px" proporcion={['4 / 5', '9 / 16', '16 / 9'][n % 3]} />
               </div>
             {/each}
           </div>
-        {/each}
-      {/if}
+        {:else if vacia}
+          <div class="vacio">
+            <div class="huecos">
+              <span class="hueco" style:height="90px"></span>
+              <span class="hueco" style:height="128px"><Icono nombre="biblio" tamano={22} /></span>
+              <span class="hueco" style:height="90px"></span>
+            </div>
+            <h2>Todavía no hay anuncios</h2>
+            <p>Cada anuncio que hagas en Crear anuncios se guarda aquí 30 días.</p>
+            <div class="boton-primero">
+              <Boton etiqueta="Crear mi primer anuncio" icono="ia" tono="tinta" onclick={() => alIr('crear')} />
+            </div>
+          </div>
+        {:else if datos && !visibles.length && !haciendoVisible && filtro !== 'todo'}
+          <div class="nota-filtro">
+            <b>Todavía no hay {FORMA[filtro].plural}.</b>
+            <span>Cambia a Todo para ver los demás.</span>
+          </div>
+        {:else}
+          {#each dias as d (d.dia)}
+            <div class="dia">
+              <span class="etq fuerte">{d.cabecera[0]}</span>
+              {#if d.cabecera[1]}<span class="etq">{d.cabecera[1]}</span>{/if}
+              <span class="raya"></span>
+              <span class="etq">{d.cuenta}</span>
+            </div>
+            <div class="collage">
+              {#each d.cols as col, n (n)}
+                <div class="columna">
+                  {#each col as a (a.id)}
+                    {#if a.estado === 'haciendo'}
+                      <div class="pieza haciendo" style:aspect-ratio={FORMA[a.formato].razon} aria-label="Haciendo tu anuncio">
+                        <Cargador desde={desde?.id === a.id ? desde.ms : Date.now() - a.segundos * 1000} orilla={12} />
+                      </div>
+                    {:else}
+                      <div
+                        class="pieza"
+                        class:aparece={recienListos.includes(a.id)}
+                        role="button"
+                        tabindex="0"
+                        style:aspect-ratio={FORMA[a.formato].razon}
+                        aria-label="{listaDe(a.productos)}, {FORMA[a.formato].corto.toLowerCase()}, {creado(a, datos?.hoy ?? '')}"
+                        onclick={() => abrir(a.id)}
+                        onkeydown={(e) => alTeclearPieza(e, a.id)}
+                      >
+                        <img src={urlFoto(a.ruta)} alt="" loading="lazy" />
+                        <div class="capa">
+                          <div class="capa-textos">
+                            <b>{listaDe(a.productos)}</b>
+                            <span>{FORMA[a.formato].corto} · {a.hora}</span>
+                          </div>
+                          <div class="capa-botones">
+                            <button
+                              type="button"
+                              class="blanco"
+                              use:pista={'Descargar'}
+                              aria-label="Descargar"
+                              disabled={bajando === a.id}
+                              onclick={(e) => {
+                                e.stopPropagation();
+                                descargar(a.id);
+                              }}
+                            >
+                              {#if bajado === a.id}<span class="verde"><Icono nombre="check" tamano={16} /></span>{:else if bajando === a.id}<span
+                                  class="rueda-chica"
+                                ></span>{:else}<Icono nombre="exportar" tamano={16} />{/if}
+                            </button>
+                            <button
+                              type="button"
+                              class="blanco"
+                              use:pista={'Eliminar'}
+                              aria-label="Eliminar"
+                              onclick={(e) => {
+                                e.stopPropagation();
+                                pedirEliminar(a);
+                              }}><Icono nombre="eliminar" tamano={16} /></button
+                            >
+                          </div>
+                        </div>
+                        {#if a.dias_restantes <= 7}
+                          <span class="vence"><Icono nombre="reloj" tamano={13} />{seBorra(a.dias_restantes)}</span>
+                        {/if}
+                      </div>
+                    {/if}
+                  {/each}
+                </div>
+              {/each}
+            </div>
+          {/each}
+        {/if}
+      </div>
     </div>
-  </Tarjeta>
+  </main>
 {/if}
 
 {#if enGrande && datos}
@@ -447,62 +493,55 @@
     top: var(--vista-arriba);
   }
 
-  /* El filtro de la barra de arriba: Todo / Posts / Historias / Carteles, con cuántos de cada uno. */
-  .filtro {
-    display: flex;
-    gap: 2px;
-    padding: 4px;
-    border-radius: 12px;
-    background: var(--chip);
-  }
-
-  .filtro button {
-    height: 32px;
-    padding: 0 12px;
-    border-radius: 9px;
-    border: 0;
-    background: transparent;
-    display: inline-flex;
-    align-items: center;
-    gap: 7px;
-    font-size: 12.5px;
-    font-weight: 600;
-    color: var(--suave);
-    white-space: nowrap;
-  }
-
-  .filtro button[aria-pressed='true'] {
-    background: var(--solido);
-    color: var(--texto);
-    box-shadow: 0 1px 3px var(--sombra-segmento);
-  }
-
-  .cuenta {
-    font-family: var(--mono);
-    font-size: 10.5px;
-    font-weight: 400;
-    color: var(--tenue);
-  }
-
-  :global(.tarjeta-biblio) {
+  /* Sin tarjeta, como Mesas: lo de arriba suelto sobre el fondo y el collage debajo, 16 entre uno y otro. */
+  .cuerpo {
     position: absolute;
     left: var(--vista-izquierda);
-    top: var(--vista-arriba);
     right: var(--vista-derecha);
+    top: var(--vista-arriba);
     bottom: var(--vista-abajo);
-    padding: 20px;
     display: flex;
+    flex-direction: column;
+    gap: 16px;
   }
 
-  .cuerpo-biblio {
+  /* 48, como las de Mi menú y Mesas. */
+  .herramientas {
+    flex: none;
+    min-height: 48px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .nota {
+    margin: 0;
+    font-size: 12.5px;
+    font-weight: 500;
+    line-height: 1.45;
+    color: var(--suave);
+  }
+
+  .crece {
+    flex-grow: 1;
+  }
+
+  /* El collage se desliza solo; 12 de más arriba, a la izquierda y abajo para que la sombra del anuncio bajo el mouse no
+     se corte, y a la derecha los 12 son de su barrita, así el collage acaba donde acaba el conteo de arriba. */
+  .desliza {
     flex: 1;
-    min-width: 0;
     min-height: 0;
     overflow-y: auto;
+    margin: -12px -12px 0;
+    padding: 12px 0 24px 12px;
+    scrollbar-width: thin;
+  }
+
+  .collage-todo {
+    min-height: 100%;
     display: flex;
     flex-direction: column;
     gap: 14px;
-    scrollbar-width: thin;
   }
 
   .etq {
@@ -628,7 +667,7 @@
     height: 36px;
     padding: 0;
     border: 0;
-    border-radius: 11px;
+    border-radius: 10px; /* los botones chicos de solo ícono (reglas, «Los botones») */
     display: flex;
     align-items: center;
     justify-content: center;
@@ -662,7 +701,7 @@
     }
   }
 
-  /* «Se borra en…» en la última semana: una pastilla de vidrio con su relojito. */
+  /* «Se borra en…» en la última semana: una pastilla sólida con su relojito (sin vidrio que flota, desde el rediseño). */
   .vence {
     position: absolute;
     z-index: 1;
@@ -674,10 +713,8 @@
     gap: 6px;
     padding: 0 10px;
     border-radius: 14px;
-    border: 1px solid var(--linea);
-    background: var(--vidrio);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--borde-tarjeta);
+    background: var(--solido);
     box-shadow: 0 1px 3px var(--sombra-segmento);
     font-size: 11.5px;
     font-weight: 600;

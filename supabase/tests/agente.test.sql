@@ -748,7 +748,7 @@ select is(
 );
 select throws_ok(
   $$ select public.agente_herramienta('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 'ranking', '{"agrupar_por": "mesa", "desde": "2026-10-01", "hasta": "2026-10-01", "mesa": "Mesa 9"}') $$,
-  '22023', 'No hay una mesa «Mesa 9». Las que hay: Mesa 2, Mesa 1, Mesa 3, Terraza, Para llevar, A domicilio.',
+  '22023', 'No hay una mesa «Mesa 9». Las que hay: Mesa 2, Mesa 1, Mesa 3, Terraza, Comer aquí, Para llevar, A domicilio.',
   'Una mesa que no existe es un error con las que sí hay'
 );
 select throws_ok(
@@ -1098,7 +1098,7 @@ select is(
                                       from jsonb_array_elements(c -> 'menu') m where m ? 'oculto'),
                              'productos', jsonb_array_length(c -> 'menu'))
    from (select public.contexto_agente('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa') as c) x),
-  '{"como": "Chuy", "mesas": ["Mesa 2", "Mesa 1", "Mesa 3", "Terraza", "Para llevar", "A domicilio"],
+  '{"como": "Chuy", "mesas": ["Mesa 2", "Mesa 1", "Mesa 3", "Terraza", "Comer aquí", "Para llevar", "A domicilio"],
     "menu": ["Agua fresca (oculto)"], "productos": 4}'::jsonb,
   'Y cómo lo llaman, las mesas y el menú sin lo archivado, con el oculto marcado'
 );

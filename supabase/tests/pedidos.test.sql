@@ -285,6 +285,11 @@ begin
     (a, 'Celular de Pepe', 102, privado.huella_aparato(repeat('P', 43)), '5e5e5e5e-0000-4000-8000-000000000001'),
     (a, 'Tableta caja', null, privado.huella_aparato(repeat('C', 43)), '5e5e5e5e-0000-4000-8000-000000000002');
 
+  -- Desde la migración adaptabilidad un restaurante nace sin áreas; aquí cada uno tiene su «Cocina», como
+  -- los restaurantes de antes.
+  insert into public.areas_preparacion (restaurante_id, nombre)
+  select id, 'Cocina' from public.restaurantes;
+
   insert into public.categorias (id, restaurante_id, nombre, icono) overriding system value values
     (601, a, 'Tacos', 'taco'), (602, a, 'Aguas', 'agua'), (603, a, 'Envíos', 'especialidad'),
     (611, b, 'Tacos B', 'taco'), (621, c, 'Tacos C', 'taco');
@@ -1249,9 +1254,9 @@ select results_eq(
 );
 
 select throws_ok(
-  format('update public.ventas set pedido_numero = 9 where id = %s', tests.id('venta_pos')),
+  format('update public.ventas set pedido_numero = 0 where id = %s', tests.id('venta_pos')),
   '23514', null,
-  'Una cuenta del punto de venta no lleva número de pedido'
+  'El número de una cuenta del punto de venta va del 1 en adelante (desde la migración adaptabilidad, la que no tiene nombre lleva uno)'
 );
 
 

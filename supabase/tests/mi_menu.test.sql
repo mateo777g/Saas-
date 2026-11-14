@@ -228,6 +228,11 @@ begin
     (c, 'Restaurante C', 'restaurante-c', true, hoy - 30, hoy + 30, 10),
     (d, 'Restaurante D', 'restaurante-d', true, hoy - 30, hoy + 30, 10);
 
+  -- Desde la migración adaptabilidad un restaurante nace sin áreas; aquí cada uno tiene su «Cocina», como
+  -- los restaurantes de antes.
+  insert into public.areas_preparacion (restaurante_id, nombre)
+  select id, 'Cocina' from public.restaurantes;
+
   insert into public.miembros (id, restaurante_id, usuario_id, nombre, roles, activo) overriding system value values
     (101, a, tests.get_supabase_uid('gerente_a'), 'Don Chuy', '{gerente}', true),
     (111, b, tests.get_supabase_uid('gerente_b'), 'Gerente B', '{gerente}', true),

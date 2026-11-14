@@ -255,6 +255,11 @@ begin
     (a, 'Tableta cocina', null, repeat('3', 64), '5e5e5e5e-0000-4000-8000-000000000003'),
     (b, 'Tableta cocina B', null, repeat('4', 64), '5e5e5e5e-0000-4000-8000-000000000011');
 
+  -- Desde la migración adaptabilidad un restaurante nace sin áreas; aquí cada uno tiene su «Cocina», como
+  -- los restaurantes de antes.
+  insert into public.areas_preparacion (restaurante_id, nombre)
+  select id, 'Cocina' from public.restaurantes;
+
   insert into tests.ids (nombre, id)
   select 'cocina_' || lower(right(r.nombre, 1)), ap.id
   from public.areas_preparacion ap join public.restaurantes r on r.id = ap.restaurante_id;
@@ -556,9 +561,9 @@ select tests.en_aparato('5e5e5e5e-0000-4000-8000-000000000001');
 
 select throws_ok(
   $$ select public.mandar_a_cocina('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 'c1a1e000-0000-4000-8000-000000000006',
-       '[{"producto_id": 504, "cantidad": 1}]', p_tipo => 'para_llevar', p_cliente_nombre => '   ') $$,
-  '22023', 'Escribe el nombre del cliente',
-  'Para llevar sin nombre no se abre'
+       '[{"producto_id": 504, "cantidad": 1}]', p_tipo => 'mostrador', p_cliente_nombre => '   ') $$,
+  '22023', 'Elige una mesa, comer aquí, para llevar o domicilio',
+  'Un tipo que no existe no se abre (sin nombre ya se abre con su número: migración adaptabilidad)'
 );
 
 select throws_ok(
@@ -572,7 +577,7 @@ select throws_ok(
 select throws_ok(
   $$ select public.mandar_a_cocina('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 'c1a1e000-0000-4000-8000-000000000006',
        '[{"producto_id": 504, "cantidad": 1}]') $$,
-  '22023', 'Elige una mesa, para llevar o domicilio',
+  '22023', 'Elige una mesa, comer aquí, para llevar o domicilio',
   'Sin mesa ni tipo no se abre nada'
 );
 

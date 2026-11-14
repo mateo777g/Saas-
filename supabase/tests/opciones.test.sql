@@ -173,8 +173,8 @@ grant execute on function tests.filas(text) to anon, authenticated;
 
 -- ─── Escenario ────────────────────────────────────────────────────────────────
 -- Se siembra como postgres, dueño de las tablas, con ids fijos para poder nombrar filas
--- que quien prueba no alcanza a leer. Cada restaurante nace con su «Cocina» (el trigger);
--- tests.ids guarda sus ids. tests.comandas hace de las comandas de la pieza 4: el área que
+-- que quien prueba no alcanza a leer. Cada restaurante tiene su «Cocina», como los de antes
+-- de la migración adaptabilidad; tests.ids guarda sus ids. tests.comandas hace de las comandas de la pieza 4: el área que
 -- señala ya recibió comandas.
 
 create table tests.ids (nombre text primary key, id bigint not null);
@@ -221,6 +221,11 @@ begin
     ('cccccccc-cccc-4ccc-8ccc-cccccccccccc', 'Restaurante C', 'restaurante-c', false, hoy - 30, hoy + 30),
     ('dddddddd-dddd-4ddd-8ddd-dddddddddddd', 'Restaurante D', 'restaurante-d', true, hoy - 31, hoy - 1),
     ('eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee', 'Restaurante E', 'restaurante-e', true, hoy - 30, hoy);
+
+  -- Desde la migración adaptabilidad un restaurante nace sin áreas; aquí cada uno tiene su «Cocina», como
+  -- los restaurantes de antes.
+  insert into public.areas_preparacion (restaurante_id, nombre)
+  select id, 'Cocina' from public.restaurantes;
 
   insert into public.miembros (restaurante_id, usuario_id, nombre, roles, activo) values
     (a, tests.get_supabase_uid('gerente_a'), 'Gerente A', '{gerente}', true),
@@ -349,15 +354,15 @@ select is_empty(
 );
 
 
--- ─── Cada restaurante nace con «Cocina» ───────────────────────────────────────
+-- ─── Un restaurante nuevo nace sin áreas (migración adaptabilidad) ────────────
 
 insert into public.restaurantes (id, nombre, slug, licencia_activa, licencia_inicio, licencia_fin)
 values ('ffffffff-ffff-4fff-8fff-ffffffffffff', 'Restaurante F', 'restaurante-f', false, null, null);
 
 select results_eq(
   $$ select * from tests.areas_de('ffffffff-ffff-4fff-8fff-ffffffffffff') $$,
-  array['Cocina'],
-  'Un restaurante nuevo nace con su área «Cocina», y solo esa'
+  array[]::text[],
+  'Un restaurante nuevo nace sin áreas: todo se entrega directo'
 );
 
 
@@ -753,10 +758,10 @@ select is(
 
 select tests.authenticate_as('gerente_e');
 
-select throws_ok(
-  $$ select public.eliminar_area((select id from tests.ids where nombre = 'cocina_e')) $$,
-  '55000', 'Necesitas al menos un área. Crea otra antes de eliminar «Cocina».',
-  'La última área que queda no se elimina'
+select is(
+  public.eliminar_area((select id from tests.ids where nombre = 'cocina_e')),
+  'borrado',
+  'La última área que queda también se elimina: el restaurante se queda sin áreas (migración adaptabilidad)'
 );
 
 

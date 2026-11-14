@@ -9,6 +9,8 @@
     así lo eligió, lleva su nombre y su precio encima; al tocarlo se abre ese producto.
   - La «i» y si está abierto van dentro del cartel y no pasan con ellos: en una cápsula de vidrio oscuro
     o solos en un círculo del mismo vidrio, arriba o abajo a la derecha (f-info-abajo, en Menu.svelte).
+  - En el celular del cartel de Crear anuncios (13 nov 2026), la muestra del estilo va sola y lleva arriba a
+    la izquierda la misma etiqueta «Muestra» que los celulares del post y la historia.
 -->
 <script lang="ts">
   import { onMount } from 'svelte';
@@ -29,6 +31,7 @@
     lengua,
     moneda,
     t,
+    deMuestra = false,
     alInfo,
     alProducto,
   }: {
@@ -40,6 +43,8 @@
     lengua: Lengua;
     moneda: Moneda;
     t: Textos;
+    // Crear anuncios: el cartel es la muestra de un estilo.
+    deMuestra?: boolean;
     // La ventana de la «i» crece desde aquí; mientras está abierta, la propia ventana esconde esta «i».
     alInfo: (desde: HTMLElement) => void;
     alProducto: (p: Producto, desde: HTMLElement) => void;
@@ -96,6 +101,7 @@
     {/each}
   </div>
   {#if formas.carteles === 'completo'}<div class="f-sombra"></div>{/if}
+  {#if deMuestra}<span class="etiqueta-muestra">Muestra</span>{/if}
   {#if carteles.length > 1}
     <div class="puntos" aria-hidden="true">
       {#each carteles as c, i (c.ruta + ':' + i)}<i class:si={i === actual}></i>{/each}
@@ -149,6 +155,27 @@
     scroll-snap-stop: always;
     user-select: none;
     -webkit-user-drag: none;
+  }
+
+  /* Como la de los celulares del post y la historia (app, crearContenido/Celulares.svelte), a 10 de la orilla del
+     cartel: de las esquinas, a 16 + 10; de orilla a orilla, a 10. */
+  .etiqueta-muestra {
+    position: absolute;
+    left: 26px;
+    top: 24px;
+    z-index: 2;
+    padding: 3px 7px;
+    border-radius: 6px;
+    background: rgba(0, 0, 0, 0.55);
+    color: #ffffff;
+    font: 600 10px var(--jakarta);
+    letter-spacing: 0.02em;
+    pointer-events: none;
+  }
+
+  .f-completo .etiqueta-muestra {
+    left: 10px;
+    top: 10px;
   }
 
   .puntos {

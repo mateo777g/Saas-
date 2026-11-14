@@ -14,6 +14,10 @@
 //   {fragmentless: 'recargar'}            Que vuelva a leer menu_publico (después de cambiar un cartel).
 //   {fragmentless: 'modo', modo}          'producto': el producto de muestra abierto; 'menu': todo cerrado.
 //   {fragmentless: 'cerrar'}              Escape en el panel: cierra lo de más arriba.
+//   {fragmentless: 'cartel', ruta}        Crear anuncios (13 nov 2026, `crear-anuncios.md`): en el celular del cartel, la
+//       muestra del estilo (estilos/<clave>/<32 hex>.webp) va sola en el lugar de los carteles, quieta y con su etiqueta
+//       «Muestra», y el teléfono va a ella. Con `ruta` null, sus carteles de siempre. La primera llega en la dirección
+//       (?muestra=menu&cartel=<ruta>), para que no se vean sus carteles antes de la muestra.
 // Del menú al panel:
 //   {fragmentless: 'menu-listo'}          Ya pintó sus datos: el panel le manda lo que no ha guardado.
 //   {fragmentless: 'esqueleto', esqueleto} El esqueleto del teléfono, medido del menú ya armado (el `Recuerdo` de
@@ -53,15 +57,24 @@ function origenDelPanel(): string | null {
 
 const color = (v: unknown) => (typeof v === 'string' && /^#[0-9A-F]{6}$/i.test(v) ? v.toUpperCase() : null);
 const cambio = (v: unknown): Cambio | null => (typeof v === 'string' && v in FORMAS_DE_SIEMPRE ? (v as Cambio) : null);
+// La muestra de un estilo, como la guarda la base (puedo_subir_muestra) y la revisa el Worker (api/src/estilos.ts).
+const RUTA_MUESTRA = /^estilos\/[a-z0-9]+(-[a-z0-9]+)*\/[0-9a-f]{32}\.webp$/;
+const rutaMuestra = (v: unknown) => (typeof v === 'string' && RUTA_MUESTRA.test(v) ? v : null);
+
+// La primera muestra del celular del cartel de Crear anuncios, desde la dirección.
+export function cartelDeInicio(): string | null {
+  return rutaMuestra(new URLSearchParams(location.search).get('cartel'));
+}
 
 export type DelPanel = {
   alPintar: (p: Pintura, cambio: Cambio | null) => void;
   alRecargar: () => void;
   alModo?: (modo: ModoPanel) => void;
   alCerrar?: () => void;
+  alCartel?: (ruta: string | null) => void;
 };
 
-export function escucharPanel({ alPintar, alRecargar, alModo, alCerrar }: DelPanel): () => void {
+export function escucharPanel({ alPintar, alRecargar, alModo, alCerrar, alCartel }: DelPanel): () => void {
   const escuchar = (e: MessageEvent) => {
     if (!ORIGENES.includes(e.origin) || e.source !== window.parent) return;
     const d = e.data as Record<string, unknown> | null;
@@ -69,6 +82,7 @@ export function escucharPanel({ alPintar, alRecargar, alModo, alCerrar }: DelPan
     if (d.fragmentless === 'recargar') return alRecargar();
     if (d.fragmentless === 'modo') return alModo?.(d.modo === 'producto' ? 'producto' : 'menu');
     if (d.fragmentless === 'cerrar') return alCerrar?.();
+    if (d.fragmentless === 'cartel') return alCartel?.(rutaMuestra(d.ruta));
     if (d.fragmentless !== 'muestra') return;
     const p: Pintura = { tema: d.tema === 'oscuro' ? 'oscuro' : 'claro', color: color(d.color) };
     if ('colorBarra' in d) p.colorBarra = color(d.colorBarra);

@@ -716,7 +716,15 @@
         </div>
 
         <div class="lado">
-          <Celulares {formato} {estilo} nombre={restaurante?.nombre ?? sucursal.nombre} color={marca} alElegir={(f) => (formato = f)} />
+          <Celulares
+            {formato}
+            {estilo}
+            nombre={restaurante?.nombre ?? sucursal.nombre}
+            color={marca}
+            slug={sucursal.slug}
+            restauranteId={sucursal.id}
+            alElegir={(f) => (formato = f)}
+          />
         </div>
       </div>
     {:else}

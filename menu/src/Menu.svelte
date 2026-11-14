@@ -44,7 +44,7 @@
   import { guardarEsqueleto, leerEsqueleto, medirEsqueleto } from './lib/esqueleto';
   import { esperarFotos, fotosDeArriba } from './lib/fotos';
   import { leerFormas, type Pestana } from './lib/formas';
-  import { avisarAlPanel, escucharPanel, irAPieza, modoMuestra, type Cambio, type ModoPanel, type Pintura } from './lib/muestra';
+  import { avisarAlPanel, cartelDeInicio, escucharPanel, irAPieza, modoMuestra, type Cambio, type ModoPanel, type Pintura } from './lib/muestra';
   import {
     abrirWhatsApp,
     centavos,
@@ -90,6 +90,8 @@
   let paso = $state<'leyendo' | 'listo' | 'apagado' | 'sinred'>('leyendo');
   // Lo que el panel manda pintar sin guardar (solo en la vista previa).
   let pintura = $state<Pintura | null>(null);
+  // Crear anuncios: la muestra del estilo, sola en el lugar de los carteles (lib/muestra.ts, «cartel»).
+  let cartelDeMuestra = $state<string | null>(enTelefono ? cartelDeInicio() : null);
 
   // El esqueleto mientras llega el menú (12 nov 2026): el que recuerda este navegador si se midió con este mismo ancho
   // de columna; si no, el general. La vista previa del panel no lleva este (el suyo es de la parte C2).
@@ -294,7 +296,9 @@
   const iconos = $derived(new Map((menu?.categorias ?? []).flatMap((c) => c.productos.map((p) => [p.id, c.icono] as const))));
   // Cada cartel con su producto, si es uno de Mi menú (Postgres solo manda los que salen en el menú).
   const carteles = $derived(
-    (menu?.carteles ?? []).map((c) => ({ ruta: c.ruta, producto: c.producto_id === null ? null : (productos.get(c.producto_id) ?? null) })),
+    cartelDeMuestra
+      ? [{ ruta: cartelDeMuestra, producto: null }]
+      : (menu?.carteles ?? []).map((c) => ({ ruta: c.ruta, producto: c.producto_id === null ? null : (productos.get(c.producto_id) ?? null) })),
   );
 
   let carrito = $state<EnCarrito[]>([]);
@@ -654,6 +658,15 @@
     irAPieza(raiz, cambio);
   }
 
+  // Crear anuncios: otra muestra (otro estilo) y el teléfono va a ella. La misma otra vez (el menú releyó) no lo mueve.
+  async function alCartel(ruta: string | null) {
+    if (!enTelefono || ruta === cartelDeMuestra) return;
+    cartelDeMuestra = ruta;
+    if (!ruta || !raiz || !menu) return;
+    await tick();
+    irAPieza(raiz, 'carteles');
+  }
+
   // El panel sabe si hay algo abierto en el teléfono: su Escape cierra primero sus ventanas y luego lo del teléfono.
   $effect(() => {
     if (enTelefono) avisarAlPanel({ fragmentless: 'encima', abierto: pila.length > 0 });
@@ -771,6 +784,7 @@
           alPintar,
           alRecargar: () => cargar(true),
           alModo,
+          alCartel,
           alCerrar: () => {
             if (encima) cerrar();
           },
@@ -873,6 +887,7 @@
               {lengua}
               {moneda}
               {t}
+              deMuestra={!!cartelDeMuestra}
               alInfo={(desde) => abrir({ tipo: 'info', desde })}
               alProducto={abrirProducto}
             />

@@ -4,8 +4,9 @@
   del menú digital): el del centro es el formato elegido, grande y adelante; los otros dos detrás, asomándose. Al picar
   uno de un lado pasa al centro con el resorte del dock y el del centro se hace a un lado. Dentro de cada uno, la
   muestra del estilo elegido en su formato, con su etiqueta «Muestra»: el post y la historia en una pantalla parecida a
-  la de Instagram (sin su logo; la cuenta es el restaurante), y el cartel en un menú en línea sencillo con el color del
-  restaurante. Lo demás de cada pantalla va en gris: no es el anuncio. Abajo, el nombre y la medida del elegido.
+  la de Instagram (sin su logo; la cuenta es el restaurante; lo demás va en gris: no es el anuncio), y el cartel en el
+  menú en línea de verdad del restaurante, sola en el lugar de sus carteles (MenuEnCelular.svelte, 13 nov 2026). Abajo,
+  el nombre y la medida del elegido.
 -->
 <script lang="ts">
   import { fade } from 'svelte/transition';
@@ -13,19 +14,25 @@
   import { FORMATOS, formatoDe, type EstiloDeHoy, type Formato } from '../../../lib/crearContenido';
   import { urlFoto } from '../../../lib/fotos';
   import Celular from './Celular.svelte';
+  import MenuEnCelular from './MenuEnCelular.svelte';
 
   let {
     formato,
     estilo,
     nombre,
     color,
+    slug,
+    restauranteId,
     alElegir,
   }: {
     formato: Formato;
     estilo: EstiloDeHoy | null;
-    // La cuenta del post y la historia, y la barra del cartel: el nombre y el color del restaurante.
+    // La cuenta del post y la historia: el nombre y el color del restaurante.
     nombre: string;
     color: string | null;
+    // El cartel va en el menú en línea de verdad de esta sucursal.
+    slug: string;
+    restauranteId: string;
     alElegir: (formato: Formato) => void;
   } = $props();
 
@@ -100,18 +107,8 @@
             </div>
           </Celular>
         {:else}
-          <Celular colorReloj={letra}>
-            <div class="pantalla-cel menu">
-              <div class="me-barra" style:background={fondo} style:color={letra}>
-                <span class="me-logo" style:color={fondo} style:background={letra}>{inicial}</span><b class="cuenta">{nombre}</b>
-              </div>
-              {@render imagen('cartel', 'cartel')}
-              <span class="me-buscar"></span>
-              <div class="me-categorias"><span class="activa" style:background={fondo}></span><span></span><span></span></div>
-              {#each [64, 52, 70] as largo (largo)}
-                <div class="me-producto"><span class="me-foto"></span><span class="me-textos"><span style:width="{largo}%"></span><span style:width="30%"></span></span></div>
-              {/each}
-            </div>
+          <Celular conReloj={false}>
+            <MenuEnCelular {slug} {restauranteId} ruta={estilo?.muestras.cartel ?? null} />
           </Celular>
         {/if}
       </button>
@@ -289,8 +286,7 @@
     padding: 2px 12px;
   }
 
-  .renglones span,
-  .me-textos span {
+  .renglones span {
     height: 8px;
     border-radius: 4px;
     background: var(--chip);
@@ -368,86 +364,6 @@
     height: 40px;
     border-radius: 20px;
     border: 1px solid rgba(255, 255, 255, 0.5);
-  }
-
-  /* El cartel, en un menú en línea sencillo */
-  .pantalla-cel.menu {
-    padding-top: 0;
-  }
-
-  .me-barra {
-    flex: none;
-    height: 104px;
-    padding: 50px 14px 0;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-  }
-
-  .me-logo {
-    width: 34px;
-    height: 34px;
-    flex: none;
-    border-radius: 10px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 14px;
-    font-weight: 800;
-  }
-
-  .imagen.cartel {
-    margin: 14px 12px 0;
-    aspect-ratio: 16 / 9;
-    border-radius: 14px;
-    overflow: hidden;
-  }
-
-  .me-buscar {
-    flex: none;
-    height: 36px;
-    margin: 14px 12px 0;
-    border-radius: 18px;
-    background: var(--chip);
-  }
-
-  .me-categorias {
-    display: flex;
-    gap: 8px;
-    padding: 14px 12px 4px;
-  }
-
-  .me-categorias span {
-    width: 64px;
-    height: 26px;
-    border-radius: 13px;
-    background: var(--chip);
-  }
-
-  .me-categorias .activa {
-    opacity: 0.85;
-  }
-
-  .me-producto {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 10px 12px;
-  }
-
-  .me-foto {
-    width: 60px;
-    height: 60px;
-    flex: none;
-    border-radius: 10px;
-    background: var(--chip);
-  }
-
-  .me-textos {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
   }
 
   /* Abajo, el elegido */

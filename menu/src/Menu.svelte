@@ -562,14 +562,15 @@
   }
 
   // ─── Lo de abajo («Tu menú en línea»): Menú, Pedido y Asistente ───
-  // Sin WhatsApp no sale Pedido y sin asistente no sale Asistente; si solo queda Menú, no sale nada. Si el
-  // asistente se queda sin IA con su vista abierta, su pestaña se queda hasta que salga de ella (la vista lo avisa).
+  // Sin WhatsApp no sale Pedido. Asistente sale siempre, también sin IA (tope 0 o su parte del mes acabada): su vista
+  // dice «Por ahora no puedo contestar…» con su WhatsApp, y ahí se ve «IA de Fragmentless» (el developer, 13 nov 2026,
+  // al ver las dos opciones lado a lado; antes salía solo si contestaba).
   const pestanas = $derived.by((): Pestana[] => {
     if (!menu || muestra === 'barra') return [];
     const lista: Pestana[] = ['menu'];
     if (menu.restaurante.telefono) lista.push('pedido');
-    if (menu.asistente_contesta || conPlatica) lista.push('asistente');
-    return lista.length > 1 ? lista : [];
+    lista.push('asistente');
+    return lista;
   });
   const pestanaActiva = $derived.by((): Pestana => {
     if (pila.some((e) => e.tipo === 'asistente')) return 'asistente';

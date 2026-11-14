@@ -42,7 +42,7 @@
   }
 </script>
 
-<Ventana centrado etiqueta="Cambiar palabra" {titulo} ancho={420} relleno="24px 28px" {alCerrar}>
+<Ventana centrado etiqueta="Cambiar palabra" {titulo} ancho={480} relleno="24px 28px" {alCerrar}>
   <div class="grupo-arriba">
   <GrupoCampos>
   <div class="campo">
@@ -70,7 +70,7 @@
   <div class="pie">
     <Boton etiqueta="Cancelar" icono="cerrar" tono="alarga" onclick={alCerrar} />
     <span class="crece"></span>
-    <Boton etiqueta="Usar esta palabra" icono="check-fino" tono="tinta" apagado={!lista} onclick={usar} />
+    <Boton etiqueta="Usar esta palabra" tono="verde" apagado={!lista} onclick={usar} />
   </div>
 </Ventana>
 

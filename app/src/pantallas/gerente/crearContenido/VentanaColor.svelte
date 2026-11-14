@@ -3,12 +3,17 @@
   línea» (menuEnLinea/VentanaColor.svelte), que entra con el color de su marca. En lugar de la barra
   del menú dice qué pinta el color en ese estilo, y «Quitar color» se vuelve «Volver al de tu marca»
   (sin color de marca, «Los de tu estilo»). El color solo es de este anuncio: nunca se guarda.
+
+  Con las reglas del rediseño (13 nov 2026, planes/trabajo/rediseno/crear-anuncios.md), como la ventana del color
+  aprobada de Tu menú en línea: «Solo para este anuncio…» va en la cabeza, al centro; el que quita el color va en rojo
+  de contorno con su ✕ y el que lo usa en verde; los avisos salen y se van deslizándose.
 -->
 <script lang="ts">
   import Boton from '../../../diseno/Boton.svelte';
   import Icono from '../../../diseno/Icono.svelte';
   import GrupoCampos from '../../../diseno/GrupoCampos.svelte';
   import Ventana from '../../../diseno/Ventana.svelte';
+  import { slide } from 'svelte/transition';
   import { esClaro, hexAHsv, hsvAHex, leerCodigo } from '../../../lib/color';
   import { loQuePinta, type EstiloDeHoy } from '../../../lib/crearContenido';
 
@@ -62,8 +67,16 @@
   }
 </script>
 
-<Ventana centrado etiqueta="Color" titulo="Color de este anuncio" ancho={440} relleno="24px 28px" {alCerrar}>
-  <p class="nota primera">Solo para este anuncio: tu marca se queda con {marca ?? 'su color'}.</p>
+<Ventana
+  centrado
+  etiqueta="Color"
+  titulo="Color de este anuncio"
+  texto="Solo para este anuncio: tu marca se queda con {marca ?? 'su color'}."
+  tamanoTexto={12.5}
+  ancho={440}
+  relleno="24px 28px"
+  {alCerrar}
+>
   <!-- svelte-ignore a11y_no_static_element_interactions -->
   <div class="sv" style:background={hsvAHex(hsv[0], 1, 1)} onpointerdown={(e) => arrastrar(e, (x, y) => (hsv = [hsv[0], x, 1 - y]))}>
     <div class="blanco"></div>
@@ -87,19 +100,21 @@
     <p class="aviso"><Icono nombre="info" tamano={16} /><span>En {estilo.nombre} pinta <b>{pinta}</b>.</span></p>
   {/if}
   {#if claro}
-    <p class="aviso"><Icono nombre="info" tamano={16} /><span>Sobre este color las letras van <b>oscuras</b>, para que se lean.</span></p>
+    <div class="aviso-claro" transition:slide={{ duration: 250 }}>
+      <p class="aviso"><Icono nombre="info" tamano={16} /><span>Sobre este color las letras van <b>oscuras</b>, para que se lean.</span></p>
+    </div>
   {/if}
   <div class="pie">
-    <Boton etiqueta={marca ? 'Volver al de tu marca' : 'Los de tu estilo'} onclick={() => alUsar(null)} />
+    <Boton etiqueta={marca ? 'Volver al de tu marca' : 'Los de tu estilo'} icono="cerrar" tono="peligro" onclick={() => alUsar(null)} />
     <span class="crece"></span>
-    <Boton etiqueta="Usar este color" icono="check-fino" tono="tinta" onclick={() => alUsar(hex)} />
+    <Boton etiqueta="Usar este color" tono="verde" onclick={() => alUsar(hex)} />
   </div>
 </Ventana>
 
 <style>
   .sv {
     position: relative;
-    margin-top: 22px;
+    margin-top: 18px;
     height: 196px;
     border-radius: 14px;
     overflow: hidden;
@@ -205,10 +220,6 @@
     font-weight: 500;
     line-height: 1.45;
     color: var(--suave);
-  }
-
-  .nota.primera {
-    margin-top: 8px;
   }
 
   .aviso {

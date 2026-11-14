@@ -1,9 +1,13 @@
 <!--
   «Crear anuncios» (se llamó «Crear contenido» hasta el 4 de noviembre de 2026, y el código conserva
-  ese nombre; parte 7b-1 de la libreta 7; maqueta JQBw2yGFSiky1x9twUyYbe, aprobada el 30 de
-  octubre de 2026; sus decisiones en planes/trabajo/7b/lista-7b.md). Una sola pantalla, como en Flet:
-  el anuncio nuevo a la izquierda (1 Producto, 2 Formato, 3 ¿Qué quieres decir?, la fila «Opcional»
-  con Color y Estilo, «Irá en el anuncio» y Generar anuncio) y «Resultado» a la derecha.
+  ese nombre; parte 7b-1 de la libreta 7; sus decisiones en planes/trabajo/7b/lista-7b.md).
+
+  Por pasos desde el 13 nov 2026 (la idea del developer y sus 11 encuestas, en planes/trabajo/rediseno/crear-anuncios.md):
+  1 Productos (la búsqueda grande de Mi menú y los productos grandes, que entran en cascada), 2 Tu anuncio (a la
+  izquierda ¿Qué quieres decir?, Estilo y color e «Irá en el anuncio»; a la derecha el formato en tres celulares, fijos
+  al bajar) y 3 Listo (la rejilla de puntitos grande al centro, luego tu anuncio ahí mismo, y «Lo que pediste» a un
+  lado). Los pasos van al centro de la barra de arriba y los botones en la barra de abajo, la de guardar de Tu menú en
+  línea: Continuar; Atrás y Generar anuncio; Nuevo anuncio, Otra vez, Ponerlo en mi menú y Descargar.
 
   Lo lee todo de Postgres con crear_contenido, al abrir, cada vez que realtime avisa de un cambio en
   sus anuncios, cada 30 segundos mientras uno se hace (por si se perdió un aviso) y al volver a la
@@ -13,19 +17,24 @@
 -->
 <script lang="ts">
   import { onMount, untrack } from 'svelte';
+  import { fade, fly } from 'svelte/transition';
   import BarraArriba from '../../diseno/BarraArriba.svelte';
+  import Boton from '../../diseno/Boton.svelte';
   import BotonCuadro from '../../diseno/BotonCuadro.svelte';
   import CajaError from '../../diseno/CajaError.svelte';
+  import { cascada } from '../../diseno/cascada';
   import Esqueleto from '../../diseno/Esqueleto.svelte';
+  import GrupoCampos from '../../diseno/GrupoCampos.svelte';
+  import Haz from '../../diseno/Haz.svelte';
   import Icono from '../../diseno/Icono.svelte';
-  import { pista } from '../../diseno/pista';
-  import Tarjeta from '../../diseno/Tarjeta.svelte';
+  import { vidrio } from '../../diseno/vidrio';
   import {
     anuncioVisto,
+    cuantosLleva,
     datosQueVan,
     descargarAnuncio,
     escucharAnuncios,
-    FORMATOS,
+    formatoDe,
     hacerAnuncio,
     leerCrearContenido,
     leerEstilosDeHoy,
@@ -35,6 +44,7 @@
     sinAcentos,
     textoSinAnuncios,
     vacioDe,
+    vaCon,
     type DatosCrearContenido,
     type EstiloDeHoy,
     type Formato,
@@ -45,11 +55,14 @@
   } from '../../lib/crearContenido';
   import { ponerEnMiMenu } from '../../lib/biblioteca';
   import { esDeRed, Fallo, mensajeDeError, SIN_CONEXION } from '../../lib/errores';
-  import { diaYMes, pesos } from '../../lib/formato';
+  import { anchos, filasDeLaUltimaVez, recordarFilas } from '../../lib/esqueletos';
+  import { diaYMes, pesos, plural } from '../../lib/formato';
   import { urlFoto } from '../../lib/fotos';
   import type { Sucursal } from '../../lib/gerente';
   import CajaSucursales from './CajaSucursales.svelte';
-  import Resultado, { type LoQueSeVe } from './crearContenido/Resultado.svelte';
+  import Celulares from './crearContenido/Celulares.svelte';
+  import PasoListo, { type LoQueSeVe } from './crearContenido/PasoListo.svelte';
+  import Pasos, { type Paso } from './crearContenido/Pasos.svelte';
   import VentanaColor from './crearContenido/VentanaColor.svelte';
   import VentanaEstilos from './crearContenido/VentanaEstilos.svelte';
   import VentanaPalabra from './crearContenido/VentanaPalabra.svelte';
@@ -75,10 +88,13 @@
   let estilos = $state<EstiloDeHoy[] | null>(null);
   let errorEstilos = $state<string | null>(null);
 
+  // En qué paso va. Entra en el 1; si al entrar hay uno haciéndose o uno terminado sin ver, en el 3.
+  let paso = $state<Paso>(1);
+
   // Lo que va armando: los productos en el orden en que los picó (el 1 va en el titular), el
-  // formato, el estilo, su mensaje y el color de este anuncio (null = el de su marca).
+  // formato (entra con el post al centro), el estilo, su mensaje y el color de este anuncio (null = el de su marca).
   let elegidos = $state<number[]>([]);
-  let formato = $state<Formato | null>(null);
+  let formato = $state<Formato>('post');
   let estiloId = $state<number | null>(null);
   let mensaje = $state('');
   let color = $state<string | null>(null);
@@ -95,6 +111,8 @@
   let ventana = $state<null | { tipo: 'estilos' } | { tipo: 'color' } | { tipo: 'palabra'; lugar: LugarListo }>(null);
 
   let se = $state<LoQueSeVe>({ fase: 'vacio' });
+  // El anuncio del paso 3, como lo guardó Postgres («Lo que pediste»).
+  let pedido = $state<ResultadoDeAnuncio | null>(null);
   // El último terminado que enseña: «Otra vez» lo repite tal cual.
   let mostrado = $state<ResultadoDeAnuncio | null>(null);
   let enviando = $state(false);
@@ -105,7 +123,7 @@
   const productos = $derived(datos?.productos ?? []);
   const restaurante = $derived(datos?.restaurante ?? null);
   const marca = $derived(restaurante?.color ?? null);
-  // Los que van: los primeros, hasta el máximo del estilo; los de más se apagan, no se borran.
+  // Los que van: los primeros, hasta el máximo del estilo (desde los pasos, el estilo siempre los lleva todos).
   const van = $derived(
     elegidos
       .slice(0, estilo?.maximo ?? MAXIMO_PRODUCTOS)
@@ -128,7 +146,6 @@
 
   const largo = $derived([...mensaje].length);
   const pasado = $derived(!!estilo && estilo.mensaje > 0 && largo > estilo.mensaje);
-  const escrito = $derived(!!estilo && estilo.mensaje > 0 && mensaje.trim() !== '');
   const haciendo = $derived(se.fase === 'haciendo' || enviando);
   const faltanPalabras = $derived(lugares.length > 0 && !palabras);
   const sinEstilos = $derived(estilos !== null && estilos.length === 0);
@@ -136,8 +153,7 @@
   const listo = $derived(
     !!estilo &&
       !!datos &&
-      van.length >= estilo.minimo &&
-      formato !== null &&
+      vaCon(estilo, elegidos.length) &&
       !pasado &&
       !faltanPalabras &&
       !aviso &&
@@ -145,22 +161,24 @@
       !haciendo,
   );
 
-  // Lo que dice bajo «Producto».
-  const notaProductos = $derived.by((): { aviso: boolean; icono?: string; texto: string } => {
-    if (nota) return { aviso: true, icono: 'alerta', texto: nota };
+  // Si el estilo no lleva los productos que eligió (solo pasa si se apagó o cambió de reglas con la vista abierta).
+  const notaDelEstilo = $derived.by((): string | null => {
     const n = elegidos.length;
-    if (estilo && n && n < estilo.minimo) return { aviso: true, icono: 'info', texto: `Este estilo es para combos: pica ${estilo.minimo} o ${estilo.maximo}.` };
-    if (estilo && n > estilo.maximo) {
-      const m = estilo.maximo;
-      const cuales = m === 1 ? 'va el 1' : m === 2 ? 'van el 1 y el 2' : `van del 1 al ${m}`;
-      return { aviso: true, icono: 'info', texto: `Este estilo lleva ${m === 1 ? '1 producto' : `hasta ${m} productos`}: ${cuales}.` };
-    }
-    return { aviso: false, texto: 'De tu menú. Pica uno o varios: el 1 va en el titular.' };
+    if (!estilo || !n) return null;
+    if (n < estilo.minimo) return `Este estilo es para combos: pica ${estilo.minimo} o ${estilo.maximo}.`;
+    if (n > estilo.maximo) return `Este estilo lleva ${estilo.maximo === 1 ? '1 producto' : `hasta ${estilo.maximo} productos`}: regresa a Productos y quita ${n - estilo.maximo}.`;
+    return null;
   });
 
   const visibles = $derived.by(() => {
     const b = sinAcentos(busqueda.trim());
     return b ? productos.filter((p) => sinAcentos(p.nombre).includes(b)) : productos;
+  });
+
+  // Los elegidos por su nombre, para la barra de abajo: «Torta de pastor, Taco al pastor y Burrito al pastor».
+  const nombresElegidos = $derived.by(() => {
+    const n = elegidos.map((id) => productos.find((p) => p.id === id)?.nombre).filter((x) => x !== undefined);
+    return n.length > 1 ? `${n.slice(0, -1).join(', ')} y ${n[n.length - 1]}` : (n[0] ?? '');
   });
 
   // «Irá en el anuncio»: su mensaje (o lo que sale vacío, en gris) y los datos de su restaurante.
@@ -174,7 +192,7 @@
         if (v) partes.push({ texto: v, vacio: true });
       }
     }
-    for (const d of datosQueVan(estilo, formato ?? 'post', restaurante, van)) partes.push({ texto: d, vacio: false });
+    for (const d of datosQueVan(estilo, formato, restaurante, van)) partes.push({ texto: d, vacio: false });
     return partes;
   });
 
@@ -198,6 +216,7 @@
   // ─── Leer ──────────────────────────────────────────────────────────────────────────────────
 
   let haciendoId: number | null = null;
+  const llaveEsqueleto = $derived(`anuncio-productos-${sucursal.id}`);
 
   async function leer() {
     let nuevos: DatosCrearContenido;
@@ -208,9 +227,12 @@
       if (!datos) errorLectura = esDeRed(e) ? SIN_CONEXION : mensajeDeError(e);
       return;
     }
+    const primera = datos === null;
     errorLectura = null;
     datos = nuevos;
+    recordarFilas(llaveEsqueleto, nuevos.productos.length);
     alLeer(nuevos.resultado);
+    if (primera && se.fase !== 'vacio') paso = 3;
   }
 
   function alLeer(r: ResultadoDeAnuncio | null) {
@@ -218,10 +240,15 @@
     if (!r) {
       // Uno que ya enseñó terminado se queda mientras siga en la vista; uno que se hacía (el de
       // otro gerente de la sucursal) ya no es suyo: queda vacío.
-      if (antes.fase === 'haciendo') se = { fase: 'vacio' };
+      if (antes.fase === 'haciendo') {
+        se = { fase: 'vacio' };
+        pedido = null;
+        if (paso === 3) paso = elegidos.length ? 2 : 1;
+      }
       haciendoId = null;
       return;
     }
+    pedido = r;
     if (r.estado === 'haciendo') {
       const desde = antes.fase === 'haciendo' && haciendoId === r.id ? antes.desde : Date.now() - r.segundos * 1000;
       haciendoId = r.id;
@@ -240,6 +267,13 @@
     anuncioVisto(r.id);
   }
 
+  // Con el que entra: el Clásico; si hoy no le sale, el primero de «Para todos». Con productos ya elegidos, el
+  // primero de esos que los lleve.
+  function deEntrada(lista: EstiloDeHoy[], n: number | null): EstiloDeHoy | undefined {
+    const sirve = (e: EstiloDeHoy) => n === null || vaCon(e, n);
+    return lista.find((e) => e.clave === 'clasico' && sirve(e)) ?? lista.find((e) => e.grupo === 'para_todos' && sirve(e)) ?? lista.find(sirve);
+  }
+
   async function leerEstilos() {
     try {
       const lista = await leerEstilosDeHoy(sucursal.id);
@@ -247,8 +281,7 @@
       estilos = lista;
       errorEstilos = null;
       if (estiloId === null) {
-        // Entra con el Clásico; si hoy no le sale, con el primero de «Para todos».
-        estiloId = (lista.find((e) => e.clave === 'clasico') ?? lista.find((e) => e.grupo === 'para_todos') ?? lista[0])?.id ?? null;
+        estiloId = deEntrada(lista, elegidos.length || null)?.id ?? lista[0]?.id ?? null;
       } else if (antes && !lista.some((e) => e.id === antes.id)) {
         perdido = antes;
         error = YA_NO_ESTA;
@@ -322,25 +355,30 @@
     leer();
   }
 
-  async function mandar(pedido: Pedido) {
+  // true si el Worker lo aceptó (ya se está haciendo).
+  async function mandar(p: Pedido): Promise<boolean> {
     enviando = true;
     error = null;
     try {
-      const r = await hacerAnuncio(sucursal.id, pedido);
-      if (r.ok) await leer();
-      else noSePuede(r);
+      const r = await hacerAnuncio(sucursal.id, p);
+      if (r.ok) {
+        await leer();
+        return true;
+      }
+      noSePuede(r);
     } catch (e) {
       error = mensajeDe(e);
     } finally {
       enviando = false;
     }
+    return false;
   }
 
-  function generar() {
-    if (!listo || !estilo || !formato) return;
+  async function generar() {
+    if (!listo || !estilo) return;
     const llaves = new Set(lugares.map((l) => l.llave));
     const todas = { ...(palabras ?? {}), ...cambiadas };
-    mandar({
+    const aceptado = await mandar({
       estiloId: estilo.id,
       formato,
       productos: van.map((p) => p.id),
@@ -348,6 +386,7 @@
       color: estilo.color ? color : null,
       palabras: Object.fromEntries(Object.entries(todas).filter(([llave]) => llaves.has(llave))),
     });
+    if (aceptado) paso = 3;
   }
 
   // «Otra vez»: el mismo anuncio, con las mismas palabras (las suyas incluidas). Cuenta uno.
@@ -364,6 +403,46 @@
     });
   }
 
+  // ─── Descargar y Ponerlo en mi menú (estaban en Resultado) ─────────────────────────────────
+
+  let bajando = $state(false);
+  let descargado = $state(false);
+  let errorDescarga = $state<string | null>(null);
+
+  async function descargar(id: number) {
+    bajando = true;
+    errorDescarga = null;
+    try {
+      await descargarAnuncio(id);
+      descargado = true;
+      setTimeout(() => (descargado = false), 1600);
+    } catch (e) {
+      errorDescarga = mensajeDe(e);
+    } finally {
+      bajando = false;
+    }
+  }
+
+  // Los carteles que ya puso en su menú, mientras siga en la vista: el botón se queda en «En tu menú».
+  let puestos = $state<number[]>([]);
+  let poniendo = $state(false);
+  let errorPoner = $state<string | null>(null);
+
+  async function poner(id: number) {
+    if (poniendo || puestos.includes(id)) return;
+    poniendo = true;
+    errorPoner = null;
+    try {
+      await ponerEnMiMenu(sucursal.id, id);
+      puestos = [...puestos, id];
+    } catch (e) {
+      if (!(e instanceof Fallo)) console.error('[crear contenido] no se pudo poner el cartel en el menú:', e);
+      errorPoner = mensajeDe(e);
+    } finally {
+      poniendo = false;
+    }
+  }
+
   // ─── Lo que se toca ────────────────────────────────────────────────────────────────────────
 
   function picar(id: number) {
@@ -372,6 +451,42 @@
     if (elegidos.includes(id)) elegidos = elegidos.filter((x) => x !== id);
     else if (elegidos.length >= MAXIMO_PRODUCTOS) nota = `Máximo ${MAXIMO_PRODUCTOS} productos en un anuncio.`;
     else elegidos = [...elegidos, id];
+  }
+
+  const puede = (n: Paso) => n === 1 || (n === 2 ? elegidos.length > 0 : se.fase !== 'vacio');
+
+  function ir(n: Paso) {
+    if (!puede(n)) return;
+    // Al paso 2 con un estilo que lleve los productos que eligió (encuesta 2): si el de ahorita no, el de entrada.
+    if (n === 2 && estilos?.length && (!estilo || !vaCon(estilo, elegidos.length))) {
+      const otro = deEntrada(estilos, elegidos.length);
+      if (otro) {
+        estiloId = otro.id;
+        perdido = null;
+        if (error === YA_NO_ESTA) error = null;
+      }
+    }
+    paso = n;
+  }
+
+  // «Nuevo anuncio» (encuesta 11): al paso 1 sin nada elegido. El que se hace se queda en el 3.
+  function nuevo() {
+    elegidos = [];
+    mensaje = '';
+    color = null;
+    busqueda = '';
+    nota = null;
+    error = null;
+    formato = 'post';
+    if (estilos?.length) estiloId = deEntrada(estilos, null)?.id ?? estiloId;
+    perdido = null;
+    if (se.fase !== 'haciendo') {
+      se = { fase: 'vacio' };
+      pedido = null;
+    }
+    errorDescarga = null;
+    errorPoner = null;
+    paso = 1;
   }
 
   function usarEstilo(e: EstiloDeHoy) {
@@ -397,6 +512,21 @@
     error = null;
     ventana = null;
   }
+
+  // Los productos entran en cascada (diseno/cascada.ts) al llegar la primera vez y cada vez que se vuelve al paso 1;
+  // al buscar o al releer, quietos.
+  let rejilla = $state<HTMLDivElement>();
+  let yaEntraron: HTMLElement | null = null;
+  $effect(() => {
+    const r = rejilla;
+    if (!r || !datos || yaEntraron === r) return;
+    yaEntraron = r;
+    requestAnimationFrame(() => cascada(r));
+  });
+
+  // Lo que mide el paso 3 entre las dos barras: el anuncio se achica si no cabe.
+  let anchoTres = $state(0);
+  let altoTres = $state(0);
 
   // Mientras uno se hace, se vuelve a leer cada 30 segundos: si se perdió el aviso de realtime, o
   // si el trabajo se cayó y Postgres lo suelta a los 15 minutos, igual se entera.
@@ -424,193 +554,257 @@
 
 <BarraArriba
   titulo="Crear anuncios"
+  chipAntes
   estado={datos
     ? { texto: datos.de > 0 ? `Te quedan ${datos.quedan} de ${datos.de} este mes` : 'Sin anuncios este mes', vivo: true, hueco: datos.quedan <= 0 }
     : { texto: errorLectura ? 'No se pudo leer' : 'Leyendo…', vivo: false }}
 >
+  {#snippet junto()}
+    <Pasos actual={paso} {puede} alIr={ir} />
+  {/snippet}
   <CajaSucursales {sucursales} actual={sucursal} {alElegir} />
 </BarraArriba>
 
 {#if errorLectura && !datos}
   <main class="cuerpo-error"><CajaError mensaje={errorLectura} /></main>
 {:else}
-  <Tarjeta como="main" class="tarjeta-nuevo">
-    <!-- 1 Producto -->
-    <div class="seccion">
-      <div class="paso-cabeza">
-        <span class="paso" class:listo={!!estilo && van.length >= estilo.minimo}>
-          {#if estilo && van.length >= estilo.minimo}<Icono nombre="check" tamano={13} />{:else}1{/if}
-        </span>
-        <div class="paso-textos">
-          <span class="paso-titulo">Producto</span>
-          <span class="paso-sub" class:aviso={notaProductos.aviso}>
-            {#if notaProductos.icono}<Icono nombre={notaProductos.icono} tamano={14} />{/if}{notaProductos.texto}
+  <main class="paso-cuerpo" class:tres={paso === 3}>
+    {#if paso === 1}
+      <!-- 1 Productos -->
+      <div class="paso-uno">
+        <div class="herramientas">
+          <Haz>
+            <label class="buscador" use:vidrio={'control'}>
+              <Icono nombre="buscar" tamano={18} />
+              <input type="search" aria-label="Buscar en tu menú" placeholder="Buscar en tu menú" bind:value={busqueda} autocomplete="off" />
+            </label>
+          </Haz>
+          <span class="crece"></span>
+          <span class="etiqueta">
+            {#if datos}{plural(productos.length, 'PRODUCTO', 'PRODUCTOS')}{:else}<Esqueleto ancho="80px" alto="10px" />{/if}
           </span>
         </div>
-        <label class="buscador">
-          <Icono nombre="buscar" tamano={15} />
-          <input type="search" placeholder="Buscar en tu menú" bind:value={busqueda} autocomplete="off" />
-        </label>
-      </div>
-      <div class="rejilla">
-        {#each visibles as p (p.id)}
-          {@const i = elegidos.indexOf(p.id)}
-          {@const deMas = i >= 0 && !!estilo && i >= estilo.maximo}
-          <button type="button" class="prod" class:elegido={i >= 0 && !deMas} class:de-mas={deMas} aria-pressed={i >= 0} onclick={() => picar(p.id)}>
-            <span class="prod-foto" style:background-image={p.imagen_ruta ? `url(${urlFoto(p.imagen_ruta)})` : undefined}></span>
-            <span class="prod-textos"><span class="prod-nombre">{p.nombre}</span><span class="prod-precio">{pesos(p.precio)}</span></span>
-            {#if i >= 0}<span class="numero" class:apagado={deMas}>{i + 1}</span>{/if}
-          </button>
-        {:else}
-          {#if datos}
-            <div class="nota-rejilla">{productos.length ? 'No hay productos con ese nombre en tu menú.' : 'Todavía no hay productos en tu menú.'}</div>
+        <p class="nota">De tu menú. Pica uno o varios: el 1 va en el titular.</p>
+        <div class="cuerpo rejilla" bind:this={rejilla}>
+          {#each visibles as p (p.id)}
+            {@const i = elegidos.indexOf(p.id)}
+            <button type="button" class="fila prod" class:elegido={i >= 0} aria-pressed={i >= 0} onclick={() => picar(p.id)}>
+              <span class="prod-foto" style:background-image={p.imagen_ruta ? `url(${urlFoto(p.imagen_ruta)})` : undefined}></span>
+              <span class="prod-textos"><span class="prod-nombre">{p.nombre}</span><span class="prod-precio">{pesos(p.precio)}</span></span>
+              {#if i >= 0}<span class="numero">{i + 1}</span>{/if}
+            </button>
           {:else}
-            <!-- El esqueleto de la primera lectura (regla «Los esqueletos»): una fila de productos con su forma. -->
-            <span class="solo-lector">Leyendo tu menú…</span>
-            {#each ['78%', '60%', '84%', '66%', '72%'] as ancho, i (i)}
-              <div class="prod quieto" aria-hidden="true">
-                <Esqueleto alto="88px" redondo="10px" />
-                <span class="prod-textos"><Esqueleto {ancho} alto="10px" /><Esqueleto ancho="40%" alto="9px" /></span>
-              </div>
-            {/each}
-          {/if}
-        {/each}
-      </div>
-    </div>
-
-    <!-- 2 Formato -->
-    <div class="seccion">
-      <div class="paso-cabeza">
-        <span class="paso" class:listo={formato !== null}>{#if formato}<Icono nombre="check" tamano={13} />{:else}2{/if}</span>
-        <span class="paso-titulo">Formato</span>
-      </div>
-      <div class="formatos">
-        {#each FORMATOS as f (f.valor)}
-          <button type="button" class="formato" class:elegido={formato === f.valor} aria-pressed={formato === f.valor} onclick={() => (formato = f.valor)}>
-            <span class="caja-ic"><Icono nombre={f.valor} tamano={18} /></span>
-            <span class="f-textos"><span class="f-titulo">{f.texto}</span><span class="f-medida">{f.medida}</span></span>
-          </button>
-        {/each}
-      </div>
-    </div>
-
-    <!-- 3 ¿Qué quieres decir? -->
-    <div class="seccion">
-      <div class="paso-cabeza">
-        <span class="paso" class:listo={escrito && !pasado}>{#if escrito && !pasado}<Icono nombre="check" tamano={13} />{:else}3{/if}</span>
-        <span class="paso-titulo crece">¿Qué quieres decir?</span>
-        {#if estilo && estilo.mensaje > 0}<span class="letras" class:pasado>{largo} / {estilo.mensaje}</span>{/if}
-      </div>
-      {#if !estilo || estilo.mensaje > 0}
-        <label class="caja-mensaje" class:pasado>
-          <textarea rows="2" placeholder={estilo ? pistaDe(estilo) : ''} aria-label="¿Qué quieres decir?" bind:value={mensaje}></textarea>
-        </label>
-      {:else}
-        <div class="sin-mensaje"><Icono nombre="info" tamano={16} /><span>{estilo.nombre} no lleva mensaje: sus letras salen de tu producto.</span></div>
-      {/if}
-    </div>
-
-    <!-- Opcional: Color y Estilo -->
-    <div class="fila-opciones">
-      <span class="etq">Opcional</span><span style="width:4px"></span>
-      {#if estilo && !estilo.color}
-        <span class="sin-color">{estilo.nombre} sale con sus colores.</span>
-      {:else}
-        <button type="button" class="boton-opcion" use:pista={'Elegir el color de este anuncio'} disabled={!estilo} onclick={() => (ventana = { tipo: 'color' })}>
-          {#if colorDelAnuncio}
-            <span class="gota-chica" style:background={colorDelAnuncio}></span>Color<span class="valor">{colorDelAnuncio}</span>
-          {:else}
-            <span class="gota-chica vacia"></span>Color<span class="valor">Los de tu estilo</span>
-          {/if}
-        </button>
-        <BotonCuadro
-          icono="volver"
-          ayuda={marca ? 'Volver al color de tu marca' : 'Volver a los de tu estilo'}
-          etiqueta="Volver al color de tu marca"
-          apagado={color === null}
-          onclick={() => (color = null)}
-        />
-      {/if}
-      <span class="separador"></span>
-      <button type="button" class="boton-opcion" use:pista={'Elegir el estilo del anuncio'} disabled={!estilos?.length} onclick={() => (ventana = { tipo: 'estilos' })}>
-        <span class="estilo-mini" style:background-image={estilo ? `url(${urlFoto(estilo.muestras.post)})` : undefined}></span>Estilo<span class="valor"
-          >{#if estilos === null}<Esqueleto ancho="56px" alto="10px" />{:else}{estilo?.nombre ?? (sinEstilos ? 'Ninguno' : '…')}{/if}</span
-        >
-      </button>
-      {#if estilo}<span class="desc-estilo" title={estilo.descripcion}>{estilo.descripcion}</span>{/if}
-    </div>
-
-    <!-- Irá en el anuncio -->
-    <div class="ira">
-      <div class="ira-cabeza">
-        <span class="etq crece">Irá en el anuncio</span>
-        <button type="button" class="enlace" onclick={() => alIr('restaurante')}>Editar tus datos</button>
-      </div>
-      <div class="ira-linea">
-        {#if !datos}
-          <Esqueleto ancho="62%" alto="10px" />
-        {:else if linea.length}
-          {#each linea as parte, n (n)}{n ? ' · ' : ''}<span class:vacio={parte.vacio}>{parte.texto}</span>{/each}
-        {:else}
-          <span class="vacio">Sin datos de tu restaurante: solo tu producto.</span>
-        {/if}
-      </div>
-      {#if escogiendo}
-        <div class="palabras"><span class="escogiendo"><span class="rueda-chica"></span>Escogiendo las palabras…</span></div>
-      {:else if falloPalabras}
-        <div class="palabras">
-          <span class="escogiendo fallo"><Icono nombre="alerta" tamano={14} />{falloPalabras}</span>
-          <button type="button" class="enlace" onclick={reintentar}>Reintentar</button>
-        </div>
-      {:else if palabras && chips.length}
-        <div class="palabras">
-          {#each chips as lugar, n (lugar.llave)}
-            {#if chips.length <= 3 && (n === 0 || chips[n - 1].clave !== lugar.clave)}
-              <span class="lugar">{nombreDeGrupo(lugar, chips.filter((l) => l.clave === lugar.clave).length)}</span>
+            {#if datos}
+              <div class="nota-rejilla">{productos.length ? 'No hay productos con ese nombre en tu menú.' : 'Todavía no hay productos en tu menú.'}</div>
+            {:else}
+              <!-- El esqueleto de la primera lectura (regla «Los esqueletos»): tantos productos como la última vez. -->
+              <span class="solo-lector">Leyendo tu menú…</span>
+              {#each anchos(['78%', '60%', '84%', '66%', '72%'], filasDeLaUltimaVez(llaveEsqueleto)) as ancho, i (i)}
+                <div class="prod quieto" aria-hidden="true">
+                  <Esqueleto proporcion="4 / 3" redondo="10px" />
+                  <span class="prod-textos"><Esqueleto {ancho} alto="12px" /><Esqueleto ancho="36%" alto="10px" /></span>
+                </div>
+              {/each}
             {/if}
-            <span class="palabra" title={palabraDe(lugar)}
-              ><span class="palabra-texto">{palabraDe(lugar)}</span><button type="button" class="enlace" onclick={() => (ventana = { tipo: 'palabra', lugar })}
-                >Cambiar</button
-              ></span
-            >
           {/each}
         </div>
-      {/if}
-    </div>
+      </div>
+    {:else if paso === 2}
+      <!-- 2 Tu anuncio -->
+      <div class="paso-dos" in:fly={{ y: 12, duration: 350 }}>
+        <div class="columna">
+          <section class="tarjeta">
+            <div class="encabezado">
+              <span class="cuadro"><Icono nombre="mensaje" tamano={18} /></span>
+              <div class="titulos"><span class="titulo">¿Qué quieres decir?</span></div>
+              {#if estilo && estilo.mensaje > 0}<span class="letras" class:pasado>{largo} / {estilo.mensaje}</span>{/if}
+            </div>
+            {#if !estilo || estilo.mensaje > 0}
+              <GrupoCampos>
+                <label class="caja-mensaje" class:pasado>
+                  <textarea rows="2" placeholder={estilo ? pistaDe(estilo) : ''} aria-label="¿Qué quieres decir?" bind:value={mensaje}></textarea>
+                </label>
+              </GrupoCampos>
+            {:else}
+              <div class="sin-mensaje"><Icono nombre="info" tamano={16} /><span>{estilo.nombre} no lleva mensaje: sus letras salen de tu producto.</span></div>
+            {/if}
+          </section>
 
-    <!-- Avisos y Generar anuncio -->
-    <div class="pie-crear">
-      {#if aviso}
-        <CajaError mensaje={aviso} tamano={12} compacta />
-      {:else if error}
-        <CajaError mensaje={error} tamano={12} compacta />
-      {:else if errorEstilos}
-        <CajaError mensaje={errorEstilos} tamano={12} compacta />
-      {:else if sinEstilos}
-        <CajaError mensaje="Todavía no hay estilos para tus anuncios." tipo="info" tamano={12} compacta />
-      {:else if pasado && estilo}
-        <span class="nota-pie">Tu mensaje no cabe en {estilo.nombre}: córtalo a {estilo.mensaje} letras.</span>
-      {:else}
-        <span class="nota-pie"></span>
-      {/if}
-      <button type="button" class="boton-generar" disabled={!listo} onclick={generar}>
-        <Icono nombre="ia" tamano={16} />{haciendo ? 'Haciendo…' : 'Generar anuncio'}
-      </button>
-    </div>
-  </Tarjeta>
+          <section class="tarjeta">
+            <div class="encabezado">
+              <span class="cuadro"><Icono nombre="contraste" tamano={18} /></span>
+              <div class="titulos">
+                <span class="titulo">Estilo y color</span>
+                {#if estilo}<span class="sub">{estilo.descripcion}</span>{:else if estilos === null}<Esqueleto ancho="70%" alto="10px" />{/if}
+              </div>
+            </div>
+            <div class="opciones">
+              <button type="button" class="opcion alta" disabled={!estilos?.length} onclick={() => (ventana = { tipo: 'estilos' })}>
+                <span class="estilo-mini" style:background-image={estilo ? `url(${urlFoto(estilo.muestras.post)})` : undefined}></span>
+                <span class="op-textos">
+                  {#if estilos === null}
+                    <Esqueleto ancho="90px" alto="12px" /><Esqueleto ancho="60px" alto="10px" />
+                  {:else}
+                    <span class="op-nombre">{estilo?.nombre ?? (sinEstilos ? 'Ninguno' : '…')}</span>
+                    {#if estilo}<span class="op-sub">{cuantosLleva(estilo)}</span>{/if}
+                  {/if}
+                </span>
+                <span class="op-cambiar">Cambiar estilo</span><Icono nombre="derecha" tamano={16} />
+              </button>
+              {#if estilo && !estilo.color}
+                <div class="sin-color"><span class="gota-chica vacia"></span>{estilo.nombre} sale con sus colores.</div>
+              {:else}
+                <div class="fila-color">
+                  <button type="button" class="opcion" disabled={!estilo} onclick={() => (ventana = { tipo: 'color' })}>
+                    {#if colorDelAnuncio}
+                      <span class="gota-chica" style:background={colorDelAnuncio}></span><span class="op-nombre">Color</span><span class="valor">{colorDelAnuncio}</span>
+                    {:else}
+                      <span class="gota-chica vacia"></span><span class="op-nombre">Color</span><span class="valor">Los de tu estilo</span>
+                    {/if}
+                    <span class="op-cambiar">Cambiar color</span><Icono nombre="derecha" tamano={16} />
+                  </button>
+                  <BotonCuadro
+                    icono="volver"
+                    grande
+                    ayuda={marca ? 'Volver al color de tu marca' : 'Volver a los de tu estilo'}
+                    etiqueta="Volver al color de tu marca"
+                    apagado={color === null}
+                    onclick={() => (color = null)}
+                  />
+                </div>
+              {/if}
+            </div>
+          </section>
 
-  <Resultado
-    {se}
-    formatoElegido={formato}
-    otraVez={!aviso && !haciendo}
-    alOtraVez={otraVez}
-    alDescargar={descargarAnuncio}
-    alPoner={(id) => ponerEnMiMenu(sucursal.id, id)}
-  />
+          <section class="tarjeta">
+            <div class="encabezado">
+              <span class="cuadro"><Icono nombre="tienda" tamano={18} /></span>
+              <div class="titulos"><span class="titulo">Irá en el anuncio</span></div>
+              <button type="button" class="enlace" onclick={() => alIr('restaurante')}>Editar tus datos</button>
+            </div>
+            <div class="ira-linea">
+              {#if !datos}
+                <Esqueleto ancho="62%" alto="10px" />
+              {:else if linea.length}
+                {#each linea as parte, n (n)}{n ? ' · ' : ''}<span class:vacio={parte.vacio}>{parte.texto}</span>{/each}
+              {:else}
+                <span class="vacio">Sin datos de tu restaurante: solo tu producto.</span>
+              {/if}
+            </div>
+            {#if escogiendo}
+              <div class="palabras"><span class="escogiendo"><span class="rueda-chica"></span>Escogiendo las palabras…</span></div>
+            {:else if falloPalabras}
+              <div class="palabras">
+                <span class="escogiendo fallo"><Icono nombre="alerta" tamano={14} />{falloPalabras}</span>
+                <button type="button" class="enlace" onclick={reintentar}>Reintentar</button>
+              </div>
+            {:else if palabras && chips.length}
+              <div class="palabras">
+                {#each chips as lugar, n (lugar.llave)}
+                  {#if chips.length <= 3 && (n === 0 || chips[n - 1].clave !== lugar.clave)}
+                    <span class="lugar">{nombreDeGrupo(lugar, chips.filter((l) => l.clave === lugar.clave).length)}</span>
+                  {/if}
+                  <span class="palabra" title={palabraDe(lugar)}
+                    ><span class="palabra-texto">{palabraDe(lugar)}</span><button type="button" class="enlace" onclick={() => (ventana = { tipo: 'palabra', lugar })}
+                      >Cambiar</button
+                    ></span
+                  >
+                {/each}
+              </div>
+            {/if}
+          </section>
+        </div>
+
+        <div class="lado">
+          <Celulares {formato} {estilo} nombre={restaurante?.nombre ?? sucursal.nombre} color={marca} alElegir={(f) => (formato = f)} />
+        </div>
+      </div>
+    {:else}
+      <!-- 3 Listo -->
+      <div class="paso-tres" in:fade={{ duration: 250 }} bind:clientWidth={anchoTres} bind:clientHeight={altoTres}>
+        <PasoListo
+          {se}
+          {pedido}
+          {productos}
+          estilo={estilos?.find((e) => e.id === pedido?.estilo_id) ?? null}
+          {restaurante}
+          lugar={[anchoTres, altoTres]}
+        />
+      </div>
+    {/if}
+  </main>
+
+  <!-- La barra de abajo: la de guardar de Tu menú en línea (encuestas 1, 7 y 11). -->
+  <footer class="barra-abajo">
+    {#key paso}
+      <div class="barra-contenido" in:fade={{ duration: 200 }}>
+        {#if paso === 1}
+          <div class="estado" role="status">
+            {#if nota}
+              <span class="aviso-chico"><Icono nombre="alerta" tamano={15} />{nota}</span>
+            {:else if elegidos.length}
+              <b>{plural(elegidos.length, 'producto elegido', 'productos elegidos')}</b><small>{nombresElegidos}</small>
+            {:else}
+              <span class="tenue">Ningún producto elegido</span>
+            {/if}
+          </div>
+          <Boton etiqueta="Continuar" tono="verde" apagado={!elegidos.length} onclick={() => ir(2)} />
+        {:else if paso === 2}
+          <div class="estado" role="status">
+            {#if aviso}
+              <CajaError mensaje={aviso} tamano={12} compacta />
+            {:else if error}
+              <CajaError mensaje={error} tamano={12} compacta />
+            {:else if errorEstilos}
+              <CajaError mensaje={errorEstilos} tamano={12} compacta />
+            {:else if sinEstilos}
+              <CajaError mensaje="Todavía no hay estilos para tus anuncios." tipo="info" tamano={12} compacta />
+            {:else if notaDelEstilo}
+              <span class="aviso-chico"><Icono nombre="info" tamano={15} />{notaDelEstilo}</span>
+            {:else if pasado && estilo}
+              <span class="aviso-chico"><Icono nombre="info" tamano={15} />Tu mensaje no cabe en {estilo.nombre}: córtalo a {estilo.mensaje} letras.</span>
+            {:else}
+              <span class="tenue">{plural(elegidos.length, 'producto', 'productos')}{estilo ? ` · ${estilo.nombre}` : ''} · {formatoDe(formato).texto}</span>
+            {/if}
+          </div>
+          <Boton etiqueta="Atrás" icono="anterior" onclick={() => ir(1)} />
+          <Boton etiqueta={se.fase === 'haciendo' ? 'Haciendo…' : 'Generar anuncio'} tono="verde" apagado={!listo && !enviando} cargando={enviando} onclick={generar} />
+        {:else}
+          <Boton etiqueta="Nuevo anuncio" icono="mas" onclick={nuevo} />
+          <div class="estado" role="status">
+            {#if errorDescarga}
+              <CajaError mensaje={errorDescarga} tamano={12} compacta />
+            {:else if errorPoner}
+              <CajaError mensaje={errorPoner} tamano={12} compacta />
+            {:else if se.fase === 'haciendo'}
+              <b>{se.nombres} · {formatoDe(se.formato).texto}</b><small>Puede tardar un par de minutos.</small>
+            {/if}
+          </div>
+          {#if se.fase === 'listo'}
+            {@const id = se.id}
+            {@const puesto = puestos.includes(id)}
+            <span class="acciones" in:fly={{ x: 8, duration: 250 }}>
+              <Boton etiqueta="Otra vez" icono="actualizar" apagado={!!aviso || haciendo} onclick={otraVez} />
+              {#if se.formato === 'cartel'}
+                <Boton
+                  etiqueta={puesto ? 'En tu menú' : poniendo ? 'Poniéndolo en tu menú…' : 'Ponerlo en mi menú'}
+                  icono="cartel"
+                  cargando={poniendo}
+                  exito={puesto}
+                  onclick={() => poner(id)}
+                />
+              {/if}
+              <Boton etiqueta={descargado ? 'Descargado' : 'Descargar'} tono="verde" cargando={bajando} exito={descargado} onclick={() => descargar(id)} />
+            </span>
+          {/if}
+        {/if}
+      </div>
+    {/key}
+  </footer>
 {/if}
 
 {#if ventana?.tipo === 'estilos' && estilos?.length}
-  <VentanaEstilos {estilos} elegido={estiloId} formato={formato ?? 'post'} alUsar={usarEstilo} alCerrar={() => (ventana = null)} />
+  <VentanaEstilos {estilos} elegido={estiloId} {formato} productos={elegidos.length} alUsar={usarEstilo} alCerrar={() => (ventana = null)} />
 {:else if ventana?.tipo === 'color' && estilo}
   <VentanaColor inicial={colorDelAnuncio} {marca} {estilo} alUsar={usarColor} alCerrar={() => (ventana = null)} />
 {:else if ventana?.tipo === 'palabra'}
@@ -633,116 +827,70 @@
     top: var(--vista-arriba);
   }
 
-  /* El anuncio nuevo: de la barra lateral hasta «Resultado» (440 px y sus márgenes). */
-  :global(.tarjeta-nuevo) {
+  /* Entre la barra de arriba (56) y la de abajo (64), sobre el fondo de las vistas. */
+  .paso-cuerpo {
     position: absolute;
-    left: var(--vista-izquierda);
-    right: calc(var(--vista-derecha) + 440px + 16px);
-    top: var(--vista-arriba);
-    bottom: var(--vista-abajo);
-    padding: 20px;
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-  }
-
-  .etq {
-    font-family: var(--mono);
-    font-size: 10.5px;
-    letter-spacing: 0.14em;
-    color: var(--tenue);
-    text-transform: uppercase;
+    left: 0;
+    right: 0;
+    top: 56px;
+    bottom: 64px;
+    overflow-y: auto;
+    padding: 20px 20px 24px 24px;
   }
 
   .crece {
     flex-grow: 1;
   }
 
-  .seccion {
-    flex: none;
-    padding: 14px 16px;
-    background: var(--solido);
-    border: 1px solid var(--linea);
-    border-radius: 18px;
+  .solo-lector {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+  }
+
+  /* ─── 1 Productos ─── */
+  .paso-uno {
     display: flex;
     flex-direction: column;
+    gap: 14px;
+  }
+
+  .herramientas {
+    position: relative;
+    flex: none;
+    min-height: 48px;
+    display: flex;
+    align-items: center;
     gap: 12px;
   }
 
-  .paso-cabeza {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    min-height: 24px;
-  }
-
-  .paso {
-    width: 24px;
-    height: 24px;
-    border-radius: 12px;
-    flex: none;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: var(--chip);
-    border: 1px solid var(--linea);
-    font-family: var(--mono);
-    font-size: 11px;
-    color: var(--suave);
-  }
-
-  .paso.listo {
-    background: var(--verde);
-    border-color: var(--verde);
-    color: #ffffff;
-  }
-
-  .paso-textos {
-    flex: 1;
+  /* La búsqueda de Mi menú: píldora de 48 con el brillo de Haz, hasta 780 de ancho. */
+  .herramientas > :global(div.haz) {
+    flex: 0 1 780px;
     min-width: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-  }
-
-  .paso-titulo {
-    font-size: 14.5px;
-    font-weight: 700;
-  }
-
-  .paso-sub {
-    font-size: 12px;
-    font-weight: 500;
-    color: var(--tenue);
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    min-width: 0;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  .paso-sub.aviso {
-    color: var(--texto);
-    font-weight: 600;
-  }
-
-  .paso-sub.aviso :global(svg) {
-    color: var(--suave);
   }
 
   .buscador {
-    width: 220px;
-    height: 36px;
-    flex: none;
+    width: 100%;
+    height: 48px;
     display: flex;
     align-items: center;
-    gap: 8px;
-    padding: 0 12px;
-    border-radius: 11px;
-    border: 1px solid var(--linea);
+    gap: 10px;
+    padding: 0 14px 0 18px;
+    border: 1px solid var(--borde-tarjeta);
+    border-radius: 999px;
+    background: var(--solido);
     color: var(--tenue);
+  }
+
+  .buscador:focus-within {
+    border-color: var(--linea-fuerte);
+  }
+
+  :global(:root[data-estilo='cristal']) .buscador {
+    position: relative;
   }
 
   .buscador input {
@@ -750,22 +898,36 @@
     min-width: 0;
     border: 0;
     background: transparent;
-    outline: none;
-    font-size: 12.5px;
     color: var(--texto);
+    font-size: 15px;
+    font-weight: 400;
+    outline: none;
   }
 
   .buscador input::placeholder {
     color: var(--tenue);
   }
 
+  .etiqueta {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    letter-spacing: 0.14em;
+    color: var(--tenue);
+  }
+
+  .nota {
+    margin: 0;
+    padding: 0 4px;
+    font-size: 12.5px;
+    font-weight: 500;
+    color: var(--suave);
+  }
+
+  /* Los productos grandes: tarjetas del panel con su foto a 4:3. */
   .rejilla {
-    height: 150px;
-    overflow-y: auto;
-    padding: 2px;
     display: grid;
-    grid-template-columns: repeat(5, minmax(0, 1fr));
-    gap: 10px;
+    grid-template-columns: repeat(auto-fill, minmax(196px, 1fr));
+    gap: 14px;
     align-content: start;
   }
 
@@ -773,34 +935,43 @@
     position: relative;
     display: flex;
     flex-direction: column;
-    gap: 8px;
-    padding: 6px 6px 10px;
+    gap: 10px;
+    padding: 8px 8px 12px;
     border-radius: 14px;
-    border: 1px solid var(--linea);
+    border: 1px solid var(--borde-tarjeta);
     background: var(--solido);
     color: var(--texto);
     text-align: left;
     min-width: 0;
     cursor: pointer;
+    transition:
+      box-shadow 0.2s ease,
+      border-color 0.2s ease,
+      transform 0.15s ease;
+  }
+
+  .prod:not(.quieto):active {
+    transform: scale(0.98);
+  }
+
+  .prod:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px var(--campo-aro);
   }
 
   .prod.quieto {
     cursor: default;
   }
 
+  /* Lo elegido, en el azul del aro de las cajas (como los roles de Empleados). */
   .prod.elegido {
-    box-shadow: 0 0 0 2px var(--tinta);
-    border-color: transparent;
-  }
-
-  .prod.de-mas {
-    box-shadow: 0 0 0 2px var(--linea-fuerte);
+    box-shadow: 0 0 0 2px var(--campo-aro);
     border-color: transparent;
   }
 
   /* Sin foto, el cuadro negro (como sin-foto.png de Flet). */
   .prod-foto {
-    height: 88px;
+    aspect-ratio: 4 / 3;
     border-radius: 10px;
     background: #000000 center / cover no-repeat;
   }
@@ -809,13 +980,13 @@
     padding: 0 4px;
     display: flex;
     flex-direction: column;
-    gap: 2px;
+    gap: 4px;
     min-width: 0;
   }
 
   .prod-nombre {
-    font-size: 12.5px;
-    font-weight: 600;
+    font-size: 14px;
+    font-weight: 700;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -823,95 +994,112 @@
 
   .prod-precio {
     font-family: var(--mono);
-    font-size: 11px;
+    font-size: 12px;
     color: var(--tenue);
   }
 
+  /* Su número (el 1 va en el titular) sale con el rebote de lo que se abre. */
   .numero {
     position: absolute;
-    top: 12px;
-    right: 12px;
-    width: 22px;
-    height: 22px;
-    border-radius: 11px;
+    top: 16px;
+    right: 16px;
+    width: 26px;
+    height: 26px;
+    border-radius: 8px;
     display: flex;
     align-items: center;
     justify-content: center;
-    background: var(--tinta);
-    color: var(--sobre-tinta);
+    background: var(--campo-aro);
+    color: #ffffff;
     font-family: var(--mono);
-    font-size: 11px;
+    font-size: 12px;
     font-weight: 700;
+    animation: sale 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) both;
   }
 
-  .numero.apagado {
-    background: var(--solido);
-    color: var(--tenue);
-    box-shadow: inset 0 0 0 1.5px var(--linea-fuerte);
+  @keyframes sale {
+    from {
+      opacity: 0;
+      transform: scale(0.4);
+    }
   }
 
   .nota-rejilla {
     grid-column: 1 / -1;
-    padding: 40px 8px;
+    padding: 56px 8px;
     text-align: center;
-    font-size: 12.5px;
+    font-size: 13px;
     color: var(--suave);
   }
 
-  .formatos {
+  /* ─── 2 Tu anuncio ─── */
+  .paso-dos {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 10px;
+    grid-template-columns: minmax(0, 1fr) 590px;
+    align-items: start;
+    gap: 28px;
   }
 
-  .formato {
+  .columna {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  /* Cada bloque, en su tarjeta (como las filas de Tu menú en línea). */
+  .tarjeta {
+    padding: 20px;
+    background: var(--solido);
+    border: 1px solid var(--borde-tarjeta);
+    border-radius: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    min-width: 0;
+  }
+
+  .encabezado {
     display: flex;
     align-items: center;
     gap: 12px;
-    padding: 11px 12px;
-    border-radius: 14px;
-    border: 1px solid var(--linea);
-    background: var(--solido);
-    color: var(--texto);
-    text-align: left;
-    min-width: 0;
-    cursor: pointer;
   }
 
-  .formato.elegido {
-    box-shadow: 0 0 0 2px var(--tinta);
-    border-color: transparent;
-  }
-
-  .caja-ic {
-    width: 34px;
-    height: 34px;
-    border-radius: 10px;
+  .cuadro {
+    width: 36px;
+    height: 36px;
     flex: none;
     display: flex;
     align-items: center;
     justify-content: center;
+    border-radius: 11px;
     background: var(--chip);
+    color: var(--texto);
   }
 
-  .f-textos {
+  .titulos {
+    flex: 1;
     min-width: 0;
     display: flex;
     flex-direction: column;
-    gap: 2px;
+    gap: 3px;
   }
 
-  .f-titulo {
-    font-size: 13.5px;
+  .titulo {
+    font-size: 14.5px;
     font-weight: 700;
-    white-space: nowrap;
   }
 
-  .f-medida {
-    font-family: var(--mono);
-    font-size: 10.5px;
-    color: var(--tenue);
-    white-space: nowrap;
+  .sub {
+    font-size: 12.5px;
+    font-weight: 500;
+    line-height: 1.45;
+    color: var(--suave);
+  }
+
+  .lado {
+    position: sticky;
+    top: 0;
   }
 
   .letras {
@@ -926,8 +1114,7 @@
     font-weight: 700;
   }
 
-  /* Como las cajas de texto (diseno/Campo.svelte, el Input de HeroUI), desde el 9 nov 2026: sin borde, más gris con el
-     mouse encima, el aro azul al escribir y el rojo cuando se pasa de letras. */
+  /* Como las cajas de texto (diseno/Campo.svelte, el Input de HeroUI), en su gris (GrupoCampos). */
   .caja-mensaje {
     display: block;
     padding: 11px 15px;
@@ -956,12 +1143,6 @@
     box-shadow: 0 0 0 2px var(--rojo);
   }
 
-  @media (prefers-reduced-motion: reduce) {
-    .caja-mensaje {
-      transition: none;
-    }
-  }
-
   .caja-mensaje textarea {
     display: block;
     width: 100%;
@@ -985,7 +1166,7 @@
     display: flex;
     align-items: center;
     gap: 10px;
-    height: 63px;
+    min-height: 56px;
     padding: 0 14px;
     border-radius: 12px;
     border: 1.5px dashed var(--linea-fuerte);
@@ -994,48 +1175,105 @@
     color: var(--suave);
   }
 
-  .fila-opciones {
-    flex: none;
+  .opciones {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .opcion {
+    flex: 1;
+    min-width: 0;
+    height: 44px;
     display: flex;
     align-items: center;
     gap: 10px;
-    padding: 12px 14px 12px 16px;
-    background: var(--solido);
-    border: 1px solid var(--linea);
-    border-radius: 18px;
-    min-width: 0;
-  }
-
-  .boton-opcion {
-    height: 36px;
-    flex: none;
-    display: inline-flex;
-    align-items: center;
-    gap: 9px;
-    padding: 0 12px 0 9px;
-    border-radius: 11px;
+    padding: 0 12px;
+    border-radius: 12px;
     border: 1px solid var(--linea);
     background: transparent;
     color: var(--texto);
-    font-size: 13px;
-    font-weight: 600;
+    text-align: left;
     cursor: pointer;
-    transition: background-color 150ms;
+    transition:
+      background-color 0.15s ease,
+      transform 0.15s ease;
   }
 
-  .boton-opcion:hover:not(:disabled) {
+  .opcion.alta {
+    height: 60px;
+    padding-left: 10px;
+  }
+
+  .opcion:hover:not(:disabled) {
     background: var(--chip);
   }
 
-  .boton-opcion:disabled {
+  .opcion:active:not(:disabled) {
+    transform: scale(0.99);
+  }
+
+  .opcion:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px var(--campo-aro);
+  }
+
+  .opcion:disabled {
     cursor: default;
-    opacity: 0.4;
+    opacity: 0.5;
+  }
+
+  .opcion > :global(svg) {
+    flex: none;
+    color: var(--tenue);
+  }
+
+  .op-textos {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .op-nombre {
+    font-size: 13.5px;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+
+  .op-sub {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--tenue);
+  }
+
+  .op-cambiar {
+    margin-left: auto;
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--suave);
+    white-space: nowrap;
+  }
+
+  .estilo-mini {
+    width: 32px;
+    height: 40px;
+    flex: none;
+    border-radius: 7px;
+    background: #000000 center / cover no-repeat;
+  }
+
+  .fila-color {
+    display: flex;
+    align-items: center;
+    gap: 10px;
   }
 
   .gota-chica {
-    width: 18px;
-    height: 18px;
-    border-radius: 5px;
+    width: 20px;
+    height: 20px;
+    border-radius: 6px;
     flex: none;
     box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.12);
   }
@@ -1047,61 +1285,22 @@
 
   .valor {
     font-family: var(--mono);
-    font-size: 11px;
-    font-weight: 400;
-    color: var(--tenue);
-  }
-
-  .estilo-mini {
-    width: 22px;
-    height: 28px;
-    border-radius: 5px;
-    flex: none;
-    background: #000000 center / cover no-repeat;
-  }
-
-  .separador {
-    width: 1px;
-    height: 24px;
-    flex: none;
-    background: var(--linea);
-    margin: 0 4px;
-  }
-
-  .desc-estilo {
-    flex: 1;
-    min-width: 0;
-    font-size: 12px;
-    font-weight: 500;
+    font-size: 11.5px;
     color: var(--tenue);
     white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
   }
 
   .sin-color {
-    font-size: 12px;
-    font-weight: 500;
-    color: var(--tenue);
-    white-space: nowrap;
-  }
-
-  .ira {
-    flex: none;
-    padding: 12px 16px 14px;
-    background: var(--solido);
-    border: 1px solid var(--linea);
-    border-radius: 18px;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    min-width: 0;
-  }
-
-  .ira-cabeza {
+    height: 44px;
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 10px;
+    padding: 0 12px;
+    border-radius: 12px;
+    background: var(--fondo);
+    font-size: 12.5px;
+    font-weight: 500;
+    color: var(--suave);
   }
 
   .enlace {
@@ -1114,16 +1313,14 @@
     text-decoration: underline;
     text-underline-offset: 2px;
     cursor: pointer;
+    white-space: nowrap;
   }
 
   .ira-linea {
-    font-size: 12.5px;
+    font-size: 13px;
     font-weight: 600;
     color: var(--suave);
-    line-height: 1.4;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    line-height: 1.5;
   }
 
   .ira-linea .vacio {
@@ -1133,10 +1330,10 @@
 
   .palabras {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
-    gap: 5px;
+    gap: 6px;
     min-height: 28px;
-    overflow: hidden;
   }
 
   .lugar {
@@ -1207,61 +1404,103 @@
     }
   }
 
-  .pie-crear {
-    flex: none;
+  /* ─── 3 Listo ─── */
+  .paso-cuerpo.tres {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .paso-tres {
+    flex: 1;
+    min-height: 0;
+  }
+
+  /* ─── La barra de abajo: la de guardar de Tu menú en línea (64, pegada abajo de lo ancho de la vista) ─── */
+  .barra-abajo {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 64px;
+    z-index: 2;
+    background: var(--solido);
+    border-top: 1px solid var(--linea);
+  }
+
+  .barra-contenido {
+    height: 100%;
     display: flex;
     align-items: center;
-    gap: 14px;
-    min-height: 44px;
-    margin-top: auto;
+    gap: 10px;
+    padding: 0 20px 0 24px;
   }
 
-  .pie-crear :global(.caja) {
+  .estado {
     flex: 1;
     min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 13px;
+    white-space: nowrap;
   }
 
-  .nota-pie {
-    flex: 1;
-    min-width: 0;
-    font-size: 12px;
-    font-weight: 500;
-    color: var(--tenue);
-    line-height: 1.4;
-  }
-
-  .boton-generar {
-    height: 44px;
+  .estado b {
+    font-weight: 600;
     flex: none;
+  }
+
+  .estado small {
+    min-width: 0;
+    font-size: 12.5px;
+    font-weight: 500;
+    color: var(--suave);
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .estado .tenue {
+    font-weight: 500;
+    color: var(--suave);
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .estado :global(.caja) {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .aviso-chico {
     display: inline-flex;
     align-items: center;
     gap: 8px;
-    padding: 0 20px;
-    border: 0;
-    border-radius: 12px;
-    background: var(--tinta);
-    color: var(--sobre-tinta);
-    font-size: 13px;
+    min-width: 0;
     font-weight: 600;
-    white-space: nowrap;
-    cursor: pointer;
-    transition: opacity 150ms;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
-  .boton-generar:hover:not(:disabled) {
-    opacity: 0.86;
+  .aviso-chico :global(svg) {
+    flex: none;
+    color: var(--suave);
   }
 
-  .boton-generar:disabled {
-    background: var(--chip);
-    color: var(--tenue);
-    cursor: default;
+  .acciones {
+    display: flex;
+    align-items: center;
+    gap: 10px;
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .boton-opcion,
-    .boton-generar {
+    .prod,
+    .opcion,
+    .caja-mensaje {
       transition: none;
+    }
+
+    .numero {
+      animation: none;
     }
 
     .rueda-chica {

@@ -279,6 +279,16 @@ export function cuantosLleva(estilo: EstiloDeHoy): string {
   return estilo.maximo === 1 ? '1 producto' : `Hasta ${estilo.maximo} productos`;
 }
 
+// Crear anuncios por pasos (13 nov 2026, encuesta 2): un estilo va con los productos elegidos si lleva esos tantos; los
+// que no, salen apagados con «Para 2 o 3 productos».
+export function vaCon(estilo: EstiloDeHoy, productos: number): boolean {
+  return productos >= estilo.minimo && productos <= estilo.maximo;
+}
+export function paraCuantos(estilo: EstiloDeHoy): string {
+  if (estilo.minimo > 1) return `Para ${estilo.minimo} o ${estilo.maximo} productos`;
+  return estilo.maximo === 1 ? 'Para 1 producto' : `Para hasta ${estilo.maximo} productos`;
+}
+
 // Lo que pinta el color en cada estilo (libreta 7, la tabla «Los estilos»). Solo se enseña: el
 // prompt de cada estilo es el que lo pinta.
 const PINTA: Record<string, string> = {

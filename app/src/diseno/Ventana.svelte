@@ -333,6 +333,14 @@
     text-overflow: ellipsis;
   }
 
+  /* Al centro, el título que no cabe entre los botones baja a un segundo renglón, parejo (el developer, 13 nov 2026:
+     «La banderita de Torta de pastor» se metía debajo de «Agrandar» y la X). */
+  .centrado .titulo {
+    max-width: 100%;
+    white-space: normal;
+    text-wrap: balance;
+  }
+
   .nota {
     margin: 0;
     font-size: 12.5px;

@@ -4,6 +4,9 @@
   WhatsApp), la dirección y el horario de los 7 días de esta sucursal. De aquí los toman el menú en
   línea, los anuncios y el mini agente. El slug no se cambia aquí: lo asigna Fragmentless.
 
+  Desde el 12 nov 2026 (maqueta UDArhiEZceT7rmSKxqRA5r de «Tu menú en línea») también vive aquí «Hago envíos», debajo de
+  la dirección: si sus clientes piden a domicilio además de para llevar.
+
   «Guardar» guarda todo junto (guardar_restaurante). El logo sigue el orden de las fotos: se sube
   antes de guardar; si el guardado falla, se borra el que se acababa de subir; el anterior se borra
   solo después de guardar.
@@ -17,10 +20,13 @@
   import Campo from '../../diseno/Campo.svelte';
   import Esqueleto from '../../diseno/Esqueleto.svelte';
   import Icono from '../../diseno/Icono.svelte';
+  import Interruptor from '../../diseno/Interruptor.svelte';
   import Tarjeta from '../../diseno/Tarjeta.svelte';
   import { ALGO_SALIO_PANEL, esDeRed, Fallo, SIN_CONEXION } from '../../lib/errores';
   import { borrarFoto, convertirLogo, revisarFoto, subirFoto, urlFoto } from '../../lib/fotos';
   import type { Sucursal } from '../../lib/gerente';
+  import { leerEnvios, type Envio } from '../../lib/pedidos.svelte';
+  import { supabase } from '../../lib/supabase';
   import { guardarRestaurante, leerRestaurante, type Horario, type Restaurante } from '../../lib/restaurante';
   import CajaSucursales from './CajaSucursales.svelte';
   import Dias, { type Dia } from './restaurante/Dias.svelte';
@@ -43,6 +49,11 @@
   let archivo = $state<File | null>(null);
   let vistaPrevia = $state<string | null>(null);
   let dias = $state<Dia[]>(Array(7).fill(null));
+  // Un logo más ancho que alto (más de 1.4 veces, como el «largo» del menú): su cuadrito deja de ser cuadro.
+  let largo = $state(false);
+  let envios = $state(false);
+  // Los productos de envío de Mi menú, para decir cuál elige quien confirma un pedido a domicilio.
+  let productosEnvio = $state<Envio[]>([]);
   let error = $state<string | null>(null);
   let telefonoMal = $state(false);
   let paso = $state<null | 'logo' | 'guardando' | 'listo'>(null);
@@ -79,12 +90,15 @@
     direccion = r.direccion ?? '';
     logo = r.logo_ruta;
     dias = aDias(r.horario);
+    envios = r.hace_envios;
     quitarArchivo();
   }
 
   async function leer() {
     try {
-      poner(await leerRestaurante(sucursal.id));
+      const [r, pe] = await Promise.all([leerRestaurante(sucursal.id), leerEnvios(supabase, sucursal.id)]);
+      productosEnvio = pe;
+      poner(r);
       errorLectura = null;
     } catch (falla) {
       console.error('[restaurante] no se pudieron leer sus datos:', falla);
@@ -111,6 +125,7 @@
         direccion.trim() !== (guardado.direccion ?? '') ||
         logo !== guardado.logo_ruta ||
         !!archivo ||
+        envios !== guardado.hace_envios ||
         JSON.stringify(aHorario(dias)) !== JSON.stringify(guardado.horario)),
   );
 
@@ -172,6 +187,7 @@
         direccion: direccion.trim(),
         logo_ruta: rutaNueva ?? logo,
         horario: aHorario(dias),
+        hace_envios: envios,
       });
     } catch (falla) {
       if (!(falla instanceof Fallo)) console.error('[restaurante] no se pudo guardar:', falla);
@@ -190,6 +206,10 @@
     await leer();
     setTimeout(() => (paso = null), 1600);
   }
+
+  // Los envíos de Mi menú como los elige quien confirma: «Envío $30 o Envío lejos $50».
+  const precioCorto = (n: number) => `$${Number.isInteger(n) ? n : n.toFixed(2)}`;
+  const listaEnvios = $derived(productosEnvio.map((e) => `${e.nombre} ${precioCorto(e.precio)}`));
 
   // Lo que le falta para que su menú diga si está abierto.
   const falta = $derived(
@@ -230,8 +250,15 @@
               {#if cargando}
                 <Esqueleto ancho="72px" alto="72px" redondo="14px" />
               {:else}
-              <span class="logo-cuadro" class:vacio={!foto}>
-                {#if foto}<img src={foto} alt="Tu logo" />{:else}<Icono nombre="biblio" tamano={24} />{/if}
+              <span class="logo-cuadro" class:vacio={!foto} class:largo={foto && largo}>
+                {#if foto}<img
+                    src={foto}
+                    alt="Tu logo"
+                    onload={(e) => {
+                      const img = e.currentTarget as HTMLImageElement;
+                      largo = img.naturalWidth > img.naturalHeight * 1.4;
+                    }}
+                  />{:else}<Icono nombre="biblio" tamano={24} />{/if}
               </span>
               {/if}
               <div class="logo-texto">
@@ -283,6 +310,30 @@
               largoMaximo={200}
             />
             {/if}
+            <div class="envios">
+              <span class="etiqueta">PEDIDOS</span>
+              <div class="envios-fila">
+                {#if cargando}
+                  <span class="envios-esqueleto" aria-hidden="true"><Esqueleto ancho="34px" alto="20px" redondo="10px" /><Esqueleto ancho="84px" alto="10px" /></span>
+                {:else}
+                  <Interruptor prendido={envios} texto="Hago envíos" alCambiar={(v) => (envios = v)} />
+                {/if}
+                <span class="pista crece">
+                  {#if cargando}
+                    <Esqueleto ancho="70%" alto="10px" />
+                  {:else if !envios}
+                    Tus clientes solo piden para llevar.
+                  {:else if !listaEnvios.length}
+                    Tus clientes también piden a domicilio. Para cobrar el envío, crea un producto en Mi menú y prende <b
+                      >«Es un costo de envío»</b
+                    >.
+                  {:else}
+                    Tus clientes también piden a domicilio. Al confirmar, eliges el envío:
+                    {#each listaEnvios as e, i (i)}{i === 0 ? '' : i === listaEnvios.length - 1 ? ' o ' : ', '}<b>{e}</b>{/each}, de Mi menú.
+                  {/if}
+                </span>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -464,6 +515,20 @@
     object-fit: contain;
   }
 
+  /* Con un logo largo (maqueta UDArhiEZceT7rmSKxqRA5r, 11 nov 2026): 72 de alto y lo ancho que pida. */
+  .logo-cuadro.largo {
+    width: auto;
+    min-width: 72px;
+    padding: 0 12px;
+  }
+
+  .logo-cuadro.largo img {
+    width: auto;
+    height: auto;
+    max-width: 220px;
+    max-height: 58px;
+  }
+
   .logo-texto {
     display: flex;
     flex-direction: column;
@@ -501,5 +566,36 @@
 
   .crece {
     flex-grow: 1;
+  }
+  /* «Hago envíos», debajo de la dirección (maqueta UDArhiEZceT7rmSKxqRA5r, Tu restaurante). */
+  .envios {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 4px;
+    padding-top: 18px;
+    border-top: 1px solid var(--linea);
+  }
+
+  .envios-fila {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+  }
+
+  .envios-fila :global(.interruptor) {
+    margin-top: 1px;
+  }
+
+  .envios-fila b {
+    color: var(--texto);
+    font-weight: 600;
+  }
+
+  .envios-esqueleto {
+    display: inline-flex;
+    align-items: center;
+    gap: 9px;
+    min-height: 20px;
   }
 </style>

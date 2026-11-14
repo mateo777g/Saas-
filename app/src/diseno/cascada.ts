@@ -19,11 +19,12 @@ function resorte(rigidez: number, freno: number, masa: number, segundos: number)
 const curva = resorte(400, 25, 0.7, 0.5);
 const RESORTE_FILA = `linear(${Array.from({ length: 41 }, (_, i) => +curva(i / 40).toFixed(4)).join(', ')})`;
 
-export function cascada(raiz: ParentNode | undefined | null) {
+// `filas`: qué entra (Tu menú en línea la usa para sus filas, sus carteles y sus productos).
+export function cascada(raiz: ParentNode | undefined | null, filas = '.cuerpo > .fila') {
   if (!raiz || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
   const abajo = innerHeight;
   let n = 0;
-  for (const fila of raiz.querySelectorAll<HTMLElement>('.cuerpo > .fila')) {
+  for (const fila of raiz.querySelectorAll<HTMLElement>(filas)) {
     if (fila.getBoundingClientRect().top >= abajo) break;
     fila.animate(
       [

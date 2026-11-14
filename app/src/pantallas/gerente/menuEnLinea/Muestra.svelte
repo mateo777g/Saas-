@@ -1,82 +1,62 @@
 <!--
-  La vista previa del menú en línea en «Tu menú en línea» (maqueta de la 6a Qx4C5CbKJYpeAsJCfw4ghn,
-  sección 3): el menú de verdad, dentro de un marco, con el tema, el color y el tipo de cambio que Don
-  Chuy todavía no guarda (lib/vistaMenu.ts). «menu» es el celular chico de «Así lo ven tus
-  clientes», sin poder tocarse; «barra» es la tira de la ventana del color: la barra de arriba y las
-  categorías, de su alto.
+  La tira de la ventana del color de «Tu menú en línea» (maqueta UDArhiEZceT7rmSKxqRA5r v59, abrirColor): el menú de
+  verdad (?muestra=barra) con el color que se prueba y lo demás como va en el teléfono, sin poder tocarse. Lleva la
+  barra de arriba y, según el color, las categorías (el de tu menú), la búsqueda y las categorías (el de la barra) o los
+  productos de su primera categoría (el fondo). Mide lo que el menú le dice; si es más alta que su recorte, se desvanece
+  abajo. El teléfono de la vista es aparte (Telefono.svelte).
 -->
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { alListo, linkDeMuestra, mandarMuestra, recargarMuestra, type Muestra } from '../../../lib/vistaMenu';
+  import { alListo, linkDeMuestra, mandarMuestra, oirAlMenu, type Muestra, type TiraDeColor } from '../../../lib/vistaMenu';
 
-  let { slug, como, muestra }: { slug: string; como: 'menu' | 'barra'; muestra: Muestra } = $props();
+  let { slug, tira, muestra }: { slug: string; tira: TiraDeColor; muestra: Muestra } = $props();
 
   let marco = $state<HTMLIFrameElement>();
   let alto = $state(168);
+  const recorte = $derived(tira === 'colorBarra' ? 300 : 210);
 
-  // Lo que no se ha guardado le llega al menú en cuanto cambia, y otra vez cuando avisa que ya pintó.
+  // Lo que se prueba le llega al menú en cuanto cambia, y otra vez cuando avisa que ya pintó.
   $effect(() => {
-    mandarMuestra(marco, { tema: muestra.tema, color: muestra.color });
+    mandarMuestra(marco, muestra);
   });
 
   onMount(() => {
-    const quitar = alListo(
+    const quitarListo = alListo(
       () => marco,
       () => mandarMuestra(marco, muestra),
     );
     // La tira dice cuánto mide, por si el nombre del restaurante ocupa dos renglones.
-    const medir = (e: MessageEvent) => {
-      if (e.source === marco?.contentWindow && e.data?.fragmentless === 'alto' && typeof e.data.alto === 'number') {
-        alto = e.data.alto;
-      }
-    };
-    window.addEventListener('message', medir);
+    const quitarAlto = oirAlMenu(
+      () => marco,
+      (m) => {
+        if (m.fragmentless === 'alto' && typeof m.alto === 'number') alto = m.alto;
+      },
+    );
     return () => {
-      quitar();
-      window.removeEventListener('message', medir);
+      quitarListo();
+      quitarAlto();
     };
   });
-
-  // Después de cambiar un cartel: que el menú lo vuelva a pedir.
-  export function recargar() {
-    recargarMuestra(marco);
-  }
 </script>
 
-{#if como === 'menu'}
-  <div class="mini-marco">
-    <iframe bind:this={marco} class="mini" src={linkDeMuestra(slug, 'menu')} title="Así ven tu menú tus clientes" tabindex="-1"></iframe>
-  </div>
-{:else}
-  <iframe bind:this={marco} class="tira" style:height="{alto}px" src={linkDeMuestra(slug, 'barra')} title="Tu menú con este color"></iframe>
-{/if}
+<div class="recorte" class:corta={alto > recorte} style:height="{Math.min(alto, recorte)}px">
+  <iframe bind:this={marco} style:height="{alto}px" src={linkDeMuestra(slug, 'barra', tira)} title="Tu menú con este color" tabindex="-1"
+  ></iframe>
+</div>
 
 <style>
-  .mini-marco {
-    width: 254px;
-    height: 550px;
-    border-radius: 34px;
-    border: 7px solid #111;
-    background: #111;
+  .recorte {
     overflow: hidden;
-    position: relative;
-    flex: none;
-    box-shadow: 0 18px 40px var(--sombra);
+    border-radius: 14px;
+    box-shadow: 0 0 0 1px var(--borde-tarjeta);
   }
 
-  .mini {
-    position: absolute;
-    left: 0;
-    top: 0;
-    width: 390px;
-    height: 844px;
-    border: 0;
-    transform: scale(0.6154);
-    transform-origin: 0 0;
-    pointer-events: none;
+  .recorte.corta {
+    -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 56px), transparent);
+    mask-image: linear-gradient(to bottom, #000 calc(100% - 56px), transparent);
   }
 
-  .tira {
+  iframe {
     display: block;
     width: 100%;
     border: 0;

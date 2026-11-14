@@ -1,40 +1,53 @@
 <!--
-  «Color de tu menú» (maqueta de la 6a Qx4C5CbKJYpeAsJCfw4ghn, estado «Eligiendo color»; libreta 6,
-  decidido el 20 de octubre de 2026): el selector de los flyers de Flet. El cuadro cambia la
-  saturación y el brillo, la barra el tono, y el código se puede escribir. Debajo, la barra de su menú
-  con ese color; avisa cuando las letras van oscuras y cuando el color casi no se ve en su tema.
-  «Usar este color» todavía no guarda: lo guarda el «Guardar» de Cómo se ve.
+  La ventana del color de «Tu menú en línea» (maqueta UDArhiEZceT7rmSKxqRA5r v59, abrirColor; antes, la de la 6a
+  Qx4C5CbKJYpeAsJCfw4ghn): el selector de los flyers de Flet para el color de tu menú, el de la barra o el fondo. El
+  cuadro cambia la saturación y el brillo, la barra el tono, y el código se puede escribir. Debajo, su menú con ese
+  color (Muestra.svelte, la tira) y el aviso si casi no se ve. Como las ventanas del gerente: lo que quita en el rojo de
+  contorno y lo que usa en verde. «Usar este color» todavía no guarda: lo guarda la barra de guardar.
 -->
 <script lang="ts">
   import Boton from '../../../diseno/Boton.svelte';
-  import Icono from '../../../diseno/Icono.svelte';
   import GrupoCampos from '../../../diseno/GrupoCampos.svelte';
+  import Icono from '../../../diseno/Icono.svelte';
   import Ventana from '../../../diseno/Ventana.svelte';
-  import { casiNoSeVe, esClaro, hexAHsv, hsvAHex, leerCodigo, type TemaMenu } from '../../../lib/color';
+  import { hexAHsv, hsvAHex, leerCodigo } from '../../../lib/color';
+  import type { Formas } from '../../../lib/formasMenu';
+  import { avisoDeColor, type ClaveColor, type Colores } from './colores';
   import Muestra from './Muestra.svelte';
 
   let {
-    inicial,
-    tema,
+    clave,
+    colores,
+    formas,
     slug,
     alUsar,
     alCerrar,
   }: {
-    inicial: string | null;
-    tema: TemaMenu;
+    clave: ClaveColor;
+    // Lo que va hoy en el teléfono (sin guardar): el color que se prueba se pone encima.
+    colores: Colores;
+    formas: Formas;
     slug: string;
     alUsar: (color: string | null) => void;
     alCerrar: () => void;
   } = $props();
 
   // svelte-ignore state_referenced_locally
-  let hsv = $state<[number, number, number]>(hexAHsv(inicial ?? '#B3261E'));
+  const TEXTOS = {
+    color: { titulo: 'Color de tu menú', nota: 'Pinta lo que está elegido, el «+» y los botones.', quitar: 'Quitar color', usar: 'Usar este color' },
+    colorBarra: { titulo: 'Color de la barra', nota: 'La barra de arriba y las cajas de tu menú.', quitar: 'Usar el de tu menú', usar: 'Usar este color' },
+    fondo: { titulo: 'Fondo de tu menú', nota: 'El fondo de todo tu menú. Las letras siguen al tema.', quitar: 'Quitar fondo', usar: 'Usar este fondo' },
+  }[clave];
+
+  // Sin color todavía, el selector arranca en uno de muestra (el de la barra, en el de tu menú).
   // svelte-ignore state_referenced_locally
-  let codigo = $state(inicial ?? '#B3261E');
+  const inicial = colores[clave] ?? (clave === 'fondo' ? '#F4EBDD' : clave === 'colorBarra' ? (colores.color ?? '#121212') : '#B3261E');
+  let hsv = $state<[number, number, number]>(hexAHsv(inicial));
+  let codigo = $state(inicial);
 
   const hex = $derived(hsvAHex(hsv[0], hsv[1], hsv[2]));
-  const claro = $derived(esClaro(hex));
-  const casi = $derived(casiNoSeVe(hex, tema));
+  const probando = $derived({ ...colores, [clave]: hex } as Colores);
+  const aviso = $derived(avisoDeColor(clave, probando));
 
   // Arrastrar en el cuadro o en la barra; el código se pone al color que sale.
   function arrastrar(e: PointerEvent, al: (x: number, y: number) => void) {
@@ -62,7 +75,7 @@
   }
 </script>
 
-<Ventana centrado titulo="Color de tu menú" nota="Pinta la barra de arriba, la raya de la categoría y los botones." ancho={440} {alCerrar}>
+<Ventana centrado titulo={TEXTOS.titulo} nota={TEXTOS.nota} ancho={440} {alCerrar}>
   <!-- svelte-ignore a11y_no_static_element_interactions -->
   <div class="sv" style:background={hsvAHex(hsv[0], 1, 1)} onpointerdown={(e) => arrastrar(e, (x, y) => (hsv = [hsv[0], x, 1 - y]))}>
     <div class="blanco"></div>
@@ -74,31 +87,24 @@
     <span class="perilla" style:left="{(hsv[0] / 360) * 100}%" style:background={hsvAHex(hsv[0], 1, 1)}></span>
   </div>
   <div class="codigo-grupo">
-  <GrupoCampos>
-  <div class="codigo-fila">
-    <span class="gota" style:background={hex}></span>
-    <input bind:value={codigo} oninput={alEscribir} maxlength="7" aria-label="Código del color" autocomplete="off" spellcheck="false" />
-    <span class="nota">Escríbelo si ya lo tienes, como el de tu logo.</span>
-  </div>
-  </GrupoCampos>
+    <GrupoCampos>
+      <div class="codigo-fila">
+        <span class="gota" style:background={hex}></span>
+        <input bind:value={codigo} oninput={alEscribir} maxlength="7" aria-label="Código del color" autocomplete="off" spellcheck="false" />
+        <span class="nota">Escríbelo si ya lo tienes, como el de tu logo.</span>
+      </div>
+    </GrupoCampos>
   </div>
   <div class="probar">
-    <Muestra {slug} como="barra" muestra={{ tema, color: hex }} />
+    <Muestra {slug} tira={clave} muestra={{ tema: probando.tema, color: probando.color, colorBarra: probando.colorBarra, fondo: probando.fondo, formas }} />
   </div>
-  {#if claro}
-    <p class="aviso"><Icono nombre="info" tamano={16} /><span>Sobre este color las letras van <b>oscuras</b>, para que se lean.</span></p>
-  {/if}
-  {#if casi}
-    <p class="aviso">
-      <Icono nombre="alerta" tamano={16} /><span
-        ><b>Este color casi no se ve en tu menú {tema}.</b> Escoge uno más {tema === 'claro' ? 'oscuro' : 'claro'} o cambia el tema.</span
-      >
-    </p>
+  {#if aviso}
+    <p class="aviso"><Icono nombre="alerta" tamano={16} /><span><b>{aviso.fuerte}</b> {aviso.texto}</span></p>
   {/if}
   <div class="pie">
-    <Boton etiqueta="Quitar color" onclick={() => alUsar(null)} />
+    <Boton etiqueta={TEXTOS.quitar} icono="cerrar" tono="peligro" onclick={() => alUsar(null)} />
     <span class="crece"></span>
-    <Boton etiqueta="Usar este color" icono="check-delgado" tono="tinta" onclick={() => alUsar(hex)} />
+    <Boton etiqueta={TEXTOS.usar} tono="verde" onclick={() => alUsar(hex)} />
   </div>
 </Ventana>
 
@@ -215,9 +221,6 @@
 
   .probar {
     margin-top: 16px;
-    border-radius: 16px;
-    border: 1px solid var(--linea);
-    overflow: hidden;
   }
 
   .aviso {
@@ -227,7 +230,7 @@
     margin: 12px 0 0;
     padding: 11px 14px;
     border-radius: 12px;
-    background: var(--chip);
+    background: var(--amarillo-fondo);
     font-size: 12.5px;
     line-height: 1.5;
     color: var(--suave);
@@ -236,6 +239,7 @@
   .aviso :global(svg) {
     flex: none;
     margin-top: 2px;
+    color: var(--amarillo-texto);
   }
 
   .aviso b {
@@ -244,7 +248,7 @@
   }
 
   .pie {
-    margin-top: 20px;
+    margin-top: 24px;
     display: flex;
     gap: 10px;
   }

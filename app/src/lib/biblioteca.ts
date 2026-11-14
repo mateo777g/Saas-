@@ -75,7 +75,7 @@ export async function ponerEnMiMenu(restauranteId: string, anuncioId: number): P
   const cartel = await convertirCartel(new File([archivo], 'anuncio.jpg', { type: archivo.type || 'image/jpeg' }));
   const ruta = await subirFoto(restauranteId, cartel, 'carteles');
   try {
-    await agregarCartel(restauranteId, ruta);
+    await agregarCartel(restauranteId, { imagen: ruta });
   } catch (error) {
     await borrarFoto(ruta);
     throw error;

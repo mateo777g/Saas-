@@ -75,10 +75,16 @@
   // El slug es lo primero del camino: pidemenu.mx/fonda-don-chuy.
   const slug = decodeURIComponent(location.pathname.split('/').filter(Boolean)[0] ?? '');
   const muestra = modoMuestra();
+  // La tira de la ventana del color (parte D, 13 nov 2026; maqueta v59, abrirColor): la barra y, según el color que se
+  // prueba, las categorías (el de tu menú), la búsqueda y las categorías (el de la barra) o los productos de la primera
+  // categoría (el fondo).
+  const tira = muestra === 'barra' ? new URLSearchParams(location.search).get('tira') : null;
   // El teléfono de la vista previa: arriba va su reloj, como en un iPhone (la maqueta dibuja el menú a 390 × 849 con 36
   // de arriba, lo de los comparar_*.py).
   const enTelefono = muestra === 'menu';
   if (enTelefono) document.documentElement.style.setProperty('--arriba-seguro', '36px');
+  // En el teléfono del panel no se ve la barrita de deslizar, como en un celular (la maqueta, .tel-desliza).
+  if (enTelefono) document.documentElement.style.setProperty('scrollbar-width', 'none');
 
   let menu = $state<MenuPublico | null>(null);
   let paso = $state<'leyendo' | 'listo' | 'apagado' | 'sinred'>('leyendo');
@@ -204,7 +210,9 @@
     );
   }
 
-  const categorias = $derived((menu?.categorias ?? []).map((c) => ({ ...c, productos: ordenados(c.productos) })));
+  const categorias = $derived(
+    (menu?.categorias ?? []).slice(0, tira === 'fondo' ? 1 : undefined).map((c) => ({ ...c, productos: ordenados(c.productos) })),
+  );
   const hallados = $derived(
     consulta
       ? categorias.flatMap((c) =>
@@ -806,7 +814,8 @@
     <Aviso titulo={t.sinRed} texto={t.sinRedTexto} boton={t.reintentar} alBoton={() => cargar()} />
   {:else if menu}
     {@const r = menu.restaurante}
-    {@const conCarteles = muestra !== 'barra' && carteles.length > 0}
+    <!-- En la tira de la ventana del color no salen los carteles, pero la barra va como si estuvieran (sin la «i»). -->
+    {@const conCarteles = carteles.length > 0}
     {@const estadoBarra = textoEstado(menu.estado, lengua)}
     {@const abiertoBarra = !!menu.estado?.abierto}
     <!-- La barra del menú; la del asistente es la misma, y su lupa regresa al menú para buscar ahí. -->
@@ -841,11 +850,19 @@
     >
       {@render barra(false)}
 
-      {#if muestra === 'barra'}
+      {#if muestra === 'barra' && tira !== 'fondo'}
+        {#if tira === 'colorBarra' && formas.barra !== 'centro'}
+          {#if formas.busqueda === 'tarjeta'}
+            <TarjetaBusca bind:busqueda {orden} {t} alOrdenar={(i) => (orden = i)} />
+          {:else}
+            <Buscador bind:busqueda {orden} blanca={formas.busqueda === 'blanca'} {t} alOrdenar={(i) => (orden = i)} />
+          {/if}
+        {/if}
         <Categorias categorias={menu.categorias} activa={menu.categorias[0]?.id ?? null} forma={formas.categorias} {lengua} {t} pegadas={false} />
       {:else}
-        <!-- Las tres piezas de en medio, en el orden que eligió. Mientras busca, solo la búsqueda. -->
-        {#each formas.orden as pieza (pieza)}
+        <!-- Las tres piezas de en medio, en el orden que eligió. Mientras busca, solo la búsqueda. En la tira del fondo,
+             ninguna: solo los productos. -->
+        {#each muestra === 'barra' ? [] : formas.orden as pieza (pieza)}
           {#if pieza === 'carteles' && conCarteles && !consulta}
             <Carteles
               {carteles}

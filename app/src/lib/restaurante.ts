@@ -3,6 +3,7 @@
 // se escribe solo con las funciones de la base, que revisan que quien llama sea el gerente.
 import type { TemaMenu } from './color';
 import { esDeRed, Fallo, mensajeDeError, SIN_CONEXION } from './errores';
+import { leerFormas, type Formas } from './formasMenu';
 import { supabase } from './supabase';
 
 // Un día que abre, con las horas como '9:00'. Si cierra antes de la hora en que abre, cierra al día
@@ -21,7 +22,8 @@ export type Restaurante = {
   horario: Horario[];
 };
 
-export type Cartel = { id: number; imagen_ruta: string };
+// Un cartel es una imagen que subió o un producto de Mi menú con foto (migración tu_menu_en_linea): uno de los dos.
+export type Cartel = { id: number; imagen_ruta: string | null; producto_id: number | null };
 
 // '09:00:00' (como lo da Postgres) → '9:00'.
 function hora(t: string): string {
@@ -61,10 +63,12 @@ export type DatosRestaurante = {
   direccion: string;
   logo_ruta: string | null;
   horario: Horario[];
+  // «Hago envíos» (desde el 12 nov 2026 vive aquí y no en Tu menú en línea).
+  hace_envios: boolean;
 };
 
-// «Guardar»: los datos y el horario juntos (guardar_restaurante). Regresa la ruta del logo anterior
-// si cambió, para borrarla de R2 después.
+// «Guardar»: los datos, el horario y «Hago envíos» juntos (guardar_restaurante). Regresa la ruta del logo
+// anterior si cambió, para borrarla de R2 después.
 export async function guardarRestaurante(restauranteId: string, datos: DatosRestaurante): Promise<string | null> {
   const { data, error } = await supabase.rpc('guardar_restaurante', {
     p_restaurante_id: restauranteId,
@@ -73,6 +77,7 @@ export async function guardarRestaurante(restauranteId: string, datos: DatosRest
     p_direccion: datos.direccion,
     p_logo_ruta: datos.logo_ruta,
     p_horario: datos.horario,
+    p_hace_envios: datos.hace_envios,
   });
   if (error) throw fallo('guardar_restaurante no se pudo', error);
   return (data as string | null) ?? null;
@@ -80,19 +85,68 @@ export async function guardarRestaurante(restauranteId: string, datos: DatosRest
 
 // ─── Tu menú en línea ───────────────────────────────────────────────────────
 
-// «Guardar» de Cómo se ve: el tema, el color (vacío = el neutro) y «Hago envíos». El dólar ya no lo
-// escribe nadie: es uno para todos y lo pone el Worker cada día (Mi menú, 6 de noviembre de 2026).
-export async function guardarMenuEnLinea(
-  restauranteId: string,
-  tema: TemaMenu,
-  color: string | null,
-  haceEnvios: boolean,
-): Promise<void> {
+// Cómo se ve su menú (migración tu_menu_en_linea): el tema, los tres colores (vacío = el de siempre) y las 18
+// formas. El dólar ya no lo escribe nadie: es uno para todos y lo pone el Worker cada día (Mi menú, 6 nov 2026).
+export type DisenoMenu = {
+  tema: TemaMenu;
+  color: string | null;
+  colorBarra: string | null;
+  fondo: string | null;
+  formas: Formas;
+};
+
+export async function leerDisenoMenu(restauranteId: string): Promise<DisenoMenu> {
+  const { data, error } = await supabase
+    .from('restaurantes')
+    .select(
+      'menu_tema, menu_color, menu_color_barra, menu_fondo, menu_barra, menu_con_nombre, menu_idioma, menu_moneda, ' +
+        'menu_busqueda, menu_carteles, menu_info, menu_info_lugar, menu_carteles_producto, menu_categorias, menu_orden, ' +
+        'menu_titulos, menu_productos, menu_abajo, menu_abajo_con_nombres, menu_producto_ventana, menu_producto_titulo, ' +
+        'menu_producto_opciones',
+    )
+    .eq('id', restauranteId)
+    .single();
+  if (error) throw error;
+  const fila = data as unknown as Record<string, unknown>;
+  // Las columnas sin «menu_», como las manda menu_publico.
+  const sinMenu = Object.fromEntries(Object.entries(fila).map(([k, v]) => [k.replace(/^menu_/, ''), v]));
+  return {
+    tema: fila.menu_tema === 'oscuro' ? 'oscuro' : 'claro',
+    color: (fila.menu_color as string | null) ?? null,
+    colorBarra: (fila.menu_color_barra as string | null) ?? null,
+    fondo: (fila.menu_fondo as string | null) ?? null,
+    formas: leerFormas(sinMenu),
+  };
+}
+
+// La barra de guardar: el tema, los colores y las formas, todo junto (guardar_menu_en_linea). Cada forma la revisa
+// su regla de la tabla.
+export async function guardarDisenoMenu(restauranteId: string, d: DisenoMenu): Promise<void> {
+  const f = d.formas;
   const { error } = await supabase.rpc('guardar_menu_en_linea', {
     p_restaurante_id: restauranteId,
-    p_tema: tema,
-    p_color: color,
-    p_hace_envios: haceEnvios,
+    p_tema: d.tema,
+    p_color: d.color,
+    p_color_barra: d.colorBarra,
+    p_fondo: d.fondo,
+    p_barra: f.barra,
+    p_con_nombre: f.con_nombre,
+    p_idioma: f.idioma,
+    p_moneda: f.moneda,
+    p_busqueda: f.busqueda,
+    p_carteles: f.carteles,
+    p_info: f.info,
+    p_info_lugar: f.info_lugar,
+    p_carteles_producto: f.carteles_producto,
+    p_categorias: f.categorias,
+    p_orden: f.orden,
+    p_titulos: f.titulos,
+    p_productos: f.productos,
+    p_abajo: f.abajo,
+    p_abajo_con_nombres: f.abajo_con_nombres,
+    p_producto_ventana: f.producto_ventana,
+    p_producto_titulo: f.producto_titulo,
+    p_producto_opciones: f.producto_opciones,
   });
   if (error) throw fallo('guardar_menu_en_linea no se pudo', error);
 }
@@ -121,7 +175,7 @@ export const MAXIMO_CARTELES = 5;
 export async function leerCarteles(restauranteId: string): Promise<Cartel[]> {
   const { data, error } = await supabase
     .from('carteles')
-    .select('id, imagen_ruta')
+    .select('id, imagen_ruta, producto_id')
     .eq('restaurante_id', restauranteId)
     .order('orden')
     .order('id');
@@ -129,15 +183,21 @@ export async function leerCarteles(restauranteId: string): Promise<Cartel[]> {
   return data;
 }
 
-// La imagen ya la subió el Worker; va al final.
-export async function agregarCartel(restauranteId: string, ruta: string): Promise<void> {
-  const { error } = await supabase.rpc('agregar_cartel', { p_restaurante_id: restauranteId, p_imagen_ruta: ruta });
+// Lo que lleva un cartel: la imagen que ya subió el Worker, o un producto de Mi menú con foto.
+export type LoDelCartel = { imagen: string } | { producto: number };
+
+const argumentos = (lo: LoDelCartel) =>
+  'imagen' in lo ? { p_imagen_ruta: lo.imagen, p_producto_id: null } : { p_imagen_ruta: null, p_producto_id: lo.producto };
+
+// Va al final.
+export async function agregarCartel(restauranteId: string, lo: LoDelCartel): Promise<void> {
+  const { error } = await supabase.rpc('agregar_cartel', { p_restaurante_id: restauranteId, ...argumentos(lo) });
   if (error) throw fallo('agregar_cartel no se pudo', error);
 }
 
-// Regresa la ruta de la imagen anterior, para borrarla de R2.
-export async function cambiarCartel(id: number, ruta: string): Promise<string | null> {
-  const { data, error } = await supabase.rpc('cambiar_cartel', { p_cartel_id: id, p_imagen_ruta: ruta });
+// En su mismo lugar. Regresa la ruta de la imagen anterior si se fue, para borrarla de R2.
+export async function cambiarCartel(id: number, lo: LoDelCartel): Promise<string | null> {
+  const { data, error } = await supabase.rpc('cambiar_cartel', { p_cartel_id: id, ...argumentos(lo) });
   if (error) throw fallo('cambiar_cartel no se pudo', error);
   return (data as string | null) ?? null;
 }
@@ -147,9 +207,9 @@ export async function moverCartel(id: number, hacia: 'arriba' | 'abajo'): Promis
   if (error) throw fallo('mover_cartel no se pudo', error);
 }
 
-// Regresa la ruta de su imagen, para borrarla de R2.
-export async function quitarCartel(id: number): Promise<string> {
+// Regresa la ruta de su imagen, para borrarla de R2 (vacío si era un producto: no hay imagen que borrar).
+export async function quitarCartel(id: number): Promise<string | null> {
   const { data, error } = await supabase.rpc('quitar_cartel', { p_cartel_id: id });
   if (error) throw fallo('quitar_cartel no se pudo', error);
-  return data as string;
+  return (data as string | null) ?? null;
 }

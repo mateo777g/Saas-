@@ -46,6 +46,7 @@
   import Inicio from './gerente/Inicio.svelte';
   import Menu from './gerente/Menu.svelte';
   import MenuEnLinea from './gerente/MenuEnLinea.svelte';
+  import { salir } from '../lib/salida';
   import Mesas from './gerente/Mesas.svelte';
   import Pedidos from './gerente/Pedidos.svelte';
   import Perfil from './gerente/Perfil.svelte';
@@ -203,9 +204,14 @@
     return () => clearTimeout(reloj);
   });
 
+  // Cambiar de vista, de sucursal o cerrar sesión le pregunta antes a la vista abierta, por si tiene cambios sin guardar
+  // (lib/salida.ts; «Tu menú en línea»).
   function elegir(sucursal: Sucursal) {
-    actualId = sucursal.id;
-    recordarSucursal(sucursal.id);
+    if (sucursal.id === actualId) return;
+    salir(() => {
+      actualId = sucursal.id;
+      recordarSucursal(sucursal.id);
+    });
   }
 
   function alPulsar(valor: string) {
@@ -224,7 +230,8 @@
       valor === 'biblioteca' ||
       valor === 'ajustes'
     ) {
-      vista = valor;
+      const destino = valor;
+      if (destino !== vista) salir(() => (vista = destino));
     }
   }
 
@@ -233,8 +240,11 @@
       alPulsar('ayuda');
       return;
     }
-    nuevoAlEntrar = destino.nuevo ?? null;
-    vista = destino.vista;
+    const a = destino.vista;
+    salir(() => {
+      nuevoAlEntrar = destino.nuevo ?? null;
+      vista = a;
+    });
   }
 
   function tomarNuevo(cual: NuevoAlEntrar) {
@@ -335,7 +345,7 @@
     activa={vista === 'pos' || vista === 'caja' || vista === 'cocina' ? 'inicio' : vista}
     alElegir={alPulsar}
     alBuscar={abrirBusqueda}
-    {alSalir}
+    alSalir={() => salir(alSalir)}
     pie={{
       inicial: nombre.charAt(0).toUpperCase(),
       nombre,

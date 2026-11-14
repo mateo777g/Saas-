@@ -158,6 +158,35 @@
     color: var(--texto);
   }
 
+  /* Cristal: como el selector de Estilo de Ajustes (el developer, 13 nov 2026: aquí se había quedado como en Simple).
+     Dentro de la fila de material, rellenos transparentes (nunca vidrio sobre vidrio): la canaleta clarita y la elegida
+     una pieza de vidrio más clara con su orilla de luz arriba. */
+  :global(:root[data-estilo='cristal'][data-tema='oscuro']) .formas {
+    background: rgba(255, 255, 255, 0.06);
+  }
+
+  :global(:root[data-estilo='cristal'][data-tema='oscuro']) .forma[aria-pressed='true'] {
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0.07));
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.18),
+      0 4px 12px -6px rgba(0, 0, 0, 0.6);
+  }
+
+  :global(:root[data-estilo='cristal'][data-tema='claro']) .formas {
+    background: var(--cl-relleno);
+  }
+
+  :global(:root[data-estilo='cristal'][data-tema='claro']) .forma[aria-pressed='true'] {
+    background: rgba(255, 255, 255, 0.9);
+    box-shadow:
+      inset 0 1px 0 #ffffff,
+      0 4px 12px -6px var(--cl-sombra);
+  }
+
+  :global(:root[data-estilo='cristal']) .forma[aria-pressed='true']:focus-visible {
+    box-shadow: 0 0 0 2px var(--campo-aro);
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .forma {
       transition: none;

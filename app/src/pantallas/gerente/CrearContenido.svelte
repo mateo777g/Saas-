@@ -3,11 +3,14 @@
   ese nombre; parte 7b-1 de la libreta 7; sus decisiones en planes/trabajo/7b/lista-7b.md).
 
   Por pasos desde el 13 nov 2026 (la idea del developer y sus 11 encuestas, en planes/trabajo/rediseno/crear-anuncios.md):
-  1 Productos (la búsqueda grande de Mi menú y los productos grandes, que entran en cascada), 2 Tu anuncio (a la
-  izquierda ¿Qué quieres decir?, Estilo y color e «Irá en el anuncio»; a la derecha el formato en tres celulares, fijos
-  al bajar) y 3 Listo (la rejilla de puntitos grande al centro, luego tu anuncio ahí mismo, y «Lo que pediste» a un
-  lado). Los pasos van al centro de la barra de arriba y los botones en la barra de abajo, la de guardar de Tu menú en
-  línea: Continuar; Atrás y Generar anuncio; Nuevo anuncio, Otra vez, Ponerlo en mi menú y Descargar.
+  1 Productos (la búsqueda grande de Mi menú con su filtro de categorías, desde el 14 nov 2026, y los productos
+  grandes, que entran en cascada) y 2 Tu anuncio (a la izquierda ¿Qué quieres decir?, Estilo y color e «Irá en el
+  anuncio»; a la derecha el formato en tres celulares, fijos al bajar). Desde el 14 nov 2026 son dos pasos (detalle 4,
+  maqueta YZPNpiWtkuRCFrttbZjKB1 v2): al generar, los celulares se van y en su lugar salen la rejilla de puntitos y luego
+  tu anuncio; la izquierda se queda (apagada mientras se hace) y, ya listo, cambiar algo regresa los celulares. Cada
+  paso lleva su título grande, que sube como la frase del Agente IA. Los pasos van al centro de la barra de arriba y
+  los botones en la barra de abajo, la de guardar de Tu menú en línea: Continuar; Atrás y Generar anuncio; Nuevo
+  anuncio, Otra vez, Ponerlo en mi menú y Descargar.
 
   Lo lee todo de Postgres con crear_contenido, al abrir, cada vez que realtime avisa de un cambio en
   sus anuncios, cada 30 segundos mientras uno se hace (por si se perdió un aviso) y al volver a la
@@ -17,6 +20,7 @@
 -->
 <script lang="ts">
   import { onMount, untrack } from 'svelte';
+  import { cubicIn, quintOut } from 'svelte/easing';
   import { fade, fly } from 'svelte/transition';
   import BarraArriba from '../../diseno/BarraArriba.svelte';
   import Boton from '../../diseno/Boton.svelte';
@@ -36,6 +40,7 @@
     escucharAnuncios,
     formatoDe,
     hacerAnuncio,
+    leerCategoriasDelMenu,
     leerCrearContenido,
     leerEstilosDeHoy,
     lugaresDe,
@@ -45,6 +50,7 @@
     textoSinAnuncios,
     vacioDe,
     vaCon,
+    type CategoriasDelMenu,
     type DatosCrearContenido,
     type EstiloDeHoy,
     type Formato,
@@ -60,6 +66,7 @@
   import { urlFoto } from '../../lib/fotos';
   import type { Sucursal } from '../../lib/gerente';
   import CajaSucursales from './CajaSucursales.svelte';
+  import FiltroCategorias from './menu/FiltroCategorias.svelte';
   import Celulares from './crearContenido/Celulares.svelte';
   import PasoListo, { type LoQueSeVe } from './crearContenido/PasoListo.svelte';
   import Pasos, { type Paso } from './crearContenido/Pasos.svelte';
@@ -88,8 +95,11 @@
   let estilos = $state<EstiloDeHoy[] | null>(null);
   let errorEstilos = $state<string | null>(null);
 
-  // En qué paso va. Entra en el 1; si al entrar hay uno haciéndose o uno terminado sin ver, en el 3.
+  // En qué paso va. Entra en el 1; si al entrar hay uno haciéndose o uno terminado sin ver, en el 2 con él.
   let paso = $state<Paso>(1);
+  // Dos pasos desde el 14 nov 2026 (detalle 4 de crear-anuncios.md): al generar, los celulares se van y el anuncio sale
+  // en su lugar. Ya listo (o si no salió), cambiar algo de la izquierda los regresa (encuesta).
+  let verAnuncio = $state(false);
 
   // Lo que va armando: los productos en el orden en que los picó (el 1 va en el titular), el
   // formato (entra con el post al centro), el estilo, su mensaje y el color de este anuncio (null = el de su marca).
@@ -99,6 +109,9 @@
   let mensaje = $state('');
   let color = $state<string | null>(null);
   let busqueda = $state('');
+  // El filtro de categorías del paso 1 (el de Mi menú): null = Todas.
+  let filtro = $state<number | null>(null);
+  let delMenu = $state<CategoriasDelMenu | null>(null);
   let nota = $state<string | null>(null);
   let error = $state<string | null>(null);
 
@@ -111,7 +124,7 @@
   let ventana = $state<null | { tipo: 'estilos' } | { tipo: 'color' } | { tipo: 'palabra'; lugar: LugarListo }>(null);
 
   let se = $state<LoQueSeVe>({ fase: 'vacio' });
-  // El anuncio del paso 3, como lo guardó Postgres («Lo que pediste»).
+  // El anuncio que se enseña, como lo guardó Postgres.
   let pedido = $state<ResultadoDeAnuncio | null>(null);
   // El último terminado que enseña: «Otra vez» lo repite tal cual.
   let mostrado = $state<ResultadoDeAnuncio | null>(null);
@@ -170,9 +183,18 @@
     return null;
   });
 
+  // La categoría de cada producto, y en el filtro solo las que tienen productos aquí. Si la elegida ya no está
+  // (la borraron con la vista abierta), vuelve a Todas.
+  const categoriaDe = $derived(new Map((delMenu?.productos ?? []).map((p) => [p.id, p.categoria_id])));
+  const conCategoria = $derived(productos.map((p) => ({ categoria_id: categoriaDe.get(p.id) ?? 0 })));
+  const categorias = $derived((delMenu?.categorias ?? []).filter((c) => productos.some((p) => categoriaDe.get(p.id) === c.id)));
+  const filtroVivo = $derived(categorias.some((c) => c.id === filtro) ? filtro : null);
+
   const visibles = $derived.by(() => {
     const b = sinAcentos(busqueda.trim());
-    return b ? productos.filter((p) => sinAcentos(p.nombre).includes(b)) : productos;
+    return productos.filter(
+      (p) => (filtroVivo === null || categoriaDe.get(p.id) === filtroVivo) && (!b || sinAcentos(p.nombre).includes(b)),
+    );
   });
 
   // Los elegidos por su nombre, para la barra de abajo: «Torta de pastor, Taco al pastor y Burrito al pastor».
@@ -220,8 +242,9 @@
 
   async function leer() {
     let nuevos: DatosCrearContenido;
+    let categoriasNuevas: CategoriasDelMenu;
     try {
-      nuevos = await leerCrearContenido(sucursal.id);
+      [nuevos, categoriasNuevas] = await Promise.all([leerCrearContenido(sucursal.id), leerCategoriasDelMenu(sucursal.id)]);
     } catch (e) {
       // Con algo ya en pantalla se queda; la primera vez, la caja de error.
       if (!datos) errorLectura = esDeRed(e) ? SIN_CONEXION : mensajeDeError(e);
@@ -230,9 +253,35 @@
     const primera = datos === null;
     errorLectura = null;
     datos = nuevos;
+    delMenu = categoriasNuevas;
     recordarFilas(llaveEsqueleto, nuevos.productos.length);
     alLeer(nuevos.resultado);
-    if (primera && se.fase !== 'vacio') paso = 3;
+    if (primera && nuevos.resultado && se.fase !== 'vacio') llenarDesde(nuevos.resultado, nuevos);
+  }
+
+  // Al entrar con uno haciéndose o uno terminado sin ver: el paso 2 con él a la derecha y, a la izquierda, lo que se
+  // pidió (sin volver a escoger las palabras: ya son las suyas).
+  function llenarDesde(r: ResultadoDeAnuncio, d: DatosCrearContenido) {
+    const ids = r.productos.map((p) => p.id).filter((id) => d.productos.some((p) => p.id === id));
+    elegidos = ids;
+    estiloId = r.estilo_id;
+    formato = r.formato;
+    mensaje = r.mensaje ?? '';
+    color = r.color === d.restaurante?.color ? null : r.color;
+    cambiadas = {};
+    palabras = r.palabras && Object.keys(r.palabras).length ? r.palabras : null;
+    ultimaClave = `${r.estilo_id}:${ids.join(',')}`;
+    verAnuncio = true;
+    paso = 2;
+  }
+
+  // Ya listo (o si no salió), cambiar algo de la izquierda o los productos regresa los celulares para hacer otro; el
+  // que salió se queda en Mi biblioteca. Mientras se hace, la izquierda está apagada.
+  function alCambiar() {
+    if (!verAnuncio || se.fase === 'haciendo') return;
+    verAnuncio = false;
+    se = { fase: 'vacio' };
+    pedido = null;
   }
 
   function alLeer(r: ResultadoDeAnuncio | null) {
@@ -243,7 +292,7 @@
       if (antes.fase === 'haciendo') {
         se = { fase: 'vacio' };
         pedido = null;
-        if (paso === 3) paso = elegidos.length ? 2 : 1;
+        verAnuncio = false;
       }
       haciendoId = null;
       return;
@@ -386,7 +435,7 @@
       color: estilo.color ? color : null,
       palabras: Object.fromEntries(Object.entries(todas).filter(([llave]) => llaves.has(llave))),
     });
-    if (aceptado) paso = 3;
+    if (aceptado) verAnuncio = true;
   }
 
   // «Otra vez»: el mismo anuncio, con las mismas palabras (las suyas incluidas). Cuenta uno.
@@ -449,11 +498,12 @@
     nota = null;
     error = null;
     if (elegidos.includes(id)) elegidos = elegidos.filter((x) => x !== id);
-    else if (elegidos.length >= MAXIMO_PRODUCTOS) nota = `Máximo ${MAXIMO_PRODUCTOS} productos en un anuncio.`;
+    else if (elegidos.length >= MAXIMO_PRODUCTOS) return void (nota = `Máximo ${MAXIMO_PRODUCTOS} productos en un anuncio.`);
     else elegidos = [...elegidos, id];
+    alCambiar();
   }
 
-  const puede = (n: Paso) => n === 1 || (n === 2 ? elegidos.length > 0 : se.fase !== 'vacio');
+  const puede = (n: Paso) => n === 1 || elegidos.length > 0;
 
   function ir(n: Paso) {
     if (!puede(n)) return;
@@ -469,12 +519,14 @@
     paso = n;
   }
 
-  // «Nuevo anuncio» (encuesta 11): al paso 1 sin nada elegido. El que se hace se queda en el 3.
+  // «Nuevo anuncio» (encuesta 11): al paso 1 sin nada elegido. El que se hace se sigue haciendo y queda en Mi biblioteca.
   function nuevo() {
+    verAnuncio = false;
     elegidos = [];
     mensaje = '';
     color = null;
     busqueda = '';
+    filtro = null;
     nota = null;
     error = null;
     formato = 'post';
@@ -494,23 +546,57 @@
       estiloId = e.id;
       perdido = null;
       error = null;
+      alCambiar();
     }
     ventana = null;
   }
 
   function usarColor(hex: string | null) {
-    color = hex === null || hex === marca ? null : hex;
+    const nuevo = hex === null || hex === marca ? null : hex;
+    if (nuevo !== color) alCambiar();
+    color = nuevo;
     error = null;
     ventana = null;
   }
 
   function usarPalabra(lugar: LugarListo, texto: string) {
+    if (texto !== palabraDe(lugar)) alCambiar();
     const nuevas = { ...cambiadas };
     if (texto === palabras?.[lugar.llave]) delete nuevas[lugar.llave];
     else nuevas[lugar.llave] = texto;
     cambiadas = nuevas;
     error = null;
     ventana = null;
+  }
+
+  // El título grande de cada paso (detalle 4): dice lo que haces y sube como la frase del Agente IA cuando cambia.
+  const titulo = $derived(
+    paso === 1
+      ? 'Elige tus productos'
+      : verAnuncio && se.fase === 'haciendo'
+        ? 'Haciendo tu anuncio…'
+        : verAnuncio && se.fase === 'listo'
+          ? 'Tu anuncio está listo'
+          : 'Arma tu anuncio',
+  );
+
+  // Los celulares salen bajando y achicándose (0.26 s) y el anuncio entra subiendo y creciendo (0.45 s); al regresar,
+  // al revés. Quietos con «reducir movimiento».
+  const quieto = typeof matchMedia === 'function' ? matchMedia('(prefers-reduced-motion: reduce)') : null;
+  function entraAnuncio(_: Element) {
+    return {
+      delay: quieto?.matches ? 0 : 200,
+      duration: quieto?.matches ? 0 : 450,
+      easing: quintOut,
+      css: (t: number) => `opacity: ${t}; transform: translateY(${(1 - t) * 10}px) scale(${0.96 + 0.04 * t})`,
+    };
+  }
+  function saleAnuncio(_: Element) {
+    return {
+      duration: quieto?.matches ? 0 : 260,
+      easing: cubicIn,
+      css: (t: number) => `opacity: ${t}; transform: translateY(${(1 - t) * 8}px) scale(${0.94 + 0.06 * t})`,
+    };
   }
 
   // Los productos entran en cascada (diseno/cascada.ts) al llegar la primera vez y cada vez que se vuelve al paso 1;
@@ -524,9 +610,12 @@
     requestAnimationFrame(() => cascada(r));
   });
 
-  // Lo que mide el paso 3 entre las dos barras: el anuncio se achica si no cabe.
-  let anchoTres = $state(0);
-  let altoTres = $state(0);
+  // Lo que mide el cuerpo entre las dos barras: el anuncio se achica si no cabe entre el título y la barra de abajo.
+  let altoCuerpo = $state(0);
+
+  // La barra de abajo: Continuar; Atrás y Generar anuncio (también si no salió, para intentarlo otra vez); con el anuncio
+  // haciéndose o listo, la que era del paso 3: Nuevo anuncio, Otra vez, Ponerlo en mi menú y Descargar.
+  const barra = $derived(paso === 1 ? 'productos' : verAnuncio && (se.fase === 'haciendo' || se.fase === 'listo') ? 'anuncio' : 'armar');
 
   // Mientras uno se hace, se vuelve a leer cada 30 segundos: si se perdió el aviso de realtime, o
   // si el trabajo se cayó y Postgres lo suelta a los 15 minutos, igual se entera.
@@ -568,7 +657,8 @@
 {#if errorLectura && !datos}
   <main class="cuerpo-error"><CajaError mensaje={errorLectura} /></main>
 {:else}
-  <main class="paso-cuerpo" class:tres={paso === 3}>
+  <main class="paso-cuerpo" bind:clientHeight={altoCuerpo}>
+    {#key titulo}<h1 class="titulo-paso">{titulo}</h1>{/key}
     {#if paso === 1}
       <!-- 1 Productos -->
       <div class="paso-uno">
@@ -579,9 +669,10 @@
               <input type="search" aria-label="Buscar en tu menú" placeholder="Buscar en tu menú" bind:value={busqueda} autocomplete="off" />
             </label>
           </Haz>
+          <FiltroCategorias {categorias} productos={conCategoria} filtro={filtroVivo} alElegir={(id) => (filtro = id)} />
           <span class="crece"></span>
           <span class="etiqueta">
-            {#if datos}{plural(productos.length, 'PRODUCTO', 'PRODUCTOS')}{:else}<Esqueleto ancho="80px" alto="10px" />{/if}
+            {#if datos}{plural(visibles.length, 'PRODUCTO', 'PRODUCTOS')}{:else}<Esqueleto ancho="80px" alto="10px" />{/if}
           </span>
         </div>
         <p class="nota">De tu menú. Pica uno o varios: el 1 va en el titular.</p>
@@ -595,7 +686,11 @@
             </button>
           {:else}
             {#if datos}
-              <div class="nota-rejilla">{productos.length ? 'No hay productos con ese nombre en tu menú.' : 'Todavía no hay productos en tu menú.'}</div>
+              <div class="nota-rejilla">
+                {productos.length
+                  ? `No hay productos con ese nombre en ${filtroVivo === null ? 'tu menú' : categorias.find((c) => c.id === filtroVivo)?.nombre}.`
+                  : 'Todavía no hay productos en tu menú.'}
+              </div>
             {:else}
               <!-- El esqueleto de la primera lectura (regla «Los esqueletos»): tantos productos como la última vez. -->
               <span class="solo-lector">Leyendo tu menú…</span>
@@ -612,7 +707,7 @@
     {:else if paso === 2}
       <!-- 2 Tu anuncio -->
       <div class="paso-dos" in:fly={{ y: 12, duration: 350 }}>
-        <div class="columna">
+        <div class="columna" class:apagada={verAnuncio && se.fase === 'haciendo'} inert={verAnuncio && se.fase === 'haciendo'}>
           <section class="tarjeta">
             <div class="encabezado">
               <span class="cuadro"><Icono nombre="mensaje" tamano={18} /></span>
@@ -622,7 +717,7 @@
             {#if !estilo || estilo.mensaje > 0}
               <GrupoCampos>
                 <label class="caja-mensaje" class:pasado>
-                  <textarea rows="2" placeholder={estilo ? pistaDe(estilo) : ''} aria-label="¿Qué quieres decir?" bind:value={mensaje}></textarea>
+                  <textarea rows="2" placeholder={estilo ? pistaDe(estilo) : ''} aria-label="¿Qué quieres decir?" bind:value={mensaje} oninput={alCambiar}></textarea>
                 </label>
               </GrupoCampos>
             {:else}
@@ -669,7 +764,10 @@
                     ayuda={marca ? 'Volver al color de tu marca' : 'Volver a los de tu estilo'}
                     etiqueta="Volver al color de tu marca"
                     apagado={color === null}
-                    onclick={() => (color = null)}
+                    onclick={() => {
+                      color = null;
+                      alCambiar();
+                    }}
                   />
                 </div>
               {/if}
@@ -715,38 +813,35 @@
           </section>
         </div>
 
+        <!-- Los celulares se quedan montados (su menú en línea no se vuelve a cargar) y el anuncio va encima, en la misma celda. -->
         <div class="lado">
-          <Celulares
-            {formato}
-            {estilo}
-            nombre={restaurante?.nombre ?? sucursal.nombre}
-            color={marca}
-            slug={sucursal.slug}
-            restauranteId={sucursal.id}
-            alElegir={(f) => (formato = f)}
-          />
+          <div class="capa celulares-capa" class:fuera={verAnuncio} inert={verAnuncio}>
+            <Celulares
+              {formato}
+              {estilo}
+              nombre={restaurante?.nombre ?? sucursal.nombre}
+              color={marca}
+              slug={sucursal.slug}
+              restauranteId={sucursal.id}
+              alElegir={(f) => (formato = f)}
+            />
+          </div>
+          {#if verAnuncio}
+            <div class="capa" in:entraAnuncio out:saleAnuncio>
+              <!-- 590 de ancho; de alto, el cuerpo menos sus rellenos (20 y 24) y el título (61). -->
+              <PasoListo {se} lugar={[590, altoCuerpo - 105]} />
+            </div>
+          {/if}
         </div>
-      </div>
-    {:else}
-      <!-- 3 Listo -->
-      <div class="paso-tres" in:fade={{ duration: 250 }} bind:clientWidth={anchoTres} bind:clientHeight={altoTres}>
-        <PasoListo
-          {se}
-          {pedido}
-          {productos}
-          estilo={estilos?.find((e) => e.id === pedido?.estilo_id) ?? null}
-          {restaurante}
-          lugar={[anchoTres, altoTres]}
-        />
       </div>
     {/if}
   </main>
 
   <!-- La barra de abajo: la de guardar de Tu menú en línea (encuestas 1, 7 y 11). -->
   <footer class="barra-abajo">
-    {#key paso}
+    {#key barra}
       <div class="barra-contenido" in:fade={{ duration: 200 }}>
-        {#if paso === 1}
+        {#if barra === 'productos'}
           <div class="estado" role="status">
             {#if nota}
               <span class="aviso-chico"><Icono nombre="alerta" tamano={15} />{nota}</span>
@@ -757,7 +852,7 @@
             {/if}
           </div>
           <Boton etiqueta="Continuar" tono="verde" apagado={!elegidos.length} onclick={() => ir(2)} />
-        {:else if paso === 2}
+        {:else if barra === 'armar'}
           <div class="estado" role="status">
             {#if aviso}
               <CajaError mensaje={aviso} tamano={12} compacta />
@@ -1067,6 +1162,17 @@
     min-width: 0;
   }
 
+  /* En Cristal la tarjeta es material y --fondo es el del marco (negro puro en oscuro, gris sólido en claro): el gris de
+     los campos (GrupoCampos) y el de «Sin color» pasan al relleno de Cristal, como en Tu restaurante (reglas-diseno.md,
+     «Los campos que van juntos, en su gris», 14 nov 2026). En Simple, igual que siempre. */
+  :global(:root[data-estilo='cristal'][data-tema='oscuro']) .tarjeta {
+    --fondo: var(--cristal-relleno);
+  }
+
+  :global(:root[data-estilo='cristal'][data-tema='claro']) .tarjeta {
+    --fondo: var(--cl-relleno);
+  }
+
   .encabezado {
     display: flex;
     align-items: center;
@@ -1105,9 +1211,75 @@
     color: var(--suave);
   }
 
+  /* Los celulares y el anuncio, uno encima del otro en la misma celda. */
   .lado {
     position: sticky;
     top: 0;
+    display: grid;
+  }
+
+  .capa {
+    grid-area: 1 / 1;
+    min-width: 0;
+    align-self: start;
+  }
+
+  /* Los celulares salen bajando y achicándose (0.26 s); al regresar entran subiendo, cuando el anuncio ya se fue. */
+  .celulares-capa {
+    transition:
+      opacity 0.35s cubic-bezier(0.22, 1, 0.36, 1) 0.2s,
+      transform 0.35s cubic-bezier(0.22, 1, 0.36, 1) 0.2s,
+      visibility 0s 0s;
+  }
+
+  .celulares-capa.fuera {
+    opacity: 0;
+    transform: translateY(8px) scale(0.94);
+    visibility: hidden;
+    transition:
+      opacity 0.26s ease-in,
+      transform 0.26s ease-in,
+      visibility 0s 0.26s;
+  }
+
+  /* Mientras se hace, la izquierda se queda apagada (encuesta). */
+  .columna {
+    transition: opacity 0.3s ease;
+  }
+
+  .columna.apagada {
+    opacity: 0.45;
+  }
+
+  /* El título de cada paso (detalle 4): el tamaño y la subida de la frase del Agente IA (frase-sube). */
+  .titulo-paso {
+    margin: 2px 0 20px;
+    font-size: 34px;
+    font-weight: 700;
+    line-height: 1.15;
+    letter-spacing: -0.7px;
+    color: var(--texto);
+    text-wrap: balance;
+    animation: titulo-sube 0.55s cubic-bezier(0.22, 1, 0.36, 1) 0.1s both;
+  }
+
+  @keyframes titulo-sube {
+    from {
+      opacity: 0;
+      transform: translateY(18px);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .titulo-paso {
+      animation: none;
+    }
+
+    .celulares-capa,
+    .celulares-capa.fuera,
+    .columna {
+      transition: none;
+    }
   }
 
   .letras {
@@ -1410,17 +1582,6 @@
     to {
       transform: rotate(360deg);
     }
-  }
-
-  /* ─── 3 Listo ─── */
-  .paso-cuerpo.tres {
-    display: flex;
-    flex-direction: column;
-  }
-
-  .paso-tres {
-    flex: 1;
-    min-height: 0;
   }
 
   /* ─── La barra de abajo: la de guardar de Tu menú en línea (64, pegada abajo de lo ancho de la vista) ─── */

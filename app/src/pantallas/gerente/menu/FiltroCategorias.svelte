@@ -23,8 +23,9 @@
     filtro,
     alElegir,
   }: {
-    categorias: Categoria[];
-    productos: Producto[];
+    // Solo lo que usa: así también lo lleva el paso 1 de Crear anuncios, que no lee el menú entero.
+    categorias: Pick<Categoria, 'id' | 'nombre' | 'icono'>[];
+    productos: Pick<Producto, 'categoria_id'>[];
     filtro: number | null;
     alElegir: (id: number | null) => void;
   } = $props();

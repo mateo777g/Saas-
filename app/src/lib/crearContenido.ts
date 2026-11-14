@@ -130,6 +130,39 @@ export async function leerCrearContenido(restauranteId: string): Promise<DatosCr
   return data as DatosCrearContenido;
 }
 
+// El filtro de categorías del paso 1, el de Mi menú (detalle 2, 14 nov 2026): las categorías en su orden y la de
+// cada producto. crear_contenido no las trae: se leen aparte con la sesión, como las lee Mi menú. Las mismas que
+// crear_contenido: sin archivar y sin los envíos.
+export type CategoriasDelMenu = {
+  categorias: { id: number; nombre: string; icono: string }[];
+  productos: { id: number; categoria_id: number }[];
+};
+
+export async function leerCategoriasDelMenu(restauranteId: string): Promise<CategoriasDelMenu> {
+  const [categorias, productos] = await Promise.all([
+    supabase
+      .from('categorias')
+      .select('id, nombre, icono')
+      .eq('restaurante_id', restauranteId)
+      .is('archivado_at', null)
+      .order('orden')
+      .order('id'),
+    supabase
+      .from('productos')
+      .select('id, categoria_id')
+      .eq('restaurante_id', restauranteId)
+      .is('archivado_at', null)
+      .eq('es_envio', false),
+  ]);
+  for (const r of [categorias, productos]) {
+    if (r.error) {
+      console.error('[crear contenido] no se pudieron leer las categorías:', r.error);
+      throw r.error;
+    }
+  }
+  return { categorias: categorias.data!, productos: productos.data! };
+}
+
 export async function leerEstilosDeHoy(restauranteId: string): Promise<EstiloDeHoy[]> {
   const r = await llamarWorker('anuncios', 'GET', `/anuncios/estilos?restaurante=${restauranteId}`);
   return (r?.estilos ?? []) as EstiloDeHoy[];

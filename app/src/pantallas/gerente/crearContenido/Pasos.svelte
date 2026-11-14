@@ -1,12 +1,12 @@
 <!--
   Los pasos de Crear anuncios, al centro de la barra de arriba (13 nov 2026, encuesta 9 de
-  planes/trabajo/rediseno/crear-anuncios.md): «1 Productos › 2 Tu anuncio › 3 Listo». El de ahorita en tinta; los hechos
-  con su palomita verde (sale con el rebote) y se pican para regresar; los que faltan, en gris, y solo se pican cuando
-  se puede (el 2 con al menos un producto, el 3 con un anuncio). Va centrado como el dock de Mi menú, para que no se
-  recorra al cambiar el chip de la izquierda.
+  planes/trabajo/rediseno/crear-anuncios.md): «1 Productos › 2 Tu anuncio» (dos desde el 14 nov 2026, detalle 4: el
+  anuncio sale en el paso 2). El de ahorita en tinta; el hecho con su palomita verde (sale con el rebote) y se pica para
+  regresar; el que falta, en gris, y solo se pica cuando se puede (el 2 con al menos un producto). Va centrado como el
+  dock de Mi menú, para que no se recorra al cambiar el chip de la izquierda.
 -->
 <script module lang="ts">
-  export type Paso = 1 | 2 | 3;
+  export type Paso = 1 | 2;
 </script>
 
 <script lang="ts">
@@ -17,7 +17,6 @@
   const PASOS: { n: Paso; texto: string }[] = [
     { n: 1, texto: 'Productos' },
     { n: 2, texto: 'Tu anuncio' },
-    { n: 3, texto: 'Listo' },
   ];
 </script>
 

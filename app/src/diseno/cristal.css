@@ -212,13 +212,14 @@
 
 /* Una hoja dentro de otra (una lista que se abre dentro de una ventana): nunca vidrio sobre vidrio. Además el navegador
    no la deja ver a través de la ventana (su desenfoque no alcanza lo de atrás y el texto se transparenta), así que va de
-   material grueso, casi opaco y un poco más claro que la ventana, con su mismo canto y su sombra. */
-:root[data-estilo='cristal'][data-tema='oscuro'] :is([data-vidrio='hoja'], [data-vidrio='ventana']) [data-vidrio='hoja'] {
+   material grueso, casi opaco y un poco más claro que la ventana, con su mismo canto y su sombra. Igual dentro de una
+   tarjeta de material (14 nov 2026: en el horario de Tu restaurante se transparentaban las horas de los días de abajo). */
+:root[data-estilo='cristal'][data-tema='oscuro'] :is([data-vidrio='hoja'], [data-vidrio='ventana'], .tarjeta, .tarjeta-panel) [data-vidrio='hoja'] {
   background: var(--luz-brillo), linear-gradient(165deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.015) 40%), rgb(34, 34, 36);
   -webkit-backdrop-filter: none;
   backdrop-filter: none;
 }
-:root[data-estilo='cristal'][data-tema='claro'] :is([data-vidrio='hoja'], [data-vidrio='ventana']) [data-vidrio='hoja'] {
+:root[data-estilo='cristal'][data-tema='claro'] :is([data-vidrio='hoja'], [data-vidrio='ventana'], .tarjeta, .tarjeta-panel) [data-vidrio='hoja'] {
   background: var(--luz-brillo), linear-gradient(165deg, rgba(255, 255, 255, 0.6), rgba(255, 255, 255, 0.18) 40%), rgb(248, 248, 250);
   -webkit-backdrop-filter: none;
   backdrop-filter: none;

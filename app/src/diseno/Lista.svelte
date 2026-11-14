@@ -219,9 +219,12 @@
     min-width: 0;
   }
 
+  /* Solo el botón de la lista abierta sube a 42, sobre su fondo y sus opciones (14 nov 2026): con todos en 42, los botones
+     de las listas de abajo (el horario de Tu restaurante) se pintaban encima de la abierta. Al cerrar se queda arriba lo
+     que tarda en recogerse. Sin capa nueva, para que el vidrio de la hoja siga desenfocando lo de atrás. */
   .lista-boton {
     position: relative;
-    z-index: 42;
+    z-index: 1;
     width: 100%;
     height: 44px;
     display: flex;
@@ -238,6 +241,16 @@
     font: 500 13.5px var(--jakarta);
     text-align: left;
     cursor: pointer;
+    transition:
+      border-radius 0.2s ease,
+      box-shadow 0.15s ease-out,
+      transform 0.2s ease,
+      background 0.2s ease,
+      z-index 0s 0.35s;
+  }
+
+  .lista.abierta .lista-boton {
+    z-index: 42;
     transition:
       border-radius 0.2s ease,
       box-shadow 0.15s ease-out,

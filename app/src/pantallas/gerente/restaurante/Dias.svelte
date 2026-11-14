@@ -12,6 +12,8 @@
 <script lang="ts">
   import Esqueleto from '../../../diseno/Esqueleto.svelte';
   import Lista from '../../../diseno/Lista.svelte';
+  import { quieto } from '../../../diseno/ventanaSeMueve';
+  import { cubicOut } from 'svelte/easing';
 
   let {
     dias = $bindable(),
@@ -32,6 +34,18 @@
   function horasCon(valor: string) {
     if (HORAS.includes(valor)) return HORAS;
     return [...HORAS, valor].sort((a, b) => minutos(a) - minutos(b));
+  }
+
+  // Al prender un día, sus horas salen del interruptor (se deslizan desde la izquierda y se aclaran, con la curva de
+  // salida de las listas); al apagarlo se desvanecen rápido. Quietas con «reducir movimiento».
+  function entra(_n: Element) {
+    if (quieto()) return { duration: 0 };
+    return { duration: 260, easing: cubicOut, css: (t: number) => `opacity: ${t}; transform: translateX(${(1 - t) * -10}px)` };
+  }
+
+  function sale(_n: Element) {
+    if (quieto()) return { duration: 0 };
+    return { duration: 120, css: (t: number) => `opacity: ${t}` };
   }
 
   function alternar(i: number) {
@@ -65,12 +79,14 @@
       </button>
       <span class="horas">
         {#if d}
-          <Lista aria-label="Abre el {nombre}" bind:valor={d.abre} {apagado} opciones={horasCon(d.abre).map((h) => ({ valor: h, texto: h }))} />
-          <span class="a">a</span>
-          <Lista aria-label="Cierra el {nombre}" bind:valor={d.cierra} {apagado} opciones={horasCon(d.cierra).map((h) => ({ valor: h, texto: h }))} />
-          {#if minutos(d.cierra) < minutos(d.abre)}
-            <span class="siguiente">del {NOMBRES[(i + 1) % 7].toLowerCase()}</span>
-          {/if}
+          <span class="horas-dentro" in:entra out:sale>
+            <Lista aria-label="Abre el {nombre}" bind:valor={d.abre} {apagado} opciones={horasCon(d.abre).map((h) => ({ valor: h, texto: h }))} />
+            <span class="a">a</span>
+            <Lista aria-label="Cierra el {nombre}" bind:valor={d.cierra} {apagado} opciones={horasCon(d.cierra).map((h) => ({ valor: h, texto: h }))} />
+            {#if minutos(d.cierra) < minutos(d.abre)}
+              <span class="siguiente" in:entra>del {NOMBRES[(i + 1) % 7].toLowerCase()}</span>
+            {/if}
+          </span>
         {/if}
       </span>
     </div>
@@ -167,7 +183,12 @@
     min-width: 0;
   }
 
-
+  .horas-dentro {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+  }
 
   .a {
     font-size: 12.5px;

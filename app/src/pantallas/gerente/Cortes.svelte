@@ -1,30 +1,40 @@
 <!--
-  Cortes y reportes (pieza 5; libreta 5; decidido el 18 de octubre de 2026; maqueta
-  7J6LvYWiktRnGxNugbuaoe). Se ordena por día de negocio: se abre en hoy y las flechas van a otros
-  días. A la izquierda, el corte de cada turno que se abrió ese día (cortes/Turno). A la derecha, lo
-  que se descontó y se canceló en las cuentas de ese día, con quién lo pidió y quién lo autorizó, y
-  los otros cambios (mesas, juntas, descuentos quitados, la hora de corte). Todo sale de
-  reporte_del_dia (migración reportes): los totales los suma Postgres. Solo el gerente lo ve.
-
-  Se lee al abrir, al cambiar de día, al regresar a la pestaña y, mientras se ve hoy, cada vez que
+  Cortes y reportes (pieza 5; libreta 5; decidido el 18 de octubre de 2026). Se ordena por día de negocio: se abre en
+  hoy y las flechas van a otros días. Todo sale de reporte_del_dia (migración reportes): los totales los suma Postgres.
+  Solo el gerente lo ve. Se lee al abrir, al cambiar de día, al regresar a la pestaña y, mientras se ve hoy, cada vez que
   cambia una cuenta, un pago o el turno (tiempo real).
+
+  Con la estructura de la Caja a lo ancho (14 nov 2026; caja/Caja.svelte y caja/caja/, maqueta de la adaptabilidad
+  GBWEGCsQFcwKkWm7Qe9FPA v4, pantalla «Caja»; notas en planes/trabajo/rediseno/cortes.md). Arriba, la barra del panel con
+  el día y sus flechas, «Hoy» (en otro día), la hora de corte (cortes/HoraCorte) y la sucursal. A la izquierda la
+  búsqueda con el filtro Todo el día · Turnos · Descuentos · Cancelaciones · Otros cambios y la tabla de Mi menú: primero
+  cada turno que se abrió ese día con su sello, luego lo que pasó en sus cuentas, por hora (cortes/TablaDia). A la
+  derecha la tarjeta de 400: sin nada elegido, lo descontado y lo cancelado del día (cortes/Resumen); un turno, su corte
+  (cortes/Turno); lo demás, su detalle con quién lo pidió y quién lo autorizó (cortes/Detalle). Abajo la barra de Crear
+  anuncios dice lo que se ve. Las piezas de pos/ancho/ se usan tal cual, sin tocarlas.
 -->
 <script lang="ts">
   import { onMount } from 'svelte';
   import BarraArriba from '../../diseno/BarraArriba.svelte';
+  import Boton from '../../diseno/Boton.svelte';
   import BotonCuadro from '../../diseno/BotonCuadro.svelte';
+  import CajaError from '../../diseno/CajaError.svelte';
   import Esqueleto from '../../diseno/Esqueleto.svelte';
-  import Icono from '../../diseno/Icono.svelte';
-  import Tarjeta from '../../diseno/Tarjeta.svelte';
-  import { esDeRed, SIN_CONEXION } from '../../lib/errores';
-  import { diaAnterior, diaConNombre, diaSiguiente, dinero, enZona, pesos, plural } from '../../lib/formato';
+  import { ALGO_SALIO_PANEL, esDeRed, SIN_CONEXION } from '../../lib/errores';
+  import { filasDeLaUltimaVez, recordarFilas } from '../../lib/esqueletos';
+  import { diaAnterior, diaConNombre, diaSiguiente, plural } from '../../lib/formato';
   import type { Sucursal } from '../../lib/gerente';
   import { escuchar } from '../../lib/pos';
-  import { leerReporte, type Cancelacion, type Descuento, type OtroCambio, type ReporteDia } from '../../lib/reportes';
+  import { leerReporte, type ReporteDia } from '../../lib/reportes';
   import { supabase } from '../../lib/supabase';
+  import Lado from '../pos/ancho/Lado.svelte';
+  import '../pos/ancho/ancho.css';
   import CajaSucursales from './CajaSucursales.svelte';
+  import Detalle from './cortes/Detalle.svelte';
+  import { cuantosDe, filasDelDia, filtrar, resumenAbajo, type FilaCortes, type FiltroCortes } from './cortes/filas';
   import HoraCorte from './cortes/HoraCorte.svelte';
-  import { quienLoHizo } from './cortes/quien';
+  import Resumen from './cortes/Resumen.svelte';
+  import TablaDia from './cortes/TablaDia.svelte';
   import Turno from './cortes/Turno.svelte';
 
   let {
@@ -40,13 +50,62 @@
   let lectura = $state<Lectura>({ estado: 'leyendo' });
   // La hora de corte de la sucursal, de la última lectura: el botón de la barra no la pierde al cambiar de día.
   let horaCorte = $state<number | null>(null);
+  // El último día que se leyó, para que las flechas sigan sirviendo si una lectura falla.
+  let ultimo = $state<{ dia: string; hoy: string } | null>(null);
+
+  let filtro = $state<FiltroCortes>('todo');
+  let busqueda = $state('');
+  // La clave del renglón que se ve en la tarjeta de la derecha; vacía, el resumen del día.
+  let elegida = $state<string | null>(null);
 
   const reporte = $derived(lectura.estado === 'listo' ? lectura.reporte : null);
-  const esHoy = $derived(dia === null || (reporte !== null && reporte.dia === reporte.hoy));
+  const leyendo = $derived(lectura.estado === 'leyendo');
+  const todas = $derived(reporte ? filasDelDia(reporte) : []);
+  const filas = $derived(filtrar(todas, filtro, busqueda));
+  const cuantos = $derived(cuantosDe(todas));
+  const fila = $derived(elegida ? (todas.find((f) => f.clave === elegida) ?? null) : null);
+  // svelte-ignore state_referenced_locally
+  const filasAntes = filasDeLaUltimaVez(`cortes-${sucursal.id}`);
 
   const estado = $derived.by(() => {
+    if (lectura.estado === 'leyendo') return { texto: 'Cargando el día…', vivo: true };
     if (lectura.estado === 'error') return { texto: lectura.deRed ? 'Sin conexión' : 'No se pudo leer', vivo: false };
     return null;
+  });
+
+  // Lo que dice abajo del día. Antes de la hora de corte el día de negocio sigue siendo el de ayer: ahí no dice «Hoy»,
+  // porque Inicio ya enseña la fecha del calendario (detalle visto en la prueba de la pieza 5).
+  const subtitulo = $derived.by(() => {
+    if (!reporte) return '';
+    const h = reporte.hora_corte;
+    if (reporte.dia !== reporte.hoy) return `Día de negocio · de ${h}:00 a ${h}:00`;
+    if (sucursal.hoy > reporte.hoy) return `En curso · hasta hoy a las ${h}:00`;
+    return `Hoy · desde las ${h}:00`;
+  });
+
+  const vacio = $derived.by(() => {
+    if (busqueda.trim()) return { titulo: 'Nada con eso', texto: 'Prueba con otra palabra, o con otro filtro.' };
+    if (filtro === 'turnos') return { titulo: 'Este día no se abrió la caja.', texto: 'Los cortes salen aquí cuando alguien de la caja o un gerente abre y cierra un turno.' };
+    if (filtro === 'descuentos') return { titulo: 'Ninguna cuenta cerrada lleva descuento.', texto: 'Aquí salen con quién los pidió y quién los autorizó.' };
+    if (filtro === 'cancelaciones') return { titulo: 'Nada se canceló.', texto: 'Aquí salen con quién lo pidió y quién lo autorizó.' };
+    if (filtro === 'otros') return { titulo: 'Ningún otro cambio.', texto: 'Aquí salen los cambios de mesa, las mesas juntas, los descuentos quitados y la hora de corte.' };
+    return {
+      titulo: 'Nada pasó este día.',
+      texto: 'Aquí salen los cortes de cada turno, los descuentos, las cancelaciones y los cambios de mesa, con quién los pidió y quién los autorizó.',
+    };
+  });
+
+  // Lo que dice la barra de abajo.
+  const abajo = $derived.by(() => {
+    if (fila) return { fuerte: fila.titulo, chico: [fila.tipo, fila.sub, fila.quien].filter(Boolean).join(' · ') };
+    if (!reporte) return null;
+    const { fuerte } = resumenAbajo(reporte);
+    const cosas = [
+      cuantos.descuentos ? plural(cuantos.descuentos, 'descuento', 'descuentos') : '',
+      cuantos.cancelaciones ? plural(cuantos.cancelaciones, 'cancelación', 'cancelaciones') : '',
+      cuantos.otros ? plural(cuantos.otros, 'otro cambio', 'otros cambios') : '',
+    ].filter(Boolean);
+    return { fuerte, chico: cosas.length ? cosas.join(' · ') : 'Nada se descontó ni se canceló' };
   });
 
   let vuelta = 0;
@@ -55,10 +114,14 @@
     const esta = ++vuelta;
     try {
       const r = await leerReporte(sucursal.id, dia);
-      if (esta === vuelta) {
-        lectura = { estado: 'listo', reporte: r };
-        horaCorte = r.hora_corte;
-      }
+      if (esta !== vuelta) return;
+      lectura = { estado: 'listo', reporte: r };
+      horaCorte = r.hora_corte;
+      ultimo = { dia: r.dia, hoy: r.hoy };
+      const nuevas = filasDelDia(r);
+      recordarFilas(`cortes-${sucursal.id}`, nuevas.length);
+      // Si lo que se veía a la derecha ya no está (otra lectura), regresa al resumen.
+      if (elegida && !nuevas.some((f) => f.clave === elegida)) elegida = null;
     } catch (error) {
       console.error('[cortes] no se pudo leer reporte_del_dia:', error);
       if (esta === vuelta) lectura = { estado: 'error', deRed: esDeRed(error) };
@@ -66,14 +129,20 @@
   }
 
   function ir(nuevo: string | null) {
-    dia = nuevo && reporte && nuevo >= reporte.hoy ? null : nuevo;
+    dia = nuevo && ultimo && nuevo >= ultimo.hoy ? null : nuevo;
+    elegida = null;
     lectura = { estado: 'leyendo' };
     leer();
   }
 
+  // Tocar un renglón lo enseña a la derecha; tocarlo otra vez regresa al resumen del día.
+  function alElegirFila(f: FilaCortes) {
+    elegida = elegida === f.clave ? null : f.clave;
+  }
+
   let espera: ReturnType<typeof setTimeout> | undefined;
   function programar() {
-    if (!esHoy) return;
+    if (dia !== null && reporte && reporte.dia !== reporte.hoy) return;
     clearTimeout(espera);
     espera = setTimeout(leer, 400);
   }
@@ -91,234 +160,88 @@
       document.removeEventListener('visibilitychange', alVolver);
     };
   });
-
-  const hora = (momento: string | null) => (momento && reporte ? enZona(momento, reporte.zona).hora.replace(/^0(\d)/, '$1') : '');
-
-  // «Mesa 4», «Para llevar · Sr. Ramírez», «Domicilio · Doña Mari».
-  function cuentaDe(x: { tipo: string; cuenta: string }): string {
-    if (x.tipo === 'para_llevar') return `Para llevar · ${x.cuenta}`;
-    if (x.tipo === 'domicilio') return `Domicilio · ${x.cuenta}`;
-    return x.cuenta;
-  }
-
-  const valor = (tipo: 'porcentaje' | 'pesos', v: number) => (tipo === 'porcentaje' ? `${v} %` : dinero(v));
-
-  function textoDescuento(d: Descuento): { que: string; det: string } {
-    return {
-      que: `${d.renglon_id ? d.nombre : 'Toda la cuenta'} · ${valor(d.descuento_tipo, d.descuento_valor)}`,
-      det: [
-        cuentaDe(d),
-        d.folio ? `Folio ${d.folio}` : '',
-        `«${d.motivo}»`,
-        quienLoHizo(d.pidio_id, d.pidio, d.autorizo_id, d.autorizo),
-        hora(d.created_at),
-      ].filter(Boolean).join(' · '),
-    };
-  }
-
-  function textoCancelacion(c: Cancelacion): { que: string; det: string } {
-    const quien = quienLoHizo(c.pidio_id, c.pidio, c.autorizo_id, c.autorizo);
-    if (c.que === 'cuenta') {
-      return {
-        que: `Toda la cuenta · ${cuentaDe(c)}`,
-        det: [`«${c.motivo}»`, quien, hora(c.created_at)].filter(Boolean).join(' · '),
-      };
-    }
-    return {
-      que: `${c.cantidad} ${c.nombre}`,
-      det: [
-        cuentaDe(c),
-        c.folio ? `Folio ${c.folio}` : '',
-        c.estado === 'abierta' ? 'abierta' : c.estado === 'cancelada' ? 'cancelada' : '',
-        `«${c.motivo}»`,
-        quien,
-        hora(c.created_at),
-      ].filter(Boolean).join(' · '),
-    };
-  }
-
-  function textoOtro(o: OtroCambio): string {
-    const d = o.detalle as Record<string, string | number | null | undefined>;
-    if (o.accion === 'cambiar_mesa') return `Cambió de mesa: de ${d.de} a ${d.a}`;
-    if (o.accion === 'juntar_mesas') return `Juntó ${d.de} con ${d.a}`;
-    if (o.accion === 'cambiar_hora_corte') return `Cambió la hora de corte de ${d.de}:00 a ${d.a}:00`;
-    const de = d.nombre ? `${d.nombre}${o.cuenta ? ` en ${o.cuenta}` : ''}` : (o.cuenta ?? 'la cuenta');
-    return `Quitó el descuento de ${de}`;
-  }
-
-  function notaCancelaciones(r: ReporteDia): string {
-    const { renglones, cuentas } = r.cancelaciones;
-    const partes = [renglones ? plural(renglones, 'renglón', 'renglones') : '', cuentas ? plural(cuentas, 'cuenta', 'cuentas') : ''];
-    return partes.filter(Boolean).join(' y ') || 'Ninguna';
-  }
-
-  const nada = $derived(
-    reporte !== null && !reporte.descuentos.lista.length && !reporte.cancelaciones.lista.length && !reporte.otros.length,
-  );
 </script>
 
-<BarraArriba titulo="Cortes y reportes" {estado}>
-  {#snippet junto()}
-    <div class="dia">
-      <BotonCuadro
-        icono="anterior"
-        ayuda="Día anterior"
-        apagado={!reporte}
-        onclick={() => reporte && ir(diaAnterior(reporte.dia))}
-      />
-      <span class="dia-texto">
-        {#if lectura.estado === 'leyendo'}<Esqueleto ancho="120px" alto="12px" />{:else}{reporte ? diaConNombre(reporte.dia) : '—'}{/if}
-        <small>
-          {#if lectura.estado === 'leyendo'}
-            <Esqueleto ancho="132px" alto="9px" />
-          {:else if reporte}
-            {reporte.dia === reporte.hoy ? `Hoy · desde las ${reporte.hora_corte}:00` : `Día de negocio · de ${reporte.hora_corte}:00 a ${reporte.hora_corte}:00`}
+<div class="pos-ancho cortes">
+  <BarraArriba titulo="Cortes y reportes" {estado}>
+    {#snippet junto()}
+      <div class="dia">
+        <BotonCuadro icono="anterior" ayuda="Día anterior" apagado={!ultimo || leyendo} onclick={() => ultimo && ir(diaAnterior(ultimo.dia))} />
+        <span class="dia-texto">
+          {#if leyendo || !reporte}
+            <span class="linea"><Esqueleto ancho="150px" alto="12px" /></span>
+            <small><Esqueleto ancho="132px" alto="9px" /></small>
+          {:else}
+            <span class="linea">{diaConNombre(reporte.dia)}</span>
+            <small>{subtitulo}</small>
           {/if}
-        </small>
-      </span>
-      <BotonCuadro
-        icono="siguiente"
-        ayuda="Día siguiente"
-        apagado={!reporte || reporte.dia === reporte.hoy}
-        onclick={() => reporte && ir(diaSiguiente(reporte.dia))}
-      />
-    </div>
-    {#if reporte && reporte.dia !== reporte.hoy}
-      <button type="button" class="boton-chico" onclick={() => ir(null)}><Icono nombre="hoy" tamano={14} />Hoy</button>
+        </span>
+        <BotonCuadro
+          icono="siguiente"
+          ayuda="Día siguiente"
+          apagado={!ultimo || leyendo || ultimo.dia >= ultimo.hoy}
+          onclick={() => ultimo && ir(diaSiguiente(ultimo.dia))}
+        />
+      </div>
+    {/snippet}
+    {#if dia !== null}
+      <Boton etiqueta="Hoy" icono="hoy" onclick={() => ir(null)} />
     {/if}
-  {/snippet}
-  <!-- La hora de corte vive aquí desde el 12 nov 2026 (salió de Ajustes): justo antes de la sucursal. -->
-  <HoraCorte restauranteId={sucursal.id} hora={horaCorte} alGuardar={leer} />
-  <CajaSucursales {sucursales} actual={sucursal} {alElegir} />
-</BarraArriba>
+    <!-- La hora de corte vive aquí desde el 12 nov 2026 (salió de Ajustes): justo antes de la sucursal. -->
+    <HoraCorte restauranteId={sucursal.id} hora={horaCorte} alGuardar={leer} />
+    <CajaSucursales {sucursales} actual={sucursal} {alElegir} />
+  </BarraArriba>
 
-<main class="columnas">
-  <Tarjeta como="section" class="tarjeta-cortes" aria-label="Cortes de caja">
-    <div class="fila-titulo">
-      <div>
-        <span class="titulo-tarjeta">Cortes de caja</span>
-        <span class="nota">Cada turno que se abrió este día, con su corte.</span>
-      </div>
-      {#if lectura.estado === 'leyendo'}<span class="etiqueta"><Esqueleto ancho="56px" alto="10px" /></span>
-      {:else if reporte}<span class="etiqueta">{plural(reporte.turnos.length, 'TURNO', 'TURNOS')}</span>{/if}
-    </div>
-    <div class="desliza">
-      {#if lectura.estado === 'leyendo'}
-        <!-- El esqueleto (regla «Los esqueletos»): un turno con su forma. -->
-        <span class="solo-lector">Cargando los cortes de este día…</span>
-        <div class="turno-esqueleto" aria-hidden="true">
-          <div class="te-cabeza">
-            <Esqueleto ancho="36px" alto="36px" redondo="11px" />
-            <span class="te-textos"><Esqueleto ancho="140px" alto="12px" /><Esqueleto ancho="180px" alto="10px" /></span>
-          </div>
-          {#each ['70%', '55%', '62%', '48%'] as ancho, i (i)}
-            <div class="te-fila"><Esqueleto {ancho} alto="10px" /><Esqueleto ancho="64px" alto="10px" /></div>
-          {/each}
-        </div>
-      {:else if lectura.estado === 'error'}
-        <div class="vacio">
-          <b>{lectura.deRed ? 'Sin conexión.' : 'No se pudo leer este día.'}</b>
-          <span>{lectura.deRed ? SIN_CONEXION : 'Intenta de nuevo en un momento.'}</span>
-        </div>
-      {:else if reporte && !reporte.turnos.length}
-        <div class="vacio">
-          <b>Este día no se abrió la caja.</b>
-          <span>Los cortes salen aquí cuando alguien de la caja o un gerente abre y cierra un turno.</span>
-        </div>
-      {:else if reporte}
-        {#each reporte.turnos as t (t.id)}
-          <Turno turno={t} zona={reporte.zona} />
-        {/each}
-      {/if}
-    </div>
-  </Tarjeta>
-
-  <Tarjeta como="section" class="tarjeta-cortes" aria-label="Descuentos y cancelaciones">
-    <div class="fila-titulo">
-      <div>
-        <span class="titulo-tarjeta">Descuentos y cancelaciones</span>
-        <span class="nota">De las cuentas de este día, con quién lo pidió y quién lo autorizó.</span>
+  {#if lectura.estado === 'error'}
+    <div class="cuerpo-ancho sin-abajo">
+      <div class="medio-ancho">
+        <CajaError mensaje={lectura.deRed ? SIN_CONEXION : ALGO_SALIO_PANEL} />
+        <Boton etiqueta="Intentar de nuevo" icono="actualizar" onclick={() => ((lectura = { estado: 'leyendo' }), leer())} />
       </div>
     </div>
-    <div class="desliza">
-      {#if lectura.estado === 'leyendo'}
-        <span class="solo-lector">Cargando los descuentos y cancelaciones…</span>
-        <div class="resumen" aria-hidden="true">
-          {#each ['DESCUENTOS', 'CANCELACIONES'] as e (e)}
-            <div class="cifra">
-              <span class="etiqueta">{e}</span>
-              <span class="cifra-valor"><Esqueleto ancho="88px" alto="20px" /></span>
-              <span class="cifra-nota"><Esqueleto ancho="120px" alto="10px" /></span>
-            </div>
-          {/each}
-        </div>
-        {#each ['DESCUENTOS', 'CANCELACIONES', 'OTROS CAMBIOS'] as e (e)}
-          <div class="bloque" aria-hidden="true">
-            <span class="etiqueta">{e}</span>
-            <div class="lista">
-              <div class="f"><Esqueleto ancho="55%" alto="10px" /><Esqueleto ancho="48px" alto="10px" /></div>
-            </div>
-          </div>
-        {/each}
-      {:else if reporte && nada}
-        <div class="vacio">
-          <b>Nada se descontó ni se canceló este día.</b>
-          <span>Aquí salen los descuentos, las cancelaciones y los cambios de mesa, con quién los pidió y quién los autorizó.</span>
-        </div>
-      {:else if reporte}
-        <div class="resumen">
-          <div class="cifra">
-            <span class="etiqueta">DESCUENTOS</span>
-            <span class="cifra-valor">{pesos(reporte.descuentos.total)}</span>
-            <span class="cifra-nota">
-              {reporte.descuentos.cuentas ? `En ${plural(reporte.descuentos.cuentas, 'cuenta cerrada', 'cuentas cerradas')}` : 'En ninguna cuenta cerrada'}
-            </span>
-          </div>
-          <div class="cifra">
-            <span class="etiqueta">CANCELACIONES</span>
-            <span class="cifra-valor">{pesos(reporte.cancelaciones.total)}</span>
-            <span class="cifra-nota">{notaCancelaciones(reporte)}</span>
-          </div>
-        </div>
+  {:else}
+    <div class="cuerpo-ancho">
+      <div class="dos">
+        <TablaDia
+          {filas}
+          bind:busqueda
+          filtroElegido={filtro}
+          {cuantos}
+          cargando={leyendo}
+          filasEsqueleto={filasAntes}
+          {elegida}
+          {vacio}
+          alFiltro={(f) => (filtro = f)}
+          alElegir={alElegirFila}
+        />
 
-        <div class="bloque">
-          <span class="etiqueta">DESCUENTOS</span>
-          <div class="lista">
-            {#each reporte.descuentos.lista as d (`${d.venta_id}-${d.renglon_id}`)}
-              {@const x = textoDescuento(d)}
-              <div class="f"><span><b>{x.que}</b><small>{x.det}</small></span><span class="n">−{pesos(d.descuento)}</span></div>
-            {:else}
-              <p class="vacia">Ninguna cuenta cerrada de este día lleva descuento.</p>
-            {/each}
-          </div>
-        </div>
-
-        <div class="bloque">
-          <span class="etiqueta">CANCELACIONES</span>
-          <div class="lista">
-            {#each reporte.cancelaciones.lista as c (`${c.que}-${c.venta_id}-${c.renglon_id}`)}
-              {@const x = textoCancelacion(c)}
-              <div class="f"><span><b>{x.que}</b><small>{x.det}</small></span><span class="n tachado">{pesos(c.importe)}</span></div>
-            {:else}
-              <p class="vacia">Nada se canceló.</p>
-            {/each}
-          </div>
-        </div>
-
-        <div class="bloque">
-          <span class="etiqueta">OTROS CAMBIOS</span>
-          <div class="lista">
-            {#each reporte.otros as o, i (i)}
-              <div class="f"><span><b>{textoOtro(o)}</b><small>{[o.quien, hora(o.created_at)].filter(Boolean).join(' · ')}</small></span></div>
-            {:else}
-              <p class="vacia">Ninguno.</p>
-            {/each}
-          </div>
-        </div>
-      {/if}
+        {#if leyendo || !reporte}
+          <Lado clave="leyendo"><Resumen reporte={null} cargando /></Lado>
+        {:else if fila?.que === 'turno'}
+          <Lado clave={fila.clave}><Turno turno={fila.turno} sello={fila.sello} zona={reporte.zona} /></Lado>
+        {:else if fila}
+          <Lado clave={fila.clave}><Detalle {fila} zona={reporte.zona} /></Lado>
+        {:else}
+          <Lado clave="resumen-{reporte.dia}"><Resumen {reporte} /></Lado>
+        {/if}
+      </div>
     </div>
-  </Tarjeta>
-</main>
+
+    <!-- La barra de abajo de Crear anuncios: dice lo que se ve a la derecha. -->
+    <footer class="barra-abajo">
+      {#key `${leyendo}-${elegida ?? ''}`}
+        <div class="barra-contenido">
+          {#if leyendo || !abajo}
+            <div class="estado" aria-hidden="true"><b><Esqueleto ancho="96px" alto="13px" /></b><small><Esqueleto ancho="220px" alto="11px" /></small></div>
+          {:else}
+            <div class="estado" role="status"><b>{abajo.fuerte}</b><small>{abajo.chico}</small></div>
+            {#if fila}<Boton etiqueta="Cerrar" icono="cerrar" onclick={() => (elegida = null)} />{/if}
+          {/if}
+        </div>
+      {/key}
+    </footer>
+  {/if}
+</div>
 
 <style>
   .dia {
@@ -329,257 +252,27 @@
 
   .dia-texto {
     min-width: 196px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
     text-align: center;
+    white-space: nowrap;
+  }
+
+  .dia-texto .linea {
     font-size: 13.5px;
     font-weight: 700;
-    white-space: nowrap;
+    line-height: 17px;
   }
 
   .dia-texto small {
-    display: block;
     font-family: var(--mono);
     font-size: 10px;
     font-weight: 400;
+    line-height: 12px;
     letter-spacing: 0.1em;
     color: var(--tenue);
     text-transform: uppercase;
-  }
-
-  .boton-chico {
-    height: 32px;
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 0 11px;
-    border-radius: 11px;
-    border: 1px solid var(--linea);
-    background: transparent;
-    color: var(--texto);
-    font-size: 12.5px;
-    font-weight: 600;
-    white-space: nowrap;
-    transition: opacity 150ms;
-  }
-
-  .boton-chico:hover {
-    opacity: 0.86;
-  }
-
-  .columnas {
-    position: absolute;
-    left: var(--vista-izquierda);
-    right: var(--vista-derecha);
-    top: var(--vista-arriba);
-    bottom: var(--vista-abajo);
-    display: grid;
-    grid-template-columns: minmax(0, 1.18fr) minmax(0, 1fr);
-    gap: 16px;
-  }
-
-  .columnas > :global(.tarjeta-cortes) {
-    min-width: 0;
-    min-height: 0;
-    padding: 20px;
-    display: flex;
-    flex-direction: column;
-    gap: 14px;
-  }
-
-  .fila-titulo {
-    flex: none;
-    display: flex;
-    align-items: flex-end;
-    justify-content: space-between;
-    gap: 16px;
-  }
-
-  .fila-titulo > div {
-    min-width: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-  }
-
-  .titulo-tarjeta {
-    font-size: 14.5px;
-    font-weight: 700;
-  }
-
-  .nota {
-    font-size: 12px;
-    font-weight: 500;
-    line-height: 1.45;
-    color: var(--tenue);
-  }
-
-  .desliza {
-    flex: 1;
-    min-height: 0;
-    overflow-y: auto;
-    display: flex;
-    flex-direction: column;
-    gap: 14px;
-    scrollbar-width: thin;
-  }
-
-  .vacio {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-    padding: 24px;
-    text-align: center;
-  }
-
-  .vacio b {
-    font-size: 14.5px;
-    font-weight: 700;
-  }
-
-  .vacio span {
-    max-width: 40ch;
-    font-size: 12.5px;
-    line-height: 1.45;
-    color: var(--suave);
-  }
-
-  /* El esqueleto de un turno: la tarjeta de cortes/Turno.svelte con barras grises. */
-  .turno-esqueleto {
-    flex: none;
-    padding: 16px;
-    border-radius: 18px;
-    border: 1px solid var(--linea);
-    background: var(--solido);
-    display: flex;
-    flex-direction: column;
-    gap: 14px;
-  }
-
-  .te-cabeza {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-  }
-
-  .te-textos {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-  }
-
-  .te-fila {
-    display: flex;
-    justify-content: space-between;
-    gap: 12px;
-  }
-
-  .resumen {
-    flex: none;
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 12px;
-  }
-
-  .cifra {
-    min-width: 0;
-    padding: 14px 16px;
-    border-radius: 18px;
-    background: var(--solido);
-    border: 1px solid var(--linea);
-    display: flex;
-    flex-direction: column;
-    gap: 5px;
-  }
-
-  .cifra-valor {
-    font-size: 24px;
-    font-weight: 800;
-    letter-spacing: -0.5px;
-    line-height: 30px;
-    font-variant-numeric: tabular-nums;
-    white-space: nowrap;
-  }
-
-  .cifra-nota {
-    font-size: 12px;
-    font-weight: 500;
-    color: var(--suave);
-  }
-
-  .bloque {
-    min-width: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-  }
-
-  .bloque > .etiqueta {
-    display: block;
-    min-height: 18px;
-    padding: 0 2px;
-  }
-
-  .lista {
-    display: flex;
-    flex-direction: column;
-    border: 1px solid var(--linea);
-    border-radius: 14px;
-  }
-
-  .lista .f {
-    display: flex;
-    align-items: baseline;
-    justify-content: space-between;
-    gap: 12px;
-    padding: 10px 12px;
-    border-top: 1px solid var(--linea);
-    font-size: 12.5px;
-  }
-
-  .lista .f:first-child {
-    border-top: 0;
-  }
-
-  .lista .f > span:first-child {
-    min-width: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 3px;
-  }
-
-  .lista b {
-    font-weight: 700;
-  }
-
-  .lista small {
-    font-size: 11px;
-    line-height: 1.45;
-    color: var(--tenue);
-  }
-
-  .n {
-    font-family: var(--mono);
-    font-variant-numeric: tabular-nums;
-    white-space: nowrap;
-  }
-
-  .tachado {
-    text-decoration: line-through;
-    text-decoration-color: var(--tenue);
-  }
-
-  .vacia {
-    margin: 0;
-    padding: 12px;
-    font-size: 12px;
-    color: var(--tenue);
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .boton-chico {
-      transition: none;
-    }
   }
 </style>

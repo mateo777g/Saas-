@@ -11,7 +11,13 @@
     recientes,
     alIr,
     alCerrar,
-  }: { recientes: VistaGerente[]; alIr: (destino: Destino) => void; alCerrar?: () => void } = $props();
+    sinMesas = false,
+  }: {
+    recientes: VistaGerente[];
+    alIr: (destino: Destino) => void;
+    alCerrar?: () => void;
+    sinMesas?: boolean; // sin mesas no se ofrece «Agregar mesa» (adaptabilidad, «Lo que decidí yo» 5)
+  } = $props();
 
   let base = $state<{ enfocar: () => void } | null>(null);
 
@@ -24,13 +30,13 @@
   });
 
   const vistas = (Object.keys(VISTAS) as VistaGerente[]).map(deVista);
-  const acciones: RenglonBusqueda[] = ACCIONES.map((a) => ({
+  const acciones: RenglonBusqueda[] = $derived(ACCIONES.filter((a) => !(sinMesas && a.destino.nuevo === 'mesa')).map((a) => ({
     clave: a.texto,
     texto: a.texto,
     de: a.de,
     icono: a.icono,
     alPicar: () => alIr(a.destino),
-  }));
+  })));
   const deRecientes = $derived(recientes.map(deVista));
 
   export function enfocar() {

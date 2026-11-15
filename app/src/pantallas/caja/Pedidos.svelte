@@ -8,6 +8,12 @@
   Tiene el ancho del celular, como la caja. La abren la pestaña Pedidos del aparato de quien es de
   caja y la vista Pedidos del panel del gerente; por eso recibe la conexión y la vigía (lib/
   pedidos.svelte.ts), que ya leyó los pedidos y es la que suena.
+
+  Con la adaptabilidad (encuesta 15 «A, Tablero»; planes/trabajo/adaptabilidad/pedidos-ancho.md): cuando le dan unos
+  900 px o más, se acomoda sola a lo ancho (pedidos/Tablero.svelte): los pedidos en tarjetas, uno junto a otro, y los
+  atendidos en una tarjeta a la derecha. Las hojas de confirmar y rechazar son las mismas, al centro y de 440. Con
+  `franjaAfuera`, a lo ancho no pinta su cabeza (el lugar, las pestañas y la franja con «Pausar pedidos»): la pone quien la
+  abre en su barra de arriba (el chip con pedidos/franja.ts y el botón con `vigia.pausar()`), y aquí queda la línea gris.
 -->
 <script lang="ts">
   import type { SupabaseClient } from '@supabase/supabase-js';
@@ -18,20 +24,13 @@
   import { ALGO_SALIO_PANEL, esDeRed, SIN_CONEXION } from '../../lib/errores';
   import { filasDeLaUltimaVez, recordarFilas } from '../../lib/esqueletos';
   import { dinero, enZona } from '../../lib/formato';
-  import {
-    confirmarPedido,
-    leerEnvios,
-    pausarPedidos,
-    rechazarPedido,
-    type Envio,
-    type Horario,
-    type PorConfirmar,
-    type VigiaPedidos,
-  } from '../../lib/pedidos.svelte';
-  import { FalloPos, leerZona } from '../../lib/pos';
+  import { confirmarPedido, leerEnvios, rechazarPedido, type Envio, type PorConfirmar, type VigiaPedidos } from '../../lib/pedidos.svelte';
+  import { areasDeLaCuenta, areasDelPedido, FalloPos, leerZona, textoMandar } from '../../lib/pos';
   import Hoja from '../pos/Hoja.svelte';
   import Lugar from '../pos/Lugar.svelte';
   import '../pos/pos.css';
+  import { franjaDe } from './pedidos/franja';
+  import Tablero from './pedidos/Tablero.svelte';
 
   let {
     cliente,
@@ -40,6 +39,8 @@
     vigia,
     linea = '',
     enPanel = false,
+    franjaAfuera = false,
+    errorArriba = null,
     pestanas,
   }: {
     cliente: SupabaseClient;
@@ -48,13 +49,23 @@
     vigia: VigiaPedidos;
     linea?: string; // quién está: «Lupita Hernández · Caja»; en el panel no se pinta
     enPanel?: boolean;
+    // A lo ancho, la cabeza va en la barra de arriba de quien la abre.
+    franjaAfuera?: boolean;
+    // El error de lo que quien la abre tiene en su barra de arriba («Hago envíos» del panel): sale con los de aquí.
+    errorArriba?: string | null;
     pestanas?: Snippet;
   } = $props();
+
+  // A lo ancho desde unos 900 px («Lo que decidí yo» 7 de la adaptabilidad): lo que mide por dentro.
+  let medida = $state<DOMRectReadOnly>();
+  const ancho = $derived((medida?.width ?? 0) >= 900);
+  const conFranja = $derived(!(ancho && franjaAfuera));
 
   const MOTIVOS = ['Pedido falso', 'Ya cerramos', 'No tenemos lo que pidió', 'Lo canceló el cliente', 'Otro motivo'];
 
   type Hojas =
-    | { tipo: 'confirmar'; pedido: PorConfirmar; envios: Envio[] | null; envio: number | null | undefined }
+    // areas: a dónde irá (areasDelPedido); null mientras se lee o si no se pudo leer.
+    | { tipo: 'confirmar'; pedido: PorConfirmar; envios: Envio[] | null; envio: number | null | undefined; areas: string[] | null }
     | { tipo: 'rechazar'; pedido: PorConfirmar; motivo: string | null; texto: string };
 
   let zona = $state('America/Mexico_City');
@@ -63,6 +74,8 @@
   let error = $state<string | null>(null);
   let ocupado = $state(false);
   let globo = $state<string | null>(null);
+  // Los errores de arriba, sin repetir el mismo texto dos veces (sin red, todos dicen lo mismo).
+  const errores = $derived([...new Set([error, vigia.errorPausa, errorArriba].filter((e): e is string => !!e))]);
   // Para «llegó hace 3 min»: la hora de Postgres al leer, y el reloj que solo avanza desde entonces.
   let reloj = $state(performance.now());
 
@@ -71,8 +84,19 @@
   // En el panel, el esqueleto de la primera lectura (regla «Los esqueletos» del panel; el aparato sigue con su texto):
   // tantos pedidos por confirmar como había la última vez, hasta 3.
   const esqueletoPedidos = $derived(enPanel ? Math.min(3, filasDeLaUltimaVez(`pedidos-${restauranteId}`)) : 0);
+  // A lo ancho caben más: hasta 6 tarjetas y los atendidos de la última vez.
+  const esqueletoAncho = $derived(
+    enPanel
+      ? {
+          pedidos: Math.min(6, filasDeLaUltimaVez(`pedidos-${restauranteId}`)),
+          atendidos: filasDeLaUltimaVez(`atendidos-${restauranteId}`),
+        }
+      : null,
+  );
   $effect(() => {
-    if (enPanel && datos) recordarFilas(`pedidos-${restauranteId}`, datos.por_confirmar.length);
+    if (!enPanel || !datos) return;
+    recordarFilas(`pedidos-${restauranteId}`, datos.por_confirmar.length);
+    recordarFilas(`atendidos-${restauranteId}`, datos.atendidos.length);
   });
   const hora = (momento: string) => enZona(momento, zona).hora;
   const pila = (nombre: string | null) => (nombre ?? '—').trim().split(/\s+/)[0];
@@ -97,32 +121,8 @@
     return `llegó a las ${hora(p.created_at)}`;
   }
 
-  // «a la 1:00», como el menú en línea.
-  const alas = (h: string) => (/^1:/.test(h) ? `a la ${h}` : `a las ${h}`);
-  const DIAS = ['lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado', 'domingo'];
-  function abre(e: Exclude<Horario, null | { abierto: true }>): string {
-    const { dia, hora: h, en_dias } = e.abre;
-    return `Abres ${en_dias === 0 ? 'hoy' : en_dias === 1 ? 'mañana' : `el ${DIAS[dia - 1]}`} ${alas(h)}`;
-  }
-
-  // La franja de arriba: recibiendo, en pausa, fuera de horario o sin lo que hace falta.
-  const franja = $derived.by(() => {
-    if (!datos) return null;
-    const ven = 'tus clientes ven «Por ahora no recibimos pedidos»';
-    if (datos.pausado) {
-      return { tono: 'pausa', titulo: 'Pedidos en pausa', sub: `Desde las ${hora(datos.pausado_at ?? datos.ahora)} · ${ven}` };
-    }
-    if (datos.recibe && datos.estado?.abierto) {
-      return { tono: 'vivo', titulo: 'Recibiendo pedidos', sub: `Por WhatsApp, desde tu menú · hasta ${alas(datos.estado.cierra).slice(2)}` };
-    }
-    if (datos.estado && !datos.estado.abierto) return { tono: 'apagado', titulo: 'Fuera de horario', sub: `${abre(datos.estado)} · ${ven}` };
-    const falta = datos.estado === null ? 'tu horario' : 'tu teléfono';
-    return {
-      tono: 'apagado',
-      titulo: 'No recibes pedidos',
-      sub: enPanel ? `Falta ${falta} en Tu restaurante` : `Falta ${falta}: tu gerente lo pone en Tu restaurante`,
-    };
-  });
+  // La franja de arriba: recibiendo, en pausa, fuera de horario o sin lo que hace falta (pedidos/franja.ts).
+  const franja = $derived(datos ? franjaDe(datos, zona, enPanel) : null);
 
   function avisar(texto: string) {
     globo = texto;
@@ -145,7 +145,13 @@
   async function abrirConfirmar(p: PorConfirmar) {
     error = null;
     errorHoja = null;
-    hoja = { tipo: 'confirmar', pedido: p, envios: p.tipo === 'domicilio' ? null : [], envio: p.tipo === 'domicilio' ? undefined : null };
+    hoja = { tipo: 'confirmar', pedido: p, envios: p.tipo === 'domicilio' ? null : [], envio: p.tipo === 'domicilio' ? undefined : null, areas: null };
+    // A dónde va, para la hoja; si no se puede leer, la hoja dice solo lo que siempre es cierto.
+    areasDelPedido(cliente, restauranteId, p.id)
+      .then((areas) => {
+        if (hoja?.tipo === 'confirmar' && hoja.pedido.id === p.id) hoja.areas = areas;
+      })
+      .catch((falla) => console.error('[pedidos] no se pudo leer a qué áreas va el pedido:', falla));
     if (p.tipo !== 'domicilio') return;
     try {
       const envios = await leerEnvios(cliente, restauranteId);
@@ -164,7 +170,14 @@
       const venta = await confirmarPedido(cliente, pedido.id, envio);
       hoja = null;
       if (venta === null) error = `El #${pedido.numero} era de ayer: se rechazó solo, «No se confirmó».`;
-      else avisar(`#${pedido.numero} confirmado · ya va a cocina`);
+      else {
+        // El aviso dice a dónde fue; si no se pudo leer, solo «confirmado» (el pedido ya está).
+        const areas = await areasDeLaCuenta(cliente, restauranteId, venta).catch((f) => {
+          console.error('[pedidos] no se pudieron leer las áreas del pedido confirmado:', f);
+          return [];
+        });
+        avisar(`#${pedido.numero} confirmado${areas.length ? ` · va a ${areas.join(' y ')}` : ''}`);
+      }
       releer();
     } catch (falla) {
       errorHoja = mensaje(falla, 'no se pudo confirmar el pedido');
@@ -197,19 +210,10 @@
     }
   }
 
-  // ─── Pausar ───
-  async function pausar() {
-    if (!datos) return;
-    ocupado = true;
+  // ─── Pausar: lo hace la vigía, para que el botón también pueda ir en la barra de arriba ───
+  function pausar() {
     error = null;
-    try {
-      await pausarPedidos(cliente, restauranteId, !datos.pausado);
-      await vigia.leer();
-    } catch (falla) {
-      error = mensaje(falla, 'no se pudieron pausar los pedidos');
-    } finally {
-      ocupado = false;
-    }
+    vigia.pausar();
   }
 
   onMount(() => {
@@ -221,11 +225,39 @@
   });
 </script>
 
-<div class="pos">
-  {#if !enPanel}<Lugar {restaurante} {linea} />{/if}
-  {@render pestanas?.()}
+{#snippet laFranja()}
+  {#if franja && datos}
+    <div class="ped-arriba {franja.tono}">
+      <span class="punto"></span>
+      <span class="t"><b>{franja.titulo}</b><span>{franja.sub}</span></span>
+      <button type="button" class="boton-chico" disabled={ocupado || vigia.pausando} onclick={pausar}>
+        {datos.pausado ? 'Reanudar' : 'Pausar pedidos'}
+      </button>
+    </div>
+  {/if}
+{/snippet}
 
-  {#if !datos}
+<div class="pos" class:ancho bind:contentRect={medida}>
+  {#if conFranja}
+    {#if !enPanel}<Lugar {restaurante} {linea} />{/if}
+    {@render pestanas?.()}
+  {/if}
+
+  {#if ancho}
+    {#if conFranja}{@render laFranja()}{/if}
+    <Tablero
+      {datos}
+      falloLectura={vigia.error && !datos}
+      esqueleto={esqueletoAncho}
+      {errores}
+      nota={conFranja ? null : (franja?.nota ?? null)}
+      {llego}
+      {hora}
+      alConfirmar={abrirConfirmar}
+      alRechazar={(p) => ((error = null), (errorHoja = null), (hoja = { tipo: 'rechazar', pedido: p, motivo: null, texto: '' }))}
+      alReintentar={releer}
+    />
+  {:else if !datos}
     <div class="desliza">
       {#if vigia.error}
         <CajaError mensaje={SIN_CONEXION} />
@@ -253,18 +285,10 @@
       </div>
     {/if}
   {:else}
-    {#if franja}
-      <div class="ped-arriba {franja.tono}">
-        <span class="punto"></span>
-        <span class="t"><b>{franja.titulo}</b><span>{franja.sub}</span></span>
-        <button type="button" class="boton-chico" disabled={ocupado} onclick={pausar}>
-          {datos.pausado ? 'Reanudar' : 'Pausar pedidos'}
-        </button>
-      </div>
-    {/if}
+    {@render laFranja()}
 
     <div class="desliza lista">
-      {#if error}<CajaError mensaje={error} />{/if}
+      {#each errores as e (e)}<CajaError mensaje={e} />{/each}
       <div class="bloque-cabeza"><span class="etq">Por confirmar · {datos.por_confirmar.length}</span></div>
       {#each datos.por_confirmar as p (p.id)}
         <div class="pedido">
@@ -276,17 +300,21 @@
             </span>
             <span class="tot">{dinero(p.total)}</span>
           </div>
-          {#if p.tipo === 'domicilio'}
+          <!-- El teléfono también para llevar (desde la migración tu_menu_en_linea el menú lo pide en los dos), como a lo
+               ancho; la dirección y «Paga con», solo a domicilio. -->
+          {#if p.cliente_telefono || p.tipo === 'domicilio'}
             <div class="ped-entrega">
               {#if p.cliente_telefono}
                 <span><Icono nombre="celular" tamano={14} /><span class="mono">{telefono(p.cliente_telefono)}</span></span>
               {/if}
-              <span>
-                <Icono nombre="ubicacion" tamano={14} />
-                <span>{p.cliente_direccion}{p.cliente_referencias ? ` · ${p.cliente_referencias}` : ''}</span>
-              </span>
-              {#if p.paga_con !== null}
-                <span><Icono nombre="billete" tamano={14} /><span>Paga con {dinero(p.paga_con)}</span></span>
+              {#if p.tipo === 'domicilio'}
+                <span>
+                  <Icono nombre="ubicacion" tamano={14} />
+                  <span>{p.cliente_direccion}{p.cliente_referencias ? ` · ${p.cliente_referencias}` : ''}</span>
+                </span>
+                {#if p.paga_con !== null}
+                  <span><Icono nombre="billete" tamano={14} /><span>Paga con {dinero(p.paga_con)}</span></span>
+                {/if}
               {/if}
             </div>
           {/if}
@@ -352,7 +380,7 @@
     {@const listo = h.envio !== undefined}
     <Hoja titulo="Confirmar #{p.numero}" sub="{p.cliente_nombre} · {dom ? 'A domicilio' : 'Para llevar'}" alCerrar={() => (hoja = null)}>
       <p class="confirmar-texto">
-        Se manda a cocina y queda como cuenta {dom ? 'a domicilio' : 'para llevar'} a tu nombre:
+        {h.areas?.length ? `Se manda a ${h.areas.join(' y ')} y queda` : 'Queda'} como cuenta {dom ? 'a domicilio' : 'para llevar'} a tu nombre:
         <b>«#{p.numero} · {p.cliente_nombre}»</b>. {dom ? 'La cobras cuando regrese el repartidor.' : 'La cobras cuando pase por ella.'}
       </p>
       {#if dom}
@@ -389,7 +417,9 @@
         <div class="resumen-fila fuerte"><span>Total</span><span>{listo ? dinero(p.total + envio) : '—'}</span></div>
       </div>
       {#if errorHoja}<CajaError mensaje={errorHoja} />{/if}
-      <button type="button" class="cel-boton fijo" disabled={!listo || ocupado} onclick={confirmar}>Confirmar y mandar a cocina</button>
+      <button type="button" class="cel-boton fijo" disabled={!listo || ocupado} onclick={confirmar}
+        >{h.areas?.length ? `Confirmar y m${textoMandar(h.areas).slice(1)}` : 'Confirmar'}</button
+      >
     </Hoja>
   {:else if hoja?.tipo === 'rechazar'}
     {@const h = hoja}
@@ -420,6 +450,44 @@
 </div>
 
 <style>
+  /* ─── A lo ancho (pedidos/Tablero.svelte) ─── */
+  .pos.ancho > :global(.tablero:not(:first-child)) {
+    margin-top: 16px;
+  }
+
+  /* Las hojas de confirmar y rechazar, las de siempre: al centro y de 440, sobre un velo que tapa toda la pantalla, como
+     las ventanas del panel (encuesta 3 de pedidos-ancho.md; Vender y la Caja hacen lo mismo con las suyas). */
+  .pos.ancho :global(.hoja-velo) {
+    position: fixed;
+    z-index: 30;
+    justify-content: center;
+  }
+
+  .pos.ancho :global(.hoja) {
+    max-width: 440px;
+  }
+
+  /* El globo, sin barra de abajo: a 24 del borde, con el rebote de la caja del agente, como el de la maqueta. */
+  .pos.ancho .globo {
+    bottom: 24px;
+    z-index: 31;
+    border-radius: 12px;
+    animation: globo-sale 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  }
+
+  @keyframes globo-sale {
+    from {
+      opacity: 0;
+      transform: translate(-50%, 14px) scale(0.97);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .pos.ancho .globo {
+      animation: none;
+    }
+  }
+
   .desliza.lista {
     gap: 8px;
   }

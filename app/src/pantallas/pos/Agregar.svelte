@@ -34,7 +34,7 @@
 
   const categoria = $derived(categorias[cat] ?? categorias[0]);
 
-  // «Elige salsa y extras», «Va a Cocina» o «Lo sirve el mesero».
+  // «Elige salsa y extras», «Va a Cocina» o «Se entrega directo».
   function detalle(p: ProductoPos): string {
     if (agotado(p)) return 'Agotado';
     if (p.grupos.length) {
@@ -42,7 +42,7 @@
       const ultimo = nombres.pop();
       return `Elige ${nombres.length ? `${nombres.join(', ')} y ${ultimo}` : ultimo}`;
     }
-    return categoria.area ? `Va a ${categoria.area}` : 'Lo sirve el mesero';
+    return categoria.area ? `Va a ${categoria.area}` : 'Se entrega directo';
   }
 </script>
 

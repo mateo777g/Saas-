@@ -383,7 +383,14 @@
     {:else if vista === 'pos' || vista === 'caja' || vista === 'cocina'}
       <!-- Otra sucursal es otro punto de venta: se vuelve a abrir desde cero. -->
       {#key actual.id}
-        <AccesoAbierto que={vista} sucursal={actual} {usuarioId} alVolver={() => (vista = 'inicio')} />
+        <AccesoAbierto
+          que={vista}
+          sucursal={actual}
+          {usuarioId}
+          alVolver={() => (vista = 'inicio')}
+          sucursales={datos.sucursales}
+          alElegir={elegir}
+        />
       {/key}
     {:else if vista === 'equipo'}
       <!-- Otra sucursal es otro equipo: se vuelve a abrir desde cero. -->

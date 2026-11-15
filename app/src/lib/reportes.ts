@@ -22,6 +22,17 @@ export type MesaAhora = {
 };
 export type MesasAhora = { hora: string; mesas: MesaAhora[]; ocupadas: number; por_cobrar: number };
 
+// Si la sucursal tiene áreas de preparación: sin ninguna, Inicio no ofrece «Cocina» (adaptabilidad).
+export async function hayAreas(restauranteId: string): Promise<boolean> {
+  const { count, error } = await supabase
+    .from('areas_preparacion')
+    .select('id', { count: 'exact', head: true })
+    .eq('restaurante_id', restauranteId)
+    .is('archivado_at', null);
+  if (error) throw error;
+  return (count ?? 0) > 0;
+}
+
 export async function leerMesasAhora(restauranteId: string): Promise<MesasAhora> {
   const { data, error } = await supabase.rpc('mesas_ahora', { p_restaurante_id: restauranteId });
   if (error) throw error;
@@ -127,7 +138,7 @@ export type TurnoDelDia = ResumenTurno & {
 export type Descuento = {
   venta_id: number;
   folio: number | null;
-  tipo: 'mesa' | 'para_llevar' | 'domicilio';
+  tipo: 'mesa' | 'comer_aqui' | 'para_llevar' | 'domicilio';
   cuenta: string;
   renglon_id: number | null; // vacío: el descuento es de toda la cuenta
   nombre: string | null;
@@ -147,7 +158,7 @@ export type Cancelacion = {
   que: 'renglon' | 'cuenta';
   venta_id: number;
   folio: number | null;
-  tipo: 'mesa' | 'para_llevar' | 'domicilio';
+  tipo: 'mesa' | 'comer_aqui' | 'para_llevar' | 'domicilio';
   cuenta: string;
   estado: 'abierta' | 'cerrada' | 'cancelada';
   renglon_id: number | null;

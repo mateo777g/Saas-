@@ -7,7 +7,7 @@
 import { esDeRed, Fallo, mensajeDeError, SIN_CONEXION } from './errores';
 import { supabase } from './supabase';
 
-// area_preparacion_id vacía = «Lo sirve el mesero». Los _en son el inglés del menú en línea
+// area_preparacion_id vacía = «Se entrega directo». Los _en son el inglés del menú en línea
 // (opcional: vacío = sale el de español; migración menu_en_linea).
 export type Categoria = {
   id: number;
@@ -199,7 +199,7 @@ export async function eliminarProducto(id: number): Promise<{ resultado: 'borrad
 
 // ─── Categorías ─────────────────────────────────────────────────────────────
 
-// Lo que se escribe en la ventana de la categoría. area vacía = «Lo sirve el mesero»; el inglés en
+// Lo que se escribe en la ventana de la categoría. area vacía = «Se entrega directo»; el inglés en
 // blanco queda vacío (lo limpia la base).
 export type DatosCategoria = { nombre: string; nombre_en: string; icono: string; area_preparacion_id: number | null };
 

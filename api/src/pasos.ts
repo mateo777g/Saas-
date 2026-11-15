@@ -144,7 +144,12 @@ function dondeYQuien(mesa: unknown, mesero: unknown): string {
   if (typeof mesa === 'string' && mesa.trim() && mesa.trim().length <= LARGO_NOMBRE) {
     const limpia = mesa.trim();
     const minusculas = limpia.toLowerCase();
-    texto += minusculas === 'para llevar' || minusculas === 'a domicilio' ? `, ${minusculas}` : `, en ${limpia}`;
+    texto +=
+      minusculas === 'para llevar' || minusculas === 'a domicilio'
+        ? `, ${minusculas}`
+        : minusculas === 'comer aquí' || minusculas === 'comer aqui'
+          ? ', para comer aquí'
+          : `, en ${limpia}`;
   }
   if (typeof mesero === 'string' && mesero.trim() && mesero.trim().length <= LARGO_NOMBRE) texto += `, de ${mesero.trim()}`;
   return texto;

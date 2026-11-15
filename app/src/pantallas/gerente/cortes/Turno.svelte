@@ -1,9 +1,10 @@
 <!--
-  Un turno en Cortes y reportes (maqueta 7J6LvYWiktRnGxNugbuaoe). Cerrado: lo contado contra lo
-  esperado de cada método, quién cobró, las propinas, las entradas y salidas y los pagos cancelados,
-  como el corte de la caja. Abierto: desde cuándo, quién abrió, el fondo, las entradas y salidas y
-  los pagos cancelados; lo esperado sale al cerrar, para nadie (libreta 5). Todos los montos y
-  diferencias vienen de Postgres; aquí no se suma nada.
+  Un turno en la tarjeta de la derecha de Cortes y reportes (14 nov 2026), con la forma del corte ya cerrado de la Caja a
+  lo ancho (caja/caja/Resultado.svelte): la cabeza con su cuadrito, el sello en su caja de color (verde si cuadra, rojo si
+  falta, como la caja del cambio del cobro) y cada bloque en su gris. Cerrado: lo contado contra lo esperado de cada
+  método, quién cobró, las propinas, las entradas y salidas y los pagos cancelados. Abierto: desde cuándo, quién abrió, el
+  fondo, las entradas y salidas y los pagos cancelados; lo esperado sale al cerrar, para nadie (libreta 5). Todos los
+  montos y diferencias vienen de Postgres; aquí no se suma nada.
 -->
 <script lang="ts">
   import CajaError from '../../../diseno/CajaError.svelte';
@@ -11,37 +12,27 @@
   import { NOMBRE_METODO, type Metodo } from '../../../lib/caja';
   import { enZona, pesos, plural } from '../../../lib/formato';
   import type { TurnoDelDia } from '../../../lib/reportes';
+  import { diferencia, type Sello } from './filas';
   import { quienLoHizo } from './quien';
 
-  let { turno: t, zona }: { turno: TurnoDelDia; zona: string } = $props();
+  let { turno: t, zona, sello }: { turno: TurnoDelDia; zona: string; sello: Sello } = $props();
 
-  const hora = (momento: string) => enZona(momento, zona).hora.replace(/^0(\d)/, '$1');
-
+  const hora = (momento: string) => enZona(momento, zona).hora;
   const METODOS: Metodo[] = ['efectivo', 'tarjeta', 'transferencia'];
-
-  function diferencia(d: number): { texto: string; clase: string } {
-    if (d === 0) return { texto: 'Cuadra', clase: 'cuadra' };
-    return d < 0 ? { texto: `Faltan ${pesos(-d)}`, clase: 'falta' } : { texto: `Sobran ${pesos(d)}`, clase: '' };
-  }
-
-  // El sello del turno: si todo cuadra, «Cuadra»; si solo un método no, lo que dice ese método;
-  // si son varios, cuántos. No se suman efectivo y tarjeta entre sí.
-  const sello = $derived.by(() => {
-    const no = (t.cortes ?? []).filter((k) => k.diferencia !== 0);
-    if (!no.length) return { texto: 'Cuadra', clase: 'cuadra' };
-    if (no.length === 1) return diferencia(no[0].diferencia);
-    return { texto: `No cuadran ${no.length} métodos`, clase: 'falta' };
-  });
 </script>
 
+{#snippet bloque(titulo: string)}
+  <span class="etiqueta-c">{titulo}</span>
+{/snippet}
+
 {#snippet movimientos()}
-  <div class="bloque">
-    <span class="etiqueta">ENTRADAS Y SALIDAS</span>
-    <div class="lista">
+  <div class="bloque-c">
+    {@render bloque('Entradas y salidas')}
+    <div class="gris">
       {#each t.movimientos as m, i (i)}
         <div class="f">
-          <span><b>{m.motivo}</b><small>{m.tipo === 'retiro' ? 'Salida' : 'Entrada'} · {m.registrado_por} · {hora(m.created_at)}</small></span>
-          <span class="n">{m.tipo === 'retiro' ? '−' : '+'}{pesos(m.monto)}</span>
+          <span>{m.motivo}<small>{m.tipo === 'retiro' ? 'Salida' : 'Entrada'} · {m.registrado_por} · {hora(m.created_at)}</small></span>
+          <b>{m.tipo === 'retiro' ? '−' : '+'}{pesos(m.monto)}</b>
         </div>
       {:else}
         <p class="vacia">{t.estado === 'abierto' ? 'Ninguna todavía.' : 'Ninguna.'}</p>
@@ -51,19 +42,19 @@
 {/snippet}
 
 {#snippet cancelados()}
-  <div class="bloque">
-    <span class="etiqueta">PAGOS CANCELADOS</span>
-    <div class="lista">
+  <div class="bloque-c">
+    {@render bloque('Pagos cancelados')}
+    <div class="gris">
       {#each t.pagos_cancelados as p (p.pago_id)}
         <div class="f">
           <span>
-            <b>{p.folio ? `Folio ${p.folio} · ` : ''}{p.cuenta}</b>
+            {p.folio ? `Folio ${p.folio} · ` : ''}{p.cuenta}
             <small>
               {NOMBRE_METODO[p.metodo]}{p.propina > 0 ? ` con ${pesos(p.propina)} de propina` : ''} · «{p.motivo}» ·
               {quienLoHizo(p.pidio_id, p.pidio, p.autorizo_id, p.autorizo)} · {hora(p.cancelado_at)}
             </small>
           </span>
-          <span class="n tachado">{pesos(p.monto)}</span>
+          <b class="tachado">{pesos(p.monto)}</b>
         </div>
       {:else}
         <p class="vacia">Ninguno.</p>
@@ -72,283 +63,187 @@
   </div>
 {/snippet}
 
-<div class="turno">
-  {#if t.estado === 'abierto'}
-    <div class="cabeza">
-      <span class="cuadro-icono"><Icono nombre="billete" tamano={18} /></span>
-      <div class="t">
-        <b>Caja abierta desde las {hora(t.abierto_at)}</b>
-        <span>Abrió {t.abierto_por} · Fondo {pesos(t.fondo_inicial)}</span>
-      </div>
-      <span class="sello"><span class="punto"></span>Abierta</span>
+{#if t.estado === 'abierto'}
+  <div class="encabezado">
+    <span class="cuadro-c"><Icono nombre="billete" tamano={18} /></span>
+    <div class="titulos">
+      <span class="titulo">Caja abierta desde las {hora(t.abierto_at)}</span>
+      <span class="sub">Abrió {t.abierto_por} · Fondo {pesos(t.fondo_inicial)}</span>
     </div>
-    <CajaError
-      tipo="info"
-      mensaje="Lo esperado, lo contado, quién cobró y las propinas salen cuando se cierre la caja. Mientras está abierta nadie los ve, tampoco tú."
-    />
-    <div class="dos">
-      {@render movimientos()}
-      {@render cancelados()}
-    </div>
-    <p class="pista">Hay {plural(t.cuentas_abiertas, 'cuenta abierta', 'cuentas abiertas')} ahora.</p>
-  {:else}
-    <div class="cabeza">
-      <span class="cuadro-icono"><Icono nombre="corte" tamano={18} /></span>
-      <div class="t">
-        <b>Turno de {hora(t.abierto_at)} a {t.cerrado_at ? hora(t.cerrado_at) : '—'}</b>
-        <span>
-          {t.abierto_por === t.cerrado_por ? `Abrió y cerró ${t.abierto_por}` : `Abrió ${t.abierto_por} · cerró ${t.cerrado_por}`}
-          · Fondo {pesos(t.fondo_inicial)}
-        </span>
-      </div>
-      <span class="sello {sello.clase}">
-        {#if sello.clase === 'cuadra'}<Icono nombre="check" tamano={14} />{/if}{sello.texto}
+  </div>
+  <CajaError
+    tipo="info"
+    mensaje="Lo esperado, lo contado, quién cobró y las propinas salen cuando se cierre la caja. Mientras está abierta nadie los ve, tampoco tú."
+  />
+  {@render movimientos()}
+  {@render cancelados()}
+  <p class="pista">Hay {plural(t.cuentas_abiertas, 'cuenta abierta', 'cuentas abiertas')} ahora.</p>
+{:else}
+  <div class="encabezado">
+    <span class="cuadro-c"><Icono nombre="corte" tamano={18} /></span>
+    <div class="titulos">
+      <span class="titulo">Turno de {hora(t.abierto_at)} a {t.cerrado_at ? hora(t.cerrado_at) : '—'}</span>
+      <span class="sub">
+        {t.abierto_por === t.cerrado_por ? `Abrió y cerró ${t.abierto_por}` : `Abrió ${t.abierto_por} · cerró ${t.cerrado_por}`}
+        · Fondo {pesos(t.fondo_inicial)}
       </span>
     </div>
+  </div>
 
-    <div class="bloque">
-      <span class="etiqueta">LO CONTADO CONTRA LO ESPERADO</span>
-      <div class="tabla-corte">
-        <div class="f cab"><span>Método</span><span class="n">Esperado</span><span class="n">Contado</span><span class="n">Diferencia</span></div>
-        {#each t.cortes ?? [] as k (k.metodo)}
-          {@const d = diferencia(k.diferencia)}
-          <div class="f">
-            <span>{NOMBRE_METODO[k.metodo]}</span>
-            <span class="n">{pesos(k.esperado)}</span>
-            <span class="n">{pesos(k.contado)}</span>
-            <span class="n {d.clase}">{d.texto}</span>
-          </div>
-        {/each}
-      </div>
-    </div>
+  <div class="veredicto {sello.clase}" role="status">
+    {#if sello.clase === 'cuadra'}<Icono nombre="check" tamano={16} />{:else}<Icono nombre="alerta" tamano={16} />{/if}
+    <span>{sello.texto}</span>
+  </div>
 
-    <div class="dos">
-      <div class="bloque">
-        <span class="etiqueta">QUIÉN COBRÓ</span>
-        <div class="lista">
-          {#each t.por_persona ?? [] as q (q.miembro_id)}
-            <div class="f">
-              <span>
-                <b>{q.nombre}</b>
-                <small>{METODOS.filter((m) => q[m] > 0).map((m) => `${NOMBRE_METODO[m]} ${pesos(q[m])}`).join(' · ')}</small>
-              </span>
-              <span class="n">{pesos(q.total)}</span>
-            </div>
-          {:else}
-            <p class="vacia">Nadie cobró en este turno.</p>
-          {/each}
+  <div class="bloque-c">
+    {@render bloque('Lo contado contra lo esperado')}
+    <div class="gris">
+      <div class="m cab"><span>Método</span><span>Esperado</span><span>Contado</span></div>
+      {#each t.cortes ?? [] as k (k.metodo)}
+        {@const d = diferencia(k.diferencia)}
+        <div class="m">
+          <span class="nom">{NOMBRE_METODO[k.metodo]}<small class="dif {d.clase}">{d.texto}</small></span>
+          <b>{pesos(k.esperado)}</b>
+          <b>{pesos(k.contado)}</b>
         </div>
-      </div>
-      <div class="bloque">
-        <span class="etiqueta">PROPINAS</span>
-        <div class="lista">
-          {#each t.propinas as p (p.miembro_id)}
-            <div class="f">
-              <span><b>{p.nombre}</b><small>Pagado {pesos(p.pagado)}{p.falta > 0 ? ` · faltó ${pesos(p.falta)}` : ' · al corriente'}</small></span>
-              <span class="n">{pesos(p.total)}</span>
-            </div>
-          {:else}
-            <p class="vacia">Sin propinas.</p>
-          {/each}
-        </div>
-      </div>
+      {/each}
     </div>
+    <p class="pista">En efectivo, lo esperado es el fondo más lo cobrado y las entradas, menos las salidas. Las propinas cuentan.</p>
+  </div>
 
-    <div class="dos">
-      {@render movimientos()}
-      {@render cancelados()}
+  <div class="bloque-c">
+    {@render bloque('Quién cobró')}
+    <div class="gris">
+      {#each t.por_persona ?? [] as q (q.miembro_id)}
+        <div class="f">
+          <span>{q.nombre}<small>{METODOS.filter((m) => q[m] > 0).map((m) => `${NOMBRE_METODO[m]} ${pesos(q[m])}`).join(' · ')}</small></span>
+          <b>{pesos(q.total)}</b>
+        </div>
+      {:else}
+        <p class="vacia">Nadie cobró en este turno.</p>
+      {/each}
     </div>
-  {/if}
-</div>
+  </div>
+
+  <div class="bloque-c">
+    {@render bloque('Propinas')}
+    <div class="gris">
+      {#each t.propinas as p (p.miembro_id)}
+        <div class="f">
+          <span>{p.nombre}<small>Pagado {pesos(p.pagado)}{p.falta > 0 ? ` · faltó ${pesos(p.falta)}` : ' · al corriente'}</small></span>
+          <b>{pesos(p.total)}</b>
+        </div>
+      {:else}
+        <p class="vacia">Sin propinas.</p>
+      {/each}
+    </div>
+  </div>
+
+  {@render movimientos()}
+  {@render cancelados()}
+{/if}
 
 <style>
-  .turno {
-    flex: none;
-    padding: 16px;
-    border-radius: 18px;
-    border: 1px solid var(--linea);
-    background: var(--solido);
+  .gris {
     display: flex;
     flex-direction: column;
-    gap: 14px;
+    gap: 10px;
+    padding: 14px 16px;
+    border-radius: 12px;
+    background: var(--fondo);
   }
 
-  .cabeza {
+  /* El sello del turno en su caja de color, como la caja del cambio del cobro. */
+  .veredicto {
     display: flex;
     align-items: center;
-    gap: 12px;
-  }
-
-  .cuadro-icono {
-    width: 36px;
-    height: 36px;
-    flex: none;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 11px;
-    background: var(--chip);
-  }
-
-  .cabeza .t {
-    flex: 1;
-    min-width: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 3px;
-  }
-
-  .cabeza b {
+    gap: 10px;
+    min-height: 52px;
+    padding: 0 16px;
+    border-radius: 12px;
+    background: var(--fondo);
     font-size: 15px;
-    font-weight: 800;
-    letter-spacing: -0.2px;
-  }
-
-  .cabeza .t span {
-    font-size: 12px;
-    color: var(--tenue);
-  }
-
-  .sello {
-    height: 28px;
-    flex: none;
-    display: inline-flex;
-    align-items: center;
-    gap: 7px;
-    padding: 0 12px;
-    border-radius: 14px;
-    background: var(--chip);
-    font-size: 12px;
     font-weight: 700;
-    white-space: nowrap;
   }
 
-  .sello.cuadra,
-  .n.cuadra {
+  .veredicto.cuadra {
+    background: color-mix(in srgb, var(--verde) 14%, transparent);
     color: var(--verde);
   }
 
-  .sello.falta,
-  .n.falta {
+  .veredicto.falta {
+    background: color-mix(in srgb, var(--rojo) 12%, transparent);
     color: var(--rojo);
   }
 
-  .punto {
-    width: 7px;
-    height: 7px;
-    border-radius: 4px;
-    background: var(--verde);
-  }
-
-  .bloque {
-    min-width: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-  }
-
-  .bloque > .etiqueta {
-    display: block;
-    min-height: 18px;
-    padding: 0 2px;
-  }
-
-  .dos {
+  .m {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-    gap: 12px;
+    grid-template-columns: minmax(0, 1fr) 92px 92px;
+    gap: 10px;
     align-items: start;
+    font-size: 13px;
   }
 
-  .tabla-corte {
-    display: flex;
-    flex-direction: column;
-    border: 1px solid var(--linea);
-    border-radius: 14px;
-    overflow: hidden;
-  }
-
-  .tabla-corte .f {
-    display: grid;
-    grid-template-columns: minmax(0, 1.2fr) repeat(3, minmax(0, 1fr));
-    gap: 8px;
-    padding: 10px 12px;
-    border-top: 1px solid var(--linea);
-    font-size: 12.5px;
-    align-items: baseline;
-  }
-
-  .tabla-corte .f:first-child {
-    border-top: 0;
-  }
-
-  .tabla-corte .f.cab {
+  .m.cab span {
     font-family: var(--mono);
-    font-size: 10px;
-    letter-spacing: 0.12em;
+    font-size: 10.5px;
+    letter-spacing: 0.1em;
     text-transform: uppercase;
     color: var(--tenue);
   }
 
-  .n {
-    font-family: var(--mono);
-    font-variant-numeric: tabular-nums;
+  .m.cab span:not(:first-child),
+  .m b {
     text-align: right;
+  }
+
+  .m b,
+  .f b {
+    font-family: var(--mono);
+    font-weight: 500;
     white-space: nowrap;
   }
 
-  .tabla-corte .n.cuadra,
-  .tabla-corte .n.falta {
+  .nom,
+  .f > span {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
     font-weight: 600;
   }
 
-  .lista {
-    display: flex;
-    flex-direction: column;
-    border: 1px solid var(--linea);
-    border-radius: 14px;
+  small {
+    font-size: 11.5px;
+    font-weight: 500;
+    line-height: 1.4;
+    color: var(--suave);
   }
 
-  .lista .f {
+  .dif.cuadra {
+    color: var(--verde);
+  }
+
+  .dif.falta {
+    color: var(--rojo);
+  }
+
+  .f {
     display: flex;
-    align-items: baseline;
     justify-content: space-between;
+    align-items: flex-start;
     gap: 12px;
-    padding: 10px 12px;
-    border-top: 1px solid var(--linea);
-    font-size: 12.5px;
-  }
-
-  .lista .f:first-child {
-    border-top: 0;
-  }
-
-  .lista .f > span:first-child {
-    min-width: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 3px;
-  }
-
-  .lista b {
-    font-weight: 700;
-  }
-
-  .lista small {
-    font-size: 11px;
-    line-height: 1.45;
-    color: var(--tenue);
+    font-size: 13px;
   }
 
   .tachado {
+    color: var(--tenue);
     text-decoration: line-through;
-    text-decoration-color: var(--tenue);
   }
 
   .vacia {
     margin: 0;
-    padding: 12px;
-    font-size: 12px;
+    font-size: 12.5px;
     color: var(--tenue);
   }
 

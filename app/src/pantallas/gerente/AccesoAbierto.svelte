@@ -2,7 +2,10 @@
   El punto de venta, la caja o la cocina abiertos dentro del panel (maquetas Mesero y cocina y La
   caja; libreta 4, decidido el 17 de octubre de 2026): con la sesión del gerente, sin PIN ni
   aparato, y lo que agrega o cobra queda a su nombre. El punto de venta y la caja conservan el
-  ancho del celular, al centro; la cocina usa todo el ancho.
+  ancho del celular, al centro; la cocina usa todo el ancho. Con la adaptabilidad (maqueta GBWEGCsQFcwKkWm7Qe9FPA v4), si
+  la vista mide ~880 o más, el punto de venta va a lo ancho: su barra con «‹ Inicio», el dock Mesas · Para llevar y la
+  cajita de sucursales. La caja también (3c): su barra con «‹ Inicio», su chip, sus tres botones y la cajita. La cocina
+  (rediseño, 14 nov 2026) pinta siempre su propia barra, con el chip, el área y el reloj, y su Tablero, a cualquier ancho.
 -->
 <script lang="ts">
   import { onMount } from 'svelte';
@@ -12,6 +15,7 @@
   import Tarjeta from '../../diseno/Tarjeta.svelte';
   import { ALGO_SALIO_PANEL, esDeRed, SIN_CONEXION } from '../../lib/errores';
   import type { Sucursal } from '../../lib/gerente';
+  import CajaSucursales from './CajaSucursales.svelte';
   import { supabase } from '../../lib/supabase';
   import Caja from '../caja/Caja.svelte';
   import Cocina from '../cocina/Cocina.svelte';
@@ -22,7 +26,19 @@
     sucursal,
     usuarioId,
     alVolver,
-  }: { que: 'pos' | 'caja' | 'cocina'; sucursal: Sucursal; usuarioId: string; alVolver: () => void } = $props();
+    sucursales = [],
+    alElegir,
+  }: {
+    que: 'pos' | 'caja' | 'cocina';
+    sucursal: Sucursal;
+    usuarioId: string;
+    alVolver: () => void;
+    sucursales?: Sucursal[]; // para la cajita de sucursales de la barra a lo ancho
+    alElegir?: (s: Sucursal) => void;
+  } = $props();
+
+  let anchoVista = $state(0);
+  const ancho = $derived(anchoVista >= 880);
 
   // Su fila de miembros en esta sucursal: a su nombre queda lo que agrega. Arriba sale su nombre
   // de pila de Empleados, el mismo que ve su equipo en lo que agrega (no su apodo de Perfil, que
@@ -52,8 +68,39 @@
   onMount(leer);
 </script>
 
+{#snippet cajita()}
+  {#if alElegir && sucursales.length}<CajaSucursales {sucursales} actual={sucursal} {alElegir} />{/if}
+{/snippet}
+
+<div class="medida" bind:clientWidth={anchoVista}></div>
+
+{#if que === 'cocina'}
+  <!-- La Cocina, siempre con la estructura de Pedidos a lo ancho y su propia barra (planes/trabajo/rediseno/cocina.md).
+       No necesita la fila de miembros: marcar «Lista» no deja nombre. -->
+  <Cocina cliente={supabase} restauranteId={sucursal.id} anfitrion={{ donde: 'panel', alInicio: alVolver, sucursal: cajita }} />
+{:else if ancho && que === 'pos' && yo.estado === 'listo'}
+  <PuntoDeVenta
+    cliente={supabase}
+    restauranteId={sucursal.id}
+    restaurante={sucursal.nombre}
+    miembroId={yo.id}
+    linea="{yo.nombre} · Gerente"
+    donde="navegador"
+    ancho
+    anfitrion={{ donde: 'panel', alInicio: alVolver, sucursal: cajita }}
+  />
+{:else if ancho && que === 'caja' && yo.estado === 'listo'}
+  <Caja
+    cliente={supabase}
+    restauranteId={sucursal.id}
+    restaurante={sucursal.nombre}
+    enPanel
+    ancho
+    anfitrion={{ donde: 'panel', alInicio: alVolver, sucursal: cajita }}
+  />
+{:else}
 <BarraArriba
-  titulo={que === 'pos' ? 'Punto de venta' : que === 'caja' ? 'Caja' : 'Cocina'}
+  titulo={que === 'pos' ? 'Punto de venta' : 'Caja'}
   estado={{ texto: 'Con tu sesión de gerente', vivo: true }}
 >
   {#snippet antes()}
@@ -82,12 +129,21 @@
     <div class="panel-cel">
       <Caja cliente={supabase} restauranteId={sucursal.id} restaurante={sucursal.nombre} enPanel />
     </div>
-  {:else if yo.estado === 'listo'}
-    <Cocina cliente={supabase} restauranteId={sucursal.id} enPanel />
   {/if}
 </Tarjeta>
+{/if}
 
 <style>
+  /* Mide el ancho de la vista, sin tapar nada. */
+  .medida {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    height: 0;
+    pointer-events: none;
+  }
+
   .volver {
     display: inline-flex;
     align-items: center;

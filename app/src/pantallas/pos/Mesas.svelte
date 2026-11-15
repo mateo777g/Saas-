@@ -6,6 +6,9 @@
   Con la parte 4b, una cuenta con pagos dice cuánto falta, y quien es mesero ve arriba el efectivo
   que trae para la caja (maqueta La caja). Una cuenta reabierta (parte 4c) ya no ocupa su mesa: sale
   con los pedidos para llevar, con su folio y «Reabierta».
+
+  Adaptabilidad («Lo que decidí yo» 5): sin mesas no sale el selector Mesas · Para llevar, solo los
+  pedidos; el pedido nuevo puede ser para comer aquí, y sin nombre sale con su número del día.
 -->
 <script lang="ts">
   import type { Snippet } from 'svelte';
@@ -13,7 +16,7 @@
   import Selector from '../../diseno/Selector.svelte';
   import { faltaDe } from '../../lib/caja';
   import { dinero } from '../../lib/formato';
-  import { nombreDeCuenta, type Mesa, type PedidoNuevo, type Venta } from '../../lib/pos';
+  import { ICONO_DE_TIPO, nombreDeCuenta, TIPO_EN_PALABRAS, type Mesa, type PedidoNuevo, type Venta } from '../../lib/pos';
   import Lugar from './Lugar.svelte';
   import MarcaEstado from './MarcaEstado.svelte';
 
@@ -59,6 +62,8 @@
   const deMesa = $derived(new Map(ventas.filter(enSuMesa).map((v) => [v.mesa_id, v])));
   const llevar = $derived(ventas.filter((v) => !enSuMesa(v)));
   const ocupadas = $derived(mesas.filter((m) => deMesa.has(m.id)).length);
+  // Sin mesas, solo los pedidos.
+  const enVista = $derived(mesas.length === 0 ? 'llevar' : vista);
 </script>
 
 <Lugar {restaurante} {linea} />
@@ -68,6 +73,7 @@
   <div class="efectivo-linea"><Icono nombre="billete" tamano={16} /><span>Traes <b>{dinero(efectivo)}</b> en efectivo para la caja</span></div>
 {/if}
 
+{#if mesas.length > 0}
 <div class="arriba-vista">
   <Selector
     etiqueta="Mesas o para llevar"
@@ -81,16 +87,11 @@
     alElegir={alVista}
   />
 </div>
+{/if}
 
 <div class="desliza">
-  {#if vista === 'mesas'}
-    {#if mesas.length === 0}
-      <div class="vacio">
-        <b>Todavía no hay mesas</b>
-        <span>Tu gerente las agrega en Mesas, en su panel.</span>
-      </div>
-    {:else}
-      <div class="rejilla-mesas">
+  {#if enVista === 'mesas'}
+    <div class="rejilla-mesas">
         {#each mesas as m (m.id)}
           {@const v = deMesa.get(m.id)}
           {#if !v}
@@ -113,32 +114,31 @@
             </button>
           {/if}
         {/each}
-      </div>
-    {/if}
+    </div>
   {:else if llevar.length === 0 && nuevos.length === 0}
     <div class="vacio">
-      <b>Sin pedidos para llevar</b>
-      <span>Los que se abran con el nombre del cliente salen aquí, junto a las mesas.</span>
+      <b>{mesas.length ? 'Sin pedidos para llevar' : 'Sin pedidos abiertos'}</b>
+      <span>{mesas.length ? 'Los que se abran sin mesa salen aquí, junto a las mesas.' : 'Los que anotes y falten de cobrar salen aquí.'}</span>
     </div>
   {:else}
     {#each nuevos as n (n.llave)}
       <button type="button" class="fila-llevar anotado" onclick={() => alAbrir(n.llave)}>
-        <span class="cuadro-icono"><Icono nombre={n.pedido.tipo === 'domicilio' ? 'moto' : 'bolsa'} tamano={18} /></span>
+        <span class="cuadro-icono"><Icono nombre={ICONO_DE_TIPO[n.pedido.tipo]} tamano={18} /></span>
         <span class="t">
-          <b>{n.pedido.nombre}</b>
-          <span class="tipo">{n.pedido.tipo === 'domicilio' ? 'Domicilio' : 'Para llevar'} · anotado aquí</span>
+          <b>{n.pedido.nombre || 'Pedido nuevo'}</b>
+          <span class="tipo">{TIPO_EN_PALABRAS[n.pedido.tipo]} · anotado aquí</span>
         </span>
       </button>
     {/each}
     {#each llevar as v (v.id)}
       <button type="button" class="fila-llevar" onclick={() => alAbrir(`v${v.id}`)}>
-        <span class="cuadro-icono"><Icono nombre={v.tipo === 'domicilio' ? 'moto' : v.tipo === 'mesa' ? 'mesas' : 'bolsa'} tamano={18} /></span>
+        <span class="cuadro-icono"><Icono nombre={ICONO_DE_TIPO[v.tipo]} tamano={18} /></span>
         <span class="t">
           <b>{nombreDeCuenta(v)}</b>
           <span class="tipo">
-            {v.folio !== null ? `Folio ${v.folio}` : v.tipo === 'domicilio' ? 'Domicilio' : 'Para llevar'} · abrió {quien(v)}, {hora(v)}
+            {v.folio !== null ? `Folio ${v.folio}` : v.tipo === 'mesa' ? 'Mesa' : TIPO_EN_PALABRAS[v.tipo]} · abrió {quien(v)}, {hora(v)}
           </span>
-          <MarcaEstado estado={estadoDe(v)} whatsapp={v.pedido_numero !== null} />
+          <MarcaEstado estado={estadoDe(v)} whatsapp={v.origen === 'menu_en_linea'} />
         </span>
         <span class="mesa-total">{dinero(v.total)}</span>
       </button>
@@ -146,9 +146,9 @@
   {/if}
 </div>
 
-{#if vista === 'llevar'}
+{#if enVista === 'llevar'}
   <div class="cel-pie">
-    <button type="button" class="cel-boton" onclick={alNuevoLlevar}><Icono nombre="mas" tamano={18} />Para llevar</button>
+    <button type="button" class="cel-boton" onclick={alNuevoLlevar}><Icono nombre="mas" tamano={18} />Pedido nuevo</button>
   </div>
 {/if}
 

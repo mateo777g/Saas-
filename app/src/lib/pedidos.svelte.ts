@@ -5,7 +5,7 @@
 // función recibe la conexión y este archivo nunca importa lib/supabase.ts: lo usan el aparato del
 // equipo y el panel del gerente. Los precios, el total y el número los pone Postgres.
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { esDeRed, mensajeDeError, SIN_CONEXION } from './errores';
+import { ALGO_SALIO_PANEL, esDeRed, mensajeDeError, SIN_CONEXION } from './errores';
 import { escuchar, FalloPos, type OpcionElegida } from './pos';
 import { avisarLista, avisarPedido, prepararSonido } from './sonido';
 
@@ -142,6 +142,10 @@ export class VigiaPedidos {
   pendientes = $derived(this.datos?.por_confirmar.length ?? 0);
   // Lo que dice la pestaña o la barra lateral: «2», «Pausado» o nada.
   insignia = $derived(this.datos?.pausado ? 'Pausado' : this.pendientes ? String(this.pendientes) : '');
+  // «Pausar pedidos» y «Reanudar» viven aquí para que el botón pueda ir en la pantalla de Pedidos o en la barra de
+  // arriba (Pedidos a lo ancho); la pantalla enseña `errorPausa` en su caja de error.
+  pausando = $state(false);
+  errorPausa = $state<string | null>(null);
 
   private conocidos: Set<number> | null = null;
   private ultimoTono = 0;
@@ -216,6 +220,22 @@ export class VigiaPedidos {
       } while (this.otraVez);
     })().finally(() => (this.leyendo = null));
     return this.leyendo;
+  }
+
+  // Pausa los pedidos el resto del día de negocio, o los reanuda, y vuelve a leer.
+  async pausar(): Promise<void> {
+    if (!this.datos || this.pausando) return;
+    this.pausando = true;
+    this.errorPausa = null;
+    try {
+      await pausarPedidos(this.cliente, this.restauranteId, !this.datos.pausado);
+      await this.leer();
+    } catch (falla) {
+      if (!(falla instanceof FalloPos)) console.error('[pedidos] no se pudieron pausar los pedidos:', falla);
+      this.errorPausa = falla instanceof FalloPos ? falla.message : esDeRed(falla) ? SIN_CONEXION : ALGO_SALIO_PANEL;
+    } finally {
+      this.pausando = false;
+    }
   }
 
   private sonar() {

@@ -1,5 +1,6 @@
 <!--
-  «Tus meseros» de Inicio (maqueta V64Pv4gmANPRZuJW5hTe5D; decidido el 18 de octubre de 2026): los meseros
+  «Tu equipo hoy» de Inicio (maqueta V64Pv4gmANPRZuJW5hTe5D; decidido el 18 de octubre de 2026; antes «Tus
+  meseros», renombrada para todos con la adaptabilidad, encuesta 5): los meseros
   activos, aunque hoy vayan en $0, y cualquiera que hoy abrió cuentas, como Lupita o el gerente; debajo de
   cada nombre, su rol. Mesas son las cuentas que trae abiertas ahora (con los para llevar); Ventas y
   Vendido, las cerradas de hoy. Todo lo cuenta tus_meseros; aquí solo se pinta, en el orden que dio Postgres.
@@ -32,11 +33,11 @@
     [...roles].sort((a, b) => ORDEN_ROLES.indexOf(a) - ORDEN_ROLES.indexOf(b)).map((r) => NOMBRE_ROL[r] ?? r).join(' · ');
 </script>
 
-<section class="tarjeta" aria-label="Tus meseros">
+<section class="tarjeta" aria-label="Tu equipo hoy">
   <div class="cabeza">
     <div>
-      <b>Tus meseros</b>
-      <span class="nota">Las mesas y las ventas de hoy de cada uno.</span>
+      <b>Tu equipo hoy</b>
+      <span class="nota">Lo abierto y lo vendido hoy de cada quien.</span>
     </div>
     <span class="etiqueta resumen">{#if lectura.estado === 'leyendo'}<Esqueleto ancho="104px" alto="10px" />{:else}{equipo}{/if}</span>
   </div>
@@ -60,14 +61,14 @@
   {:else if lectura.estado === 'error'}
     <p class="mensaje">No se pudieron leer las ventas de hoy.</p>
   {:else if !lectura.datos.personas.length}
-    <p class="mensaje">Todavía no tienes meseros. Dalos de alta en Empleados.</p>
+    <p class="mensaje">Aquí salen quienes venden hoy.</p>
   {:else}
     <TablaDeslizable>
       <table>
         <thead>
           <tr>
-            <th class="etiqueta">Mesero</th>
-            <th class="etiqueta der">Mesas</th>
+            <th class="etiqueta">Persona</th>
+            <th class="etiqueta der">Abiertas</th>
             <th class="etiqueta der">Ventas</th>
             <th class="etiqueta der">Vendido</th>
           </tr>

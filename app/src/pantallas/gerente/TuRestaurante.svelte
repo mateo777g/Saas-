@@ -6,12 +6,12 @@
 
   Con el rediseño (13 nov 2026, planes/trabajo/rediseno/tu-restaurante.md): una columna al centro como Ajustes,
   «TU RESTAURANTE» con su nota sobre el gris y una tarjeta tras otra, cada una con su ícono, su título y su nota: Tu logo
-  y tu nombre · Contacto · Envíos · Horario. Los campos van en su gris (diseno/GrupoCampos). Abajo, la barra de guardar
+  y tu nombre · Contacto · Horario. Los campos van en su gris (diseno/GrupoCampos). Abajo, la barra de guardar
   de «Tu menú en línea» (diseno/BarraGuardar): «Descartar» en rojo y «Guardar» en verde; si se va con cambios, «Tienes
   cambios sin guardar» (lib/salida.ts).
 
-  «Hago envíos» vive aquí desde el 12 nov 2026 (maqueta UDArhiEZceT7rmSKxqRA5r de «Tu menú en línea»): si sus clientes
-  piden a domicilio además de para llevar. Se va a la vista de Pedidos cuando se rehaga (encuesta del 13 nov 2026).
+  «Hago envíos» se fue a la barra de arriba de Pedidos el 14 nov 2026 (encuesta del 13 nov;
+  planes/trabajo/rediseno/pedidos-vista.md). Aquí ya no se manda: guardar_restaurante lo deja como está.
 
   «Guardar» guarda todo junto (guardar_restaurante). El logo sigue el orden de las fotos: se sube antes de guardar; si el
   guardado falla, se borra el que se acababa de subir; el anterior se borra solo después de guardar.
@@ -27,15 +27,12 @@
   import Esqueleto from '../../diseno/Esqueleto.svelte';
   import GrupoCampos from '../../diseno/GrupoCampos.svelte';
   import Icono from '../../diseno/Icono.svelte';
-  import Interruptor from '../../diseno/Interruptor.svelte';
   import Tarjeta from '../../diseno/Tarjeta.svelte';
   import { quieto } from '../../diseno/ventanaSeMueve';
   import { ALGO_SALIO_PANEL, esDeRed, Fallo, SIN_CONEXION } from '../../lib/errores';
   import { borrarFoto, convertirLogo, revisarFoto, subirFoto, urlFoto } from '../../lib/fotos';
   import type { Sucursal } from '../../lib/gerente';
-  import { leerEnvios, type Envio } from '../../lib/pedidos.svelte';
   import { ponerGuardia } from '../../lib/salida';
-  import { supabase } from '../../lib/supabase';
   import { guardarRestaurante, leerRestaurante, type Horario, type Restaurante } from '../../lib/restaurante';
   import CajaSucursales from './CajaSucursales.svelte';
   import Dias, { type Dia } from './restaurante/Dias.svelte';
@@ -61,9 +58,6 @@
   let dias = $state<Dia[]>(Array(7).fill(null));
   // Un logo más ancho que alto (más de 1.4 veces, como el «largo» del menú): su cuadrito deja de ser cuadro.
   let largo = $state(false);
-  let envios = $state(false);
-  // Los productos de envío de Mi menú, para decir cuál elige quien confirma un pedido a domicilio.
-  let productosEnvio = $state<Envio[]>([]);
   let errorGuardar = $state<string | null>(null);
   let telefonoMal = $state(false);
   let paso = $state<null | 'logo' | 'guardando' | 'listo'>(null);
@@ -102,15 +96,12 @@
     direccion = r.direccion ?? '';
     logo = r.logo_ruta;
     dias = aDias(r.horario);
-    envios = r.hace_envios;
     quitarArchivo();
   }
 
   async function leer() {
     try {
-      const [r, pe] = await Promise.all([leerRestaurante(sucursal.id), leerEnvios(supabase, sucursal.id)]);
-      productosEnvio = pe;
-      poner(r);
+      poner(await leerRestaurante(sucursal.id));
       errorLectura = null;
     } catch (falla) {
       console.error('[restaurante] no se pudieron leer sus datos:', falla);
@@ -158,14 +149,13 @@
         soloDigitos(telefono) !== (guardado.telefono ?? ''),
         direccion.trim() !== (guardado.direccion ?? ''),
         logo !== guardado.logo_ruta || !!archivo,
-        envios !== guardado.hace_envios,
       ].filter(Boolean).length + dias.filter((d, i) => JSON.stringify(d) !== JSON.stringify(antes[i])).length
     );
   });
 
   // Un cambio nuevo quita el error del guardado anterior (como en «Tu menú en línea»).
   $effect(() => {
-    void [nombre, telefono, direccion, logo, archivo, envios, JSON.stringify(dias)];
+    void [nombre, telefono, direccion, logo, archivo, JSON.stringify(dias)];
     errorGuardar = null;
     telefonoMal = false;
   });
@@ -230,7 +220,6 @@
         direccion: direccion.trim(),
         logo_ruta: rutaNueva ?? logo,
         horario: aHorario(dias),
-        hace_envios: envios,
       });
     } catch (falla) {
       if (!(falla instanceof Fallo)) console.error('[restaurante] no se pudo guardar:', falla);
@@ -251,12 +240,6 @@
     return null;
   }
 
-  // Los envíos de Mi menú como los elige quien confirma: «Envío $30 o Envío lejos $50».
-  const precioCorto = (n: number) => `$${Number.isInteger(n) ? n : n.toFixed(2)}`;
-  const listaEnvios = $derived(productosEnvio.map((e) => `${e.nombre} ${precioCorto(e.precio)}`));
-  // Qué dice la pista de «Hago envíos» (cambia con un desvanecido corto).
-  const pistaEnvios = $derived(!envios ? 'solo' : listaEnvios.length ? 'con' : 'sin');
-
   // Lo que le falta para que su menú diga si está abierto.
   const falta = $derived(
     guardado && !guardado.horario.length
@@ -266,7 +249,7 @@
       : null,
   );
 
-  // Lo que cambia (el logo, la pista de los envíos) aparece con el desvanecido corto de «Tu menú en línea».
+  // Lo que cambia (el logo) aparece con el desvanecido corto de «Tu menú en línea».
   function aparece(_el: Element) {
     if (quieto()) return { duration: 0 };
     return { duration: 220, css: (x: number) => `opacity: ${x}` };
@@ -385,34 +368,6 @@
               largoMaximo={200}
             />
           {/if}
-        </GrupoCampos>
-      </Tarjeta>
-
-      <Tarjeta como="section" class="tr-tarjeta" aria-label="Envíos">
-        {@render cabecera('moto', 'Envíos', 'Si tus clientes también piden a domicilio desde tu menú.')}
-        <GrupoCampos>
-          <div class="envios-fila">
-            {#if cargando}
-              <span class="envios-esqueleto" aria-hidden="true"><Esqueleto ancho="34px" alto="20px" redondo="10px" /><Esqueleto ancho="84px" alto="10px" /></span>
-              <span class="pista crece"><Esqueleto ancho="70%" alto="10px" /></span>
-            {:else}
-              <Interruptor prendido={envios} texto="Hago envíos" alCambiar={(v) => (envios = v)} />
-              {#key pistaEnvios}
-                <span class="pista crece" in:aparece>
-                  {#if pistaEnvios === 'solo'}
-                    Tus clientes solo piden para llevar.
-                  {:else if pistaEnvios === 'sin'}
-                    Tus clientes también piden a domicilio. Para cobrar el envío, crea un producto en Mi menú y prende <b
-                      >«Es un costo de envío»</b
-                    >.
-                  {:else}
-                    Tus clientes también piden a domicilio. Al confirmar, eliges el envío:
-                    {#each listaEnvios as e, i (i)}{i === 0 ? '' : i === listaEnvios.length - 1 ? ' o ' : ', '}<b>{e}</b>{/each}, de Mi menú.
-                  {/if}
-                </span>
-              {/key}
-            {/if}
-          </div>
         </GrupoCampos>
       </Tarjeta>
 
@@ -644,29 +599,4 @@
     color: var(--tenue);
   }
 
-  .crece {
-    flex-grow: 1;
-  }
-
-  .envios-fila {
-    display: flex;
-    align-items: flex-start;
-    gap: 14px;
-  }
-
-  .envios-fila :global(.interruptor) {
-    margin-top: 1px;
-  }
-
-  .envios-fila b {
-    color: var(--texto);
-    font-weight: 600;
-  }
-
-  .envios-esqueleto {
-    display: inline-flex;
-    align-items: center;
-    gap: 9px;
-    min-height: 20px;
-  }
 </style>

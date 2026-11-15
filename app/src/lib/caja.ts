@@ -5,7 +5,7 @@
 // esperado del corte) los calcula Postgres; aquí solo se piden y se pintan.
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { esDeRed, mensajeDeError, SIN_CONEXION } from './errores';
-import { FalloPos, nombreDeCuenta } from './pos';
+import { FalloPos, nombreDeCuenta, type TipoCuenta } from './pos';
 
 export type Metodo = 'efectivo' | 'tarjeta' | 'transferencia';
 export const NOMBRE_METODO: Record<Metodo, string> = { efectivo: 'Efectivo', tarjeta: 'Tarjeta', transferencia: 'Transferencia' };
@@ -20,6 +20,12 @@ function fallo(contexto: string, error: unknown): FalloPos {
 // anotar, quien decide cuánto falta es Postgres.
 export function faltaDe(v: { total: number; pagado: number }): number {
   return (Math.round(v.total * 100) - Math.round(v.pagado * 100)) / 100;
+}
+
+// Lo que entregó el cliente en un pago con tarjeta o transferencia (el monto y su propina), solo para el ticket de la
+// cuenta cobrada; en centavos, como faltaDe.
+export function conPropina(p: { monto: number; propina: number }): number {
+  return (Math.round(p.monto * 100) + Math.round(p.propina * 100)) / 100;
 }
 
 // ─── El turno ───────────────────────────────────────────────────────────────────────────────
@@ -163,6 +169,9 @@ export type Pago = {
   cancelado_at: string | null;
   cancelado_por: number | null;
   cancelado_motivo: string | null;
+  // Con cuánto pagó en efectivo y su cambio (los cuenta Postgres); para el ticket de la cuenta cobrada.
+  recibido: number | null;
+  cambio: number | null;
 };
 
 // Los pagos ya anotados de unas cuentas, también los cancelados.
@@ -170,12 +179,13 @@ export async function leerPagos(cliente: SupabaseClient, restauranteId: string, 
   if (ventas.length === 0) return [];
   const { data, error } = await cliente
     .from('pagos')
-    .select('id, venta_id, metodo, monto, propina, cobrado_por, turno_id, created_at, cancelado_at, cancelado_por, cancelado_motivo')
+    .select('id, venta_id, metodo, monto, propina, recibido, cambio, cobrado_por, turno_id, created_at, cancelado_at, cancelado_por, cancelado_motivo')
     .eq('restaurante_id', restauranteId)
     .in('venta_id', ventas)
     .order('id');
   if (error) throw error;
-  return (data as Pago[]).map((p) => ({ ...p, monto: Number(p.monto), propina: Number(p.propina) }));
+  const n = (x: unknown) => (x === null || x === undefined ? null : Number(x));
+  return (data as Pago[]).map((p) => ({ ...p, monto: Number(p.monto), propina: Number(p.propina), recibido: n(p.recibido), cambio: n(p.cambio) }));
 }
 
 // ─── Lo cobrado en el turno ─────────────────────────────────────────────────────────────────
@@ -184,19 +194,22 @@ export type Cobrada = {
   id: number;
   folio: number;
   titulo: string;
-  tipo: 'mesa' | 'para_llevar' | 'domicilio';
+  tipo: TipoCuenta;
   whatsapp: boolean; // nació de un pedido del menú en línea (parte 6b)
   total: number;
   abierta_por: number | null;
+  abierta_at: string; // la Caja a lo ancho dice quién la abrió y a qué hora
   cerrada_at: string;
   metodos: Metodo[]; // sin los pagos cancelados
+  subtotal: number;
+  descuento: number; // el de toda la cuenta, en pesos (lo cuenta Postgres)
 };
 
 // Las cuentas que se cerraron en este turno, la más reciente arriba, con cómo se pagaron.
 export async function leerCobradas(cliente: SupabaseClient, restauranteId: string, turnoId: number): Promise<Cobrada[]> {
   const { data, error } = await cliente
     .from('ventas')
-    .select('id, folio, tipo, mesa_nombre, cliente_nombre, pedido_numero, total, abierta_por, cerrada_at')
+    .select('id, folio, tipo, mesa_nombre, cliente_nombre, pedido_numero, origen, subtotal, descuento, total, abierta_por, created_at, cerrada_at')
     .eq('restaurante_id', restauranteId)
     .eq('estado', 'cerrada')
     .eq('turno_id', turnoId)
@@ -216,13 +229,38 @@ export async function leerCobradas(cliente: SupabaseClient, restauranteId: strin
       folio: v.folio,
       titulo: nombreDeCuenta(v),
       tipo: v.tipo,
-      whatsapp: v.pedido_numero !== null,
+      whatsapp: v.origen === 'menu_en_linea',
       total: Number(v.total),
       abierta_por: v.abierta_por,
+      abierta_at: v.created_at,
       cerrada_at: v.cerrada_at,
       metodos,
+      subtotal: Number(v.subtotal),
+      descuento: Number(v.descuento),
     };
   });
+}
+
+// Lo que llevaba una cuenta (sin lo cancelado), para su ticket: «1 × Latte · $48.00». El importe ya trae su descuento.
+export type LineaTicket = { id: number; cantidad: number; nombre: string; importe: number };
+
+export async function leerLineas(cliente: SupabaseClient, restauranteId: string, ventaId: number): Promise<LineaTicket[]> {
+  const { data, error } = await cliente
+    .from('venta_items')
+    .select('id, cantidad, nombre, importe')
+    .eq('restaurante_id', restauranteId)
+    .eq('venta_id', ventaId)
+    .eq('estado', 'activo')
+    .order('id');
+  if (error) throw error;
+  return data.map((r) => ({ id: r.id, cantidad: Number(r.cantidad), nombre: r.nombre, importe: Number(r.importe) }));
+}
+
+// Los billetes que se sugieren en efectivo («Lo que decidí yo» 10 de la adaptabilidad): hasta tres de estos, los primeros
+// que pasan de lo que se cobra (el justo ya es «Exacto»). Solo compara: el cambio lo cuenta Postgres.
+const BILLETES = [20, 50, 100, 200, 500];
+export function billetesQueAlcanzan(cobrar: number): number[] {
+  return BILLETES.filter((b) => b > cobrar).slice(0, 3);
 }
 
 // ─── Entradas, salidas y propinas ───────────────────────────────────────────────────────────

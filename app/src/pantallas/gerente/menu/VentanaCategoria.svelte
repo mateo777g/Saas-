@@ -48,7 +48,7 @@
   let nombre = $state(inicial?.nombre ?? '');
   let nombreEn = $state(inicial?.nombre_en ?? '');
   let icono = $state(inicial?.icono ?? '');
-  // En la lista, «mesero» es «Lo sirve el mesero» (la columna vacía). Una nueva sale con la primera.
+  // En la lista, «mesero» es «Se entrega directo» (la columna vacía). Una nueva sale con la primera.
   // svelte-ignore state_referenced_locally
   let area = $state(
     inicial ? (inicial.area_preparacion_id === null ? 'mesero' : String(inicial.area_preparacion_id)) : String(menu.areas[0]?.id ?? 'mesero'),
@@ -168,8 +168,8 @@
             etiqueta="ÁREA"
             bind:valor={area}
             placeholder="Elige un área"
-            opciones={[...menu.areas.map((a) => ({ valor: String(a.id), texto: a.nombre })), { valor: 'mesero', texto: 'Lo sirve el mesero' }]}
-            pista="Ahí llegan sus productos al mandar a cocina. Lo que sirve el mesero no llega a ninguna pantalla."
+            opciones={[...menu.areas.map((a) => ({ valor: String(a.id), texto: a.nombre })), { valor: 'mesero', texto: 'Se entrega directo' }]}
+            pista="Ahí llegan sus productos al mandarlos. Lo que se entrega directo no llega a ninguna pantalla."
           />
           </GrupoCampos>
 

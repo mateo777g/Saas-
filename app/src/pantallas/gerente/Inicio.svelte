@@ -28,6 +28,7 @@
   import { escuchar } from '../../lib/pos';
   import {
     leerCifrasDeInicio,
+    hayAreas,
     leerMesasAhora,
     leerTusMeseros,
     type CifrasDeInicio,
@@ -75,13 +76,16 @@
   let meseros = $state<Lectura<DatosMeseros>>({ estado: 'leyendo' });
   let hora = $state<string | null>(null);
   let leyendo = $state(false);
+  // Lo que se acomoda solo (adaptabilidad): sin mesas, fuera «Mesas ahora»; sin áreas, fuera «Cocina».
+  let conCocina = $state(true);
+  const sinMesas = $derived(mesas.estado === 'listo' && mesas.datos.mesas.length === 0);
   let buscador = $state<{ enfocar: () => void } | null>(null);
   // svelte-ignore state_referenced_locally
   const recientes = leerRecientes(sucursal.id);
 
   const chip = $derived.by(() => {
     const fallas = [cifras, mesas, meseros].filter((l) => l.estado === 'error');
-    if (!fallas.length) return { texto: 'Ventas y mesas en vivo', vivo: true };
+    if (!fallas.length) return { texto: sinMesas ? 'Ventas en vivo' : 'Ventas y mesas en vivo', vivo: true };
     return fallas.some((l) => l.estado === 'error' && l.deRed)
       ? { texto: 'Sin conexión', vivo: false }
       : { texto: 'No se pudo leer', vivo: false };
@@ -97,13 +101,17 @@
   async function leer() {
     const esta = ++vuelta;
     leyendo = true;
-    const [c, m, p] = await Promise.allSettled([
+    const [c, m, p, a] = await Promise.allSettled([
       leerCifrasDeInicio(sucursal.id),
       leerMesasAhora(sucursal.id),
       leerTusMeseros(sucursal.id),
+      hayAreas(sucursal.id),
     ]);
     if (esta !== vuelta) return;
     leyendo = false;
+    // Si no se pudo saber, «Cocina» se queda: abrirla dice si no hay áreas.
+    if (a.status === 'fulfilled') conCocina = a.value;
+    else console.error('[inicio] no se pudo saber si hay áreas:', a.reason);
     if (c.status === 'fulfilled') {
       cifras = { estado: 'listo', datos: c.value };
       hora = c.value.hora;
@@ -170,16 +178,16 @@
       <h1>{saludoPorHora(sucursal.hora)}, {nombre}.<span class="debajo">Así va tu negocio hoy.</span></h1>
     </div>
 
-    <Buscador bind:this={buscador} {recientes} {alIr} />
-    <Columnas {recientes} {alAbrir} {alIr} />
+    <Buscador bind:this={buscador} {recientes} {alIr} {sinMesas} />
+    <Columnas {recientes} {alAbrir} {alIr} {conCocina} />
 
     <div class="resumen-titulo">
       <h2>Resumen de hoy</h2>
       {#if hora}<span class="hora">Actualizado {hora}</span>{/if}
     </div>
     <Cifras lectura={cifras} />
-    <div class="fila">
-      <MesasAhora lectura={mesas} alAdministrar={() => alIr({ vista: 'mesas' })} />
+    <div class="fila" class:sola={sinMesas}>
+      {#if !sinMesas}<MesasAhora lectura={mesas} alAdministrar={() => alIr({ vista: 'mesas' })} />{/if}
       <TusMeseros lectura={meseros} alVerEmpleados={() => alIr({ vista: 'equipo' })} />
     </div>
   </div>
@@ -272,6 +280,10 @@
     grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
     gap: 12px;
     margin-top: 12px;
+  }
+
+  .fila.sola {
+    grid-template-columns: minmax(0, 1fr);
   }
 
   /* La franja ámbar de Mercado Pago (maqueta FiHkjmT1meyTu7zuU3En2n, versión 36): a lo ancho de la columna. En

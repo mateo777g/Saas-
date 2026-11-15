@@ -1,0 +1,227 @@
+/* ─── Vender, la Caja y las mesas a lo ancho (adaptabilidad; maqueta GBWEGCsQFcwKkWm7Qe9FPA v4, planes/maquetas/
+   adaptabilidad.html): lo que no traen las piezas de diseno/, con las medidas de la maqueta (su estilos.css) y de Crear
+   anuncios (los cuadros, la tarjeta con su cabeza y la barra de abajo). Todo bajo .pos-ancho, para no chocar con pos.css
+   (el celular, bajo .pos). Sin otro verde: el de los botones es el de Boton; el de los textos, --verde. ─── */
+.pos-ancho { position: absolute; inset: 0; background: var(--fondo); color: var(--texto); font-size: 13.5px; text-align: left; overflow: hidden; }
+/* Cristal (el developer, 14 nov 2026): en el panel, lo de atrás es el fondo del marco (sus manchas y su grano,
+   diseno/Marco.svelte), como en las demás vistas; aquí --fondo es negro puro y las tapaba. Y dentro de la tarjeta el gris
+   de los campos pasa al relleno de Cristal (reglas-diseno.md, «En Cristal oscuro ese gris nunca es negro»). En Simple y en
+   el aparato (sin marco), igual que siempre. Sin recortar: el desvanecido de la barra de arriba (BarraArriba) corre por
+   detrás de la barra lateral flotante; recortado aquí, dejaba una raya entre las dos (el developer, 14 nov 2026). */
+:root[data-estilo='cristal'] .lugar-vista .pos-ancho { background: transparent; overflow: visible; }
+:root[data-estilo='cristal'][data-tema='oscuro'] .pos-ancho .tarjeta { --fondo: var(--cristal-relleno); }
+:root[data-estilo='cristal'][data-tema='claro'] .pos-ancho .tarjeta { --fondo: var(--cl-relleno); }
+.pos-ancho * { box-sizing: border-box; }
+.pos-ancho .mono { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+.pos-ancho .crece { flex: 1; }
+.pos-ancho .solo-lector { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+/* Entre la barra de arriba (56) y la de abajo (64), como el paso de Crear anuncios */
+.pos-ancho .cuerpo-ancho { position: absolute; left: 0; right: 0; top: 56px; bottom: 64px; padding: 20px 20px 20px 24px; }
+.pos-ancho .cuerpo-ancho.sin-abajo { bottom: 0; }
+.pos-ancho .dos { height: 100%; display: grid; grid-template-columns: minmax(0, 1fr) 400px; gap: 24px; }
+.pos-ancho .izq, .pos-ancho .uno { min-width: 0; min-height: 0; height: 100%; display: flex; flex-direction: column; gap: 14px; }
+.pos-ancho .der { min-width: 0; min-height: 0; height: 100%; }
+
+/* La fila de herramientas de Mi menú: la búsqueda en píldora con su brillo, el filtro y el conteo */
+.pos-ancho .herramientas { position: relative; flex: none; min-height: 48px; display: flex; align-items: center; gap: 12px; }
+.pos-ancho .herramientas > div.haz { flex: 0 1 520px; min-width: 0; }
+.pos-ancho .buscador { width: 100%; height: 48px; display: flex; align-items: center; gap: 10px; padding: 0 14px 0 18px; border: 1px solid var(--borde-tarjeta);
+  border-radius: 999px; background: var(--solido); color: var(--tenue); }
+.pos-ancho .buscador:focus-within { border-color: var(--linea-fuerte); }
+:root[data-estilo='cristal'] .pos-ancho .buscador { position: relative; }
+.pos-ancho .buscador input { flex: 1; min-width: 0; border: 0; background: transparent; color: var(--texto); font-size: 15px; font-weight: 400; font-family: inherit; outline: none; }
+.pos-ancho .buscador input::placeholder { color: var(--tenue); }
+.pos-ancho .buscador input::-webkit-search-cancel-button { display: none; }
+.pos-ancho .herramientas .etiqueta { font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.14em; color: var(--tenue); white-space: nowrap; }
+
+/* Los productos en cuadros, cada categoría con su título (encuesta 13) */
+.pos-ancho .rejilla-scroll { flex: 1; min-height: 0; overflow-y: auto; margin: 0 -6px; padding: 2px 6px 12px; scrollbar-width: none; }
+.pos-ancho .rejilla-scroll::-webkit-scrollbar { width: 0; }
+.pos-ancho .cat-titulo { display: flex; align-items: baseline; gap: 10px; margin: 18px 2px 10px; }
+.pos-ancho .bloque-cat:first-child .cat-titulo { margin-top: 2px; }
+.pos-ancho .cat-titulo h2 { margin: 0; font-size: 15px; font-weight: 800; letter-spacing: -0.2px; }
+.pos-ancho .cat-titulo span { font-family: var(--mono); font-size: 10.5px; color: var(--tenue); letter-spacing: 0.14em; }
+.pos-ancho .rejilla { display: grid; grid-template-columns: repeat(auto-fill, minmax(196px, 1fr)); gap: 14px; align-content: start; }
+.pos-ancho .sin-coincide { padding: 60px 0; text-align: center; color: var(--suave); font-size: 13px; }
+.pos-ancho .sin-coincide b { display: block; color: var(--texto); font-size: 14.5px; margin-bottom: 4px; }
+
+/* El cuadro de Crear anuncios (.prod) tal cual: foto a 4:3, nombre en un renglón y precio; lo anotado, con el aro azul */
+.pos-ancho .prod { position: relative; display: flex; flex-direction: column; gap: 10px; padding: 8px 8px 12px; border-radius: 14px; border: 1px solid var(--borde-tarjeta);
+  background: var(--solido); color: var(--texto); text-align: left; min-width: 0; cursor: pointer; font: inherit;
+  transition: box-shadow 0.2s ease, border-color 0.2s ease, transform 0.15s ease; }
+.pos-ancho .prod:not(:disabled):active { transform: scale(0.98); }
+.pos-ancho .prod:focus-visible { outline: none; box-shadow: 0 0 0 2px var(--campo-aro); }
+.pos-ancho .prod.elegido { box-shadow: 0 0 0 2px var(--campo-aro); border-color: transparent; }
+.pos-ancho .prod-foto { aspect-ratio: 4 / 3; border-radius: 10px; background: #000000 center / cover no-repeat; }
+.pos-ancho .prod-textos { padding: 0 4px; display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.pos-ancho .prod-nombre { font-size: 14px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pos-ancho .prod-precio { font-family: var(--mono); font-size: 12px; color: var(--tenue); }
+.pos-ancho .prod .numero { position: absolute; top: 16px; right: 16px; width: 26px; height: 26px; border-radius: 8px; display: flex; align-items: center;
+  justify-content: center; background: var(--campo-aro); color: #ffffff; font-family: var(--mono); font-size: 12px; font-weight: 700;
+  animation: numero-sale 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) both; }
+@keyframes numero-sale { from { opacity: 0; transform: scale(0.4); } }
+.pos-ancho .prod .numero.salta { animation: numero-salta 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+@keyframes numero-salta { from { transform: scale(0.6); } }
+/* Agotado: como en el aparato de hoy, apagado y con su etiqueta. */
+.pos-ancho .prod.agotado { opacity: 0.42; cursor: default; }
+.pos-ancho .prod.agotado .prod-foto::after { content: 'Agotado'; position: relative; top: 8px; left: 8px; padding: 3px 7px; border-radius: 6px;
+  background: var(--solido); color: var(--texto); font-size: 11px; font-weight: 700; }
+
+/* Las mesas: los cuadros de Crear anuncios sin foto, las ocupadas con su punto verde */
+.pos-ancho .mesa-t { min-height: 112px; justify-content: space-between; gap: 14px; padding: 16px 16px 14px; }
+.pos-ancho .mesa-nom { display: flex; align-items: center; gap: 8px; min-width: 0; min-height: 22px; font-size: 15px; font-weight: 800; }
+.pos-ancho .mesa-nom .nom { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pos-ancho .punto-v { width: 8px; height: 8px; flex: none; border-radius: 50%; background: var(--verde); }
+.pos-ancho .mesa-abajo { display: flex; flex-direction: column; gap: 3px; }
+.pos-ancho .mesa-abajo b { font-family: var(--mono); font-size: 17px; font-weight: 600; }
+.pos-ancho .mesa-abajo span { font-size: 12px; color: var(--tenue); }
+.pos-ancho .mesa-t.libre .mesa-abajo span { font-size: 12.5px; font-weight: 600; color: var(--suave); }
+/* La marca se va a la derecha con su margen, sin un espaciador que gaste otro hueco de 8 px: con él, «Mesa 2» + «En cocina»
+   salía «Mes…» en un cuadro de 197 px. */
+.pos-ancho .mesa-t .marca-e { align-self: flex-start; margin-left: auto; }
+
+/* La tarjeta de la derecha (la de Crear anuncios), del alto de la pantalla; lo de adentro se desliza con su desvanecido
+   abajo solo cuando no cabe (como las ventanas, diseno/ventanaSeMueve.ts). */
+.pos-ancho .tarjeta { padding: 20px; background: var(--solido); border: 1px solid var(--borde-tarjeta); border-radius: 14px; display: flex; flex-direction: column;
+  gap: 16px; min-width: 0; }
+.pos-ancho .lado-tarjeta { height: 100%; padding: 0; gap: 0; overflow: hidden; position: relative; }
+.pos-ancho .tarjeta-scroll { height: 100%; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 18px; scrollbar-width: none; }
+.pos-ancho .tarjeta-scroll::-webkit-scrollbar { width: 0; }
+.pos-ancho .tarjeta-scroll.con-mas { -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 40px), transparent); mask-image: linear-gradient(to bottom, #000 calc(100% - 40px), transparent); }
+/* Lo de adentro cambia (la cuenta, Abiertos, el cobro, la cobrada) con el rebote de la caja del agente. */
+.pos-ancho .tarjeta-scroll.abre { animation: lado-abre 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+@keyframes lado-abre { from { opacity: 0; transform: translateY(14px) scale(0.98); } }
+
+/* La cabeza de las tarjetas de Crear anuncios: cuadrito con su ícono, título y su texto */
+.pos-ancho .encabezado { display: flex; align-items: center; gap: 12px; }
+.pos-ancho .cuadro-c { width: 36px; height: 36px; flex: none; display: flex; align-items: center; justify-content: center; border-radius: 11px; background: var(--chip); color: var(--texto); }
+.pos-ancho .titulos { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.pos-ancho .titulos .titulo { font-size: 14.5px; font-weight: 700; overflow-wrap: anywhere; }
+.pos-ancho .titulos .sub { font-size: 12.5px; font-weight: 500; line-height: 1.45; color: var(--suave); }
+.pos-ancho .etiqueta-c { font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.14em; color: var(--tenue); text-transform: uppercase; }
+.pos-ancho .bloque-c { display: flex; flex-direction: column; gap: 8px; }
+
+/* Lo que se elige, como los roles de Empleados (ElegirRoles.svelte): la caja de texto de HeroUI que se llena del azul del aro */
+.pos-ancho .elige { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 8px; }
+.pos-ancho .elige-op { height: 40px; display: inline-flex; align-items: center; justify-content: flex-start; gap: 6px; padding: 0 14px; border: 0; border-radius: 12px;
+  background: var(--campo-fondo); box-shadow: var(--campo-sombra); color: var(--texto); font: 600 13px var(--jakarta); white-space: nowrap; cursor: pointer;
+  transition: background-color 0.15s ease, box-shadow 0.15s ease-out, transform 0.15s ease; }
+.pos-ancho .elige-op:hover { background: var(--campo-encima); }
+.pos-ancho .elige-op:active { transform: scale(0.97); }
+.pos-ancho .elige-op:focus-visible { outline: none; box-shadow: 0 0 0 2px var(--campo-aro); }
+.pos-ancho .elige-op[aria-pressed='true'] { background: var(--campo-aro); color: #ffffff; }
+
+/* Lo anotado, renglón por renglón: cuántos (− n +) y Quitar; lo mandado, con quién lo anotó */
+.pos-ancho .renglones { display: flex; flex-direction: column; }
+.pos-ancho .renglon { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px 10px; padding: 11px 0; width: 100%; border: 0; background: transparent;
+  color: var(--texto); text-align: left; font: inherit; }
+.pos-ancho button.renglon { cursor: pointer; border-radius: 10px; }
+.pos-ancho button.renglon:hover { background: var(--chip); box-shadow: 0 0 0 8px var(--chip); }
+.pos-ancho .renglon + .renglon { border-top: 1px solid var(--tabla-linea, var(--linea)); }
+.pos-ancho .renglon .que { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.pos-ancho .renglon .que b { font-size: 13.5px; font-weight: 700; }
+.pos-ancho .renglon .det { font-size: 12px; color: var(--suave); }
+.pos-ancho .renglon .nota-r { font-size: 12px; color: var(--suave); font-style: italic; }
+.pos-ancho .renglon .desc-r { font-size: 12px; color: var(--verde); }
+.pos-ancho .renglon .cancel-r { font-size: 12px; color: var(--rojo); }
+.pos-ancho .renglon.cancelado .que b, .pos-ancho .renglon.cancelado .imp { text-decoration: line-through; color: var(--tenue); }
+.pos-ancho .renglon .imp { font-family: var(--mono); font-size: 13px; text-align: right; white-space: nowrap; }
+.pos-ancho .renglon .imp .antes { margin-right: 6px; color: var(--tenue); text-decoration: line-through; }
+.pos-ancho .renglon .abajo-r { grid-column: 1 / -1; display: flex; align-items: center; gap: 8px; }
+.pos-ancho .renglon .cant-e { font-family: var(--mono); font-weight: 600; margin-right: 6px; }
+.pos-ancho .paso { display: inline-flex; align-items: center; height: 32px; border-radius: 10px; background: var(--campo-fondo); box-shadow: var(--campo-sombra); overflow: hidden; }
+.pos-ancho .paso button { width: 32px; height: 32px; display: grid; place-items: center; border: 0; background: transparent; color: var(--texto); cursor: pointer; }
+.pos-ancho .paso button:hover { background: var(--campo-encima); }
+.pos-ancho .paso span { min-width: 24px; text-align: center; font-family: var(--mono); font-size: 13px; font-weight: 600; }
+.pos-ancho .quitar { height: 32px; display: inline-flex; align-items: center; gap: 4px; padding: 0 8px; border: 0; border-radius: 10px; background: transparent;
+  color: var(--suave); font: 600 12px var(--jakarta); cursor: pointer; }
+.pos-ancho .quitar:hover { background: color-mix(in srgb, var(--rojo) 12%, transparent); color: var(--rojo); }
+.pos-ancho .renglon.entra { animation: renglon-entra 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+@keyframes renglon-entra { from { opacity: 0; transform: translateY(-6px) scale(0.98); } }
+.pos-ancho .bloque-cabeza { display: flex; align-items: center; gap: 8px; }
+.pos-ancho .marca-e { height: 22px; display: inline-flex; align-items: center; gap: 6px; padding: 0 8px; border-radius: 7px; background: var(--chip);
+  font-size: 11.5px; font-weight: 600; color: var(--suave); white-space: nowrap; }
+.pos-ancho .marca-e::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: var(--amarillo); }
+.pos-ancho .marca-e.lista::before { background: var(--verde); }
+.pos-ancho .marca-e.cuenta::before { background: var(--acento); }
+.pos-ancho .marca-e.reabierta::before { background: var(--tenue); }
+.pos-ancho .vacio-c { padding: 36px 12px; text-align: center; display: flex; flex-direction: column; gap: 6px; border: 1.5px dashed var(--linea-fuerte, var(--linea)); border-radius: 12px; }
+.pos-ancho .vacio-c b { font-size: 14px; }
+.pos-ancho .vacio-c span { font-size: 12.5px; color: var(--suave); line-height: 1.45; }
+.pos-ancho .datos-c { display: flex; flex-direction: column; gap: 6px; padding: 12px 16px; border-radius: 12px; background: var(--fondo); font-size: 12.5px; line-height: 1.4; }
+.pos-ancho .datos-c > span { display: flex; gap: 8px; align-items: flex-start; }
+.pos-ancho .datos-c svg { margin-top: 1px; color: var(--suave); flex: none; }
+.pos-ancho .resumen-c { display: flex; flex-direction: column; gap: 6px; padding-top: 12px; border-top: 1px solid var(--linea); }
+.pos-ancho .resumen-c > div { display: flex; justify-content: space-between; gap: 12px; font-size: 13px; }
+.pos-ancho .resumen-c > div span:last-child { font-family: var(--mono); }
+.pos-ancho .resumen-c .desc { color: var(--verde); }
+.pos-ancho .resumen-c .fuerte { font-weight: 700; }
+
+/* Lo abierto sin mesa (Abiertos · 3) */
+.pos-ancho .abiertos { display: flex; flex-direction: column; margin: 0 -8px; }
+.pos-ancho .fila-c { width: 100%; display: flex; align-items: center; gap: 12px; padding: 11px 10px; border: 0; border-radius: 12px; background: transparent;
+  color: var(--texto); text-align: left; font: inherit; cursor: pointer; }
+.pos-ancho .fila-c:hover, .pos-ancho .fila-c[aria-pressed='true'] { background: var(--chip); }
+.pos-ancho .fila-c + .fila-c { box-shadow: 0 -1px 0 var(--tabla-linea, var(--linea)); }
+.pos-ancho .fila-c:hover + .fila-c { box-shadow: none; }
+.pos-ancho .fila-c.anotado .ico-c { background: transparent; border: 1.5px dashed var(--linea-fuerte, var(--linea)); }
+.pos-ancho .ico-c { width: 36px; height: 36px; flex: none; display: grid; place-items: center; border-radius: 11px; background: var(--chip); color: var(--texto); }
+.pos-ancho .fila-c .t { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.pos-ancho .fila-c .t b { font-size: 13.5px; font-weight: 700; }
+.pos-ancho .fila-c .t > span { font-size: 12px; color: var(--tenue); }
+.pos-ancho .fila-c .der b { font-family: var(--mono); font-size: 13.5px; font-weight: 600; }
+.pos-ancho .wa { height: 18px; padding: 0 6px; border-radius: 5px; background: color-mix(in srgb, var(--verde) 16%, transparent); color: var(--verde); font-size: 10.5px;
+  font-weight: 700; display: inline-flex; align-items: center; align-self: flex-start; flex: none; }
+
+/* La barra de abajo de Crear anuncios (64, --solido, línea arriba): lo que llevas, el total y sus botones */
+.pos-ancho .barra-abajo { position: absolute; left: 0; right: 0; bottom: 0; height: 64px; z-index: 2; background: var(--solido); border-top: 1px solid var(--linea); }
+.pos-ancho .barra-contenido { height: 100%; display: flex; align-items: center; gap: 10px; padding: 0 20px 0 24px; animation: funde 0.2s ease; }
+@keyframes funde { from { opacity: 0; } }
+.pos-ancho .estado { flex: 1; min-width: 0; display: flex; align-items: center; gap: 10px; font-size: 13px; white-space: nowrap; }
+.pos-ancho .estado b { font-weight: 600; flex: none; }
+.pos-ancho .estado small { min-width: 0; font-size: 12.5px; font-weight: 500; color: var(--suave); overflow: hidden; text-overflow: ellipsis; }
+.pos-ancho .total-abajo { display: inline-flex; align-items: baseline; gap: 10px; margin-right: 10px; white-space: nowrap; }
+.pos-ancho .total-abajo span { font-size: 12.5px; color: var(--suave); font-weight: 600; }
+.pos-ancho .total-abajo b { font-family: var(--mono); font-size: 20px; font-weight: 600; letter-spacing: -0.4px; }
+.pos-ancho .barra-abajo .caja-abajo { flex: 1; min-width: 0; }
+
+/* El aparato a lo ancho: la estrella, el lugar y quién está, a la izquierda de su barra */
+.pos-ancho .ap-logo { width: 28px; height: 28px; flex: none; display: grid; place-items: center; }
+/* Sin «‹ Mesas» antes, la estrella va a 24 del borde, como la maqueta (BarraArriba deja 16 por el botón de volver). */
+.pos-ancho .ap-logo:first-child { margin-left: 8px; }
+.pos-ancho .ap-lugar { display: flex; flex-direction: column; gap: 2px; flex: none; min-width: 0; max-width: 220px; }
+.pos-ancho .ap-lugar b { font-size: 14px; font-weight: 800; letter-spacing: -0.2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pos-ancho .ap-lugar span { font-family: var(--mono); font-size: 10.5px; color: var(--tenue); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* El globito de siempre, arriba de la barra de abajo */
+.pos-ancho .globo-a { position: absolute; left: 50%; bottom: 84px; z-index: 40; transform: translateX(-50%); display: inline-flex; align-items: center; gap: 8px; height: 40px;
+  padding: 0 16px; border-radius: 12px; background: var(--globo); color: var(--globo-texto); font-size: 13px; font-weight: 600; white-space: nowrap;
+  box-shadow: 0 12px 30px var(--sombra-menu); animation: globo-sale 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+.pos-ancho .globo-a.sin-abajo { bottom: 24px; }
+.pos-ancho .globo-a svg { color: var(--verde); }
+@keyframes globo-sale { from { opacity: 0; transform: translate(-50%, 14px) scale(0.97); } }
+
+/* El aviso de «Lista», arriba a la derecha, sobre todo */
+.pos-ancho .aviso-ancho { position: absolute; right: 20px; top: 68px; z-index: 30; width: 360px; display: flex; align-items: center; gap: 10px; padding: 8px 8px 8px 14px;
+  border-radius: 14px; border: 1px solid var(--borde-tarjeta); background: var(--solido); box-shadow: 0 24px 60px var(--sombra); color: var(--texto);
+  animation: lado-abre 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+.pos-ancho .aviso-ancho .punto-v { width: 9px; height: 9px; }
+.pos-ancho .aviso-ancho .abrir { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; border: 0; background: transparent; padding: 0; text-align: left;
+  color: inherit; font: inherit; cursor: pointer; }
+.pos-ancho .aviso-ancho b { font-size: 14px; font-weight: 700; }
+.pos-ancho .aviso-ancho .abrir span { font-size: 12px; color: var(--suave); }
+
+/* Las hojas del celular (opciones, cancelar, descuento…) siguen siendo hojas: a lo ancho, al centro y de 440, sobre un
+   velo que tapa toda la pantalla, barra lateral incluida, como las de Pedidos y las ventanas del panel (encuesta 20). */
+.pos-ancho .capa-hojas { position: absolute; inset: 0; z-index: 20; height: auto; pointer-events: none; overflow: visible; background: transparent; }
+.pos-ancho .capa-hojas > * { pointer-events: auto; }
+.pos-ancho .capa-hojas .hoja-velo { position: fixed; z-index: 30; justify-content: center; }
+.pos-ancho .capa-hojas .hoja { max-width: 440px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .pos-ancho *, .pos-ancho *::before, .pos-ancho *::after { animation: none !important; transition: none !important; }
+}
+
+/* Si no se pudo leer: el error y «Intentar de nuevo», al centro */
+.pos-ancho .medio-ancho { height: 100%; max-width: 420px; margin: 0 auto; display: flex; flex-direction: column; justify-content: center; align-items: stretch; gap: 14px; }

@@ -99,7 +99,7 @@
           {#if c.area_preparacion_id !== null}
             <span class="area">{nombreArea.get(c.area_preparacion_id) ?? '—'}</span>
           {:else}
-            <span class="area mesero">Lo sirve el mesero</span>
+            <span class="area mesero">Se entrega directo</span>
           {/if}
         </span>
         <span class="acciones">

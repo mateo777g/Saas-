@@ -2,8 +2,9 @@
   Una cuenta (maqueta Mesero y cocina, estado «Mesa 4»). Arriba, lo anotado y todavía no mandado,
   punteado en «Por mandar»: vive solo en este aparato y se cambia o se quita sin permiso. Debajo,
   lo mandado, una comanda por bloque (la más nueva arriba) con su área y si ya está lista, y lo
-  que no va a ninguna pantalla en «Lo sirve el mesero». El total es el de Postgres, y si ya tiene
-  pagos, lo pagado y lo que falta (parte 4b). Abajo, Agregar y «Mandar a cocina», que sin internet
+  que no va a ninguna pantalla en «Se entrega directo». El total es el de Postgres, y si ya tiene
+  pagos, lo pagado y lo que falta (parte 4b). Abajo, Agregar y el botón que dice a dónde va lo
+  anotado («Mandar a Cocina», o «Anotar» si nada va a una pantalla; adaptabilidad), que sin internet
   dice «Sin conexión»; sin nada por mandar, el botón es «Cobrar» (maqueta La caja).
 
   Con la parte 4c (maqueta Cancelaciones y descuentos), lo mandado se toca y abre la hoja de
@@ -27,7 +28,14 @@
     por: string;
   };
   export type DescuentoVista = { texto: string; motivo: string; monto: number };
-  export type BloqueVista = { id: number; etiqueta: string; estado: 'pendiente' | 'lista'; renglones: EnviadoVista[] };
+  // `etiquetaAncha`: la de lo ancho, con el área primero («Cocina · 14:05», maqueta de la adaptabilidad v4).
+  export type BloqueVista = {
+    id: number;
+    etiqueta: string;
+    etiquetaAncha?: string;
+    estado: 'pendiente' | 'lista';
+    renglones: EnviadoVista[];
+  };
 </script>
 
 <script lang="ts">
@@ -41,6 +49,7 @@
     titulo,
     sub,
     volver,
+    mandarTexto,
     conCuenta,
     domicilio,
     lineas,
@@ -68,6 +77,7 @@
     titulo: string;
     sub: string;
     volver: string;
+    mandarTexto: string; // «Mandar a Cocina», «Mandar a Cocina y Barra» o «Anotar»
     conCuenta: boolean;
     domicilio: { telefono: string; direccion: string } | null;
     lineas: LineaVista[];
@@ -137,7 +147,7 @@
   <div class="caja-pos" role="alert">
     <CajaError
       tipo="sinred"
-      mensaje="Sin conexión. Lo anotado sigue en este {donde}; vuelve a pulsar «Mandar a cocina» cuando regrese el internet."
+      mensaje="Sin conexión. Lo anotado sigue en este {donde}; vuelve a pulsar «{mandarTexto}» cuando regrese el internet."
     />
   </div>
 {:else if error}
@@ -189,7 +199,7 @@
   {/each}
   {#if sinArea.length}
     <div class="bloque">
-      <div class="bloque-cabeza"><span class="etq">Lo sirve el mesero</span></div>
+      <div class="bloque-cabeza"><span class="etq">Se entrega directo</span></div>
       {#each sinArea as r (r.id)}{@render enviado(r)}{/each}
     </div>
   {/if}
@@ -214,7 +224,7 @@
   {#if total === null && !lineas.length}
     <div class="vacio">
       <b>{titulo}{volver === 'Mesas' ? ' está libre' : ''}</b>
-      <span>Lo que anotes se queda en este {donde} hasta que lo mandes a cocina. Ahí se abre la cuenta.</span>
+      <span>Lo que anotes se queda en este {donde} hasta que {mandarTexto === 'Anotar' ? 'pulses «Anotar»' : 'lo mandes'}. Ahí se abre la cuenta.</span>
     </div>
   {/if}
 </div>
@@ -228,7 +238,7 @@
       {#if sinRed}
         <Icono nombre="sinred" tamano={18} />Sin conexión
       {:else}
-        Mandar a cocina{porMandar ? ` · ${porMandar}` : ''}
+        {mandarTexto}{porMandar ? ` · ${porMandar}` : ''}
       {/if}
     </button>
   {/if}

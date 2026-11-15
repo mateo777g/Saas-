@@ -12,9 +12,10 @@ import { dinero } from './formato';
 export type Opcion = { id: number; nombre: string; precio_extra: number; visible: boolean };
 export type Grupo = { id: number; nombre: string; minimo: number; maximo: number; opciones: Opcion[] };
 // `grupos`: los que lleva, en el orden de la pestaña Opciones (uno solo por restaurante).
-export type ProductoPos = { id: number; nombre: string; precio: number; visible: boolean; grupos: Grupo[] };
-// `area`: a qué pantalla de cocina va; null es «Lo sirve el mesero».
-export type CategoriaPos = { id: number; nombre: string; area: string | null; productos: ProductoPos[] };
+// `foto`: la dirección de su foto de Mi menú, o null (el cuadro negro); la usan los cuadros de Vender a lo ancho.
+export type ProductoPos = { id: number; nombre: string; precio: number; visible: boolean; foto: string | null; grupos: Grupo[] };
+// `area`: a qué pantalla de cocina va; null es «Se entrega directo». `icono`: el de Mi menú, para el filtro.
+export type CategoriaPos = { id: number; nombre: string; icono: string; area: string | null; productos: ProductoPos[] };
 export type Area = { id: number; nombre: string };
 export type MenuPos = { categorias: CategoriaPos[]; areas: Area[] };
 
@@ -29,14 +30,14 @@ export async function leerMenuPos(cliente: SupabaseClient, restauranteId: string
   const [categorias, productos, grupos, opciones, enlaces, areas] = await Promise.all([
     cliente
       .from('categorias')
-      .select('id, nombre, area_preparacion_id')
+      .select('id, nombre, icono, area_preparacion_id')
       .eq('restaurante_id', restauranteId)
       .is('archivado_at', null)
       .order('orden')
       .order('id'),
     cliente
       .from('productos')
-      .select('id, categoria_id, nombre, precio, visible')
+      .select('id, categoria_id, nombre, precio, visible, imagen_ruta')
       .eq('restaurante_id', restauranteId)
       .is('archivado_at', null)
       .order('orden')
@@ -83,6 +84,7 @@ export async function leerMenuPos(cliente: SupabaseClient, restauranteId: string
     categorias: categorias.data!.map((c) => ({
       id: c.id,
       nombre: c.nombre,
+      icono: c.icono,
       area: c.area_preparacion_id === null ? null : (nombreArea.get(c.area_preparacion_id) ?? null),
       productos: productos.data!
         .filter((p) => p.categoria_id === c.id)
@@ -91,6 +93,8 @@ export async function leerMenuPos(cliente: SupabaseClient, restauranteId: string
           nombre: p.nombre,
           precio: Number(p.precio),
           visible: p.visible,
+          // Como urlFoto de lib/fotos.ts, que el aparato no importa (trae la conexión del panel).
+          foto: p.imagen_ruta ? `${import.meta.env.VITE_R2_PUBLICO}/${p.imagen_ruta}` : null,
           grupos: (gruposDe.get(p.id) ?? [])
             .sort((a, b) => (ordenGrupo.get(a) ?? 0) - (ordenGrupo.get(b) ?? 0))
             .map((id) => porGrupo.get(id))
@@ -159,7 +163,22 @@ export async function leerEquipo(cliente: SupabaseClient, restauranteId: string,
 
 // ─── Las cuentas abiertas ───────────────────────────────────────────────────────────────────
 
-export type TipoCuenta = 'mesa' | 'para_llevar' | 'domicilio';
+export type TipoCuenta = 'mesa' | 'comer_aqui' | 'para_llevar' | 'domicilio';
+
+// Cómo se dice el tipo de una cuenta sin mesa (adaptabilidad, 12 de noviembre de 2026).
+export const TIPO_EN_PALABRAS: Record<Exclude<TipoCuenta, 'mesa'>, string> = {
+  comer_aqui: 'Comer aquí',
+  para_llevar: 'Para llevar',
+  domicilio: 'Domicilio',
+};
+
+// El ícono de cada tipo de cuenta (maqueta de la adaptabilidad v4).
+export const ICONO_DE_TIPO: Record<TipoCuenta, string> = {
+  mesa: 'mesas',
+  comer_aqui: 'tienda',
+  para_llevar: 'bolsa',
+  domicilio: 'moto',
+};
 export type TipoDescuento = 'porcentaje' | 'pesos';
 
 export type Venta = {
@@ -180,13 +199,14 @@ export type Venta = {
   folio: number | null; // abierta con folio: reabierta, porque se canceló un pago (parte 4c)
   abierta_por: number | null;
   cuenta_pedida_at: string | null;
-  pedido_numero: number | null; // la que nació de un pedido del menú en línea: su #27 (parte 6b)
+  pedido_numero: number | null; // el número del día de una cuenta sin mesa: «#27» (partes 6b y adaptabilidad)
+  origen: 'punto_de_venta' | 'menu_en_linea'; // menu_en_linea: nació de un pedido del menú en línea
   created_at: string;
 };
 
-// Cómo se llama una cuenta en todos lados: la de una mesa, por su mesa; la de un pedido del menú en
-// línea, «#27 · Rosa Ramírez» (parte 6b, decidido el 25 de octubre de 2026); las demás, por el
-// nombre del cliente.
+// Cómo se llama una cuenta en la app: la de una mesa, por su mesa; con número del día y nombre,
+// «#27 · Rosa Ramírez» (parte 6b); solo con número, «#23», y solo con nombre, el nombre (adaptabilidad:
+// el nombre es opcional y sin él la cuenta toma su número).
 export function nombreDeCuenta(v: {
   tipo: TipoCuenta;
   mesa_nombre: string | null;
@@ -194,8 +214,9 @@ export function nombreDeCuenta(v: {
   pedido_numero: number | null;
 }): string {
   if (v.tipo === 'mesa') return v.mesa_nombre ?? '—';
-  if (v.pedido_numero !== null) return `#${v.pedido_numero} · ${v.cliente_nombre ?? '—'}`;
-  return v.cliente_nombre ?? '—';
+  const nombre = v.cliente_nombre?.trim() || null;
+  if (v.pedido_numero !== null) return nombre ? `#${v.pedido_numero} · ${nombre}` : `#${v.pedido_numero}`;
+  return nombre ?? '—';
 }
 
 export type OpcionElegida = { grupo: string; opcion: string; precio_extra: number };
@@ -236,7 +257,7 @@ export type Abiertas = { ventas: Venta[]; renglones: Renglon[]; comandas: Comand
 
 // Un solo texto cada una: así supabase-js sabe qué columnas trae.
 const COLUMNAS_VENTA =
-  'id, tipo, mesa_id, mesa_nombre, cliente_nombre, cliente_telefono, cliente_direccion, subtotal, descuento, descuento_tipo, descuento_valor, descuento_motivo, total, pagado, folio, abierta_por, cuenta_pedida_at, pedido_numero, created_at';
+  'id, tipo, mesa_id, mesa_nombre, cliente_nombre, cliente_telefono, cliente_direccion, subtotal, descuento, descuento_tipo, descuento_valor, descuento_motivo, total, pagado, folio, abierta_por, cuenta_pedida_at, pedido_numero, origen, created_at';
 const COLUMNAS_RENGLON =
   'id, venta_id, nombre, cantidad, precio_unitario, descuento, descuento_tipo, descuento_valor, descuento_motivo, importe, opciones, nota, comanda_id, agregado_por, clave_envio, estado, autorizado_por, cancelado_motivo';
 
@@ -300,6 +321,63 @@ export async function leerAbiertas(cliente: SupabaseClient, restauranteId: strin
     renglones: (renglones.data as Renglon[]).map(renglon),
     comandas: comandas.data as Comanda[],
   };
+}
+
+// Las comandas que mandó esta persona a cuentas que ya no están abiertas. En el mostrador se cobra
+// antes de mandar (adaptabilidad, encuesta 4), así que la cuenta ya está cerrada cuando la cocina la
+// marca, y el aviso de «Lista» tiene que llegar igual (encuesta 10: le suena a quien lo mandó y dice
+// el nombre o el número). Trae las que siguen en la cocina y, de las que la lectura anterior traía
+// pendientes (`vigiladas`), cómo quedaron; cada una con el nombre de su cuenta y si le queda algo sin
+// cancelar (una comanda con todo cancelado no es «Lista»). Las de cuentas abiertas no: esas ya las
+// trae leerAbiertas.
+export type ComandaFuera = Comanda & { titulo: string; algo: boolean };
+
+export async function leerComandasFuera(
+  cliente: SupabaseClient,
+  restauranteId: string,
+  miembroId: number,
+  abiertas: number[],
+  vigiladas: number[],
+): Promise<ComandaFuera[]> {
+  const base = cliente
+    .from('comandas')
+    .select(COLUMNAS_COMANDA)
+    .eq('restaurante_id', restauranteId)
+    .eq('enviada_por', miembroId);
+  const { data, error } = await (vigiladas.length > 0
+    ? base.or(`estado.eq.pendiente,id.in.(${vigiladas.join(',')})`)
+    : base.eq('estado', 'pendiente')
+  ).order('id');
+  if (error) throw error;
+  const fuera = (data as Comanda[]).filter((c) => !abiertas.includes(c.venta_id));
+  if (fuera.length === 0) return [];
+
+  const [ventas, renglones] = await Promise.all([
+    cliente
+      .from('ventas')
+      .select('id, tipo, mesa_nombre, cliente_nombre, pedido_numero')
+      .eq('restaurante_id', restauranteId)
+      .in('id', [...new Set(fuera.map((c) => c.venta_id))]),
+    cliente
+      .from('venta_items')
+      .select('comanda_id')
+      .eq('restaurante_id', restauranteId)
+      .eq('estado', 'activo')
+      .in(
+        'comanda_id',
+        fuera.map((c) => c.id),
+      ),
+  ]);
+  if (ventas.error) throw ventas.error;
+  if (renglones.error) throw renglones.error;
+  const nombres = new Map(
+    (ventas.data as Pick<Venta, 'id' | 'tipo' | 'mesa_nombre' | 'cliente_nombre' | 'pedido_numero'>[]).map((v) => [
+      v.id,
+      nombreDeCuenta(v),
+    ]),
+  );
+  const conAlgo = new Set((renglones.data as { comanda_id: number | null }[]).map((r) => r.comanda_id));
+  return fuera.map((c) => ({ ...c, titulo: nombres.get(c.venta_id) ?? '—', algo: conAlgo.has(c.id) }));
 }
 
 // ¿A qué cuenta llegó el envío con esa clave? Lo pregunta quien mandó sin saber si llegó (se cayó
@@ -371,7 +449,7 @@ export async function leerCocina(
   const [ventas, renglones] = await Promise.all([
     cliente
       .from('ventas')
-      .select('id, tipo, mesa_nombre, cliente_nombre, pedido_numero')
+      .select('id, tipo, mesa_nombre, cliente_nombre, pedido_numero, origen')
       .eq('restaurante_id', restauranteId)
       .in('id', [...new Set(todas.map((c) => c.venta_id))]),
     cliente
@@ -390,11 +468,43 @@ export async function leerCocina(
       ...c,
       titulo: v ? nombreDeCuenta(v) : '—',
       tipo: (v?.tipo ?? 'mesa') as TipoCuenta,
-      whatsapp: v?.pedido_numero != null,
+      whatsapp: v?.origen === 'menu_en_linea',
       renglones: (renglones.data as Renglon[]).filter((r) => r.comanda_id === c.id).map(renglon),
     };
   };
   return { pendientes: (pendientes.data as Comanda[]).map(tarjeta), listas: (listas.data as Comanda[]).map(tarjeta) };
+}
+
+// A qué áreas fue una cuenta, en el orden de las áreas: «#12 confirmado · va a Cocina» (adaptabilidad,
+// «Lo que decidí yo» 6). Sin comandas, ninguna.
+export async function areasDeLaCuenta(cliente: SupabaseClient, restauranteId: string, ventaId: number): Promise<string[]> {
+  const comandas = await cliente.from('comandas').select('area_preparacion_id').eq('restaurante_id', restauranteId).eq('venta_id', ventaId);
+  if (comandas.error) throw comandas.error;
+  const ids = [...new Set(comandas.data.map((c) => c.area_preparacion_id as number))];
+  if (ids.length === 0) return [];
+  const areas = await cliente.from('areas_preparacion').select('id, nombre').eq('restaurante_id', restauranteId).in('id', ids).order('id');
+  if (areas.error) throw areas.error;
+  return areas.data.map((a) => a.nombre as string);
+}
+
+// A qué áreas irá un pedido del menú en línea al confirmarlo (adaptabilidad: la hoja de Confirmar
+// dice a dónde va, como el botón de la cuenta). Por sus productos, su categoría y el área de esa
+// categoría hoy; en el orden de las áreas. Vacío: todo se entrega directo y no se manda nada.
+export async function areasDelPedido(cliente: SupabaseClient, restauranteId: string, pedidoId: number): Promise<string[]> {
+  const renglones = await cliente.from('pedido_items').select('producto_id').eq('restaurante_id', restauranteId).eq('pedido_id', pedidoId);
+  if (renglones.error) throw renglones.error;
+  const productoIds = [...new Set(renglones.data.map((r) => r.producto_id as number))];
+  if (productoIds.length === 0) return [];
+  const productos = await cliente.from('productos').select('id, categoria_id').eq('restaurante_id', restauranteId).in('id', productoIds);
+  if (productos.error) throw productos.error;
+  const categoriaIds = [...new Set(productos.data.map((p) => p.categoria_id as number))];
+  const categorias = await cliente.from('categorias').select('id, area_preparacion_id').eq('restaurante_id', restauranteId).in('id', categoriaIds);
+  if (categorias.error) throw categorias.error;
+  const areaIds = [...new Set(categorias.data.map((c) => c.area_preparacion_id as number | null).filter((a): a is number => a !== null))];
+  if (areaIds.length === 0) return [];
+  const areas = await cliente.from('areas_preparacion').select('id, nombre').eq('restaurante_id', restauranteId).in('id', areaIds).order('id');
+  if (areas.error) throw areas.error;
+  return areas.data.map((a) => a.nombre as string);
 }
 
 // ─── Lo que cambia, siempre por una función de Postgres ─────────────────────────────────────
@@ -419,11 +529,9 @@ function fallo(contexto: string, error: unknown): FalloPos {
 // Un renglón como lo pide mandar_a_cocina: el producto, cuántos, las opciones (ids) y la nota.
 export type RenglonAMandar = { producto_id: number; cantidad: number; opciones: number[]; nota: string };
 
-// A qué cuenta va: la abierta, la de una mesa (abierta o libre) o un pedido nuevo sin mesa.
-export type Destino =
-  | { venta: number }
-  | { mesa: number }
-  | { tipo: 'para_llevar' | 'domicilio'; nombre: string; telefono: string; direccion: string };
+// A qué cuenta va: la abierta, la de una mesa (abierta o libre) o un pedido nuevo sin mesa. Sin
+// nombre, Postgres le da su número del día.
+export type Destino = { venta: number } | { mesa: number } | PedidoNuevo;
 
 // Regresa el id de la cuenta. Con la misma clave, Postgres no guarda nada dos veces.
 export async function mandarACocina(
@@ -440,7 +548,7 @@ export async function mandarACocina(
     p_venta_id: 'venta' in destino ? destino.venta : null,
     p_mesa_id: 'mesa' in destino ? destino.mesa : null,
     p_tipo: 'tipo' in destino ? destino.tipo : null,
-    p_cliente_nombre: 'tipo' in destino ? destino.nombre : null,
+    p_cliente_nombre: 'tipo' in destino ? destino.nombre.trim() || null : null,
     p_cliente_telefono: 'tipo' in destino && destino.tipo === 'domicilio' ? destino.telefono : null,
     p_cliente_direccion: 'tipo' in destino && destino.tipo === 'domicilio' ? destino.direccion : null,
   });
@@ -618,7 +726,60 @@ export function escuchar(
 // pulsar dos veces lo mismo no guarda dos veces. `enDuda`: un envío que se fue sin internet de
 // regreso; hasta saber si llegó, se recuerda qué llevaba.
 export type LineaBorrador = { producto_id: number; nombre: string; cantidad: number; opciones: number[]; nota: string };
-export type PedidoNuevo = { tipo: 'para_llevar' | 'domicilio'; nombre: string; telefono: string; direccion: string };
+export type PedidoNuevo = { tipo: Exclude<TipoCuenta, 'mesa'>; nombre: string; telefono: string; direccion: string };
+
+// El último tipo de pedido nuevo que se usó en este aparato («Lo que decidí yo» 1 de la adaptabilidad).
+const LLAVE_TIPO = 'fragmentless-pos-tipo';
+const TIPOS_NUEVO: PedidoNuevo['tipo'][] = ['comer_aqui', 'para_llevar', 'domicilio'];
+
+export function leerTipoPedido(): PedidoNuevo['tipo'] {
+  try {
+    const t = localStorage.getItem(LLAVE_TIPO) as PedidoNuevo['tipo'] | null;
+    return t && TIPOS_NUEVO.includes(t) ? t : 'comer_aqui';
+  } catch (error) {
+    console.error('[pos] no se pudo leer el último tipo de pedido:', error);
+    return 'comer_aqui';
+  }
+}
+
+export function guardarTipoPedido(tipo: PedidoNuevo['tipo']) {
+  try {
+    localStorage.setItem(LLAVE_TIPO, tipo);
+  } catch (error) {
+    console.error('[pos] no se pudo guardar el tipo de pedido:', error);
+  }
+}
+
+// Cuántas mesas tenía la sucursal la última vez que se abrió el punto de venta en este navegador (regla «Los
+// esqueletos»): a lo ancho, mientras lee la primera vez, sale el esqueleto de las mesas (con esas) o el del menú (0), y
+// sin mesas el pedido nuevo ya está listo. null = nunca se abrió aquí.
+const prefijoMesas = 'fragmentless-pos-mesas-';
+
+export function mesasDeLaUltimaVez(restauranteId: string): number | null {
+  try {
+    const n = JSON.parse(localStorage.getItem(prefijoMesas + restauranteId) ?? 'null');
+    return typeof n === 'number' && Number.isFinite(n) && n >= 0 ? Math.round(n) : null;
+  } catch (error) {
+    console.error('[pos] no se pudo leer cuántas mesas había:', error);
+    return null;
+  }
+}
+
+export function recordarMesas(restauranteId: string, n: number) {
+  try {
+    localStorage.setItem(prefijoMesas + restauranteId, JSON.stringify(n));
+  } catch (error) {
+    console.error('[pos] no se pudo recordar cuántas mesas hay:', error);
+  }
+}
+
+// Lo que dice el botón de la cuenta (adaptabilidad, encuesta 7): a dónde va lo anotado, en el orden de
+// las áreas; con tres o más, «Mandar a cocina»; si nada va a una pantalla, «Anotar».
+export function textoMandar(areas: string[]): string {
+  if (areas.length === 0) return 'Anotar';
+  if (areas.length >= 3) return 'Mandar a cocina';
+  return `Mandar a ${areas.join(' y ')}`;
+}
 export type Borrador = {
   clave: string;
   lineas: LineaBorrador[];

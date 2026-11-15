@@ -6,7 +6,8 @@
   0.55 s; altura 500/25, 0.65 s) y se aprieta a 0.95 al picarle. El nombre sale abajo al instante
   (150 ms), también con el teclado. Lo elegido lleva el gris de pasar el mouse (--chip). Va al centro de
   la barra de arriba, para que no se recorra al cambiar de sección, y quieto: solo se mueve con el mouse.
-  Sin el desenfoque del original: en la barra lisa no se ve.
+  Sin el desenfoque del original: en la barra lisa no se ve. Una opción puede llevar `insignia` (el «2» de Pedidos
+  en el aparato a lo ancho, adaptabilidad): el rectángulo de la barra lateral, en la esquina de su ícono.
 -->
 <script lang="ts" generics="T extends string">
   import Icono from './Icono.svelte';
@@ -18,7 +19,7 @@
     alElegir,
     etiqueta,
   }: {
-    opciones: { valor: T; texto: string; icono: string; trazos?: string }[];
+    opciones: { valor: T; texto: string; icono: string; trazos?: string; insignia?: string | null }[];
     elegida: T;
     alElegir: (valor: T) => void;
     etiqueta: string;
@@ -30,6 +31,7 @@
     <button type="button" class="dock-boton" aria-pressed={o.valor === elegida} aria-label={o.texto} onclick={() => alElegir(o.valor)}>
       <span class="dock-icono"><Icono nombre={o.icono} trazos={o.trazos} tamano={18} /></span>
       <span class="dock-nombre" aria-hidden="true">{o.texto}</span>
+      {#if o.insignia}<span class="dock-insignia">{o.insignia}</span>{/if}
     </button>
   {/each}
 </div>
@@ -114,6 +116,26 @@
   .dock-boton:focus-visible {
     outline: 2px solid var(--acento);
     outline-offset: 2px;
+  }
+
+  /* La insignia de la barra lateral (rectángulo de 6, mono 10, en el acento), en la esquina del ícono. */
+  .dock-insignia {
+    position: absolute;
+    top: -6px;
+    right: -8px;
+    min-width: 17px;
+    height: 17px;
+    padding: 0 4px;
+    border-radius: 6px;
+    display: grid;
+    place-items: center;
+    background: var(--acento);
+    color: #ffffff;
+    font-family: var(--mono);
+    font-size: 10px;
+    font-weight: 500;
+    line-height: 1;
+    pointer-events: none;
   }
 
   .dock-icono {

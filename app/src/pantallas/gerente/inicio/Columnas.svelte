@@ -9,8 +9,10 @@
     recientes,
     alAbrir,
     alIr,
+    conCocina = true,
   }: {
     recientes: VistaGerente[];
+    conCocina?: boolean; // sin áreas no sale «Cocina» en Abrir (adaptabilidad, «Lo que decidí yo» 5)
     alAbrir: (que: 'pos' | 'caja' | 'cocina') => void;
     alIr: (destino: Destino) => void;
   } = $props();
@@ -27,13 +29,13 @@
     { texto: 'Ver el corte de hoy', icono: 'r-corte', destino: { vista: 'cortes' } },
   ];
 
-  const abrir: ItemColumna[] = ABRIR.map((a) => ({
+  const abrir: ItemColumna[] = $derived(ABRIR.filter((a) => conCocina || a.abre !== 'cocina').map((a) => ({
     clave: a.abre,
     texto: a.texto,
     icono: a.icono,
     flecha: 'r-afuera',
     alPicar: () => alAbrir(a.abre),
-  }));
+  })));
 
   const atajos: ItemColumna[] = ATAJOS.map((a) => ({
     clave: a.texto,

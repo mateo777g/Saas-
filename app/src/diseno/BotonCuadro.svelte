@@ -17,6 +17,7 @@
     apagado = false,
     grande = false,
     tamanoIcono = 16,
+    expandido = null,
     onclick,
     ...resto
   }: {
@@ -27,6 +28,8 @@
     // 40 × 40, a la altura de un Boton (Quitar logo, Volver a Inicio).
     grande?: boolean;
     tamanoIcono?: number;
+    // Si abre un menú (el «⋯» de la cuenta a lo ancho): dice si está abierto. Sin él, el botón no anuncia menú.
+    expandido?: boolean | null;
     onclick?: (e: MouseEvent) => void;
     [dato: `data-${string}`]: string | number;
   } = $props();
@@ -43,6 +46,8 @@
   use:vidrio={deBarra ? 'boton' : null}
   use:pica={deBarra ? 1.08 : null}
   aria-label={etiqueta ?? ayuda}
+  aria-haspopup={expandido === null ? undefined : 'menu'}
+  aria-expanded={expandido === null ? undefined : expandido}
   disabled={apagado}
   {onclick}
   {...resto}

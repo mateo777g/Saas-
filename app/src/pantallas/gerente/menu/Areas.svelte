@@ -1,12 +1,12 @@
 <!--
   La sección Áreas de Mi menú (maqueta de Opciones y áreas GhrEVWPmevfBZtWzi4exKi): dónde se prepara
   lo que se manda a cocina, en el orden en que se crearon, cada una con las categorías que le llegan
-  y el lápiz. Al final, sin lápiz, «Lo sirve el mesero» con sus categorías: lo que no llega a
+  y el lápiz. Al final, sin lápiz, «Se entrega directo» con sus categorías: lo que no llega a
   ninguna pantalla. El área de cada categoría se elige en Categorías.
 
   Desde la tabla nueva (8 nov 2026, maqueta Ltm74p3fb7tiAqYcj5nqbX): la nota va suelta sobre el fondo y la
   tabla, en su marco. Mientras se lee el menú la primera vez (`cargando`), esqueletos con la forma de cada
-  área y del conteo; «Lo sirve el mesero» no espera a nada, solo sus categorías.
+  área y del conteo; «Se entrega directo» no espera a nada, solo sus categorías.
 -->
 <script lang="ts">
   import BotonCuadro from '../../../diseno/BotonCuadro.svelte';
@@ -79,7 +79,7 @@
   {/if}
   <div class="fila">
     <span class="mesero">
-      <span class="nombre suave">Lo sirve el mesero</span>
+      <span class="nombre suave">Se entrega directo</span>
       <span class="pista">No llega a ninguna pantalla</span>
     </span>
     {#if cargando}<span aria-hidden="true"><Esqueleto ancho="96px" alto="10px" /></span>{:else}{@render llegan(categoriasDe(null))}{/if}

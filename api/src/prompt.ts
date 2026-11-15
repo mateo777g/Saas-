@@ -54,7 +54,7 @@ export const HERRAMIENTAS = [
           description: 'Por defecto mayor; cronologico para dia, semana y mes',
         },
         limite: LIMITE(10),
-        mesa: { type: 'string', description: 'Nombre de una mesa, "Para llevar" o "A domicilio"' },
+        mesa: { type: 'string', description: 'Nombre de una mesa, "Comer aquí", "Para llevar" o "A domicilio"' },
         categoria: { type: 'string', description: 'Nombre de una de las categorías del restaurante' },
         producto_id: { type: 'integer' },
         dia_semana: { type: 'integer', minimum: 1, maximum: 7, description: 'Filtro: 1 = lunes, 7 = domingo' },
@@ -99,7 +99,7 @@ export const HERRAMIENTAS = [
         desde: FECHA('Primer día de negocio (obligatorio, salvo con folio)'),
         hasta: FECHA('Último día de negocio (obligatorio, salvo con folio)'),
         folio: { type: 'integer', minimum: 1, description: 'El número del ticket' },
-        mesa: { type: 'string', description: 'Nombre de una mesa, "Para llevar" o "A domicilio"' },
+        mesa: { type: 'string', description: 'Nombre de una mesa, "Comer aquí", "Para llevar" o "A domicilio"' },
         mesero: { type: 'string', description: 'Nombre de quien abrió la cuenta' },
         producto_id: { type: 'integer' },
         estado: {

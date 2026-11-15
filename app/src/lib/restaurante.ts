@@ -63,11 +63,11 @@ export type DatosRestaurante = {
   direccion: string;
   logo_ruta: string | null;
   horario: Horario[];
-  // «Hago envíos» (desde el 12 nov 2026 vive aquí y no en Tu menú en línea).
-  hace_envios: boolean;
+  // «Hago envíos»: desde el 14 nov 2026 lo cambia Pedidos, no Tu restaurante. Sin él, se queda como estaba.
+  hace_envios?: boolean;
 };
 
-// «Guardar»: los datos, el horario y «Hago envíos» juntos (guardar_restaurante). Regresa la ruta del logo
+// Los datos y el horario juntos (guardar_restaurante), y «Hago envíos» si se manda. Regresa la ruta del logo
 // anterior si cambió, para borrarla de R2 después.
 export async function guardarRestaurante(restauranteId: string, datos: DatosRestaurante): Promise<string | null> {
   const { data, error } = await supabase.rpc('guardar_restaurante', {
@@ -77,7 +77,7 @@ export async function guardarRestaurante(restauranteId: string, datos: DatosRest
     p_direccion: datos.direccion,
     p_logo_ruta: datos.logo_ruta,
     p_horario: datos.horario,
-    p_hace_envios: datos.hace_envios,
+    p_hace_envios: datos.hace_envios ?? null,
   });
   if (error) throw fallo('guardar_restaurante no se pudo', error);
   return (data as string | null) ?? null;

@@ -6,7 +6,8 @@
   un estilo o no se pudo leer Estilos) y, a la derecha, los botones que le pase la vista. `junto` va
   pegado al título, antes del chip (el selector Productos | Categorías de Mi menú, el día de Cortes y
   reportes). Con `chipAntes` la pastilla va pegada al título, antes de `junto` (Mi menú, con el dock al
-  centro; maqueta U9YqpsSb2PeB5pFXTPvh1C, versión 14). Los botones de aquí miden 34.
+  centro; maqueta U9YqpsSb2PeB5pFXTPvh1C, versión 14). Los botones de aquí miden 34. Con el título vacío no sale el
+  título: el aparato a lo ancho pone en `antes` la estrella, el restaurante y quién está (adaptabilidad).
 -->
 <script lang="ts">
   import type { Snippet } from 'svelte';
@@ -36,7 +37,7 @@
 
 <header class="barra" class:con-volver={!!antes}>
   {@render antes?.()}
-  <h1 class="titulo">{titulo}</h1>
+  {#if titulo}<h1 class="titulo">{titulo}</h1>{/if}
   {#if chipAntes}{@render chip()}{/if}
   {@render junto?.()}
   {#if !chipAntes}{@render chip()}{/if}

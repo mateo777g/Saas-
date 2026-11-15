@@ -4,22 +4,33 @@
   una cambia con pestañas arriba (Toño, mesero y caja: Mesas y Caja). La caja es la de la parte
   4b (maqueta La caja). El aparato recuerda la última pestaña. Quien es de caja también tiene
   Pedidos (parte 6b; maqueta Pedidos por WhatsApp): su vigía vive aquí, encima de las pestañas, para
-  que el tono suene en cualquiera.
+  que el tono suene en cualquiera. Con la adaptabilidad (encuesta 8), la pestaña del punto de venta
+  dice «Mesas» donde hay mesas y «Vender» donde no. Desde ~900 px de ancho (tableta acostada o compu; «Lo que decidí yo» 7)
+  el punto de venta va a lo ancho, a toda la pantalla, con sus pestañas en el dock de su barra de arriba. Pedidos también
+  (pedidos-ancho.md, «Para la otra sesión»): su chip («Recibiendo pedidos hasta las 22:00») y «Pausar pedidos» van en esa
+  barra, y Pedidos pinta el Tablero sin su cabeza (`franjaAfuera`). La Caja también (cobro-caja.md, 3e): pinta su propia
+  barra con el mismo dock, su chip («Caja abierta desde las 08:00») y sus tres botones.
 
   Usa la sesión del aparato (lib/aparato.ts), nunca la del panel.
 -->
 <script lang="ts">
   import { onMount } from 'svelte';
+  import Boton from '../../diseno/Boton.svelte';
   import CajaError from '../../diseno/CajaError.svelte';
   import Selector from '../../diseno/Selector.svelte';
   import { supabaseAparato, type Lista, type PersonaAparato } from '../../lib/aparato';
   import { ALGO_SALIO_PANEL, esDeRed, SIN_CONEXION } from '../../lib/errores';
   import { VigiaPedidos } from '../../lib/pedidos.svelte';
+  import { leerZona } from '../../lib/pos';
   import { NOMBRE_ROL } from '../../lib/roles';
   import Caja from '../caja/Caja.svelte';
   import Pedidos from '../caja/Pedidos.svelte';
+  import { franjaDe } from '../caja/pedidos/franja';
   import Cocina from '../cocina/Cocina.svelte';
   import PuntoDeVenta from '../pos/PuntoDeVenta.svelte';
+  import Barra from '../pos/ancho/Barra.svelte';
+  import type { Anfitrion } from '../pos/ancho/barra';
+  import '../pos/ancho/ancho.css';
   import Arriba from './Arriba.svelte';
 
   type Pestana = 'mesas' | 'caja' | 'pedidos' | 'cocina';
@@ -32,12 +43,15 @@
 
   const LLAVE_PESTANA = 'fragmentless-aparato-pestana';
 
+  // Si el restaurante tiene mesas; si no se pudo saber, como si tuviera (la pestaña de siempre).
+  let conMesas = $state(true);
+
   // La vigía de los pedidos, solo para quien es de caja; nace cuando se sabe el restaurante.
   let vigia = $state<VigiaPedidos | null>(null);
 
   const pestanas = $derived(
     [
-      { valor: 'mesas' as const, texto: 'Mesas', si: persona.roles.includes('mesero') || persona.roles.includes('caja') },
+      { valor: 'mesas' as const, texto: conMesas ? 'Mesas' : 'Vender', si: persona.roles.includes('mesero') || persona.roles.includes('caja') },
       { valor: 'caja' as const, texto: 'Caja', si: persona.roles.includes('caja') },
       // «Pedidos · 2», como «Por cobrar · 5»; en pausa, «Pedidos · Pausado».
       { valor: 'pedidos' as const, texto: vigia?.insignia ? `Pedidos · ${vigia.insignia}` : 'Pedidos', si: persona.roles.includes('caja') },
@@ -47,6 +61,33 @@
   let elegida = $state<Pestana | null>(leerPestana());
   const pestana = $derived<Pestana>(pestanas.find((p) => p.valor === elegida)?.valor ?? pestanas[0]?.valor ?? 'mesas');
   const linea = $derived(`${persona.nombre} · ${persona.roles.map((r) => NOMBRE_ROL[r] ?? r).join(' · ')}`);
+
+  // A lo ancho: las pestañas en el dock, con su ícono; el número de Pedidos en su esquina.
+  let anchoVentana = $state(0);
+  const ancho = $derived(anchoVentana >= 900);
+  const ICONO: Record<Pestana, string> = { mesas: 'cuenta', caja: 'r-billete', pedidos: 'r-bolsa', cocina: 'r-cocina' };
+  const anfitrion = $derived<Anfitrion>({
+    donde: 'aparato',
+    restaurante: lista.restaurante,
+    linea,
+    pestanas: pestanas.map((p) => ({
+      valor: p.valor,
+      texto: p.valor === 'pedidos' ? 'Pedidos' : p.texto,
+      icono: p.valor === 'mesas' && conMesas ? 'r-mesas' : ICONO[p.valor],
+      insignia: p.valor === 'pedidos' && /^\d+$/.test(String(vigia?.insignia ?? '')) ? String(vigia?.insignia) : null,
+    })),
+    pestana,
+    alPestana: (v) => elegir(v as Pestana),
+  });
+
+  // El chip de Pedidos a lo ancho: lo de su franja (encuesta 4 de pedidos-ancho.md); mientras lee, «Cargando los pedidos…».
+  let zona = $state('America/Mexico_City');
+  const chipPedidos = $derived.by(() => {
+    const d = vigia?.datos;
+    if (!d) return vigia?.error ? { texto: 'No se pudo leer', vivo: false } : { texto: 'Cargando los pedidos…', vivo: true };
+    const f = franjaDe(d, zona, false);
+    return { texto: f.chip, vivo: f.tono === 'vivo', pausa: f.tono === 'pausa', hueco: f.tono === 'apagado' };
+  });
 
   let restaurante = $state<{ estado: 'leyendo' } | { estado: 'listo'; id: string } | { estado: 'error'; mensaje: string }>({
     estado: 'leyendo',
@@ -97,15 +138,27 @@
       restaurante = { estado: 'error', mensaje: esDeRed(error) ? SIN_CONEXION : ALGO_SALIO_PANEL };
       return;
     }
+    const mesas = await supabaseAparato
+      .from('mesas')
+      .select('id', { count: 'exact', head: true })
+      .eq('restaurante_id', data.restaurante_id)
+      .is('archivado_at', null);
+    if (mesas.error) console.error('[aparato] no se pudo saber si hay mesas:', mesas.error);
+    else conMesas = (mesas.count ?? 0) > 0;
     restaurante = { estado: 'listo', id: data.restaurante_id };
+    leerZona(supabaseAparato, data.restaurante_id)
+      .then((z) => (zona = z))
+      .catch((falla) => console.error('[aparato] no se pudo leer la zona de Pedidos; se usa la de México:', falla));
   }
 
   onMount(leerRestaurante);
 </script>
 
+<svelte:window bind:innerWidth={anchoVentana} />
+
 {#snippet selector()}
   {#if pestanas.length > 1}
-    <div class="pestanas" class:en-cocina={pestana === 'cocina'}>
+    <div class="pestanas">
       <Selector etiqueta="Pantalla" lleno alto={30} opciones={pestanas} elegida={pestana} alElegir={elegir} />
     </div>
   {/if}
@@ -124,8 +177,29 @@
     </div>
   </div>
 {:else if pestana === 'cocina'}
-  <div class="cocina-aparato">
-    <Cocina cliente={supabaseAparato} restauranteId={restaurante.id} aparato={lista.aparato} pestanas={pestanas.length > 1 ? selector : undefined} />
+  <!-- La Cocina siempre va a lo ancho, con la misma barra que Vender y Pedidos (planes/trabajo/rediseno/cocina.md). -->
+  <div class="pantalla-ancha">
+    <Cocina cliente={supabaseAparato} restauranteId={restaurante.id} {anfitrion} />
+  </div>
+{:else if pestana === 'pedidos' && ancho}
+  <!-- Solo la barra va en .pos-ancho: sus clases (.rejilla, .tarjeta…) chocarían con las del Tablero de Pedidos. -->
+  <div class="pantalla-ancha pedidos-ancho">
+    <div class="pos-ancho solo-barra">
+      <Barra {anfitrion} titulo="Pedidos" chip={chipPedidos}>
+        <Boton
+          etiqueta={vigia?.datos?.pausado ? 'Reanudar' : 'Pausar pedidos'}
+          icono={vigia?.datos?.pausado ? 'reanudar' : 'detener'}
+          cargando={vigia?.pausando ?? false}
+          apagado={!vigia?.datos}
+          onclick={() => vigia?.pausar()}
+        />
+      </Barra>
+    </div>
+    <div class="cuerpo-pedidos">
+      {#if vigia}
+        <Pedidos cliente={supabaseAparato} restauranteId={restaurante.id} restaurante={lista.restaurante} {vigia} {linea} franjaAfuera />
+      {/if}
+    </div>
   </div>
 {:else if pestana === 'pedidos'}
   <div class="columna sin-margen">
@@ -133,9 +207,28 @@
       <Pedidos cliente={supabaseAparato} restauranteId={restaurante.id} restaurante={lista.restaurante} {vigia} {linea} pestanas={selector} />
     {/if}
   </div>
+{:else if pestana === 'caja' && ancho}
+  <!-- La Caja pinta su propia barra, como el punto de venta: su chip y sus botones dependen de su turno. -->
+  <div class="pantalla-ancha">
+    <Caja cliente={supabaseAparato} restauranteId={restaurante.id} restaurante={lista.restaurante} {linea} ancho {anfitrion} />
+  </div>
 {:else if pestana === 'caja'}
   <div class="columna sin-margen">
     <Caja cliente={supabaseAparato} restauranteId={restaurante.id} restaurante={lista.restaurante} {linea} pestanas={selector} />
+  </div>
+{:else if ancho}
+  <div class="pantalla-ancha">
+    <PuntoDeVenta
+      cliente={supabaseAparato}
+      restauranteId={restaurante.id}
+      restaurante={lista.restaurante}
+      miembroId={persona.id}
+      {linea}
+      donde="aparato"
+      conEfectivo={persona.roles.includes('mesero')}
+      ancho
+      {anfitrion}
+    />
   </div>
 {:else}
   <div class="columna sin-margen">
@@ -178,20 +271,39 @@
     padding: max(52px, env(safe-area-inset-top)) 16px max(30px, env(safe-area-inset-bottom));
   }
 
-  .cocina-aparato {
+  /* A lo ancho, el punto de venta toma toda la pantalla (pos/ancho/ancho.css). */
+  .pantalla-ancha {
+    position: relative;
     width: 100%;
     height: 100vh;
     height: 100dvh;
   }
 
+  /* Pedidos a lo ancho: la barra de 56 arriba y, debajo, el Tablero con los márgenes de Vender (pos/ancho/ancho.css). */
+  .pedidos-ancho {
+    background: var(--fondo);
+    color: var(--texto);
+  }
+
+  .solo-barra {
+    bottom: auto;
+    height: 56px;
+    z-index: 2;
+    overflow: visible;
+  }
+
+  .cuerpo-pedidos {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 56px;
+    bottom: 0;
+    padding: 20px 20px 20px 24px;
+  }
+
   .pestanas {
     flex: none;
     margin-top: 12px;
-  }
-
-  .pestanas.en-cocina {
-    margin-top: 0;
-    width: 220px;
   }
 
   .medio {

@@ -113,6 +113,7 @@ export const ICONOS: Record<string, string> = {
   'globito': '<path d="M21 11.5a8.5 8.5 0 0 1-12.3 7.6L3 21l1.9-5.7A8.5 8.5 0 1 1 21 11.5z"></path>',
   'tabla': '<rect x="3" y="4" width="18" height="16" rx="2"></rect><path d="M3 10h18"></path><path d="M10 10v10"></path>',
   'detener': '<rect x="7" y="7" width="10" height="10" rx="2" fill="currentColor" stroke="none"></rect>',
+  'reanudar': '<path d="M8.5 7.2v9.6l8-4.8z" fill="currentColor" stroke-width="2" stroke-linejoin="round"></path>',
   // Los del rediseño del panel, tal cual la maqueta V64Pv4gmANPRZuJW5hTe5D: los del marco, Inicio y el
   // agente. Van aparte porque el aparato del equipo y las demás vistas siguen con los de arriba.
   'r-inicio': '<rect x="3" y="3" width="7" height="7" rx="1.5"></rect><rect x="14" y="3" width="7" height="7" rx="1.5"></rect><rect x="3" y="14" width="7" height="7" rx="1.5"></rect><rect x="14" y="14" width="7" height="7" rx="1.5"></rect>',

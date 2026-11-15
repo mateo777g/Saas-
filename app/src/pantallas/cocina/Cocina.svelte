@@ -1,31 +1,34 @@
 <!--
-  La pantalla de cocina (parte 4a; maqueta Mesero y cocina TYq97pKacRCYBqcvRp1bZ2; libreta 5, «La
-  cocina»). Una tarjeta por comanda de su área, de la más vieja a la más nueva, con los minutos
-  que lleva esperando: a los 10 se pone amarilla y a los 20, roja. Un toque la marca «Lista» y se
-  va. «Últimas listas» trae las 10 más recientes de hoy (el día de negocio, parte 4b) para
-  regresarlas si se marcó por error. El área se elige una vez y este aparato la recuerda. Las comandas llegan solas con el tiempo real.
+  La pantalla de cocina (parte 4a; libreta 5, «La cocina»). Una tarjeta por comanda de su área, de la más vieja a la más
+  nueva, con los minutos que lleva esperando: a los 10 se pone amarilla y a los 20, roja. Un toque la marca «Lista» y se
+  va. «Últimas listas» trae las 10 más recientes de hoy (el día de negocio, parte 4b) para regresarlas si se marcó por
+  error. El área se elige una vez y este aparato la recuerda. Las comandas llegan solas con el tiempo real.
 
-  Con la parte 4c (maqueta Cancelaciones y descuentos): lo que se cancela sale aquí al momento,
-  tachado en rojo con «Cancelado» y su motivo, para que no se prepare. La tarjeta se marca «Cambió»
-  mientras siga pendiente, y suena un tono distinto al de «Lista», una vez por cada cancelación. Si
-  se cancela todo, dice «Todo cancelado» y se quita con el mismo toque. Lo cancelado de algo ya
-  «Lista» no regresa la tarjeta: sale tachado en «Últimas listas».
+  Con la parte 4c: lo que se cancela sale aquí al momento, tachado en rojo con «Cancelado» y su motivo, para que no se
+  prepare. La tarjeta se marca «Cambió» mientras siga pendiente, y suena un tono distinto al de «Lista», una vez por cada
+  cancelación. Si se cancela todo, dice «Todo cancelado» y se quita con el mismo toque. Lo cancelado de algo ya «Lista» no
+  regresa la tarjeta: sale tachado en «Últimas listas».
 
-  La abre el aparato de cocina, que nunca vuelve a pedir el PIN, y el panel del gerente con su
-  sesión. Los minutos y el reloj usan el reloj de este aparato, como la cuenta regresiva del
-  código de Empleados: la hora de cada comanda es la de Postgres.
+  Con el rediseño (14 nov 2026; planes/trabajo/rediseno/cocina.md) tiene la estructura de Pedidos a lo ancho: su barra de
+  arriba (pos/ancho/Barra.svelte: en el aparato la estrella, el lugar y sus pestañas en el dock; en el panel «‹ Inicio» y la
+  cajita de sucursales), con el chip, la cajita del área (CajaAreas) y el reloj; abajo, el Tablero: las comandas a la
+  izquierda y «Últimas listas» en la tarjeta de la derecha. Cómo funciona no cambió: nunca pide nada, nunca se bloquea.
+
+  La abre el aparato de cocina, que nunca vuelve a pedir el PIN, y el panel del gerente con su sesión. Los minutos y el
+  reloj usan el reloj de este aparato, como la cuenta regresiva del código de Empleados: la hora de cada comanda es la de
+  Postgres.
 -->
 <script lang="ts">
   import type { SupabaseClient } from '@supabase/supabase-js';
-  import { onMount, type Snippet } from 'svelte';
-  import CajaError from '../../diseno/CajaError.svelte';
+  import { onMount } from 'svelte';
   import Icono from '../../diseno/Icono.svelte';
-  import Estrella from '../../diseno/Estrella.svelte';
   import { ALGO_SALIO_PANEL, esDeRed, Fallo, SIN_CONEXION } from '../../lib/errores';
+  import { filasDeLaUltimaVez, recordarFilas } from '../../lib/esqueletos';
   import { enZona, plural } from '../../lib/formato';
   import { avisarCambio, prepararSonido } from '../../lib/sonido';
   import {
     escuchar,
+    TIPO_EN_PALABRAS,
     leerCocina,
     leerNombres,
     leerZona,
@@ -34,19 +37,20 @@
     type EnCocina,
     type Tarjeta,
   } from '../../lib/pos';
+  import Barra from '../pos/ancho/Barra.svelte';
+  import type { Anfitrion } from '../pos/ancho/barra';
+  import '../pos/ancho/ancho.css';
+  import CajaAreas from './CajaAreas.svelte';
+  import Tablero from './Tablero.svelte';
 
   let {
     cliente,
     restauranteId,
-    aparato = null,
-    enPanel = false,
-    pestanas,
+    anfitrion,
   }: {
     cliente: SupabaseClient;
     restauranteId: string;
-    aparato?: string | null; // el nombre del aparato, arriba a la derecha
-    enPanel?: boolean;
-    pestanas?: Snippet;
+    anfitrion: Anfitrion; // quién la abre: el aparato (sus pestañas) o el panel («‹ Inicio» y la cajita de sucursales)
   } = $props();
 
   // svelte-ignore state_referenced_locally
@@ -54,7 +58,6 @@
 
   let areas = $state<Area[]>([]);
   let areaId = $state<number | null>(leerArea());
-  let pantalla = $state<'area' | 'comandas' | 'listas'>('comandas');
   let datos = $state<EnCocina>({ pendientes: [], listas: [] });
   let nombres = $state(new Map<number, string>());
   let zona = $state('America/Mexico_City');
@@ -64,6 +67,19 @@
 
   const area = $derived(areas.find((a) => a.id === areaId) ?? null);
   const pendientes = $derived(datos.pendientes.filter((c) => c.area_preparacion_id === areaId));
+
+  // El esqueleto de la primera lectura: tantas comandas (hasta 6) y listas como había la última vez en este navegador.
+  // svelte-ignore state_referenced_locally
+  const llaveFilas = `cocina-${restauranteId}-${areaId ?? 'sin-area'}`;
+  const esqueleto = {
+    comandas: Math.min(6, filasDeLaUltimaVez(llaveFilas)),
+    listas: filasDeLaUltimaVez(`${llaveFilas}-listas`),
+  };
+  $effect(() => {
+    if (carga !== 'listo' || !area) return;
+    recordarFilas(`cocina-${restauranteId}-${area.id}`, pendientes.length);
+    recordarFilas(`cocina-${restauranteId}-${area.id}-listas`, datos.listas.length);
+  });
 
   function leerArea(): number | null {
     try {
@@ -75,15 +91,19 @@
     }
   }
 
-  function elegirArea(id: number) {
+  function guardarArea(id: number) {
     areaId = id;
-    oidos = null;
-    pantalla = 'comandas';
     try {
       localStorage.setItem(LLAVE_AREA, String(id));
     } catch (falla) {
       console.error('[cocina] no se pudo guardar el área de este aparato:', falla);
     }
+  }
+
+  function elegirArea(id: number) {
+    guardarArea(id);
+    oidos = null;
+    error = null;
     recargar();
   }
 
@@ -101,7 +121,8 @@
       if (a.error) throw a.error;
       areas = a.data;
       zona = z;
-      if (!areas.some((x) => x.id === areaId)) pantalla = 'area';
+      // Con una sola área no hay nada que elegir: se queda esa.
+      if (areas.length === 1 && areaId !== areas[0].id) guardarArea(areas[0].id);
       await leer();
       carga = 'listo';
     } catch (falla) {
@@ -125,7 +146,7 @@
       do {
         otraVez = false;
         const [d, n] = await Promise.all([
-          leerCocina(cliente, restauranteId, areaId),
+          leerCocina(cliente, restauranteId, area ? areaId : null),
           leerNombres(cliente, restauranteId),
         ]);
         datos = d;
@@ -140,6 +161,12 @@
     leer().catch((falla) => console.error('[cocina] no se pudieron volver a leer las comandas:', falla));
   }
 
+  function reintentar() {
+    carga = 'leyendo';
+    error = null;
+    leerTodo();
+  }
+
   // Lo cancelado de las pendientes de esta área que ya sonó. La primera lectura solo lo anota.
   let oidos: Set<number> | null = null;
   function oirCambios(d: EnCocina) {
@@ -148,22 +175,6 @@
       .flatMap((c) => c.renglones.filter((r) => r.estado === 'cancelado').map((r) => r.id));
     if (oidos && cancelados.some((id) => !oidos!.has(id))) avisarCambio();
     oidos = new Set([...(oidos ?? []), ...cancelados]);
-  }
-
-  const cambio = (t: Tarjeta): 'todo' | 'algo' | null => {
-    const cancelados = t.renglones.filter((r) => r.estado === 'cancelado').length;
-    if (cancelados === 0) return null;
-    return cancelados === t.renglones.length ? 'todo' : 'algo';
-  };
-
-  // «Últimas listas»: lo cancelado del mismo producto va junto («2 Taco de pastor»), aunque sean
-  // renglones distintos, cada uno con su motivo (decidido en la prueba de verdad de la 4c).
-  function textoCancelados(t: Tarjeta): string {
-    const cuantos = new Map<string, number>();
-    for (const r of t.renglones) {
-      if (r.estado === 'cancelado') cuantos.set(r.nombre, (cuantos.get(r.nombre) ?? 0) + r.cantidad);
-    }
-    return [...cuantos].map(([nombre, n]) => `${n} ${nombre}`).join(', ');
   }
 
   async function marcar(t: Tarjeta, lista: boolean) {
@@ -182,9 +193,22 @@
   const minutos = (t: Tarjeta) => Math.max(0, Math.floor((ahora - Date.parse(t.created_at)) / 60000));
   const hora = (momento: string) => enZona(momento, zona).hora;
   const quien = (id: number | null) => (id === null ? '—' : (nombres.get(id) ?? '—'));
-  // «Para llevar · WhatsApp · Lupita»: la de un pedido del menú en línea lo dice (parte 6b).
-  const tipoTexto = (t: Tarjeta) =>
-    (t.tipo === 'domicilio' ? 'Domicilio · ' : t.tipo === 'para_llevar' ? 'Para llevar · ' : '') + (t.whatsapp ? 'WhatsApp · ' : '');
+  // «Para llevar · WhatsApp · Lupita · 14:05»: la de un pedido del menú en línea lo dice (parte 6b).
+  const lineaLista = (t: Tarjeta) =>
+    (t.tipo === 'mesa' ? '' : `${TIPO_EN_PALABRAS[t.tipo]} · `) + (t.whatsapp ? 'WhatsApp · ' : '') + quien(t.enviada_por);
+  const subDe = (t: Tarjeta) => `${lineaLista(t)} · ${hora(t.created_at)}`;
+
+  // Lo de arriba: el chip dice cuántas hay (en vivo); la cajita, qué área muestra y cuántas tiene cada una.
+  const chip = $derived.by(() => {
+    if (carga === 'leyendo') return { texto: 'Cargando las comandas…', vivo: true };
+    if (carga === 'error') return { texto: 'No se pudo leer', vivo: false };
+    if (areas.length === 0) return { texto: 'Sin áreas', vivo: false, hueco: true };
+    if (!area) return null;
+    return { texto: plural(pendientes.length, 'comanda', 'comandas'), vivo: true };
+  });
+  const areasConCuenta = $derived(
+    areas.map((a) => ({ ...a, comandas: datos.pendientes.filter((c) => c.area_preparacion_id === a.id).length })),
+  );
 
   onMount(() => {
     leerTodo();
@@ -209,212 +233,133 @@
   });
 </script>
 
-<div class="cocina" class:en-panel={enPanel}>
-  {#if carga === 'error'}
-    <div class="k-vacio">
-      <b>No pudimos abrir la cocina</b>
-      <div class="caja-k"><CajaError mensaje={error ?? ALGO_SALIO_PANEL} /></div>
-      <button type="button" class="boton" onclick={() => ((carga = 'leyendo'), (error = null), leerTodo())}>Intentar de nuevo</button>
-    </div>
-  {:else if carga === 'leyendo'}
-    <div class="k-vacio"><span>Abriendo la cocina…</span></div>
-  {:else if pantalla === 'area' || !area}
-    <div class="k-elegir">
-      <div class="k-elegir-caja vidrio sombra">
-        <span class="etq">Esta pantalla</span>
-        <h3>¿Qué área muestra?</h3>
-        <p class="texto">Se queda guardada en este aparato. Para cambiarla, toca el nombre del área arriba.</p>
-        {#each areas as a (a.id)}
-          {@const n = datos.pendientes.filter((c) => c.area_preparacion_id === a.id).length}
-          <button type="button" class="k-elegir-op" onclick={() => elegirArea(a.id)}>
-            <Icono nombre={a.nombre === 'Cocina' ? 'cocina' : 'menu'} tamano={20} />{a.nombre}
-            <span>{plural(n, 'comanda', 'comandas')}</span>
-          </button>
-        {/each}
-        {#if pestanas}<div class="pestanas-elegir">{@render pestanas()}</div>{/if}
-      </div>
-    </div>
-  {:else}
-    <div class="k-arriba" class:vidrio={!enPanel} class:sombra={!enPanel}>
-      {#if !enPanel}<div class="logo"><Estrella fondo="panel" tamano={22} /></div>{/if}
-      <button type="button" class="k-area" onclick={() => (pantalla = 'area')}>{area.nombre}<Icono nombre="abajo" tamano={16} /></button>
-      <span class="chip-estado"><span class="punto"></span>{plural(pendientes.length, 'comanda', 'comandas')}</span>
-      {@render pestanas?.()}
-      <span class="crece"></span>
-      {#if aparato}<span class="aparato">{aparato}</span>{/if}
-      <button type="button" class="boton" onclick={() => (pantalla = 'listas')}><Icono nombre="regresar" tamano={16} />Últimas listas</button>
-      <span class="k-reloj">{hora(new Date(ahora).toISOString())}</span>
-    </div>
+<div class="cocina">
+  <!-- Solo la barra va en .pos-ancho (sus clases chocarían con las del Tablero), como Pedidos en el aparato. -->
+  <div class="pos-ancho barra-c">
+    <Barra {anfitrion} titulo="Cocina" {chip}>
+      {#if carga === 'listo' && area}
+        <CajaAreas areas={areasConCuenta} actual={area.id} alElegir={elegirArea} />
+      {/if}
+      <span class="reloj">{hora(new Date(ahora).toISOString())}</span>
+    </Barra>
+  </div>
 
-    {#if pendientes.length}
-      <div class="k-rejilla">
-        {#if error}<div class="caja-k ancho"><CajaError mensaje={error} /></div>{/if}
-        {#each pendientes as t (t.id)}
-          {@const m = minutos(t)}
-          {@const k = cambio(t)}
-          <button
-            type="button"
-            class="comanda"
-            class:todo={k === 'todo'}
-            class:amarilla={k !== 'todo' && m >= 10 && m < 20}
-            class:roja={k !== 'todo' && m >= 20}
-            aria-label="{k === 'todo' ? 'Quitar' : 'Marcar lista'} la comanda de {t.titulo}"
-            onclick={() => marcar(t, true)}
-          >
-            <span class="c-cabeza">
-              <span class="t"><b>{t.titulo}</b><span>{tipoTexto(t)}{quien(t.enviada_por)} · {hora(t.created_at)}</span></span>
-              {#if k}
-                <span class="marca-cambio"><Icono nombre="alerta" tamano={13} />{k === 'todo' ? 'Todo cancelado' : 'Cambió'}</span>
-              {/if}
-              {#if k !== 'todo'}<span class="c-min">{m} min</span>{/if}
-            </span>
-            <span class="c-items">
-              {#each t.renglones as r (r.id)}
-                <span class="c-item" class:cancelado={r.estado === 'cancelado'}>
-                  <span class="cant">{r.cantidad}</span>
-                  <b>{r.nombre}</b>
-                  {#if r.opciones.length}<span class="det">{r.opciones.map((o) => o.opcion).join(' · ')}</span>{/if}
-                  {#if r.nota && r.estado === 'activo'}<span class="nota-c">{r.nota}</span>{/if}
-                  {#if r.estado === 'cancelado'}<span class="cancel-c">Cancelado · «{r.cancelado_motivo}»</span>{/if}
-                </span>
-              {/each}
-            </span>
-            <span class="c-pie">{k === 'todo' ? 'Toca para quitarla' : 'Toca cuando salga todo'}</span>
-          </button>
-        {/each}
+  <main class="cuerpo">
+    {#if carga === 'listo' && areas.length === 0}
+      <!-- Un restaurante nace sin áreas (adaptabilidad, «Lo que decidí yo» 4). -->
+      <div class="aviso">
+        <span class="cuadrito"><Icono nombre="r-cocina" tamano={18} /></span>
+        <b>Todavía no hay áreas</b>
+        <span>Tu gerente las agrega en Mi menú, en su panel.</span>
+      </div>
+    {:else if carga === 'listo' && !area}
+      <!-- La primera vez en este aparato, con más de un área. -->
+      <div class="elegir">
+        <section class="tarjeta elegir-caja">
+          <div class="encabezado">
+            <span class="cuadrito"><Icono nombre="r-cocina" tamano={18} /></span>
+            <div class="titulos">
+              <span class="titulo">¿Qué área muestra?</span>
+              <span class="sub">Se queda guardada en este aparato. Para cambiarla, toca el nombre del área arriba.</span>
+            </div>
+          </div>
+          <div class="opciones">
+            {#each areasConCuenta as a (a.id)}
+              <button type="button" class="opcion" onclick={() => elegirArea(a.id)}>
+                <span class="cuadro-icono"><Icono nombre="cocina" tamano={16} /></span>
+                <span class="nombre">{a.nombre}</span>
+                <span class="cuenta">{plural(a.comandas, 'comanda', 'comandas')}</span>
+                <Icono nombre="siguiente" tamano={16} />
+              </button>
+            {/each}
+          </div>
+        </section>
       </div>
     {:else}
-      <div class="k-vacio">
-        {#if error}<div class="caja-k"><CajaError mensaje={error} /></div>{/if}
-        <span class="cuadro-icono"><Icono nombre="check" tamano={18} /></span>
-        <b>Sin comandas pendientes</b>
-        <span>Las nuevas llegan solas, al momento.</span>
-      </div>
+      <Tablero
+        clave={areaId ?? 'sin-area'}
+        comandas={carga === 'listo' ? pendientes : null}
+        listas={carga === 'listo' ? datos.listas : null}
+        falloLectura={carga === 'error'}
+        esqueleto={carga === 'leyendo' ? esqueleto : null}
+        {error}
+        {subDe}
+        {minutos}
+        {hora}
+        {lineaLista}
+        alMarcar={(t) => marcar(t, true)}
+        alRegresar={(t) => marcar(t, false)}
+        alReintentar={reintentar}
+      />
     {/if}
-
-    {#if pantalla === 'listas'}
-      <div class="k-lado vidrio sombra">
-        <div class="k-lado-cabeza">
-          <div class="t">
-            <b>Últimas listas</b>
-            <span>Las 10 más recientes de hoy. Regresar la devuelve a la pantalla.</span>
-          </div>
-          <button type="button" class="cuadro" aria-label="Cerrar" title="Cerrar" onclick={() => (pantalla = 'comandas')}>
-            <Icono nombre="cerrar" tamano={16} />
-          </button>
-        </div>
-        <div class="k-lista">
-          {#each datos.listas as t (t.id)}
-            {@const cancelados = t.renglones.filter((r) => r.estado === 'cancelado')}
-            <div class="k-fila">
-              <span class="t">
-                <b class:tachada={cancelados.length > 0 && cancelados.length === t.renglones.length}>{t.titulo}</b>
-                <span>{quien(t.enviada_por)} · lista {hora(t.lista_at ?? t.created_at)}</span>
-                {#if cancelados.length}
-                  <span class="cancel-l">Cancelado: {textoCancelados(t)}</span>
-                {/if}
-              </span>
-              <button type="button" class="boton-chico" onclick={() => marcar(t, false)}><Icono nombre="regresar" tamano={14} />Regresar</button>
-            </div>
-          {:else}
-            <div class="vacio"><b>Nada marcado todavía</b></div>
-          {/each}
-        </div>
-      </div>
-    {/if}
-  {/if}
+  </main>
 </div>
 
 <style>
   .cocina {
-    position: relative;
-    width: 100%;
-    height: 100%;
+    position: absolute;
+    inset: 0;
+    background: var(--fondo);
+    color: var(--texto);
+    font-size: 13.5px;
+    text-align: left;
     overflow: hidden;
+  }
+
+  /* Cristal, en el panel: lo de atrás es el fondo del marco, con sus manchas, y sin recortar el desvanecido de la barra
+     de arriba, que corre por detrás de la barra lateral (como .pos-ancho en pos/ancho/ancho.css). */
+  :global(:root[data-estilo='cristal'] .lugar-vista) .cocina {
+    background: transparent;
+    overflow: visible;
+  }
+
+  /* La barra de arriba de 56; lo que cuelga de ella (la lista del área) sale por debajo. */
+  .pos-ancho.barra-c {
+    bottom: auto;
+    height: 56px;
+    z-index: 2;
+    overflow: visible;
+    background: transparent;
+  }
+
+  /* El reloj, en mono como siempre. */
+  .reloj {
+    font-family: var(--mono);
     font-size: 14px;
     font-weight: 500;
-  }
-
-  .crece {
-    flex-grow: 1;
-  }
-
-  .etq {
-    font-family: var(--mono);
-    font-size: 10.5px;
-    letter-spacing: 0.14em;
-    color: var(--tenue);
-    text-transform: uppercase;
-  }
-
-  .texto {
-    margin: 0;
-    font-size: 13.5px;
-    line-height: 1.5;
-    color: var(--suave);
-  }
-
-  .vidrio {
-    background: var(--vidrio);
-    border: 1px solid var(--vidrio-linea);
-    backdrop-filter: blur(18px) saturate(1.1);
-    -webkit-backdrop-filter: blur(18px) saturate(1.1);
-  }
-
-  .sombra {
-    box-shadow: 0 24px 60px var(--sombra);
-  }
-
-  .boton {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    height: 40px;
-    padding: 0 14px;
-    border-radius: 12px;
-    border: 1px solid var(--linea);
-    background: transparent;
-    color: var(--texto);
-    font-size: 13px;
-    font-weight: 600;
-    white-space: nowrap;
-    transition: opacity 150ms;
-  }
-
-  .boton:hover {
-    opacity: 0.86;
-  }
-
-  .boton-chico {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    height: 30px;
-    padding: 0 10px;
-    border-radius: 10px;
-    border: 1px solid var(--linea);
-    background: transparent;
-    color: var(--texto);
-    font-size: 12px;
-    font-weight: 600;
+    font-variant-numeric: tabular-nums;
     white-space: nowrap;
   }
 
-  .cuadro {
-    width: 36px;
-    height: 36px;
-    flex: none;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    padding: 0;
-    border: 1px solid var(--linea);
-    border-radius: 10px;
-    background: transparent;
-    color: var(--texto);
+  /* En una tableta parada, el aparato no cabe con el lugar escrito: queda la estrella. */
+  @media (max-width: 860px) {
+    .barra-c :global(.ap-lugar) {
+      display: none;
+    }
   }
 
+  /* En un celular el dock (al centro) no deja lugar: se van el chip y el reloj, y la cajita del área queda en su ícono
+     (CajaAreas). Lo que dice el chip ya lo dice «POR PREPARAR · N». */
+  @media (max-width: 600px) {
+    .barra-c :global(.chip),
+    .reloj {
+      display: none;
+    }
+  }
+
+  /* Debajo de la barra, en el lugar de una vista (los mismos márgenes que Pedidos y Vender). */
+  .cuerpo {
+    position: absolute;
+    left: var(--vista-izquierda);
+    right: var(--vista-derecha);
+    top: var(--vista-arriba);
+    bottom: var(--vista-abajo);
+    display: flex;
+    flex-direction: column;
+    container: cocina / inline-size;
+  }
+
+  .cuadrito,
   .cuadro-icono {
     width: 36px;
     height: 36px;
@@ -424,482 +369,155 @@
     justify-content: center;
     border-radius: 11px;
     background: var(--chip);
-  }
-
-  .chip-estado {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    height: 28px;
-    padding: 0 12px;
-    border-radius: 14px;
-    background: var(--chip);
-    font-size: 12px;
-    font-weight: 500;
-    color: var(--suave);
-    white-space: nowrap;
-  }
-
-  .punto {
-    width: 7px;
-    height: 7px;
-    border-radius: 4px;
-    background: var(--verde);
-    flex: none;
-  }
-
-  .logo {
-    width: 32px;
-    height: 32px;
-    flex: none;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  .aparato {
-    font-family: var(--mono);
-    font-size: 11px;
-    color: var(--tenue);
-    white-space: nowrap;
-  }
-
-  /* Arriba */
-  .k-arriba {
-    position: absolute;
-    left: 16px;
-    right: 16px;
-    top: 16px;
-    height: 64px;
-    padding: 0 12px 0 14px;
-    display: flex;
-    align-items: center;
-    gap: 14px;
-    border-radius: 20px;
-    z-index: 2;
-  }
-
-  .k-area {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    height: 40px;
-    padding: 0 12px 0 14px;
-    border-radius: 12px;
-    border: 1px solid var(--linea);
-    background: transparent;
     color: var(--texto);
-    font-size: 17px;
-    font-weight: 800;
-    letter-spacing: -0.2px;
   }
 
-  .k-reloj {
-    font-family: var(--mono);
-    font-size: 15px;
-    font-weight: 500;
-    font-variant-numeric: tabular-nums;
-  }
-
-  /* Las tarjetas */
-  .k-rejilla {
-    position: absolute;
-    left: 16px;
-    right: 16px;
-    top: 96px;
-    bottom: 16px;
-    display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    grid-auto-rows: min-content;
-    gap: 12px;
-    align-content: start;
-    overflow-y: auto;
-    padding-bottom: 12px;
-    scrollbar-width: none;
-  }
-
-  .k-rejilla::-webkit-scrollbar {
-    display: none;
-  }
-
-  .comanda {
-    display: flex;
-    flex-direction: column;
-    border-radius: 20px;
-    border: 1px solid var(--linea);
-    background: var(--solido);
-    color: var(--texto);
-    text-align: left;
-    padding: 0;
-    overflow: hidden;
-    box-shadow: 0 8px 24px var(--sombra-segmento);
-  }
-
-  .comanda:active {
-    transform: scale(0.99);
-  }
-
-  .c-cabeza {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 12px 14px;
-    border-bottom: 1px solid var(--linea);
-  }
-
-  .c-cabeza .t {
-    min-width: 0;
+  /* Sin áreas: al centro, como «Sin pedidos por confirmar». */
+  .aviso {
     flex: 1;
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-  }
-
-  .c-cabeza b {
-    font-size: 18px;
-    font-weight: 800;
-    letter-spacing: -0.3px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  .c-cabeza span {
-    font-size: 12px;
-    opacity: 0.75;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  .c-min {
-    flex: none;
-    font-family: var(--mono);
-    font-size: 15px;
-    font-weight: 600;
-    font-variant-numeric: tabular-nums;
-  }
-
-  .comanda.amarilla .c-cabeza {
-    background: var(--amarillo);
-    color: var(--sobre-amarillo);
-    border-bottom-color: transparent;
-  }
-
-  .comanda.roja .c-cabeza {
-    background: var(--rojo);
-    color: var(--sobre-rojo);
-    border-bottom-color: transparent;
-  }
-
-  .c-items {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    padding: 14px;
-  }
-
-  .c-item {
-    display: grid;
-    grid-template-columns: 28px minmax(0, 1fr);
-    gap: 2px 8px;
-  }
-
-  .c-item .cant {
-    font-family: var(--mono);
-    font-size: 17px;
-    font-weight: 600;
-    line-height: 1.25;
-  }
-
-  .c-item b {
-    font-size: 16px;
-    font-weight: 700;
-    line-height: 1.25;
-  }
-
-  .c-item .det {
-    grid-column: 2;
-    font-size: 13px;
-    color: var(--suave);
-    line-height: 1.4;
-  }
-
-  .c-item .nota-c {
-    grid-column: 2;
-    font-size: 13px;
-    font-weight: 700;
-    line-height: 1.4;
-  }
-
-  .c-item .nota-c::before {
-    content: 'Nota: ';
-    font-weight: 500;
-    color: var(--tenue);
-  }
-
-  .c-pie {
-    padding: 10px 14px 12px;
-    border-top: 1px dashed var(--linea-fuerte);
-    font-size: 12px;
-    color: var(--tenue);
-  }
-
-  /* Lo cancelado (parte 4c), tal cual la maqueta Cancelaciones y descuentos. */
-  .c-item.cancelado .cant,
-  .c-item.cancelado b {
-    text-decoration: line-through;
-    color: var(--rojo);
-  }
-
-  .c-item .cancel-c {
-    grid-column: 2;
-    font-size: 13px;
-    font-weight: 700;
-    color: var(--rojo);
-    line-height: 1.4;
-  }
-
-  .marca-cambio {
-    flex: none;
-    display: inline-flex;
-    align-items: center;
-    gap: 5px;
-    height: 24px;
-    padding: 0 9px;
-    border-radius: 8px;
-    background: var(--tinta);
-    color: var(--sobre-tinta);
-    font-size: 12px;
-    font-weight: 700;
-  }
-
-  .comanda.todo .c-cabeza {
-    background: var(--chip);
-    color: var(--texto);
-  }
-
-  .comanda.todo .c-pie {
-    color: var(--texto);
-    font-weight: 600;
-  }
-
-  .k-fila b.tachada {
-    text-decoration: line-through;
-    color: var(--tenue);
-  }
-
-  .k-fila span.cancel-l {
-    font-family: var(--jakarta);
-    font-size: 11.5px;
-    font-weight: 600;
-    color: var(--rojo);
-  }
-
-  .k-vacio {
-    position: absolute;
-    left: 16px;
-    right: 16px;
-    top: 96px;
-    bottom: 16px;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 8px;
-    text-align: center;
-  }
-
-  .k-vacio b {
-    font-size: 18px;
-    font-weight: 800;
-  }
-
-  .k-vacio span {
-    font-size: 13.5px;
-    color: var(--suave);
-  }
-
-  .caja-k {
-    max-width: 520px;
-    margin-bottom: 8px;
-    text-align: left;
-  }
-
-  .caja-k.ancho {
-    grid-column: 1 / -1;
-    max-width: none;
-    margin: 0;
-  }
-
-  /* Últimas listas */
-  .k-lado {
-    position: absolute;
-    top: 96px;
-    right: 16px;
-    bottom: 16px;
-    width: 380px;
-    max-width: calc(100% - 32px);
-    z-index: 3;
-    border-radius: 24px;
-    padding: 18px;
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-  }
-
-  .k-lado-cabeza {
-    display: flex;
-    align-items: flex-start;
-    gap: 12px;
-  }
-
-  .k-lado-cabeza .t {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-  }
-
-  .k-lado-cabeza b {
-    font-size: 17px;
-    font-weight: 800;
-  }
-
-  .k-lado-cabeza span {
-    font-size: 12px;
-    color: var(--suave);
-  }
-
-  .k-lista {
-    flex: 1;
-    min-height: 0;
-    overflow-y: auto;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-  }
-
-  .k-fila {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    min-height: 56px;
-    padding: 8px 8px 8px 14px;
-    border-radius: 14px;
-    border: 1px solid var(--linea);
-    background: var(--solido);
-  }
-
-  .k-fila .t {
-    flex: 1;
-    min-width: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-  }
-
-  .k-fila b {
-    font-size: 14px;
-    font-weight: 700;
-  }
-
-  .k-fila span {
-    font-family: var(--mono);
-    font-size: 11px;
-    color: var(--tenue);
-  }
-
-  .vacio {
-    padding: 36px 8px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
     gap: 6px;
+    padding: 40px 16px 60px;
     text-align: center;
   }
 
-  .vacio b {
+  .aviso .cuadrito {
+    margin-bottom: 6px;
+  }
+
+  .aviso b {
     font-size: 14.5px;
     font-weight: 700;
   }
 
-  /* Elegir el área */
-  .k-elegir {
-    position: absolute;
-    inset: 0;
+  .aviso > span:not(.cuadrito) {
+    font-size: 12.5px;
+    color: var(--suave);
+    line-height: 1.45;
+  }
+
+  /* Elegir el área: una tarjeta de Crear anuncios al centro, con las áreas como renglones. */
+  .elegir {
+    flex: 1;
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 16px;
+    padding-bottom: 40px;
   }
 
-  .k-elegir-caja {
-    width: 460px;
+  .elegir-caja {
+    width: 440px;
     max-width: 100%;
-    padding: 30px;
-    border-radius: 28px;
+    padding: 20px;
+    background: var(--solido);
+    border: 1px solid var(--borde-tarjeta);
+    border-radius: 14px;
     display: flex;
     flex-direction: column;
-    gap: 14px;
+    gap: 16px;
+    animation: abre 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
   }
 
-  .k-elegir-caja h3 {
-    margin: 0;
-    font-size: 24px;
-    font-weight: 800;
-    letter-spacing: -0.5px;
+  @keyframes abre {
+    from {
+      opacity: 0;
+      transform: translateY(14px) scale(0.98);
+    }
   }
 
-  .k-elegir-op {
+  .encabezado {
     display: flex;
     align-items: center;
-    gap: 14px;
-    min-height: 64px;
-    padding: 0 18px;
-    border: 1px solid var(--linea);
-    border-radius: 16px;
-    background: var(--solido);
-    color: var(--texto);
-    font-size: 17px;
-    font-weight: 700;
-    text-align: left;
+    gap: 12px;
   }
 
-  .k-elegir-op span {
-    margin-left: auto;
+  .titulos {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+
+  .titulo {
+    font-size: 14.5px;
+    font-weight: 700;
+  }
+
+  .sub {
     font-size: 12.5px;
     font-weight: 500;
+    line-height: 1.45;
+    color: var(--suave);
+  }
+
+  .opciones {
+    display: flex;
+    flex-direction: column;
+    margin: 0 -8px;
+  }
+
+  .opcion {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 10px;
+    border: 0;
+    border-radius: 12px;
+    background: transparent;
+    color: var(--texto);
+    text-align: left;
+    font: inherit;
+    cursor: pointer;
+    transition:
+      background-color 150ms,
+      transform 0.15s ease;
+  }
+
+  .opcion + .opcion {
+    box-shadow: 0 -1px 0 var(--tabla-linea, var(--linea));
+  }
+
+  .opcion:hover {
+    background: var(--chip);
+  }
+
+  .opcion:active {
+    transform: scale(0.98);
+  }
+
+  .opcion .nombre {
+    flex: 1;
+    min-width: 0;
+    font-size: 15px;
+    font-weight: 700;
+  }
+
+  .opcion .cuenta {
+    font-family: var(--mono);
+    font-size: 11.5px;
     color: var(--tenue);
+    white-space: nowrap;
   }
 
-  /* Dentro del panel: sin vidrio arriba y en tres columnas. */
-  .en-panel .k-arriba {
-    top: 8px;
-  }
-
-  .en-panel .k-rejilla,
-  .en-panel .k-vacio,
-  .en-panel .k-lado {
-    top: 84px;
-  }
-
-  .en-panel .k-rejilla {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-
-  @media (max-width: 1000px) {
-    .k-rejilla {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
+  .opcion :global(svg:last-child) {
+    color: var(--suave);
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .boton {
+    .elegir-caja {
+      animation: none;
+    }
+
+    .opcion {
       transition: none;
     }
 
-    .comanda:active {
+    .opcion:active {
       transform: none;
     }
   }

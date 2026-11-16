@@ -186,10 +186,12 @@
 .pos-ancho .total-abajo b { font-family: var(--mono); font-size: 20px; font-weight: 600; letter-spacing: -0.4px; }
 .pos-ancho .barra-abajo .caja-abajo { flex: 1; min-width: 0; }
 
-/* El aparato a lo ancho: la estrella, el lugar y quién está, a la izquierda de su barra */
-.pos-ancho .ap-logo { width: 28px; height: 28px; flex: none; display: grid; place-items: center; }
-/* Sin «‹ Mesas» antes, la estrella va a 24 del borde, como la maqueta (BarraArriba deja 16 por el botón de volver). */
-.pos-ancho .ap-logo:first-child { margin-left: 8px; }
+/* El aparato a lo ancho: el logo del restaurante, el lugar y quién está, a la izquierda de su barra */
+.pos-ancho .ap-logo { flex: none; display: flex; align-items: center; }
+/* Sin «‹ Mesas» antes, el logo (o el nombre, sin logo) va a 24 del borde, como la maqueta (BarraArriba deja 16 por el
+   botón de volver). */
+.pos-ancho .ap-logo:first-child,
+.pos-ancho .ap-lugar:first-child { margin-left: 8px; }
 .pos-ancho .ap-lugar { display: flex; flex-direction: column; gap: 2px; flex: none; min-width: 0; max-width: 220px; }
 .pos-ancho .ap-lugar b { font-size: 14px; font-weight: 800; letter-spacing: -0.2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .pos-ancho .ap-lugar span { font-family: var(--mono); font-size: 10.5px; color: var(--tenue); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }

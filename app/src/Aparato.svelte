@@ -34,6 +34,7 @@
     type PersonaAparato,
   } from './lib/aparato';
   import { ALGO_SALIO_PANEL } from './lib/errores';
+  import { ponerMarca, urlLogo } from './lib/marcaAparato';
   import { avisarPedido, prepararSonido } from './lib/sonido';
   import Arriba from './pantallas/aparato/Arriba.svelte';
   import Adentro from './pantallas/aparato/Adentro.svelte';
@@ -65,6 +66,27 @@
   let ultimoToque = performance.now();
   // La pantalla que se ve adentro: en la de cocina no corren los 2 minutos.
   let pestana = 'mesas';
+
+  // El aparato lleva la marca del restaurante, no la de Fragmentless: su logo en las barras (lib/marcaAparato.ts) y
+  // en la pestaña, como el menú en línea. Sin logo, o mientras no se sabe de qué restaurante es, la pestaña va sin
+  // ícono (la estrella de index.html es del panel).
+  ponerMarca({
+    get logo() {
+      return lista?.logo ?? null;
+    },
+  });
+  $effect(() => {
+    const logo = lista?.logo ?? null;
+    let enlace = document.querySelector<HTMLLinkElement>('link[rel="icon"]');
+    if (!logo) return enlace?.remove();
+    if (!enlace) {
+      enlace = document.createElement('link');
+      enlace.rel = 'icon';
+      document.head.append(enlace);
+    }
+    enlace.removeAttribute('type');
+    enlace.href = urlLogo(logo);
+  });
 
   async function abrir() {
     if (!ligado) {

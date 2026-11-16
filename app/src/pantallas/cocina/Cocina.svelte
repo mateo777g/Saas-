@@ -10,7 +10,7 @@
   regresa la tarjeta: sale tachado en «Últimas listas».
 
   Con el rediseño (14 nov 2026; planes/trabajo/rediseno/cocina.md) tiene la estructura de Pedidos a lo ancho: su barra de
-  arriba (pos/ancho/Barra.svelte: en el aparato la estrella, el lugar y sus pestañas en el dock; en el panel «‹ Inicio» y la
+  arriba (pos/ancho/Barra.svelte: en el aparato el logo, el lugar y sus pestañas en el dock; en el panel «‹ Inicio» y la
   cajita de sucursales), con el chip, la cajita del área (CajaAreas) y el reloj; abajo, el Tablero: las comandas a la
   izquierda y «Últimas listas» en la tarjeta de la derecha. Cómo funciona no cambió: nunca pide nada, nunca se bloquea.
 
@@ -331,7 +331,8 @@
     white-space: nowrap;
   }
 
-  /* En una tableta parada, el aparato no cabe con el lugar escrito: queda la estrella. */
+  /* En una tableta parada, el aparato no cabe con el lugar escrito: queda el logo del restaurante (sin logo, nada; el
+     nombre largo se encimaría con el dock). */
   @media (max-width: 860px) {
     .barra-c :global(.ap-lugar) {
       display: none;

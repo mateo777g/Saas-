@@ -126,17 +126,19 @@ export type PersonaAparato = {
 
 export type Lista = {
   restaurante: string;
+  logo: string | null; // la ruta en R2 del logo de «Tu restaurante»; null: sin logo
   aparato: string;
   compartido: boolean;
   personas: PersonaAparato[];
   pedidosPorConfirmar: number | null; // null donde no entra nadie de caja (parte 6b)
 };
 
-// «¿Quién eres?»: el restaurante, el aparato y quiénes pueden entrar ahí (en uno de una
+// «¿Quién eres?»: el restaurante con su logo, el aparato y quiénes pueden entrar ahí (en uno de una
 // persona, solo ella), y cuántos pedidos del menú esperan. Si un bloqueo sigue lo decide Postgres.
 export async function nombres(token: string): Promise<Lista> {
   const r = await pedir<{
     restaurante: string;
+    logo?: string | null;
     aparato: string;
     compartido: boolean;
     personas: { id: number; nombre: string; roles: string[]; bloqueado: boolean; bloqueado_hasta: string | null }[];
@@ -144,6 +146,7 @@ export async function nombres(token: string): Promise<Lista> {
   }>('/equipo/nombres', { token });
   return {
     restaurante: r.restaurante,
+    logo: r.logo ?? null,
     aparato: r.aparato,
     compartido: r.compartido,
     personas: r.personas.map((p) => ({

@@ -1,16 +1,20 @@
 <!--
-  Lo de arriba de cada pantalla del aparato (maqueta de Empleados 36iXMMqXCfVv4NuVR7vNSc): la
-  estrella con el restaurante y el nombre del aparato, o, en el PIN de la tableta
-  compartida, «Cambiar de persona» para regresar a la lista. Sin ligar, solo el logo.
+  Lo de arriba de cada pantalla del aparato (maqueta de Empleados 36iXMMqXCfVv4NuVR7vNSc): el
+  logo del restaurante con su nombre y el del aparato, o, en el PIN de la tableta compartida,
+  «Cambiar de persona» para regresar a la lista. El logo es el de «Tu restaurante» (lib/marcaAparato.ts);
+  sin logo, solo el nombre. Sin ligar, o mientras carga, nada: todavía no se sabe de qué restaurante es.
 -->
 <script lang="ts">
   import Icono from '../../diseno/Icono.svelte';
-  import Estrella from '../../diseno/Estrella.svelte';
+  import LogoRestaurante from '../../diseno/LogoRestaurante.svelte';
+  import { leerMarca } from '../../lib/marcaAparato';
 
   let {
     lugar = null,
     alVolver,
   }: { lugar?: { restaurante: string; aparato: string } | null; alVolver?: () => void } = $props();
+
+  const marca = leerMarca();
 </script>
 
 <div class="arriba">
@@ -18,14 +22,12 @@
     <button type="button" class="volver" onclick={alVolver}>
       <Icono nombre="anterior" tamano={16} />Cambiar de persona
     </button>
-  {:else}
-    <span class="logo"><Estrella fondo="panel" tamano={22} /></span>
-    {#if lugar}
-      <span class="lugar">
-        <b>{lugar.restaurante}</b>
-        <span>{lugar.aparato}</span>
-      </span>
-    {/if}
+  {:else if lugar}
+    {#if marca?.logo}<LogoRestaurante ruta={marca.logo} />{/if}
+    <span class="lugar">
+      <b>{lugar.restaurante}</b>
+      <span>{lugar.aparato}</span>
+    </span>
   {/if}
 </div>
 
@@ -35,15 +37,6 @@
     display: flex;
     align-items: center;
     gap: 10px;
-  }
-
-  .logo {
-    width: 32px;
-    height: 32px;
-    flex: none;
-    display: flex;
-    align-items: center;
-    justify-content: center;
   }
 
   .lugar {

@@ -1552,7 +1552,7 @@
       alVer={() => (pantalla = 'cuenta')}
     />
   {:else if pantalla === 'pedida' && ventaActual}
-    <Lugar {restaurante} linea="La cuenta · {tituloDe(actual)}" />
+    <Lugar {restaurante} linea="La cuenta · {tituloDe(actual)}" comoSeVe={false} />
     <div class="ticket">
       {#each abiertas.renglones.filter((r) => r.venta_id === ventaActual.id && r.estado === 'activo') as r (r.id)}
         <div class="ticket-linea">
@@ -1619,7 +1619,7 @@
     </div>
   {:else}
     <!-- La cuenta se cerró o se juntó mientras se veía. -->
-    <Lugar {restaurante} {linea} />
+    <Lugar {restaurante} {linea} comoSeVe={false} />
     <div class="desliza">
       <div class="vacio"><b>Esa cuenta ya no está abierta</b></div>
     </div>

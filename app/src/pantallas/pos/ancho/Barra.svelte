@@ -5,7 +5,7 @@
   («Lupita · Caja»), y el chip de lo que pasa; en el dock, sus
   pestañas, y la de la pantalla puede cambiarse por sus propias vistas (con mesas: Mesas · Para llevar). En el panel,
   «‹ Inicio» (o lo que pida la pantalla, como «‹ Mesas»), el título y el dock de sus vistas; a la derecha, los botones
-  de la pantalla y la cajita de sucursales.
+  de la pantalla y la cajita de sucursales. En el aparato, al final, el botón «Cómo se ve» (aparato/ComoSeVe.svelte).
 -->
 <script lang="ts">
   import type { Snippet } from 'svelte';
@@ -14,6 +14,7 @@
   import Dock from '../../../diseno/Dock.svelte';
   import LogoRestaurante from '../../../diseno/LogoRestaurante.svelte';
   import { leerMarca } from '../../../lib/marcaAparato';
+  import ComoSeVe from '../../aparato/ComoSeVe.svelte';
   import type { Anfitrion, OpcionDock } from './barra';
 
   let {
@@ -65,5 +66,5 @@
     {/if}
   {/snippet}
   {@render children?.()}
-  {#if anfitrion.donde === 'panel'}{@render anfitrion.sucursal?.()}{/if}
+  {#if anfitrion.donde === 'panel'}{@render anfitrion.sucursal?.()}{:else}<ComoSeVe />{/if}
 </BarraArriba>

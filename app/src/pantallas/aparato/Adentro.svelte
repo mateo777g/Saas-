@@ -159,7 +159,7 @@
 {#snippet selector()}
   {#if pestanas.length > 1}
     <div class="pestanas">
-      <Selector etiqueta="Pantalla" lleno alto={30} opciones={pestanas} elegida={pestana} alElegir={elegir} />
+      <Selector etiqueta="Pantalla" lleno vidrio alto={30} opciones={pestanas} elegida={pestana} alElegir={elegir} />
     </div>
   {/if}
 {/snippet}

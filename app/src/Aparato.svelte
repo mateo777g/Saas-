@@ -21,6 +21,7 @@
 -->
 <script lang="ts">
   import { onMount } from 'svelte';
+  import './pantallas/aparato/cristal-aparato.css';
   import CajaError from './diseno/CajaError.svelte';
   import {
     FalloAparato,

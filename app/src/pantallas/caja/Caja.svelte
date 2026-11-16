@@ -842,6 +842,7 @@
 
     <div class="arriba-vista">
       <Selector
+        vidrio
         etiqueta="Qué cuentas"
         lleno
         alto={30}

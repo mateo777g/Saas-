@@ -5,7 +5,8 @@
 // :root[data-estilo='cristal'], así que cambiarlo se ve al momento.
 export type Estilo = 'simple' | 'cristal';
 
-const LLAVE = 'fragmentless-estilo';
+// El aparato del equipo guarda el suyo aparte del panel (public/tema-inicial.js pone data-puerta="equipo").
+const LLAVE = () => (document.documentElement.dataset.puerta === 'equipo' ? 'fragmentless-aparato-estilo' : 'fragmentless-estilo');
 
 export function estiloActual(): Estilo {
   return document.documentElement.dataset.estilo === 'cristal' ? 'cristal' : 'simple';
@@ -14,7 +15,7 @@ export function estiloActual(): Estilo {
 export function cambiarEstilo(estilo: Estilo): void {
   document.documentElement.dataset.estilo = estilo;
   try {
-    localStorage.setItem(LLAVE, estilo);
+    localStorage.setItem(LLAVE(), estilo);
   } catch (error) {
     console.error('[estilo] no se pudo guardar el estilo; se queda solo mientras la pestaña siga abierta:', error);
   }

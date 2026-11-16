@@ -76,6 +76,7 @@
 {#if mesas.length > 0}
 <div class="arriba-vista">
   <Selector
+    vidrio
     etiqueta="Mesas o para llevar"
     lleno
     alto={30}

@@ -1,0 +1,99 @@
+/* ─── Cristal en el aparato del equipo (/equipo) ───
+   Las reglas de Cristal del panel (libreta 4, «El estilo Cristal») sobre las pantallas del aparato: lo que se toca es
+   vidrio, lo que se lee es material, nunca vidrio sobre vidrio, y el monto del cobro y el teclado del PIN siempre sólidos.
+   Maqueta «Cristal en los aparatos» v2 (planes/maquetas/aparatos-cristal.html; su capa es
+   planes/trabajo/estilo-cristal/aparatos/cristal-aparato.css, esta misma); decisiones en
+   planes/trabajo/estilo-cristal/aparatos.md. Usa las recetas de diseno/cristal.css. Lo importa Aparato.svelte y todo
+   cuelga de :root[data-puerta='equipo'] (public/tema-inicial.js), así que no toca el panel. Lo de Vender, la Caja y la
+   Cocina a lo ancho que también va en el panel vive en pos/ancho/ancho.css y en cocina/TarjetaComanda.svelte. */
+
+/* ── 1. El fondo: el del marco del panel (manchas grises y grano; en claro, gris claro con manchas blancas), quieto
+   detrás de todo el aparato. Lo del aparato que pintaba su propio fondo lo deja ver. ── */
+:root[data-puerta='equipo'][data-estilo='cristal'][data-tema='oscuro'] body {
+  background-color: #000;
+  background-image: var(--grano), var(--manchas);
+  background-attachment: fixed;
+}
+:root[data-puerta='equipo'][data-estilo='cristal'][data-tema='claro'] body {
+  background-color: var(--fondo);
+  background-image: var(--grano-claro), var(--fondo-cristal-claro);
+  background-attachment: fixed;
+}
+:root[data-puerta='equipo'][data-estilo='cristal'] :is(.aparato, .columna, .columna-aparato, .pantalla-ancha, .pos, .pos-ancho, .cuerpo-ancho, .cocina) {
+  background: transparent;
+}
+
+/* ── 2. Lo que se lee es material: las mesas, los renglones de la cuenta, las filas de la Caja, los productos, el turno y
+   las personas de «¿Quién eres?». El de las tarjetas (diseno/cristal.css), sin canto ni brillo y quieto. Las que están
+   libres o ya cobradas siguen huecas, con su raya. ── */
+:root[data-puerta='equipo'][data-estilo='cristal'][data-tema='oscuro'] :is(
+  .pos .mesa:not(.libre), .pos .renglon, .pos .fila-llevar, .pos .producto:not(.agotado), .pos .fila-cobro:not(.cobrada), .pos .turno,
+  .columna-aparato .persona
+) {
+  background: var(--cristal-tinte);
+  -webkit-backdrop-filter: blur(26px) saturate(150%);
+  backdrop-filter: blur(26px) saturate(150%);
+  border-color: var(--cristal-linea);
+  box-shadow: 0 18px 40px -14px var(--cristal-sombra);
+}
+:root[data-puerta='equipo'][data-estilo='cristal'][data-tema='claro'] :is(
+  .pos .mesa:not(.libre), .pos .renglon, .pos .fila-llevar, .pos .producto:not(.agotado), .pos .fila-cobro:not(.cobrada), .pos .turno,
+  .columna-aparato .persona
+) {
+  background: var(--cl-tinte);
+  -webkit-backdrop-filter: blur(26px) saturate(160%);
+  backdrop-filter: blur(26px) saturate(160%);
+  border-color: var(--cl-linea);
+  box-shadow: 0 18px 40px -14px var(--cl-sombra);
+}
+/* Las tarjetas pasan a esquinas de 22, como los widgets del iPhone; los renglones de una cuenta se quedan con las suyas. */
+:root[data-puerta='equipo'][data-estilo='cristal'] :is(.pos .mesa, .pos .turno) { border-radius: 22px; }
+/* Las huecas (mesa libre, cuenta cobrada, renglón por anotar): su raya en el color del canto, sin relleno. */
+:root[data-puerta='equipo'][data-estilo='cristal'][data-tema='oscuro'] :is(.pos .mesa.libre, .pos .fila-cobro.cobrada, .pos .borrador .renglon) {
+  background: transparent;
+  border-color: rgba(255, 255, 255, 0.2);
+}
+:root[data-puerta='equipo'][data-estilo='cristal'][data-tema='claro'] :is(.pos .mesa.libre, .pos .fila-cobro.cobrada, .pos .borrador .renglon) {
+  background: transparent;
+  border-color: rgba(255, 255, 255, 0.95);
+}
+/* Dentro del material, los grises sólidos pasan a rellenos transparentes (nunca un gris sólido sobre vidrio). */
+:root[data-puerta='equipo'][data-estilo='cristal'][data-tema='oscuro'] :is(.pos, .pos-ancho, .columna-aparato) :is(.cuadro-icono, .marca-estado:not(.cuenta), .marca-e, .inicial, .chip-estado, .efectivo-linea) {
+  background: var(--cristal-relleno);
+}
+:root[data-puerta='equipo'][data-estilo='cristal'][data-tema='claro'] :is(.pos, .pos-ancho, .columna-aparato) :is(.cuadro-icono, .marca-estado:not(.cuenta), .marca-e, .inicial, .chip-estado, .efectivo-linea) {
+  background: var(--cl-relleno);
+}
+
+/* ── 3. Lo que se toca arriba es vidrio (use:vidrio): «‹ Mesas» y el «⋯» de la cuenta son botones, y las pestañas de
+   arriba (Mesas · Para llevar; Mesas · Caja · Pedidos; Por cobrar · Cobradas) un control, como el dock: su elegida, una
+   gota de vidrio como la del dock. Sus cantos de luz cuelgan de ellos. ── */
+:root[data-puerta='equipo'][data-estilo='cristal'] :is(.pos .cel-volver, .pos .cuadro[data-vidrio], .selector[data-vidrio]) { position: relative; }
+:root[data-puerta='equipo'][data-estilo='cristal'][data-tema='oscuro'] .selector[data-vidrio] button[aria-pressed='true'] {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0.06));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3), inset 0 0 0 1px rgba(255, 255, 255, 0.1);
+}
+:root[data-puerta='equipo'][data-estilo='cristal'][data-tema='claro'] .selector[data-vidrio] button[aria-pressed='true'] {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0.6));
+  box-shadow: inset 0 1px 0 #ffffff, inset 0 0 0 1px rgba(255, 255, 255, 0.8), 0 4px 12px -6px var(--cl-sombra);
+}
+
+/* ── 4. Las hojas del celular (cobrar, opciones, para llevar, lo que pide un PIN) son hojas de vidrio grueso, como las
+   ventanas del panel (pos/Hoja.svelte); adentro, rellenos transparentes. El monto del cobro (el resumen: total, lo que
+   falta) va sólido. ── */
+:root[data-puerta='equipo'][data-estilo='cristal'] .pos .hoja-velo > .hoja { position: relative; }
+:root[data-puerta='equipo'][data-estilo='cristal'][data-tema='oscuro'] .pos .hoja .resumen { background: #1b1b1b; border-color: rgba(255, 255, 255, 0.1); }
+:root[data-puerta='equipo'][data-estilo='cristal'][data-tema='claro'] .pos .hoja .resumen { background: #ffffff; border-color: rgba(0, 0, 0, 0.08); }
+:root[data-puerta='equipo'][data-estilo='cristal'][data-tema='oscuro'] .pos .hoja :is(.op, .chip-cat:not([aria-pressed='true']), .campo input, .boton-chico) {
+  background: var(--cristal-relleno);
+  border-color: var(--cristal-linea);
+}
+:root[data-puerta='equipo'][data-estilo='cristal'][data-tema='claro'] .pos .hoja :is(.op, .chip-cat:not([aria-pressed='true']), .campo input, .boton-chico) {
+  background: var(--cl-relleno);
+  border-color: transparent;
+}
+
+/* ── 5. Afuera: el código para ligar es un campo (su relleno de Cristal); el teclado del PIN se queda sólido. ── */
+:root[data-puerta='equipo'][data-estilo='cristal'] .columna-aparato .codigo { background: var(--campo-fondo); }
+:root[data-puerta='equipo'][data-estilo='cristal'][data-tema='oscuro'] .columna-aparato .tecla:not(.vacia) { background: #1b1b1b; }
+:root[data-puerta='equipo'][data-estilo='cristal'][data-tema='claro'] .columna-aparato .tecla:not(.vacia) { background: #ffffff; }

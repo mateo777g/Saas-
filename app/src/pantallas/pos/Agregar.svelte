@@ -5,6 +5,7 @@
   bolita dice cuántos van anotados de cada uno.
 -->
 <script lang="ts">
+  import { pica, vidrio } from '../../diseno/vidrio';
   import type { Snippet } from 'svelte';
   import Icono from '../../diseno/Icono.svelte';
   import { dinero } from '../../lib/formato';
@@ -47,7 +48,7 @@
 </script>
 
 <div class="cel-arriba">
-  <button type="button" class="cel-volver" onclick={alVer}><Icono nombre="anterior" tamano={16} />{titulo}</button>
+  <button type="button" class="cel-volver" use:vidrio={'boton'} use:pica={1.08} onclick={alVer}><Icono nombre="anterior" tamano={16} />{titulo}</button>
   <span class="crece"></span>
   <span class="etq">Agregar</span>
 </div>

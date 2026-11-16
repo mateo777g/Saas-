@@ -176,6 +176,16 @@
 
 /* La barra de abajo de Crear anuncios (64, --solido, línea arriba): lo que llevas, el total y sus botones */
 .pos-ancho .barra-abajo { position: absolute; left: 0; right: 0; bottom: 0; height: 64px; z-index: 2; background: var(--solido); border-top: 1px solid var(--linea); }
+/* Cristal (planes/trabajo/estilo-cristal/aparatos.md, «Lo que decidí yo» 7): como la de arriba, transparente; lo que pasa
+   por debajo se borra poco a poco, al revés que arriba (como abajo del Agente IA). Sus botones no cambian. */
+:root[data-estilo='cristal'] .pos-ancho .barra-abajo { background: transparent; border-top-color: transparent; }
+:root[data-estilo='cristal'] .pos-ancho .barra-abajo::before {
+  content: ''; position: absolute; inset: -18px 0 0 0; z-index: -1; pointer-events: none;
+  -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
+  -webkit-mask-image: linear-gradient(transparent, #000 45%); mask-image: linear-gradient(transparent, #000 45%);
+}
+:root[data-estilo='cristal'][data-tema='oscuro'] .pos-ancho .barra-abajo::before { background: linear-gradient(rgba(0, 0, 0, 0), rgba(0, 0, 0, 0.55)); }
+:root[data-estilo='cristal'][data-tema='claro'] .pos-ancho .barra-abajo::before { background: linear-gradient(rgba(255, 255, 255, 0), rgba(255, 255, 255, 0.5)); }
 .pos-ancho .barra-contenido { height: 100%; display: flex; align-items: center; gap: 10px; padding: 0 20px 0 24px; animation: funde 0.2s ease; }
 @keyframes funde { from { opacity: 0; } }
 .pos-ancho .estado { flex: 1; min-width: 0; display: flex; align-items: center; gap: 10px; font-size: 13px; white-space: nowrap; }
@@ -227,3 +237,18 @@
 
 /* Si no se pudo leer: el error y «Intentar de nuevo», al centro */
 .pos-ancho .medio-ancho { height: 100%; max-width: 420px; margin: 0 auto; display: flex; flex-direction: column; justify-content: center; align-items: stretch; gap: 14px; }
+
+/* ─── Cristal: las mesas y los productos en cuadros son contenido y van de material, como las tarjetas (diseno/cristal.css),
+   con esquinas de 22; las mesas libres siguen huecas, con su raya (planes/trabajo/estilo-cristal/aparatos.md). ─── */
+:root[data-estilo='cristal'][data-tema='oscuro'] :is(.pos-ancho .mesa-t:not(.libre), .pos-ancho .prod) {
+  background: var(--cristal-tinte); -webkit-backdrop-filter: blur(26px) saturate(150%); backdrop-filter: blur(26px) saturate(150%);
+  border-color: var(--cristal-linea); box-shadow: 0 18px 40px -14px var(--cristal-sombra);
+}
+:root[data-estilo='cristal'][data-tema='claro'] :is(.pos-ancho .mesa-t:not(.libre), .pos-ancho .prod) {
+  background: var(--cl-tinte); -webkit-backdrop-filter: blur(26px) saturate(160%); backdrop-filter: blur(26px) saturate(160%);
+  border-color: var(--cl-linea); box-shadow: 0 18px 40px -14px var(--cl-sombra);
+}
+:root[data-estilo='cristal'] :is(.pos-ancho .mesa-t, .pos-ancho .prod) { border-radius: 22px; }
+:root[data-estilo='cristal'] .pos-ancho .prod-foto { border-radius: 14px; }
+:root[data-estilo='cristal'][data-tema='oscuro'] .pos-ancho .mesa-t.libre { background: transparent; border-color: rgba(255, 255, 255, 0.2); }
+:root[data-estilo='cristal'][data-tema='claro'] .pos-ancho .mesa-t.libre { background: transparent; border-color: rgba(255, 255, 255, 0.95); }

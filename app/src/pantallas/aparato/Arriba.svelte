@@ -2,12 +2,14 @@
   Lo de arriba de cada pantalla del aparato (maqueta de Empleados 36iXMMqXCfVv4NuVR7vNSc): el
   logo del restaurante con su nombre y el del aparato, o, en el PIN de la tableta compartida,
   «Cambiar de persona» para regresar a la lista. El logo es el de «Tu restaurante» (lib/marcaAparato.ts);
-  sin logo, solo el nombre. Sin ligar, o mientras carga, nada: todavía no se sabe de qué restaurante es.
+  sin logo, solo el nombre. Sin ligar, o mientras carga, nada: todavía no se sabe de qué restaurante es. A la derecha,
+  siempre, el botón «Cómo se ve» (ComoSeVe.svelte): el tema y el estilo de este aparato.
 -->
 <script lang="ts">
   import Icono from '../../diseno/Icono.svelte';
   import LogoRestaurante from '../../diseno/LogoRestaurante.svelte';
   import { leerMarca } from '../../lib/marcaAparato';
+  import ComoSeVe from './ComoSeVe.svelte';
 
   let {
     lugar = null,
@@ -29,6 +31,7 @@
       <span>{lugar.aparato}</span>
     </span>
   {/if}
+  <ComoSeVe />
 </div>
 
 <style>

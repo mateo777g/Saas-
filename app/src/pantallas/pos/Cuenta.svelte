@@ -39,6 +39,7 @@
 </script>
 
 <script lang="ts">
+  import { pica, vidrio } from '../../diseno/vidrio';
   import type { Snippet } from 'svelte';
   import CajaError from '../../diseno/CajaError.svelte';
   import Icono from '../../diseno/Icono.svelte';
@@ -133,12 +134,12 @@
 {/snippet}
 
 <div class="cel-arriba">
-  <button type="button" class="cel-volver" onclick={alVolver}><Icono nombre="anterior" tamano={16} />{volver}</button>
+  <button type="button" class="cel-volver" use:vidrio={'boton'} use:pica={1.08} onclick={alVolver}><Icono nombre="anterior" tamano={16} />{volver}</button>
   <div class="cuenta-titulo">
     <b>{titulo}</b>
     <span>{sub}</span>
   </div>
-  <button type="button" class="cuadro" aria-label="Más acciones" title="Más acciones" disabled={!conCuenta} onclick={alMenu}>
+  <button type="button" class="cuadro" aria-label="Más acciones" title="Más acciones" disabled={!conCuenta} onclick={alMenu} use:vidrio={'boton'} use:pica={1.08}>
     <Icono nombre="puntos" tamano={18} />
   </button>
 </div>

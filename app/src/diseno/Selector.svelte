@@ -3,10 +3,12 @@
   Hoy / Semana / Mes en Inicio). Caja de chip, radio 12, relleno 3; el elegido en sólido con una
   sombra de 1 px. `alto` es el de cada segmento (30 en Flet, 34 en las ventanas, 38 en el tema de
   Ajustes) y `lleno` los reparte a lo ancho, todos iguales. Un segmento puede llevar icono, como
-  Oscuro / Claro en Ajustes.
+  Oscuro / Claro en Ajustes. `vidrio`: en Cristal es un control de vidrio, como el dock (las pestañas de arriba del
+  aparato del equipo); nunca dentro de una hoja o ventana, que ya son vidrio.
 -->
 <script lang="ts" generics="T extends string">
   import Icono from './Icono.svelte';
+  import { vidrio as deVidrio } from './vidrio';
 
   let {
     opciones,
@@ -15,6 +17,7 @@
     etiqueta,
     alto = 30,
     lleno = false,
+    vidrio = false,
   }: {
     opciones: { valor: T; texto: string; icono?: string }[];
     elegida: T;
@@ -22,6 +25,7 @@
     etiqueta: string;
     alto?: number;
     lleno?: boolean;
+    vidrio?: boolean;
   } = $props();
 </script>
 
@@ -32,6 +36,7 @@
   aria-label={etiqueta}
   style:--alto="{alto}px"
   style:--cuantas={opciones.length}
+  use:deVidrio={vidrio ? 'control' : null}
 >
   {#each opciones as opcion (opcion.valor)}
     <button

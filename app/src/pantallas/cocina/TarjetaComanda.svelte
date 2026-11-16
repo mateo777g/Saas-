@@ -147,6 +147,21 @@
     box-shadow: 0 0 0 1px var(--rojo);
   }
 
+  /* En Cristal la tarjeta es de material (diseno/cristal.css), que traía su propio borde: el aro dice algo y se queda. */
+  :global(:root[data-estilo='cristal']) .comanda.amarilla {
+    border-color: var(--amarillo);
+    box-shadow:
+      0 0 0 1px var(--amarillo),
+      0 18px 40px -14px var(--cristal-sombra);
+  }
+
+  :global(:root[data-estilo='cristal']) .comanda.roja {
+    border-color: var(--rojo);
+    box-shadow:
+      0 0 0 1px var(--rojo),
+      0 18px 40px -14px var(--cristal-sombra);
+  }
+
   .encabezado {
     display: flex;
     align-items: center;

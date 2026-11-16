@@ -57,6 +57,7 @@ export function textoOtro(o: OtroCambio): string {
   if (o.accion === 'cambiar_mesa') return `De ${d.de} a ${d.a}`;
   if (o.accion === 'juntar_mesas') return `${d.de} con ${d.a}`;
   if (o.accion === 'cambiar_hora_corte') return `De ${d.de}:00 a ${d.a}:00`;
+  if (o.accion === 'devuelto_mercado_pago') return `Devuelto desde Mercado Pago · ${pesos(Number(d.monto))}`;
   return d.nombre ? String(d.nombre) : 'Toda la cuenta';
 }
 
@@ -65,6 +66,7 @@ export const TIPO_OTRO: Record<OtroCambio['accion'], string> = {
   juntar_mesas: 'Juntó mesas',
   quitar_descuento: 'Quitó un descuento',
   cambiar_hora_corte: 'Hora de corte',
+  devuelto_mercado_pago: 'Devolución',
 };
 
 const ICONO_OTRO: Record<OtroCambio['accion'], string> = {
@@ -72,6 +74,7 @@ const ICONO_OTRO: Record<OtroCambio['accion'], string> = {
   juntar_mesas: 'juntar',
   quitar_descuento: 'porcentaje',
   cambiar_hora_corte: 'reloj',
+  devuelto_mercado_pago: 'tarjeta',
 };
 
 const sinAcentos = (texto: string) => texto.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
@@ -156,7 +159,13 @@ export function filasDelDia(r: ReporteDia): FilaCortes[] {
 
   r.otros.forEach((o, i) => {
     const titulo = textoOtro(o);
-    const sub = o.accion === 'quitar_descuento' && o.cuenta ? o.cuenta : '';
+    const d = o.detalle as Record<string, string | number | null | undefined>;
+    const sub =
+      o.accion === 'quitar_descuento' && o.cuenta
+        ? o.cuenta
+        : o.accion === 'devuelto_mercado_pago'
+          ? juntos(o.cuenta, d.folio != null ? `folio ${d.folio}` : null)
+          : '';
     pasaron.push({
       cuando: o.created_at,
       fila: {

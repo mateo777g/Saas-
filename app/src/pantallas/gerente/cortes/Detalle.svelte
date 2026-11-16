@@ -66,6 +66,9 @@
     if (o.accion === 'cambiar_mesa') return `Cambió de mesa: de ${d.de} a ${d.a}`;
     if (o.accion === 'juntar_mesas') return `Juntó ${d.de} con ${d.a}`;
     if (o.accion === 'cambiar_hora_corte') return `Cambió la hora de corte de ${d.de}:00 a ${d.a}:00`;
+    if (o.accion === 'devuelto_mercado_pago') {
+      return `Devuelto desde Mercado Pago · ${pesos(Number(d.monto))}${o.cuenta ? ` de ${o.cuenta}` : ''}${d.folio != null ? ` (folio ${d.folio})` : ''}`;
+    }
     const de = d.nombre ? `${d.nombre}${o.cuenta ? ` en ${o.cuenta}` : ''}` : (o.cuenta ?? 'la cuenta');
     return `Quitó el descuento de ${de}`;
   }

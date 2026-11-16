@@ -174,7 +174,9 @@ export type Cancelacion = {
 };
 
 export type OtroCambio = {
-  accion: 'cambiar_mesa' | 'juntar_mesas' | 'quitar_descuento' | 'cambiar_hora_corte';
+  // devuelto_mercado_pago: Don Chuy devolvió un pago de la terminal desde su app (la terminal conectada, 16 nov 2026);
+  // sale el día en que llegó el aviso, con detalle.monto (lo devuelto, puede ser una parte) y su folio.
+  accion: 'cambiar_mesa' | 'juntar_mesas' | 'quitar_descuento' | 'cambiar_hora_corte' | 'devuelto_mercado_pago';
   detalle: Record<string, unknown>;
   cuenta: string | null; // la cuenta a la que se le hizo («Mesa 1»); vacía en la hora de corte
   quien: string | null;

@@ -14,6 +14,11 @@
 
   Con la adaptabilidad (encuesta 17; encuesta 8 de cobro-caja.md): en efectivo, «Exacto» y hasta tres
   billetes que alcanzan, en chips como los de la propina; un toque llena «Con cuánto paga».
+
+  Con la terminal conectada (libreta 5, «La terminal conectada»; maqueta 8aJ1RUKVd2xA5kgawVpDkQ v2, «Celular · Cobrar»):
+  con Tarjeta y una Point, el botón grande es «Mandar a la terminal · $489.50» y abajo, chico, «La cobré a mano». Al
+  mandarlo, la hoja espera («Esperando en la terminal», los segundos, «Revisar» y «Cancelar cobro»); si Mercado Pago no
+  sabe, «Revisa la terminal» con «Sí se pagó / No se pagó»; si no se cobró, la nota roja con el porqué y «Reintentar».
 -->
 <script lang="ts">
   import type { SupabaseClient } from '@supabase/supabase-js';
@@ -24,6 +29,7 @@
   import { NOMBRE_METODO } from '../../lib/caja';
   import { dinero } from '../../lib/formato';
   import type { Autoriza, Renglon, TipoCuenta, Venta } from '../../lib/pos';
+  import type { VigiaTerminal } from '../../lib/terminal.svelte';
   import { Cobro, type ElegidaPropina } from './cobro/cobro.svelte';
   import Encima from './cobro/Encima.svelte';
   import Hoja from './Hoja.svelte';
@@ -39,6 +45,7 @@
     autorizan,
     zona,
     renglones,
+    terminal = null,
     alCerrar,
     alAviso,
     alListo,
@@ -52,12 +59,13 @@
     autorizan: Autoriza[] | null; // quién pone su PIN para descontar o cancelar un pago; null: quien cobra es de la caja o gerente
     zona: string;
     renglones?: Renglon[];
+    terminal?: VigiaTerminal | null;
     alCerrar: () => void;
     alAviso: (texto: string) => void;
     alListo: () => void;
   } = $props();
 
-  const c = new Cobro(() => ({ cliente, restauranteId, venta, cuenta, turnoId, nombres, autorizan, zona, renglones, alAviso }));
+  const c = new Cobro(() => ({ cliente, restauranteId, venta, cuenta, turnoId, nombres, autorizan, zona, renglones, terminal, alAviso }));
   onDestroy(() => c.destruir());
 
   const PROPINAS: { valor: ElegidaPropina; texto: string }[] = [
@@ -66,7 +74,22 @@
     { valor: '15', texto: '15 %' },
     { valor: 'otra', texto: 'Otra' },
   ];
+
+  // Lo que dice cada motivo de «No se cobró» («cancelada» es la de Pepe y regresa a elegir, sin nota).
+  const MOTIVOS: Record<string, string> = {
+    rechazada: 'La tarjeta fue rechazada. Pide otra tarjeta o elige otra forma de pago.',
+    vencida: 'Pasaron 5 minutos y nadie pagó en la terminal.',
+    cancelada_terminal: 'Se canceló en la terminal.',
+    sin_conexion: 'No se pudo mandar a la terminal. Cóbrala a mano.',
+  };
 </script>
+
+{#snippet senal(ambar: boolean)}
+  <div class="t-senal" class:ambar aria-hidden="true">
+    <span class="t-onda"></span><span class="t-onda dos"></span>
+    <span class="t-centro"><Icono nombre={ambar ? 'alerta' : 'tarjeta'} tamano={22} /></span>
+  </div>
+{/snippet}
 
 {#if c.encima}
   <Encima cobro={c} />
@@ -103,6 +126,63 @@
       <CajaError tipo="info" mensaje="Esta cuenta ya no está abierta: se cobró o se juntó en otro aparato." />
     {/if}
 
+    {#if c.fase === 'esperando' && c.cobroT}
+      {@const t = c.cobroT}
+      <div class="t-espera-cel t-entra">
+        <div class="t-espera">
+          {@render senal(false)}
+          <b class="t-espera-tit">Esperando en la terminal</b>
+          <span class="t-espera-monto">{dinero(t.monto)}</span>
+          <span class="t-espera-linea">{c.vigia?.point ?? 'Point'}{t.propina > 0 ? ` · propina ${dinero(t.propina)}` : ''}</span>
+          <span class="t-seg">{c.segundos} s</span>
+        </div>
+        {#if c.aviso5}
+          <p class="t-aviso5" role="status">
+            <Icono nombre="alerta" tamano={16} /><span><b>La terminal no lo ha recibido:</b> abre «Cobros vinculados» en la Point.</span>
+          </p>
+        {/if}
+        {#if c.error}<CajaError tipo={c.error.startsWith('Sin conexión') ? 'sinred' : 'alerta'} mensaje={c.error} />{/if}
+        <p class="t-pista">Puedes cerrar esto y atender otra mesa: la cuenta se cierra sola cuando paguen.</p>
+        <div class="t-par">
+          <button type="button" class="cel-boton contorno" class:t-girando={c.revisando} disabled={c.revisando} onclick={() => c.revisar()}>
+            <Icono nombre="actualizar" tamano={16} />Revisar
+          </button>
+          <button type="button" class="cel-boton contorno t-rojo" disabled={c.ocupado} onclick={() => c.cancelarTerminal()}>Cancelar cobro</button>
+        </div>
+      </div>
+    {:else if c.fase === 'revisa' && c.cobroT}
+      {@const t = c.cobroT}
+      <div class="t-espera-cel t-entra">
+        <div class="t-espera">
+          {@render senal(true)}
+          <b class="t-espera-tit">Revisa la terminal</b>
+          <span class="t-espera-monto">{dinero(t.monto)}</span>
+          <span class="t-espera-linea">Mercado Pago no sabe si se pagó. Mira la Point: ¿salió el comprobante?</span>
+        </div>
+        {#if c.error}<CajaError mensaje={c.error} />{/if}
+        <p class="t-pista">Lo que elijas queda en la bitácora, y el corte lo compara con el cierre de la terminal.</p>
+        <div class="t-par">
+          <button type="button" class="cel-boton contorno t-rojo" disabled={c.ocupado} onclick={() => c.confirmar(false)}>No se pagó</button>
+          <button type="button" class="cel-boton" disabled={c.ocupado} onclick={() => c.confirmar(true)}>Sí se pagó</button>
+        </div>
+      </div>
+    {:else}
+    {#if c.notaTerminal}
+      {@const nota = c.notaTerminal}
+      {#if nota.tipo === 'no-cobro'}
+        <div class="t-nota roja t-entra" role="alert">
+          <Icono nombre="alerta" tamano={16} /><span><b>No se cobró.</b> {MOTIVOS[nota.motivo] ?? ''}</span>
+        </div>
+      {:else if nota.tipo === 'ocupada'}
+        <div class="t-nota ambar t-entra" role="alert">
+          <Icono nombre="alerta" tamano={16} /><span><b>La terminal está atendiendo otro cobro.</b> Cuando termine, vuelve a mandarlo.</span>
+        </div>
+      {:else}
+        <div class="t-nota ambar t-entra" role="alert">
+          <Icono nombre="alerta" tamano={16} /><span><b>La terminal tiene algo pendiente: revisa el papel.</b> Lo pendiente sale solo cuando la Point tiene papel y está en «Cobros vinculados».</span>
+        </div>
+      {/if}
+    {/if}
     {#if c.resumen}
       <div class="resumen">
         {#if c.descuento && cuenta}
@@ -268,13 +348,24 @@
 
     {#if c.error}<CajaError tipo={c.error.startsWith('Sin conexión') ? 'sinred' : 'alerta'} mensaje={c.error} />{/if}
 
-    <button type="button" class="cel-boton fijo" disabled={!c.listo} onclick={() => c.anotar()}>
-      {#if c.enCero}
-        Cerrar la cuenta
-      {:else}
-        Anotar pago{c.cobrarEnBoton !== null ? ` · ${dinero(c.cobrarEnBoton)}` : ''}
-      {/if}
-    </button>
+    {#if c.conTerminal && !c.enCero}
+      <div class="t-pie-cel">
+        <button type="button" class="cel-boton fijo" disabled={!c.listoTerminal} onclick={() => c.mandar()}>
+          {c.notaTerminal ? 'Reintentar' : 'Mandar a la terminal'}{c.cobrarEnBoton !== null ? ` · ${dinero(c.cobrarEnBoton)}` : ''}
+        </button>
+        {#if c.poco}<p class="t-razon">Menos de $5.00 no se puede mandar a la terminal</p>{/if}
+        <button type="button" class="boton-chico t-a-mano" disabled={!c.listo} onclick={() => c.anotar()}>La cobré a mano</button>
+      </div>
+    {:else}
+      <button type="button" class="cel-boton fijo" disabled={!c.listo} onclick={() => c.anotar()}>
+        {#if c.enCero}
+          Cerrar la cuenta
+        {:else}
+          Anotar pago{c.cobrarEnBoton !== null ? ` · ${dinero(c.cobrarEnBoton)}` : ''}
+        {/if}
+      </button>
+    {/if}
+    {/if}
   </Hoja>
 {/if}
 

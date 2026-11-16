@@ -18,7 +18,9 @@
   "vars": {
     "SUPABASE_URL": "https://jntciroxrgxqyhtdtxhw.supabase.co",
     "SUPABASE_LLAVE_PUBLICABLE": "sb_publishable__z6hdwI-FsCuiVGtdySVOw_7BCCZFCG",
-    "ORIGENES": "https://app.fragmentless.com,https://pidemenu.mx"
+    "ORIGENES": "https://app.fragmentless.com,https://pidemenu.mx",
+    // A donde regresa Mercado Pago al conectar una cuenta (la misma en la aplicación de Mercado Pago).
+    "MP_REGRESO": "https://api.fragmentless.com/mp/regreso"
   },
   "r2_buckets": [{ "binding": "BUCKET", "bucket_name": "fragmentless" }],
   // El trabajo en segundo plano que hace cada anuncio (src/hacerAnuncio.ts).
@@ -35,7 +37,8 @@
       "vars": {
         "SUPABASE_URL": "https://jntciroxrgxqyhtdtxhw.supabase.co",
         "SUPABASE_LLAVE_PUBLICABLE": "sb_publishable__z6hdwI-FsCuiVGtdySVOw_7BCCZFCG",
-        "ORIGENES": "http://localhost:8125,http://gerente.localhost:8125,http://aparato.localhost:8125,http://fragmentless.localhost:8125,http://localhost:8126"
+        "ORIGENES": "http://localhost:8125,http://gerente.localhost:8125,http://aparato.localhost:8125,http://fragmentless.localhost:8125,http://localhost:8126",
+        "MP_REGRESO": "https://api-pruebas.fragmentless.workers.dev/mp/regreso"
       },
       "r2_buckets": [{ "binding": "BUCKET", "bucket_name": "fragmentless" }],
       "workflows": [{ "name": "hacer-anuncio-pruebas", "binding": "HACER_ANUNCIO", "class_name": "HacerAnuncio" }],

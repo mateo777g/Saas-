@@ -7,6 +7,7 @@
   se lee la primera vez, sus cuadros en bloques grises que laten (regla «Los esqueletos»; maqueta «Mesas» cargando).
 -->
 <script lang="ts">
+  import type { VigiaTerminal } from '../../../lib/terminal.svelte';
   import { tick, type Snippet } from 'svelte';
   import { cascada } from '../../../diseno/cascada';
   import { faltaDe } from '../../../lib/caja';
@@ -31,6 +32,7 @@
     cargando = 0,
     encima,
     alAbrir,
+    terminal = null,
   }: {
     mesas: Mesa[];
     deMesa: Map<number, Venta>; // la cuenta abierta de cada mesa
@@ -42,6 +44,7 @@
     cargando?: number; // cuántas mesas había la última vez, mientras se lee la primera vez (0 = ya se leyó)
     encima?: Snippet;
     alAbrir: (m: Mesa) => void;
+    terminal?: VigiaTerminal | null; // la terminal de la sucursal: la mesa cuyo cobro espera lo dice
   } = $props();
 
   let busqueda = $state('');
@@ -105,14 +108,17 @@
       <div class="rejilla" bind:this={rejilla}>
         {#each vistas as m (m.id)}
           {@const v = deMesa.get(m.id)}
+          {@const t = v ? (terminal?.marca(v.id) ?? null) : null}
           <button type="button" class="prod mesa-t" class:libre={!v} disabled={apagadas} onclick={() => alAbrir(m)}>
             <span class="mesa-nom">
               {#if v}<span class="punto-v"></span>{/if}<span class="nom">{m.nombre}</span>
-              {#if v && MARCA[estadoDe(v)]}<span class="marca-e {estadoDe(v)}">{MARCA[estadoDe(v)]}</span>{/if}
+              {#if t}
+                <span class="marca-e t-marca {t.tipo}">{t.tipo === 'terminal' ? 'En la terminal' : t.tipo === 'revisa' ? 'Revisa la terminal' : 'No se cobró'}</span>
+              {:else if v && MARCA[estadoDe(v)]}<span class="marca-e {estadoDe(v)}">{MARCA[estadoDe(v)]}</span>{/if}
             </span>
             {#if v}
               <span class="mesa-abajo">
-                <b>{pesos(v.total)}</b>
+                <b>{pesos(t && t.tipo !== 'no-cobro' ? t.monto : v.total)}</b>
                 <span>{v.pagado > 0 ? `Falta ${pesos(faltaDe(v))} · ` : ''}Abrió {quien(v)} · {hora(v)}</span>
               </span>
             {:else}

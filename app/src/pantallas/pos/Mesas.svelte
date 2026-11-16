@@ -9,6 +9,8 @@
 
   Adaptabilidad («Lo que decidí yo» 5): sin mesas no sale el selector Mesas · Para llevar, solo los
   pedidos; el pedido nuevo puede ser para comer aquí, y sin nombre sale con su número del día.
+  Con la terminal conectada (maqueta 8aJ1RUKVd2xA5kgawVpDkQ v2, «Celular · Mesas»): la mesa cuyo cobro espera dice «En la
+  terminal» en azul y lo que se mandó ($489.50) en lugar del total; «Revisa la terminal» en ámbar; «No se cobró» en rojo.
 -->
 <script lang="ts">
   import type { Snippet } from 'svelte';
@@ -17,6 +19,7 @@
   import { faltaDe } from '../../lib/caja';
   import { dinero } from '../../lib/formato';
   import { ICONO_DE_TIPO, nombreDeCuenta, TIPO_EN_PALABRAS, type Mesa, type PedidoNuevo, type Venta } from '../../lib/pos';
+  import type { VigiaTerminal } from '../../lib/terminal.svelte';
   import Lugar from './Lugar.svelte';
   import MarcaEstado from './MarcaEstado.svelte';
 
@@ -39,6 +42,7 @@
     alVista,
     alAbrir,
     alNuevoLlevar,
+    terminal = null,
   }: {
     restaurante: string;
     linea: string;
@@ -56,6 +60,7 @@
     alVista: (v: 'mesas' | 'llevar') => void;
     alAbrir: (llave: string) => void;
     alNuevoLlevar: () => void;
+    terminal?: VigiaTerminal | null;
   } = $props();
 
   const enSuMesa = (v: Venta) => v.tipo === 'mesa' && v.folio === null;
@@ -102,13 +107,22 @@
             </button>
           {:else}
             {@const e = estadoDe(v)}
+            {@const t = terminal?.marca(v.id) ?? null}
             <button type="button" class="mesa" class:lista={e === 'lista'} onclick={() => alAbrir(`m${m.id}`)}>
               <span class="mesa-arriba">
                 <span class="mesa-nombre">{m.nombre}</span>
-                <MarcaEstado estado={e} />
+                {#if t?.tipo === 'terminal'}
+                  <span class="marca-estado t-marca azul"><Icono nombre="tarjeta" tamano={13} />En la terminal</span>
+                {:else if t?.tipo === 'revisa'}
+                  <span class="marca-estado t-marca ambar"><Icono nombre="alerta" tamano={13} />Revisa la terminal</span>
+                {:else if t?.tipo === 'no-cobro'}
+                  <span class="marca-estado t-marca roja"><Icono nombre="alerta" tamano={13} />No se cobró</span>
+                {:else}
+                  <MarcaEstado estado={e} />
+                {/if}
               </span>
               <span class="mesa-abajo">
-                <span class="mesa-total">{dinero(v.total)}</span>
+                <span class="mesa-total">{dinero(t && t.tipo !== 'no-cobro' ? t.monto : v.total)}</span>
                 {#if v.pagado > 0}<span class="mesa-falta">Falta {dinero(faltaDe(v))}</span>{/if}
                 <span class="mesa-quien">Abrió {quien(v)} · {hora(v)}</span>
               </span>

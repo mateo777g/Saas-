@@ -16,6 +16,7 @@
   import { pesos, plural } from '../../../lib/formato';
   import Filtro from '../../pos/ancho/Filtro.svelte';
   import Herramientas from '../../pos/ancho/Herramientas.svelte';
+  import type { VigiaTerminal } from '../../../lib/terminal.svelte';
   import type { FilaCaja, FiltroCaja } from './filas';
 
   let {
@@ -29,6 +30,7 @@
     vacio,
     alFiltro,
     alElegir,
+    terminal = null,
   }: {
     filas: FilaCaja[]; // ya filtradas y buscadas
     busqueda?: string;
@@ -40,6 +42,7 @@
     vacio: { titulo: string; texto: string };
     alFiltro: (f: FiltroCaja) => void;
     alElegir: (f: FilaCaja) => void;
+    terminal?: VigiaTerminal | null; // «En la terminal · $489.50» en la cuenta cuyo cobro espera
   } = $props();
 
   // La cascada, solo la primera vez que llegan las cuentas.
@@ -100,17 +103,20 @@
         <NotaTabla relleno={48} angosta titulo={vacio.titulo} texto={vacio.texto} />
       {:else}
         {#each filas as f (f.clave)}
+          {@const t = f.cobrada ? null : (terminal?.marca(f.id) ?? null)}
           <button type="button" class="fila fila-cuenta" class:cobrada={f.cobrada} aria-pressed={elegida === f.clave} onclick={() => alElegir(f)}>
             <span class="cel-cuenta">
               <span class="ico-c"><Icono nombre={f.icono} tamano={16} /></span>
               <span class="celda fuerte">{f.titulo}</span>
               {#if f.whatsapp}<span class="wa">WhatsApp</span>{/if}
-              {#if f.marca}<span class="marca-e" class:cuenta={f.marca === 'Pidió la cuenta'} class:reabierta={f.marca === 'Reabierta'}>{f.marca}</span>{/if}
+              {#if t}
+                <span class="marca-e t-marca {t.tipo}">{t.tipo === 'terminal' ? 'En la terminal' : t.tipo === 'revisa' ? 'Revisa la terminal' : 'No se cobró'}</span>
+              {:else if f.marca}<span class="marca-e" class:cuenta={f.marca === 'Pidió la cuenta'} class:reabierta={f.marca === 'Reabierta'}>{f.marca}</span>{/if}
             </span>
             <span class="celda">{f.como}</span>
             <span class="celda tenue">{f.abrio}</span>
             <span class="celda numero">
-              {pesos(f.total)}{#if f.cobrada}<span class="hecha" aria-label="cobrada"> ✓</span>{/if}
+              {pesos(t && t.tipo !== 'no-cobro' ? t.monto : f.total)}{#if f.cobrada}<span class="hecha" aria-label="cobrada"> ✓</span>{/if}
               {#if f.falta !== null}<small>Falta {pesos(f.falta)}</small>{/if}
             </span>
           </button>

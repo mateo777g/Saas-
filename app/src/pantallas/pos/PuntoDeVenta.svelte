@@ -78,6 +78,7 @@
     type Renglon,
     type Venta,
   } from '../../lib/pos';
+  import { VigiaTerminal } from '../../lib/terminal.svelte';
   import { faltaDe, leerTurno, miEfectivo } from '../../lib/caja';
   import { avisarLista, prepararSonido } from '../../lib/sonido';
   import Agregar from './Agregar.svelte';
@@ -131,6 +132,9 @@
     ancho?: boolean; // a lo ancho (≥ ~900 px): lo decide quien lo abre
     anfitrion?: Anfitrion | null; // quién lo abre, para la barra de arriba a lo ancho
   } = $props();
+
+  // La terminal de la sucursal y sus cobros (lib/terminal.svelte.ts): «Mandar a la terminal» y «En la terminal» en Mesas.
+  const terminal = untrack(() => new VigiaTerminal(cliente, restauranteId)); // la sucursal no cambia mientras se ve
 
   type Hojas =
     | { tipo: 'opciones'; producto: ProductoPos }
@@ -940,6 +944,7 @@
       autorizan,
       zona,
       renglones: abiertas.renglones,
+      terminal,
       alAviso: avisar,
     }));
     lado = 'cobro';
@@ -981,6 +986,7 @@
     const dejar = escuchar(cliente, restauranteId, ['ventas', 'venta_items', 'comandas', 'pagos', 'turnos'], () => {
       if (carga.estado === 'listo') recargarCuentas();
     });
+    const dejarTerminal = terminal.iniciar();
     const alVolver = () => {
       if (document.visibilityState === 'visible') leerTodo();
     };
@@ -990,6 +996,7 @@
     window.addEventListener('online', conRed);
     return () => {
       dejar();
+      dejarTerminal();
       document.removeEventListener('visibilitychange', alVolver);
       document.removeEventListener('pointerdown', prepararSonido, true);
       window.removeEventListener('online', conRed);
@@ -1161,6 +1168,7 @@
     {nombres}
     {autorizan}
     {zona}
+    {terminal}
     alCerrar={() => (hoja = null)}
     alAviso={avisar}
     alListo={() => {
@@ -1224,6 +1232,7 @@
           {estadoDe}
           quien={(v) => quien(v.abierta_por)}
           hora={(v) => hora(v.created_at)}
+          {terminal}
           alAbrir={(m) => abrirAncho(`m${m.id}`)}
         />
       </div>
@@ -1505,6 +1514,7 @@
       alVista={(v) => (vista = v)}
       alAbrir={abrir}
       alNuevoLlevar={() => (hoja = { tipo: 'llevar' })}
+      {terminal}
     />
   {:else if pantalla === 'cuenta' && (actual[0] !== 'v' || ventaActual)}
     <Cuenta

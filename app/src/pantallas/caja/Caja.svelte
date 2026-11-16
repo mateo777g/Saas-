@@ -27,7 +27,7 @@
 -->
 <script lang="ts">
   import type { SupabaseClient } from '@supabase/supabase-js';
-  import { onDestroy, onMount, type Snippet } from 'svelte';
+  import { onDestroy, onMount, untrack, type Snippet } from 'svelte';
   import Boton from '../../diseno/Boton.svelte';
   import CajaError from '../../diseno/CajaError.svelte';
   import Esqueleto from '../../diseno/Esqueleto.svelte';
@@ -84,6 +84,7 @@
     type Renglon,
     type Venta,
   } from '../../lib/pos';
+  import { VigiaTerminal } from '../../lib/terminal.svelte';
   import Hoja from '../pos/Hoja.svelte';
   import HojaCancelarPago from '../pos/HojaCancelarPago.svelte';
   import HojaCobrar from '../pos/HojaCobrar.svelte';
@@ -111,6 +112,10 @@
     ancho?: boolean; // a lo ancho (≥ ~900 px): lo decide quien la abre
     anfitrion?: Anfitrion | null; // quién la abre, para la barra de arriba a lo ancho
   } = $props();
+
+  // La terminal de la sucursal y sus cobros (lib/terminal.svelte.ts): «Mandar a la terminal» y «En la terminal» en Por
+  // cobrar.
+  const terminal = untrack(() => new VigiaTerminal(cliente, restauranteId)); // la sucursal no cambia mientras se ve
 
   type Hojas =
     | { tipo: 'cobrar'; venta: Venta }
@@ -420,6 +425,7 @@
       autorizan: null,
       zona,
       renglones,
+      terminal,
       alAviso: avisar,
     }));
     elegida = `v${v.id}`;
@@ -474,12 +480,14 @@
     const dejar = escuchar(cliente, restauranteId, ['ventas', 'comandas', 'pagos', 'turnos'], () => {
       if (carga.estado === 'listo') recargar();
     });
+    const dejarTerminal = terminal.iniciar();
     const alVolver = () => {
       if (document.visibilityState === 'visible') leerTodo();
     };
     document.addEventListener('visibilitychange', alVolver);
     return () => {
       dejar();
+      dejarTerminal();
       document.removeEventListener('visibilitychange', alVolver);
     };
   });
@@ -511,6 +519,7 @@
       <div class="cuerpo-ancho">
         <div class="dos">
           <TablaCuentas
+            {terminal}
             filas={filasCaja}
             bind:busqueda
             filtroElegido={filtro}
@@ -915,6 +924,7 @@
       {nombres}
       autorizan={null}
       {zona}
+      {terminal}
       alCerrar={() => (hoja = null)}
       alAviso={avisar}
       alListo={() => (hoja = null)}

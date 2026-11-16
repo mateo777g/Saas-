@@ -8,6 +8,11 @@
   lugar mientras no hay monto) o, con tarjeta o transferencia, cuánto cobrar y la referencia; «Propina» en cuadros y
   «¿Paga todo?» con «Otra cantidad» en su gris. «Anotar pago» va en la barra de abajo (pos/cobro/Abajo.svelte). Mientras
   llega el primer resumen, lo que lo espera sale en esqueleto. El punto de venta nunca cobra: aquí se anota cómo pagó.
+
+  Con la terminal conectada (maqueta 8aJ1RUKVd2xA5kgawVpDkQ v2, «Caja a lo ancho»): con Tarjeta, «En la terminal» dice a
+  qué Point va; mientras el cobro espera, la tarjeta enseña la Point con sus ondas, el monto grande, los segundos y lo
+  que lleva (la cuenta y la propina); si Mercado Pago no sabe, «Revisa la terminal». Arriba, la nota roja o ámbar de lo
+  que no salió. Los botones (Mandar, La cobré a mano, Revisar, Cancelar cobro, Sí / No se pagó) van en la barra.
 -->
 <script lang="ts">
   import Boton from '../../../diseno/Boton.svelte';
@@ -41,6 +46,14 @@
   });
   const recibidoMal = $derived(c.recibido.tipo === 'texto' && c.recibido.texto.trim() !== '' && c.recibidoPedido === null);
 
+  // Lo que dice cada motivo de «No se cobró» («cancelada» es la de quien lo mandó y regresa a elegir, sin nota).
+  const MOTIVOS: Record<string, string> = {
+    rechazada: 'La tarjeta fue rechazada. Pide otra tarjeta o elige otra forma de pago.',
+    vencida: 'Pasaron 5 minutos y nadie pagó en la terminal.',
+    cancelada_terminal: 'Se canceló en la terminal.',
+    sin_conexion: 'No se pudo mandar a la terminal. Cóbrala a mano.',
+  };
+
   // Un error al anotar sale arriba: la tarjeta sube para que se vea.
   let arriba = $state<HTMLDivElement>();
   $effect(() => {
@@ -48,14 +61,80 @@
   });
 </script>
 
-{#snippet cabeza(icono: string, texto: string)}
+{#snippet cabeza(icono: string, texto: string, sub?: string)}
   <div class="encabezado">
     <span class="cuadro-c"><Icono nombre={icono} tamano={18} /></span>
-    <div class="titulos"><span class="titulo">{texto}</span></div>
+    <div class="titulos"><span class="titulo">{texto}</span>{#if sub}<span class="t-sub">{sub}</span>{/if}</div>
   </div>
 {/snippet}
 
+{#snippet senal(ambar: boolean)}
+  <div class="t-senal" class:ambar aria-hidden="true">
+    <span class="t-onda"></span><span class="t-onda dos"></span>
+    <span class="t-centro"><Icono nombre={ambar ? 'alerta' : 'tarjeta'} tamano={22} /></span>
+  </div>
+{/snippet}
+
+{#snippet lleva(monto: number, propina: number)}
+  <div class="ya">
+    <div class="f"><span>{titulo}</span><b>{pesos(monto - propina)}</b></div>
+    {#if propina > 0}<div class="f"><span>Propina</span><b>{pesos(propina)}</b></div>{/if}
+  </div>
+{/snippet}
+
+{#if c.fase === 'esperando' && c.cobroT}
+  {@const t = c.cobroT}
+  <div class="t-espera-ancho t-entra">
+    <div class="t-espera ancha">
+      {@render senal(false)}
+      <span class="t-espera-tit">Esperando en la terminal</span>
+      <b class="t-espera-monto">{pesos(t.monto)}</b>
+      <span class="t-espera-linea">{c.vigia?.point ?? 'Point'}</span>
+      <span class="t-seg">{c.segundos} s</span>
+    </div>
+    {@render lleva(t.monto, t.propina)}
+    {#if c.aviso5}
+      <p class="t-aviso5" role="status">
+        <Icono nombre="alerta" tamano={16} /><span><b>La terminal no lo ha recibido:</b> abre «Cobros vinculados» en la Point.</span>
+      </p>
+    {/if}
+    {#if c.error}<CajaError tipo={c.error.startsWith('Sin conexión') ? 'sinred' : 'alerta'} mensaje={c.error} />{/if}
+    <p class="t-pista">Puedes cobrar otra cuenta: esta se cierra sola cuando paguen.</p>
+  </div>
+{:else if c.fase === 'revisa' && c.cobroT}
+  {@const t = c.cobroT}
+  <div class="t-espera-ancho t-entra">
+    <div class="t-espera ancha">
+      {@render senal(true)}
+      <span class="t-espera-tit">Revisa la terminal</span>
+      <b class="t-espera-monto">{pesos(t.monto)}</b>
+      <span class="t-espera-linea">{c.vigia?.point ?? 'Point'}</span>
+    </div>
+    <p class="t-nota ambar" role="alert">
+      <Icono nombre="alerta" tamano={16} /><span><b>Mercado Pago no sabe si se pagó.</b> Mira la Point: ¿salió el comprobante? Lo resuelve quien lo mandó.</span>
+    </p>
+    {#if c.error}<CajaError mensaje={c.error} />{/if}
+    {@render lleva(t.monto, t.propina)}
+    <p class="t-pista">Lo que elijas queda en la bitácora, y el corte lo compara con el cierre de la terminal.</p>
+  </div>
+{:else}
 <div class="cobro" bind:this={arriba}>
+  {#if c.notaTerminal}
+    {@const nota = c.notaTerminal}
+    {#if nota.tipo === 'no-cobro'}
+      <div class="t-nota roja t-entra" role="alert">
+        <Icono nombre="alerta" tamano={16} /><span><b>No se cobró.</b> {MOTIVOS[nota.motivo] ?? ''}</span>
+      </div>
+    {:else if nota.tipo === 'ocupada'}
+      <div class="t-nota ambar t-entra" role="alert">
+        <Icono nombre="alerta" tamano={16} /><span><b>La terminal está atendiendo otro cobro.</b> Cuando termine, vuelve a mandarlo.</span>
+      </div>
+    {:else}
+      <div class="t-nota ambar t-entra" role="alert">
+        <Icono nombre="alerta" tamano={16} /><span><b>La terminal tiene algo pendiente: revisa el papel.</b> Lo pendiente sale solo cuando la Point tiene papel y está en «Cobros vinculados».</span>
+      </div>
+    {/if}
+  {/if}
   {#if !c.turnoAbierto}
     <CajaError mensaje="La caja no está abierta. Pídele a quien está en caja que la abra para anotar pagos." />
   {/if}
@@ -177,7 +256,11 @@
       </div>
     {:else}
       <div class="seccion">
-        {@render cabeza(c.metodo === 'tarjeta' ? 'tarjeta' : 'banco', c.metodo === 'tarjeta' ? 'En la terminal' : 'La transferencia')}
+        {@render cabeza(
+          c.metodo === 'tarjeta' ? 'tarjeta' : 'banco',
+          c.metodo === 'tarjeta' ? 'En la terminal' : 'La transferencia',
+          c.conTerminal ? (c.vigia?.point ?? undefined) : undefined,
+        )}
         <div class="cobra-en">
           <span>{c.metodo === 'tarjeta' ? 'Cobra en la terminal' : 'Debe llegar'}</span>
           {#if r}<b class="mono">{pesos(r.cabe ? r.cobrar : 0)}</b>{:else}<Esqueleto ancho="90px" alto="20px" />{/if}
@@ -256,6 +339,7 @@
     </div>
   {/if}
 </div>
+{/if}
 
 <style>
   /* Medidas de la maqueta (planes/trabajo/adaptabilidad/maqueta/estilos.css: .cobro, .grande, .seccion-c, .sugeridos,

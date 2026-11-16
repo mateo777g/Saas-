@@ -1,0 +1,84 @@
+/* La terminal en el cobro, en Mesas y en la caja (maqueta 8aJ1RUKVd2xA5kgawVpDkQ v2, planes/trabajo/terminal/maqueta/
+   estilos.css): la espera con la tarjeta y sus ondas, las notas de lo que no salió, el aviso de los 5 segundos, los
+   botones del celular y las marcas. Lo carga pos/cobro/cobro.svelte.ts; todo empieza con «t-». */
+
+/* Lo que aparece al cambiar de estado sube un poco con el rebote de la caja del agente (reglas-diseno.md, «Movimiento»). */
+.t-entra { animation: t-entra 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) both; }
+@keyframes t-entra { from { opacity: 0; transform: translateY(8px) scale(0.98); } }
+
+/* ─── La espera: la tarjeta con sus ondas, los segundos, el monto y a qué Point fue ─── */
+.t-espera-cel, .t-espera-ancho { display: flex; flex-direction: column; gap: 16px; }
+.t-espera-ancho { gap: 20px; }
+.t-espera { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 14px 0 4px; text-align: center; }
+.t-espera.ancha { padding-top: 6px; }
+.t-senal { position: relative; width: 76px; height: 76px; display: grid; place-items: center; margin-bottom: 10px; }
+.t-centro { position: relative; z-index: 1; width: 52px; height: 52px; border-radius: 16px; display: grid; place-items: center;
+  background: color-mix(in srgb, var(--acento) 14%, var(--solido)); color: var(--acento); }
+.t-onda { position: absolute; inset: 12px; border-radius: 18px; border: 2px solid var(--acento); opacity: 0;
+  animation: t-onda 2.2s cubic-bezier(0.2, 0.6, 0.3, 1) infinite; }
+.t-onda.dos { animation-delay: 1.1s; }
+@keyframes t-onda { 0% { transform: scale(0.9); opacity: 0.5; } 100% { transform: scale(1.7); opacity: 0; } }
+.t-senal.ambar .t-centro { background: var(--amarillo-fondo); color: var(--amarillo-texto); }
+.t-senal.ambar .t-onda { display: none; }
+.t-seg { margin-top: 6px; font-family: var(--mono); font-size: 11px; font-weight: 500; padding: 2px 8px; border-radius: 6px; background: var(--chip);
+  color: var(--suave); font-variant-numeric: tabular-nums; }
+.t-espera-tit { font-size: 15px; font-weight: 700; color: var(--texto); margin-top: 4px; }
+.t-espera.ancha .t-espera-tit { font-size: 12.5px; font-weight: 600; color: var(--suave); }
+.t-espera-monto { font-family: var(--mono); font-size: 34px; font-weight: 600; letter-spacing: -1px; color: var(--texto); }
+.t-espera.ancha .t-espera-monto { font-size: 40px; letter-spacing: -1.5px; }
+.t-espera-linea { max-width: 300px; font-size: 12.5px; line-height: 1.45; color: var(--suave); }
+.t-pista { margin: 0; font-size: 12.5px; line-height: 1.45; color: var(--suave); text-align: center; }
+
+/* El aviso de los 5 s: el ámbar de Ajustes (.aviso), que baja con el rebote al llegar. */
+.t-aviso5 { display: flex; align-items: flex-start; gap: 10px; margin: 0; padding: 11px 14px; border-radius: 12px;
+  background: var(--amarillo-fondo); font-size: 12.5px; line-height: 1.5; color: var(--suave);
+  animation: t-baja 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) both; }
+.t-aviso5 svg { flex: none; margin-top: 2px; color: var(--amarillo-texto); }
+.t-aviso5 b { color: var(--texto); font-weight: 600; }
+@keyframes t-baja { from { opacity: 0; transform: translateY(-8px) scale(0.98); } }
+
+/* ─── Las notas de lo que no salió: rojo si no se cobró, ámbar si la terminal está ocupada o hay que revisar ─── */
+.t-nota { display: flex; align-items: flex-start; gap: 10px; margin: 0; padding: 11px 14px; border-radius: 12px; font-size: 12.5px;
+  line-height: 1.5; color: var(--suave); text-align: left; }
+.t-nota svg { flex: none; margin-top: 2px; }
+.t-nota b { color: var(--texto); font-weight: 700; }
+.t-nota.roja { background: color-mix(in srgb, var(--rojo) 11%, transparent); }
+.t-nota.roja svg, .t-nota.roja b { color: var(--rojo); }
+.t-nota.ambar { background: var(--amarillo-fondo); }
+.t-nota.ambar svg { color: var(--amarillo-texto); }
+.t-nota.azul { background: color-mix(in srgb, var(--acento) 10%, transparent); }
+.t-nota.azul svg { color: var(--acento); }
+
+/* ─── El celular (pos.css): el botón grande, «La cobré a mano» chico abajo, y los dos de la espera ─── */
+.t-pie-cel { display: flex; flex-direction: column; align-items: stretch; gap: 8px; }
+.t-pie-cel .t-a-mano { align-self: center; height: 32px; padding: 0 14px; }
+.t-razon { margin: 0; font-size: 12px; line-height: 1.4; color: var(--suave); text-align: center; }
+.t-par { display: flex; gap: 10px; }
+/* Los dos a lo ancho de la hoja, iguales (el contorno de pos.css trae flex: none). */
+.pos .t-par .cel-boton,
+.pos .t-par .cel-boton.contorno { flex: 1; padding: 0 12px; }
+.pos .cel-boton.contorno.t-rojo { color: var(--rojo); border-color: color-mix(in srgb, var(--rojo) 45%, transparent); }
+.pos .cel-boton svg { flex: none; }
+.pos .cel-boton:disabled { cursor: default; }
+
+/* «Revisar» da una vuelta al preguntar. */
+.t-girando svg { animation: t-gira 0.6s cubic-bezier(0.2, 0.7, 0.3, 1); }
+@keyframes t-gira { to { transform: rotate(360deg); } }
+
+/* ─── La tarjeta a lo ancho ─── */
+.t-sub { display: block; margin-top: 1px; font-size: 12px; font-weight: 500; color: var(--suave); }
+.t-bar { display: flex; align-items: center; gap: 10px; }
+
+/* ─── Las marcas: «En la terminal» con su puntito azul que late, «Revisa la terminal» ámbar, «No se cobró» rojo ─── */
+.marca-e.t-marca.terminal::before { background: var(--acento); animation: t-late 1.6s ease-in-out infinite; }
+.marca-e.t-marca.no-cobro::before { background: var(--rojo); }
+@keyframes t-late { 50% { opacity: 0.35; transform: scale(0.8); } }
+.fila-cuenta .t-marca { margin-left: 10px; align-self: center; }
+.marca-estado.t-marca.azul { color: var(--acento); }
+.marca-estado.t-marca.ambar { color: var(--amarillo-texto); }
+.marca-estado.t-marca.roja { color: var(--rojo); }
+
+@media (prefers-reduced-motion: reduce) {
+  .t-entra, .t-onda, .t-aviso5, .marca-e.t-marca.terminal::before, .t-girando svg { animation: none !important; transition: none !important; }
+  .t-onda { display: none; }
+}

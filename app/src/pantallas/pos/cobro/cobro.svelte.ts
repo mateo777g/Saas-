@@ -8,6 +8,11 @@
 // Se crea con `new Cobro(() => ({ ... }))`: la función da lo de afuera (la cuenta según el tiempo real, el turno…) y se
 // vuelve a leer sola. Puede nacer en cualquier momento (también al tocar una fila); quien la crea la suelta con
 // `destruir()` cuando ya no se ve.
+//
+// Con la terminal conectada (libreta 5, «La terminal conectada»; maqueta 8aJ1RUKVd2xA5kgawVpDkQ v2): con Tarjeta y una
+// Point en la sucursal, «Mandar a la terminal» manda el monto con su propina (el Worker), la hoja espera mientras la
+// Point cobra y, cuando Mercado Pago dice que se pagó, la cuenta se cierra sola. Lo que pasa con el cobro llega por el
+// tiempo real de la vigía (lib/terminal.svelte.ts); «La cobré a mano» es el «Anotar pago» de siempre.
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { untrack } from 'svelte';
 import {
@@ -24,6 +29,17 @@ import {
 } from '../../../lib/caja';
 import { dinero } from '../../../lib/formato';
 import { FalloPos, quitarDescuento, textoDescuento, type Autoriza, type Renglon, type TipoCuenta, type Venta } from '../../../lib/pos';
+import {
+  cancelarCobro,
+  confirmarCobro,
+  esActivo,
+  mandarATerminal,
+  MINIMO_TERMINAL,
+  revisarCobro,
+  type MotivoCobro,
+  type VigiaTerminal,
+} from '../../../lib/terminal.svelte';
+import './terminal.css';
 
 export type EntradaCobro = {
   cliente: SupabaseClient;
@@ -35,6 +51,7 @@ export type EntradaCobro = {
   autorizan: Autoriza[] | null; // quién pone su PIN para descontar o cancelar un pago; null: quien cobra es de la caja o gerente
   zona: string;
   renglones?: Renglon[]; // lo que lleva la cuenta, para el ticket de «Cobrada» (a lo ancho)
+  terminal?: VigiaTerminal | null; // la Point de la sucursal y sus cobros; sin ella, no sale «Mandar a la terminal»
   alAviso: (texto: string) => void;
 };
 
@@ -53,6 +70,10 @@ export type Cerrada = {
   lineas: LineaTicket[];
   pagos: PagoTicket[];
 };
+
+// Lo que sale arriba del cobro cuando algo no salió: no se cobró (con su porqué), la terminal atiende otro cobro, o
+// tiene algo pendiente en su fila.
+export type NotaTerminal = { tipo: 'no-cobro'; motivo: MotivoCobro } | { tipo: 'ocupada' } | { tipo: 'pendiente' };
 
 export class Cobro {
   metodo = $state<Metodo>('efectivo');
@@ -75,6 +96,16 @@ export class Cobro {
   cerrada = $state<Cerrada | null>(null);
   // La hoja de encima: el descuento a la cuenta o cancelar un pago. El cobro se queda como estaba.
   encima = $state<{ tipo: 'descuento' } | { tipo: 'pago'; pago: Pago } | null>(null);
+
+  // La terminal: el último «no se cobró» que ya no se enseña, «otra mesa está en la terminal», los segundos de la
+  // espera y si ya se preguntó a los 5 s.
+  descartado = $state<number | null>(null);
+  ocupadaLocal = $state(false);
+  segundos = $state(0);
+  revisado5 = $state<number | null>(null);
+  revisando = $state(false);
+  #seguido: number | null = null;
+  #reabiertaAlMandar = false;
 
   #entrada: () => EntradaCobro;
   #soltar: () => void;
@@ -126,6 +157,45 @@ export class Cobro {
         const r = this.resumen;
         const x = untrack(() => this.recibido);
         if (r && x.tipo === 'billete' && x.n < r.cobrar) this.recibido = { tipo: 'nada' };
+      });
+
+      // La terminal: cuando el cobro que esta hoja vio esperando se paga, la cuenta se cierra (o falta otra parte).
+      $effect(() => {
+        const c = this.cobroT;
+        untrack(() => {
+          if (!c) return;
+          if (esActivo(c)) {
+            this.#seguido = c.id;
+            return;
+          }
+          if (c.id !== this.#seguido) return;
+          this.#seguido = null;
+          if (c.estado === 'pagado') this.alPagarse().catch((e) => console.error('[terminal] no se pudo cerrar la hoja:', e));
+        });
+      });
+
+      // Los segundos de la espera; a los 5 s, una pregunta a Mercado Pago (¿ya la tomó la Point?), y al vencer, otra.
+      $effect(() => {
+        const c = this.cobroT;
+        if (!c || !esActivo(c) || c.estado === 'revisar') return;
+        const inicio = Date.parse(c.created_at);
+        const vence = Date.parse(c.vence_at);
+        let a5 = untrack(() => this.revisado5) === c.id;
+        let alVencer = false;
+        const tic = () => {
+          this.segundos = Math.max(0, Math.floor((Date.now() - inicio) / 1000));
+          if (!a5 && this.segundos >= 5 && !c.tomado_at) {
+            a5 = true;
+            this.revisar(true).finally(() => (this.revisado5 = c.id));
+          }
+          if (!alVencer && Date.now() > vence + 10_000) {
+            alVencer = true;
+            this.revisar(true);
+          }
+        };
+        tic();
+        const reloj = setInterval(tic, 1000);
+        return () => clearInterval(reloj);
       });
 
       // Al regresar el internet, si el resumen había fallado, se vuelve a pedir.
@@ -222,6 +292,29 @@ export class Cobro {
 
   // Un pago se cancela mientras su turno sigue abierto; uno en línea, nunca desde aquí.
   seCancela = (p: Pago) => !p.cancelado_at && p.cobrado_por !== null && p.turno_id !== null && p.turno_id === this.e.turnoId;
+
+  // ─── La terminal ───
+  vigia = $derived(this.e.terminal ?? null);
+  // Con Tarjeta y una Point en la sucursal, el botón grande es «Mandar a la terminal».
+  conTerminal = $derived(this.metodo === 'tarjeta' && !!this.vigia?.puedeMandar);
+  cobroT = $derived(this.vigia?.ultimo(this.e.venta.id) ?? null);
+  fase = $derived<'elegir' | 'esperando' | 'revisa'>(
+    !this.cobroT || !esActivo(this.cobroT) ? 'elegir' : this.cobroT.estado === 'revisar' ? 'revisa' : 'esperando',
+  );
+  notaTerminal = $derived.by<NotaTerminal | null>(() => {
+    if (this.fase !== 'elegir') return null;
+    if (this.ocupadaLocal) return { tipo: 'ocupada' };
+    const c = this.cobroT;
+    if (!c || c.estado !== 'no_se_cobro' || c.id === this.descartado || c.confirmado_por !== null || !c.motivo) return null;
+    if (c.motivo === 'cancelada') return null;
+    if (c.motivo === 'ocupada') return { tipo: 'pendiente' };
+    return { tipo: 'no-cobro', motivo: c.motivo };
+  });
+  // Menos de $5.00 (con su propina) no va a la terminal: el botón sale gris con la razón.
+  poco = $derived(this.cobrarEnBoton !== null && this.cobrarEnBoton < MINIMO_TERMINAL && !this.enCero);
+  listoTerminal = $derived(this.listo && this.conTerminal && !this.enCero && !this.poco);
+  // «La terminal no lo ha recibido»: a los 5 s Mercado Pago dijo que la Point todavía no lo toma.
+  aviso5 = $derived(this.fase === 'esperando' && !!this.cobroT && !this.cobroT.tomado_at && this.revisado5 === this.cobroT.id);
 
   // ─── Lo que se elige ───
   // Un cambio en el cobro es otro pago: otra clave.
@@ -322,6 +415,8 @@ export class Cobro {
         recibido,
         referencia: this.referencia.trim(),
       });
+      if (this.cobroT && !esActivo(this.cobroT)) this.descartado = this.cobroT.id;
+      this.ocupadaLocal = false;
       if (r.cerrada) {
         // El ticket: los pagos de antes (sin el que se acaba de anotar, si el tiempo real ya lo trajo) y este.
         const pagos: PagoTicket[] = this.pagos
@@ -364,6 +459,131 @@ export class Cobro {
     } finally {
       this.ocupado = false;
     }
+  }
+
+  // ─── La terminal ───
+  // «Mandar a la terminal · $489.50»: lo de «Anotar pago», pero a la Point. Con la misma clave no se manda dos veces;
+  // si no hubo respuesta, la clave se queda y «Revisar» (o volver a pulsar) lo vuelve a mandar igual.
+  async mandar() {
+    const resumen = this.resumen;
+    if (!this.listoTerminal || !resumen) return;
+    const { cliente, venta } = this.e;
+    this.ocupado = true;
+    this.error = null;
+    this.ocupadaLocal = false;
+    if (this.cobroT && !esActivo(this.cobroT)) this.descartado = this.cobroT.id;
+    this.#reabiertaAlMandar = this.cuenta?.folio != null;
+    try {
+      const r = await mandarATerminal(cliente, {
+        ventaId: venta.id,
+        clave: this.clave,
+        monto: this.montoPedido ?? resumen.monto,
+        propina: this.propinaPedida === 'mal' ? null : this.propinaPedida,
+      });
+      if (!r.ok) {
+        this.ocupadaLocal = true;
+        return;
+      }
+      if (r.error) this.error = r.error;
+      else this.clave = crypto.randomUUID();
+      await this.vigia?.leer().catch(() => {});
+    } catch (falla) {
+      this.error = falla instanceof FalloPos ? falla.message : String(falla);
+      if (!(falla instanceof FalloPos)) console.error('[terminal] no se pudo mandar a la terminal:', falla);
+    } finally {
+      this.ocupado = false;
+    }
+  }
+
+  // «Revisar»: le pregunta a Mercado Pago cómo va (también a los 5 s y al vencer, sin decir nada si falla).
+  async revisar(solo = false) {
+    const c = this.cobroT;
+    if (!c || this.revisando) return;
+    this.revisando = true;
+    if (!solo) this.error = null;
+    try {
+      const r = await revisarCobro(this.e.cliente, c.id);
+      if (r.ok && r.error && !solo) this.error = r.error;
+      await this.vigia?.leer().catch(() => {});
+    } catch (falla) {
+      if (solo) console.warn('[terminal] no se pudo revisar el cobro:', falla);
+      else this.error = falla instanceof FalloPos ? falla.message : String(falla);
+    } finally {
+      this.revisando = false;
+    }
+  }
+
+  async cancelarTerminal() {
+    const c = this.cobroT;
+    if (!c || this.ocupado) return;
+    this.ocupado = true;
+    this.error = null;
+    try {
+      const r = await cancelarCobro(this.e.cliente, c.id);
+      if (r.ok && r.cancelando) this.e.alAviso('Cancelando en la terminal…');
+      await this.vigia?.leer().catch(() => {});
+    } catch (falla) {
+      this.error = falla instanceof FalloPos ? falla.message : String(falla);
+      if (!(falla instanceof FalloPos)) console.error('[terminal] no se pudo cancelar el cobro:', falla);
+    } finally {
+      this.ocupado = false;
+    }
+  }
+
+  // «Revisa la terminal»: Sí se pagó / No se pagó, lo resuelve quien lo mandó.
+  async confirmar(pagado: boolean) {
+    const c = this.cobroT;
+    if (!c || this.ocupado) return;
+    this.ocupado = true;
+    this.error = null;
+    try {
+      await confirmarCobro(this.e.cliente, c.id, pagado);
+      await this.vigia?.leer().catch(() => {});
+    } catch (falla) {
+      this.error = falla instanceof FalloPos ? falla.message : String(falla);
+      if (!(falla instanceof FalloPos)) console.error('[terminal] no se pudo confirmar el cobro:', falla);
+    } finally {
+      this.ocupado = false;
+    }
+  }
+
+  // El cobro de la terminal se pagó: si cubrió el total, «Cobrada» con su folio; si no, falta otra parte.
+  async alPagarse() {
+    const { cliente, venta, alAviso } = this.e;
+    const { data, error } = await cliente.from('ventas').select('folio, total, subtotal, pagado, estado').eq('id', venta.id).maybeSingle();
+    await this.leerSusPagos();
+    if (error || !data) {
+      console.error('[terminal] no se pudo leer la cuenta cobrada:', error);
+      this.reintento += 1;
+      return;
+    }
+    const total = Number(data.total);
+    if (data.estado === 'cerrada') {
+      this.cerrada = {
+        folio: data.folio,
+        total,
+        subtotal: Number(data.subtotal),
+        descuento: this.descuento ? { texto: this.descuento.texto, monto: this.descuento.monto } : null,
+        cambio: 0,
+        reabierta: this.#reabiertaAlMandar,
+        lineas: (this.e.renglones ?? [])
+          .filter((r) => r.venta_id === venta.id && r.estado === 'activo')
+          .map((r) => ({ id: r.id, cantidad: r.cantidad, nombre: r.nombre, importe: r.importe })),
+        pagos: this.pagos
+          .filter((p) => !p.cancelado_at)
+          .map((p) => ({ metodo: p.metodo, monto: p.monto, propina: p.propina, recibido: p.recibido, cambio: p.cambio ?? 0 })),
+      };
+      return;
+    }
+    alAviso(`Pago anotado · falta ${dinero(Math.max(total - Number(data.pagado), 0))}`);
+    if (this.partes > 1 && this.hechas + 1 < this.partes) this.hechas += 1;
+    else this.elegirPartes(1);
+    this.montoAuto = true;
+    this.montoTexto = '';
+    this.propina = 'no';
+    this.otraTexto = '';
+    this.referencia = '';
+    this.cambio();
   }
 
   async quitarDescuento() {

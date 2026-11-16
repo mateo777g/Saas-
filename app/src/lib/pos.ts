@@ -583,6 +583,9 @@ export type Pedido =
   | { funcion: 'cancelar_renglon'; datos: { p_renglon_id: number; p_cantidad: number; p_motivo: string } }
   | { funcion: 'cancelar_cuenta'; datos: { p_venta_id: number; p_motivo: string } }
   | { funcion: 'cancelar_pago'; datos: { p_pago_id: number; p_motivo: string } }
+  // Un pago de la terminal no se cancela: se devuelve el dinero por el Worker (POST /terminal/devolver), que solo lo
+  // cancela si Mercado Pago dice que sí lo devolvió (libreta 5, «La terminal conectada»).
+  | { funcion: 'devolver_pago'; datos: { p_pago_id: number; p_motivo: string } }
   | {
       funcion: 'descontar';
       datos: { p_venta_id: number; p_renglon_id: number | null; p_tipo: TipoDescuento; p_valor: number; p_motivo: string };
@@ -600,8 +603,12 @@ function autorizacion(r: Record<string, unknown>): Autorizacion {
   return { ok: false, motivo: 'pin', quedan: Number(r.quedan) };
 }
 
-// Quien pide es de la caja o gerente: Postgres directo, sin PIN; queda a su nombre.
+// Quien pide es de la caja o gerente: Postgres directo, sin PIN; queda a su nombre. Devolver un pago de la terminal
+// va siempre por el Worker, también sin PIN.
 export async function pedirDirecto(cliente: SupabaseClient, pedido: Pedido): Promise<Autorizacion> {
+  if (pedido.funcion === 'devolver_pago') {
+    return autorizacion(await alWorkerPos(cliente, '/terminal/devolver', { pago: pedido.datos.p_pago_id, motivo: pedido.datos.p_motivo }));
+  }
   const { data, error } = await cliente.rpc(pedido.funcion, pedido.datos);
   if (error) throw fallo(`${pedido.funcion} no se pudo`, error);
   return autorizacion(data as Record<string, unknown>);
@@ -611,28 +618,38 @@ export async function pedirDirecto(cliente: SupabaseClient, pedido: Pedido): Pro
 // sesión de Pepe. El Worker mezcla el PIN con su llave y llama a la misma función de Postgres,
 // que revisa el PIN y aplica el cambio en el mismo paso.
 export async function pedirConPin(cliente: SupabaseClient, pedido: Pedido, autoriza: number, pin: string): Promise<Autorizacion> {
+  if (pedido.funcion === 'devolver_pago') {
+    return autorizacion(
+      await alWorkerPos(cliente, '/terminal/devolver', { pago: pedido.datos.p_pago_id, motivo: pedido.datos.p_motivo, autoriza, pin }),
+    );
+  }
+  return autorizacion(await alWorkerPos(cliente, '/pos/autorizar', { funcion: pedido.funcion, datos: pedido.datos, autoriza, pin }));
+}
+
+// Lo que el punto de venta le pide al Worker con la sesión de quien está adentro (el PIN y devolver un pago).
+async function alWorkerPos(cliente: SupabaseClient, camino: string, cuerpo: Record<string, unknown>): Promise<Record<string, unknown>> {
   const { data, error } = await cliente.auth.getSession();
   if (error || !data.session) {
-    console.error('[pos] no hay sesión para pedir la autorización:', error);
+    console.error('[pos] no hay sesión para hablar con el Worker:', error);
     throw new FalloPos('Tu sesión venció. Vuelve a entrar.');
   }
   let respuesta: Response;
   try {
-    respuesta = await fetch(`${import.meta.env.VITE_API_URL}/pos/autorizar`, {
+    respuesta = await fetch(`${import.meta.env.VITE_API_URL}${camino}`, {
       method: 'POST',
       headers: { Authorization: `Bearer ${data.session.access_token}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ funcion: pedido.funcion, datos: pedido.datos, autoriza, pin }),
+      body: JSON.stringify(cuerpo),
     });
   } catch (falla) {
-    console.error(`[pos] ${pedido.funcion}: no se pudo hablar con el Worker:`, falla);
+    console.error(`[pos] ${camino}: no se pudo hablar con el Worker:`, falla);
     throw new FalloPos(SIN_CONEXION, true);
   }
-  const cuerpo = await respuesta.json().catch(() => null);
+  const respuestaJson = await respuesta.json().catch(() => null);
   if (!respuesta.ok) {
-    console.error(`[pos] ${pedido.funcion}: el Worker dijo ${respuesta.status}:`, cuerpo);
-    throw new FalloPos(typeof cuerpo?.error === 'string' ? sinCentavos(cuerpo.error) : ALGO_SALIO_PANEL);
+    console.error(`[pos] ${camino}: el Worker dijo ${respuesta.status}:`, respuestaJson);
+    throw new FalloPos(typeof respuestaJson?.error === 'string' ? sinCentavos(respuestaJson.error) : ALGO_SALIO_PANEL);
   }
-  return autorizacion(cuerpo as Record<string, unknown>);
+  return (respuestaJson ?? {}) as Record<string, unknown>;
 }
 
 // Quitar un descuento no pide PIN: la cuenta sube. Sin renglón, el de toda la cuenta.
@@ -697,7 +714,7 @@ export function siSeDescuenta(
 export function escuchar(
   cliente: SupabaseClient,
   restauranteId: string,
-  tablas: ('ventas' | 'venta_items' | 'comandas' | 'pagos' | 'turnos' | 'pedidos_en_linea' | 'anuncios')[],
+  tablas: ('ventas' | 'venta_items' | 'comandas' | 'pagos' | 'turnos' | 'pedidos_en_linea' | 'anuncios' | 'cobros_terminal')[],
   alCambiar: () => void,
 ): () => void {
   const canal = cliente.channel(`pos-${restauranteId}-${crypto.randomUUID()}`);

@@ -35,7 +35,7 @@
     id: string;
     etiqueta: string;
     valor?: string;
-    tipo?: 'text' | 'email' | 'tel' | 'date' | 'number';
+    tipo?: 'text' | 'email' | 'tel' | 'date' | 'number' | 'password';
     pista?: string;
     placeholder?: string;
     autocomplete?: HTMLInputElement['autocomplete'];

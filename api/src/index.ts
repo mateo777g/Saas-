@@ -5,8 +5,10 @@
 // (asistente.ts), las muestras de los estilos de los anuncios (estilos.ts), Crear contenido
 // (crearContenido.ts, con su trabajo en segundo plano en hacerAnuncio.ts) y Mi biblioteca
 // (biblioteca.ts: Eliminar y, cada día a las 9:00 UTC, el borrado de los 30 días) y Mi menú
-// (traducir.ts: el inglés que traduce la IA y, en el mismo Cron, el dólar del día). Nunca decide
-// solo: antes de cada trabajo le pregunta a Postgres si se puede.
+// (traducir.ts: el inglés que traduce la IA y, en el mismo Cron, el dólar del día), y la terminal
+// conectada (terminal.ts y mercadoPago.ts: conectar Mercado Pago, mandar cada cobro a la Point, sus
+// avisos y, en el mismo Cron, renovar sus llaves). Nunca decide solo: antes de cada trabajo le
+// pregunta a Postgres si se puede.
 import { agente } from './agente';
 import { preguntaDelMenu } from './asistente';
 import { borrarVencidos } from './biblioteca';
@@ -16,6 +18,7 @@ import { listaDeEstilos, muestraDeEstilo } from './estilos';
 import { fotoDelMenu } from './fotos';
 import { pedidoDelMenu } from './pedidos';
 import { pos } from './pos';
+import { avisoDeMercadoPago, mercadoPago, regresoDeMercadoPago, renovarLlaves, terminal } from './terminal';
 import { conCors, error, origenPermitido, preflight, Rechazo } from './respuestas';
 import { dolarDelDia, traducirMenu } from './traducir';
 import type { Parametros } from './hacerAnuncio';
@@ -45,11 +48,33 @@ export interface Env {
   OPENAI_MODEL_IMAGEN?: string;
   OPENAI_MODEL_PALABRAS?: string;
   OPENAI_MODEL_TRADUCIR?: string;
+  // La terminal: la dirección fija de regreso al conectar (wrangler.jsonc) y los secretos de la aplicación de
+  // Mercado Pago, el de sus avisos y la llave que cifra las llaves de cada sucursal (32 bytes en base64), con su
+  // versión y, mientras se cambia, la anterior.
+  MP_REGRESO?: string;
+  MP_CLIENT_ID?: string;
+  MP_CLIENT_SECRET?: string;
+  MP_SECRETO_AVISOS?: string;
+  MP_LLAVE_CIFRADO?: string;
+  MP_LLAVE_CIFRADO_ANTERIOR?: string;
+  MP_LLAVE_VERSION?: string;
 }
 
 export default {
   async fetch(request, env, ctx): Promise<Response> {
     const url = new URL(request.url);
+    // Lo único que llega sin Origin: los avisos de Mercado Pago (con su firma) y su regreso al conectar (una página
+    // del navegador, con su pase de un solo uso).
+    if (url.pathname === '/mp/aviso' || url.pathname === '/mp/regreso') {
+      try {
+        if (url.pathname === '/mp/aviso') return await avisoDeMercadoPago(request, env, url);
+        if (request.method !== 'GET') return new Response('Solo GET', { status: 405 });
+        return await regresoDeMercadoPago(env, url);
+      } catch (e) {
+        console.error('[api] falló', request.method, url.pathname, e);
+        return new Response('Algo salió mal.', { status: 500 });
+      }
+    }
     const origen = request.headers.get('Origin');
     if (!origenPermitido(origen, env.ORIGENES)) {
       console.warn('[api] origen no permitido', origen, request.method, url.pathname);
@@ -68,6 +93,8 @@ export default {
       else if (url.pathname === '/anuncios' || url.pathname.startsWith('/anuncios/')) respuesta = await crearContenido(request, env, url);
       else if (url.pathname.startsWith('/equipo/')) respuesta = await equipo(request, env, url);
       else if (url.pathname.startsWith('/pos/')) respuesta = await pos(request, env, url);
+      else if (url.pathname.startsWith('/mp/')) respuesta = await mercadoPago(request, env, url);
+      else if (url.pathname.startsWith('/terminal/')) respuesta = await terminal(request, env, url);
       else if (url.pathname.startsWith('/agente/')) respuesta = await agente(request, env, url, ctx);
       else respuesta = error(404, 'Ese trabajo no existe.');
     } catch (e) {
@@ -81,10 +108,12 @@ export default {
     return conCors(respuesta, origen);
   },
 
-  // El Cron Trigger diario (wrangler.jsonc): el borrado de los 30 días y el dólar del día, cada uno por
-  // su lado. Si el borrado falla, la corrida sale como fallida en Cloudflare; el dólar nunca la tumba.
+  // El Cron Trigger diario (wrangler.jsonc): el borrado de los 30 días, el dólar del día y renovar las llaves de
+  // Mercado Pago, cada uno por su lado. Si el borrado o la renovación fallan, la corrida sale como fallida en
+  // Cloudflare; el dólar nunca la tumba.
   async scheduled(_controlador, env): Promise<void> {
-    const [vencidos] = await Promise.allSettled([borrarVencidos(env), dolarDelDia(env)]);
+    const [vencidos, , llaves] = await Promise.allSettled([borrarVencidos(env), dolarDelDia(env), renovarLlaves(env)]);
     if (vencidos.status === 'rejected') throw vencidos.reason;
+    if (llaves.status === 'rejected') throw llaves.reason;
   },
 } satisfies ExportedHandler<Env>;

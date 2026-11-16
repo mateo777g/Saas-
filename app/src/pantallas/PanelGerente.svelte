@@ -29,7 +29,7 @@
     type DatosGerente,
     type Sucursal,
   } from '../lib/gerente';
-  import { leerMercadoPago, type EstadoMercadoPago } from '../lib/mercadoPago';
+  import { leerMercadoPago, leerRegreso, type EstadoMercadoPago } from '../lib/mercadoPago';
   import { VigiaPedidos } from '../lib/pedidos.svelte';
   import { SIN_PANEL } from '../lib/sesion';
   import { supabase } from '../lib/supabase';
@@ -148,6 +148,14 @@
   // «Conectar otra vez» abre Ajustes con la cajita de Mercado Pago abierta. Si no se pudo leer, no hay franja.
   let estadoMercadoPago = $state<EstadoMercadoPago | null>(null);
   let abrirMercadoPago = $state(false);
+  // Al regresar de dar el permiso en Mercado Pago (?mp=conectado | cancelado | error): Ajustes, con la cajita abierta.
+  // Se toma una vez: al salir de Ajustes se olvida, para que no se repita al volver.
+  const regresoAlEntrar = leerRegreso();
+  let regresoMercadoPago = $state(regresoAlEntrar);
+  if (regresoAlEntrar) {
+    vista = 'ajustes';
+    abrirMercadoPago = true;
+  }
   $effect(() => {
     if (vigilada === null) return;
     const restauranteId = vigilada;
@@ -163,7 +171,10 @@
     };
   });
   $effect(() => {
-    if (vista !== 'ajustes') abrirMercadoPago = false;
+    if (vista !== 'ajustes') {
+      abrirMercadoPago = false;
+      regresoMercadoPago = null;
+    }
   });
 
   async function leer() {
@@ -446,7 +457,12 @@
       <BarraArriba titulo="Ajustes" estado={{ texto: actual.nombre, vivo: true }} />
       <main class="cuerpo">
         {#key actual.id}
-          <Ajustes sucursal={actual} {abrirMercadoPago} />
+          <Ajustes
+            sucursal={actual}
+            {abrirMercadoPago}
+            regreso={regresoMercadoPago}
+            alCambiarMercadoPago={(e) => (estadoMercadoPago = e)}
+          />
         {/key}
       </main>
     {/if}

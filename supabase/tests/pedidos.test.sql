@@ -940,7 +940,8 @@ select is(
 );
 
 select results_eq(
-  format($$ select nombre, precio_unitario, cantidad, opciones, nota, agregado_por, clave_envio, comanda_id is not null
+  -- Las opciones sin el id que les pone el inventario (migración inventario).
+  format($$ select nombre, precio_unitario, cantidad, (select coalesce(jsonb_agg(e.x - 'id' order by e.n), '[]') from jsonb_array_elements(opciones) with ordinality e(x, n)), nota, agregado_por, clave_envio, comanda_id is not null
             from public.venta_items where venta_id = %s order by id $$, tests.id('venta_1')),
   $$ values ('Taco al pastor'::text, 32.00::numeric, 2,
              '[{"grupo": "Salsa", "opcion": "Verde", "precio_extra": 0}, {"grupo": "Extras", "opcion": "Queso", "precio_extra": 10}]'::jsonb,

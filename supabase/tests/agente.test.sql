@@ -472,8 +472,9 @@ select is_empty(
      where n.nspname = 'privado'
        and has_function_privilege(r, p.oid, 'EXECUTE')
        and not (r = 'authenticated' and p.proname in ('soy_admin', 'mis_membresias', 'mis_restaurantes',
-                                                       'mis_restaurantes_gerente', 'mis_restaurantes_caja')) $$,
-  'Nadie llama desde afuera a ninguna función privada, salvo las cinco de las reglas de RLS'
+                                                       'mis_restaurantes_gerente', 'mis_restaurantes_caja',
+                                                       'mis_restaurantes_cocina')) $$,
+  'Nadie llama desde afuera a ninguna función privada, salvo las seis de las reglas de RLS'
 );
 
 select is_empty(

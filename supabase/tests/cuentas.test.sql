@@ -431,7 +431,8 @@ select results_eq(
 );
 
 select is(
-  (select opciones from public.venta_items where venta_id = tests.id('v1') and producto_id = 501),
+  -- Desde el inventario cada opción lleva también su id (migración inventario); aquí se compara la copia sin él.
+  (select (select coalesce(jsonb_agg(e.x - 'id' order by e.n), '[]') from jsonb_array_elements(opciones) with ordinality e(x, n)) from public.venta_items where venta_id = tests.id('v1') and producto_id = 501),
   '[{"grupo": "Salsa", "opcion": "Verde", "precio_extra": 0.00}, {"grupo": "Extras", "opcion": "Queso", "precio_extra": 15.00}]'::jsonb,
   'Cada renglón guarda su copia de lo elegido, en el orden de los grupos y sin repetir'
 );
@@ -514,7 +515,7 @@ select is(
 reset role;
 
 select is(
-  (select opciones from public.venta_items where venta_id = tests.id('v1') and agregado_por = 101),
+  (select (select coalesce(jsonb_agg(e.x - 'id' order by e.n), '[]') from jsonb_array_elements(opciones) with ordinality e(x, n)) from public.venta_items where venta_id = tests.id('v1') and agregado_por = 101),
   '[{"grupo": "Salsa", "opcion": "Verde", "precio_extra": 0.00}, {"grupo": "Extras", "opcion": "Queso", "precio_extra": 15.00}, {"grupo": "Extras", "opcion": "Aguacate", "precio_extra": 12.50}]'::jsonb,
   'Dentro de un grupo, las opciones quedan en su orden'
 );

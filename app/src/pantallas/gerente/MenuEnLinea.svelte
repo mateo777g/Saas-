@@ -726,6 +726,13 @@
     gap: 0 24px;
   }
 
+  /* Cristal: la vista pasa por debajo de la barra de guardar, que es transparente (diseno/BarraGuardar), y ahí se borra
+     poco a poco (si no, se cortaba en seco arriba de ella). Lo último sigue quedando arriba de la barra: 28 + 64. */
+  :global(:root[data-estilo='cristal']) .cuerpo {
+    bottom: 0;
+    padding-bottom: 92px;
+  }
+
   .col {
     min-width: 0;
     display: flex;

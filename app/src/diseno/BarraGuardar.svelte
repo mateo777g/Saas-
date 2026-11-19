@@ -75,6 +75,39 @@
     border-top: 1px solid var(--linea);
   }
 
+  /* Cristal: como la del punto de venta (pos/ancho/ancho.css), transparente; lo que pasa por debajo se borra poco a poco.
+     Sus botones no cambian. */
+  :global(:root[data-estilo='cristal']) .barra-guardar {
+    background: transparent;
+    border-top-color: transparent;
+    /* Lo que no es botón deja pasar el mouse a la vista de abajo: la rueda y su barrita de desplazar siguen funcionando. */
+    pointer-events: none;
+  }
+
+  :global(:root[data-estilo='cristal']) .barra-guardar :global(button) {
+    pointer-events: auto;
+  }
+
+  :global(:root[data-estilo='cristal']) .barra-guardar::before {
+    content: '';
+    position: absolute;
+    inset: -18px 0 0 0;
+    z-index: -1;
+    pointer-events: none;
+    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
+    -webkit-mask-image: linear-gradient(transparent, #000 45%);
+    mask-image: linear-gradient(transparent, #000 45%);
+  }
+
+  :global(:root[data-estilo='cristal'][data-tema='oscuro']) .barra-guardar::before {
+    background: linear-gradient(rgba(0, 0, 0, 0), rgba(0, 0, 0, 0.55));
+  }
+
+  :global(:root[data-estilo='cristal'][data-tema='claro']) .barra-guardar::before {
+    background: linear-gradient(rgba(255, 255, 255, 0), rgba(255, 255, 255, 0.5));
+  }
+
   .estado {
     flex: 1;
     min-width: 0;

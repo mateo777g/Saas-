@@ -19,7 +19,7 @@
   pagar una vuelta por cada producto que pica.
 -->
 <script lang="ts">
-  import { onMount, untrack } from 'svelte';
+  import { onDestroy, onMount, untrack } from 'svelte';
   import { cubicIn, quintOut } from 'svelte/easing';
   import { fade, fly } from 'svelte/transition';
   import BarraArriba from '../../diseno/BarraArriba.svelte';
@@ -61,6 +61,7 @@
   } from '../../lib/crearContenido';
   import { ponerEnMiMenu } from '../../lib/biblioteca';
   import { esDeRed, Fallo, mensajeDeError, SIN_CONEXION } from '../../lib/errores';
+  import { alCambiarEstilo, estiloActual } from '../../lib/estilo';
   import { anchos, filasDeLaUltimaVez, recordarFilas } from '../../lib/esqueletos';
   import { diaYMes, pesos, plural } from '../../lib/formato';
   import { urlFoto } from '../../lib/fotos';
@@ -612,6 +613,9 @@
 
   // Lo que mide el cuerpo entre las dos barras: el anuncio se achica si no cabe entre el título y la barra de abajo.
   let altoCuerpo = $state(0);
+  // En Cristal el cuerpo llega hasta abajo y pasa por debajo de la barra transparente: al anuncio se le quitan sus 64.
+  let enCristal = $state(estiloActual() === 'cristal');
+  onDestroy(alCambiarEstilo((estilo) => (enCristal = estilo === 'cristal')));
 
   // La barra de abajo: Continuar; Atrás y Generar anuncio (también si no salió, para intentarlo otra vez); con el anuncio
   // haciéndose o listo, la que era del paso 3: Nuevo anuncio, Otra vez, Ponerlo en mi menú y Descargar.
@@ -828,8 +832,9 @@
           </div>
           {#if verAnuncio}
             <div class="capa" in:entraAnuncio out:saleAnuncio>
-              <!-- 590 de ancho; de alto, el cuerpo menos sus rellenos (20 y 24) y el título (61). -->
-              <PasoListo {se} lugar={[590, altoCuerpo - 105]} />
+              <!-- 590 de ancho; de alto, el cuerpo menos sus rellenos (20 y 24) y el título (61); en Cristal, también la barra
+                   de abajo (64), que ahí queda encima del cuerpo. -->
+              <PasoListo {se} lugar={[590, altoCuerpo - 105 - (enCristal ? 64 : 0)]} />
             </div>
           {/if}
         </div>
@@ -939,6 +944,13 @@
     bottom: 64px;
     overflow-y: auto;
     padding: 20px 20px 24px 24px;
+  }
+
+  /* Cristal: el cuerpo pasa por debajo de la barra de abajo, que es transparente, y ahí se borra poco a poco (si no, se
+     cortaba en seco arriba de ella). Lo último sigue quedando arriba de la barra: 24 + 64. */
+  :global(:root[data-estilo='cristal']) .paso-cuerpo {
+    bottom: 0;
+    padding-bottom: 88px;
   }
 
   .crece {
@@ -1594,6 +1606,39 @@
     z-index: 2;
     background: var(--solido);
     border-top: 1px solid var(--linea);
+  }
+
+  /* Cristal: como la del punto de venta (pos/ancho/ancho.css), transparente; lo que pasa por debajo se borra poco a poco.
+     Sus botones no cambian. */
+  :global(:root[data-estilo='cristal']) .barra-abajo {
+    background: transparent;
+    border-top-color: transparent;
+    /* Lo que no es botón deja pasar el mouse al cuerpo de abajo: la rueda y su barrita de desplazar siguen funcionando. */
+    pointer-events: none;
+  }
+
+  :global(:root[data-estilo='cristal']) .barra-abajo :global(button) {
+    pointer-events: auto;
+  }
+
+  :global(:root[data-estilo='cristal']) .barra-abajo::before {
+    content: '';
+    position: absolute;
+    inset: -18px 0 0 0;
+    z-index: -1;
+    pointer-events: none;
+    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
+    -webkit-mask-image: linear-gradient(transparent, #000 45%);
+    mask-image: linear-gradient(transparent, #000 45%);
+  }
+
+  :global(:root[data-estilo='cristal'][data-tema='oscuro']) .barra-abajo::before {
+    background: linear-gradient(rgba(0, 0, 0, 0), rgba(0, 0, 0, 0.55));
+  }
+
+  :global(:root[data-estilo='cristal'][data-tema='claro']) .barra-abajo::before {
+    background: linear-gradient(rgba(255, 255, 255, 0), rgba(255, 255, 255, 0.5));
   }
 
   .barra-contenido {

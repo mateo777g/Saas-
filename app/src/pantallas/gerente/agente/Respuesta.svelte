@@ -185,6 +185,11 @@
     animation: latido 1s ease-in-out infinite;
   }
 
+  /* En Cristal oscuro el agente va en blanco, como sus puntitos y el «Pensando…» (--punto-panel, 13 nov 2026). */
+  :global(:root[data-estilo='cristal'][data-tema='oscuro']) .md :global(.cursor) {
+    background: var(--punto-panel);
+  }
+
   @keyframes latido {
     0%,
     100% {

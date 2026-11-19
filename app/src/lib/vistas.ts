@@ -11,6 +11,7 @@ export type VistaGerente =
   | 'restaurante'
   | 'menu-en-linea'
   | 'menu'
+  | 'inventario'
   | 'equipo'
   | 'agente'
   | 'crear'
@@ -33,6 +34,7 @@ export const VISTAS: Record<VistaGerente, DatosVista> = {
   restaurante: { texto: 'Tu restaurante', grupo: 'Tu negocio', icono: 'r-tienda' },
   'menu-en-linea': { texto: 'Tu menú en línea', grupo: 'Tu negocio', icono: 'r-celular' },
   menu: { texto: 'Mi menú', grupo: 'Tu negocio', icono: 'r-menu' },
+  inventario: { texto: 'Inventario', grupo: 'Tu negocio', icono: 'inventario' },
   equipo: { texto: 'Empleados', grupo: 'Tu negocio', icono: 'r-usuarios' },
   agente: { texto: 'Agente IA', grupo: 'IA y contenido', icono: 'r-ia' },
   crear: { texto: 'Crear anuncios', grupo: 'IA y contenido', icono: 'r-crear' },

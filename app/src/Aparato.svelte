@@ -164,9 +164,10 @@
   }
 
   // Tras 2 minutos sin tocar la tableta compartida, quien estaba sale y se le pide su PIN otra vez.
-  // La cocina no: el taquero entra una vez y la pantalla queda abierta (libreta 5, «La cocina»).
+  // La cocina no: el taquero entra una vez y la pantalla queda abierta (libreta 5, «La cocina»); tampoco en su pestaña
+  // Inventario (19 nov 2026), que es de la cocina.
   async function revisarDosMinutos() {
-    if (pantalla.tipo !== 'adentro' || !lista?.compartido || pestana === 'cocina') return;
+    if (pantalla.tipo !== 'adentro' || !lista?.compartido || pestana === 'cocina' || pestana === 'inventario') return;
     if (performance.now() - ultimoToque < DOS_MINUTOS) return;
     const persona = pantalla.persona;
     pantalla = { tipo: 'pin', persona, otraVez: true };

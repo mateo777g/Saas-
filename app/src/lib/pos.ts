@@ -714,7 +714,7 @@ export function siSeDescuenta(
 export function escuchar(
   cliente: SupabaseClient,
   restauranteId: string,
-  tablas: ('ventas' | 'venta_items' | 'comandas' | 'pagos' | 'turnos' | 'pedidos_en_linea' | 'anuncios' | 'cobros_terminal')[],
+  tablas: ('ventas' | 'venta_items' | 'comandas' | 'pagos' | 'turnos' | 'pedidos_en_linea' | 'anuncios' | 'cobros_terminal' | 'productos' | 'ingredientes')[],
   alCambiar: () => void,
 ): () => void {
   const canal = cliente.channel(`pos-${restauranteId}-${crypto.randomUUID()}`);

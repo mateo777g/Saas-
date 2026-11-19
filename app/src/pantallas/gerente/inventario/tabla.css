@@ -1,0 +1,199 @@
+/* Las celdas de las tablas del inventario (maqueta BBBNJST5w9qZfHWNdovGgb v3): las de Productos de Mi menú
+   (menu/Productos.svelte), con lo que el inventario suma: cómo va cada ingrediente, con el punto de «Visible», y lo que
+   lleva cada receta. Las usan la vista del gerente y, en el aparato, la pestaña Inventario de la cocina y la vista
+   chiquita de Mi menú. Todo lleva el prefijo inv- para no pisar las clases de las demás vistas. */
+
+.inv-producto {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.inv-nombre,
+.inv-lleva {
+  min-width: 0;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.inv-nombre {
+  font-size: 13.5px;
+  font-weight: 700;
+}
+
+.inv-lleva {
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: var(--suave);
+}
+
+/* Cada cosa que lleva no se parte a la mitad: «100 g de Pastor · 2 piezas de Tortilla». */
+.inv-lleva > span {
+  white-space: nowrap;
+}
+
+.inv-chip {
+  max-width: 100%;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px 4px 8px;
+  border-radius: 8px;
+  background: var(--chip);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--suave);
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.inv-chip span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.inv-queda {
+  font-family: var(--mono);
+  font-size: 13px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.inv-rinde {
+  font-family: var(--mono);
+  font-size: 13px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.inv-queda.amarillo {
+  color: var(--amarillo-texto);
+}
+
+.inv-queda.rojo {
+  color: var(--rojo);
+}
+
+.inv-tenue {
+  min-width: 0;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--tenue);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Cómo va: el punto y su texto, como «● Visible» de Mi menú; amarillo al llegar al mínimo y rojo en 0 o abajo. */
+.inv-estado {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13.5px;
+  font-weight: 500;
+  color: var(--texto);
+  white-space: nowrap;
+}
+
+.inv-punto {
+  width: 7px;
+  height: 7px;
+  flex: none;
+  border-radius: 50%;
+  background: var(--verde);
+}
+
+.inv-estado.amarillo {
+  color: var(--amarillo-texto);
+}
+
+.inv-estado.amarillo .inv-punto {
+  background: var(--amarillo);
+}
+
+.inv-estado.rojo {
+  color: var(--rojo);
+}
+
+.inv-estado.rojo .inv-punto {
+  background: var(--rojo);
+}
+
+/* La preparación lleva una olla donde los platillos llevan su foto. */
+.inv-olla {
+  width: 44px;
+  height: 44px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  border-radius: 11px;
+  background: var(--chip);
+  color: var(--texto);
+}
+
+.inv-acciones {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+/* La línea de abajo de la tableta de cocina y de la vista chiquita de Mi menú. */
+.inv-nota {
+  margin: 0;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--tenue);
+  text-align: center;
+}
+
+/* Lo que se desliza adentro (la tabla, la ventana) lleva la barrita de la barra lateral (maqueta v2): 6 px, redonda, en
+   --barrita, sin carril ni flechas. */
+.inv-desliza::-webkit-scrollbar,
+.inv-desliza *::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.inv-desliza::-webkit-scrollbar-track,
+.inv-desliza *::-webkit-scrollbar-track {
+  margin: 6px 0;
+  background: transparent;
+}
+
+.inv-desliza::-webkit-scrollbar-thumb,
+.inv-desliza *::-webkit-scrollbar-thumb {
+  border-radius: 3px;
+  background: var(--barrita);
+}
+
+.inv-desliza::-webkit-scrollbar-button,
+.inv-desliza *::-webkit-scrollbar-button {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+@supports not selector(::-webkit-scrollbar) {
+  .inv-desliza,
+  .inv-desliza * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--barrita) transparent;
+  }
+}
+
+/* Las ventanas del inventario: sus campos van en .inv-campos (sin caja propia) y la pista de un campo o de su gris va a
+   8 px más de lo de arriba, como en la maqueta (16 en total). */
+.inv-campos {
+  display: contents;
+}
+
+.inv-campos .campo > .pista,
+.inv-campos .grupo-campos > .pista {
+  margin-top: 8px;
+}

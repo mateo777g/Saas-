@@ -11,6 +11,10 @@
   barra, y Pedidos pinta el Tablero sin su cabeza (`franjaAfuera`). La Caja también (cobro-caja.md, 3e): pinta su propia
   barra con el mismo dock, su chip («Caja abierta desde las 08:00») y sus tres botones.
 
+  Con el inventario (19 nov 2026; maqueta BBBNJST5w9qZfHWNdovGgb v3, encuestas 17 a 19): la cocina suma «Inventario»
+  (lo que queda, con «Merma» y «Llegó»; su numerito, cuántos se acaban, viene de su vigía) y «Menú» (la vista chiquita de
+  Mi menú con su ojito), y la caja suma «Menú». Las dos van siempre a lo ancho, como la Cocina.
+
   Usa la sesión del aparato (lib/aparato.ts), nunca la del panel.
 -->
 <script lang="ts">
@@ -23,17 +27,20 @@
   import { VigiaPedidos } from '../../lib/pedidos.svelte';
   import { leerZona } from '../../lib/pos';
   import { NOMBRE_ROL } from '../../lib/roles';
+  import { VigiaInventario } from '../../lib/vigiaInventario.svelte';
   import Caja from '../caja/Caja.svelte';
   import Pedidos from '../caja/Pedidos.svelte';
   import { franjaDe } from '../caja/pedidos/franja';
   import Cocina from '../cocina/Cocina.svelte';
+  import InventarioCocina from '../cocina/Inventario.svelte';
   import PuntoDeVenta from '../pos/PuntoDeVenta.svelte';
   import Barra from '../pos/ancho/Barra.svelte';
   import type { Anfitrion } from '../pos/ancho/barra';
   import '../pos/ancho/ancho.css';
   import Arriba from './Arriba.svelte';
+  import MenuChico from './MenuChico.svelte';
 
-  type Pestana = 'mesas' | 'caja' | 'pedidos' | 'cocina';
+  type Pestana = 'mesas' | 'caja' | 'pedidos' | 'cocina' | 'inventario' | 'menu';
 
   let {
     lista,
@@ -48,6 +55,8 @@
 
   // La vigía de los pedidos, solo para quien es de caja; nace cuando se sabe el restaurante.
   let vigia = $state<VigiaPedidos | null>(null);
+  // Los ingredientes en vivo, solo para la cocina (la caja no los lee).
+  let vigiaInventario = $state<VigiaInventario | null>(null);
 
   const pestanas = $derived(
     [
@@ -56,6 +65,12 @@
       // «Pedidos · 2», como «Por cobrar · 5»; en pausa, «Pedidos · Pausado».
       { valor: 'pedidos' as const, texto: vigia?.insignia ? `Pedidos · ${vigia.insignia}` : 'Pedidos', si: persona.roles.includes('caja') },
       { valor: 'cocina' as const, texto: 'Cocina', si: persona.roles.includes('cocina') },
+      {
+        valor: 'inventario' as const,
+        texto: vigiaInventario?.insignia ? `Inventario · ${vigiaInventario.insignia}` : 'Inventario',
+        si: persona.roles.includes('cocina'),
+      },
+      { valor: 'menu' as const, texto: 'Menú', si: persona.roles.includes('cocina') || persona.roles.includes('caja') },
     ].filter((p) => p.si),
   );
   let elegida = $state<Pestana | null>(leerPestana());
@@ -65,16 +80,28 @@
   // A lo ancho: las pestañas en el dock, con su ícono; el número de Pedidos en su esquina.
   let anchoVentana = $state(0);
   const ancho = $derived(anchoVentana >= 900);
-  const ICONO: Record<Pestana, string> = { mesas: 'cuenta', caja: 'r-billete', pedidos: 'r-bolsa', cocina: 'r-cocina' };
+  const ICONO: Record<Pestana, string> = {
+    mesas: 'cuenta',
+    caja: 'r-billete',
+    pedidos: 'r-bolsa',
+    cocina: 'r-cocina',
+    inventario: 'inventario',
+    menu: 'cubiertos',
+  };
   const anfitrion = $derived<Anfitrion>({
     donde: 'aparato',
     restaurante: lista.restaurante,
     linea,
     pestanas: pestanas.map((p) => ({
       valor: p.valor,
-      texto: p.valor === 'pedidos' ? 'Pedidos' : p.texto,
+      texto: p.valor === 'pedidos' ? 'Pedidos' : p.valor === 'inventario' ? 'Inventario' : p.texto,
       icono: p.valor === 'mesas' && conMesas ? 'r-mesas' : ICONO[p.valor],
-      insignia: p.valor === 'pedidos' && /^\d+$/.test(String(vigia?.insignia ?? '')) ? String(vigia?.insignia) : null,
+      insignia:
+        p.valor === 'pedidos' && /^\d+$/.test(String(vigia?.insignia ?? ''))
+          ? String(vigia?.insignia)
+          : p.valor === 'inventario'
+            ? (vigiaInventario?.insignia ?? null)
+            : null,
     })),
     pestana,
     alPestana: (v) => elegir(v as Pestana),
@@ -129,6 +156,17 @@
     };
   });
 
+  $effect(() => {
+    if (restaurante.estado !== 'listo' || !persona.roles.includes('cocina')) return;
+    const v = new VigiaInventario(supabaseAparato, restaurante.id);
+    vigiaInventario = v;
+    const dejar = v.iniciar();
+    return () => {
+      dejar();
+      vigiaInventario = null;
+    };
+  });
+
   // El restaurante de quien entró: lo dice su fila de miembros, que su sesión puede leer.
   async function leerRestaurante() {
     restaurante = { estado: 'leyendo' };
@@ -180,6 +218,17 @@
   <!-- La Cocina siempre va a lo ancho, con la misma barra que Vender y Pedidos (planes/trabajo/rediseno/cocina.md). -->
   <div class="pantalla-ancha">
     <Cocina cliente={supabaseAparato} restauranteId={restaurante.id} {anfitrion} />
+  </div>
+{:else if pestana === 'inventario'}
+  <!-- Inventario y Menú van siempre a lo ancho, como la Cocina. -->
+  <div class="pantalla-ancha">
+    {#if vigiaInventario}
+      <InventarioCocina cliente={supabaseAparato} restauranteId={restaurante.id} vigia={vigiaInventario} {anfitrion} />
+    {/if}
+  </div>
+{:else if pestana === 'menu'}
+  <div class="pantalla-ancha">
+    <MenuChico cliente={supabaseAparato} restauranteId={restaurante.id} {anfitrion} />
   </div>
 {:else if pestana === 'pedidos' && ancho}
   <!-- Solo la barra va en .pos-ancho: sus clases (.rejilla, .tarjeta…) chocarían con las del Tablero de Pedidos. -->

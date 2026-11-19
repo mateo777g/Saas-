@@ -987,6 +987,18 @@
       if (carga.estado === 'listo') recargarCuentas();
     });
     const dejarTerminal = terminal.iniciar();
+    // Un platillo que la cocina, la caja o el gerente marcan agotado sale en gris al momento (inventario, 19 nov 2026:
+    // productos entra al tiempo real). Varios avisos juntos, una lectura.
+    let relojMenu: ReturnType<typeof setTimeout> | undefined;
+    const dejarMenu = escuchar(cliente, restauranteId, ['productos'], () => {
+      if (carga.estado !== 'listo') return;
+      clearTimeout(relojMenu);
+      relojMenu = setTimeout(() => {
+        leerMenuPos(cliente, restauranteId)
+          .then((m) => (menu = m))
+          .catch((falla) => console.error('[pos] no se pudo releer el menú tras un cambio; se queda el que había:', falla));
+      }, 250);
+    });
     const alVolver = () => {
       if (document.visibilityState === 'visible') leerTodo();
     };
@@ -997,6 +1009,8 @@
     return () => {
       dejar();
       dejarTerminal();
+      clearTimeout(relojMenu);
+      dejarMenu();
       document.removeEventListener('visibilitychange', alVolver);
       document.removeEventListener('pointerdown', prepararSonido, true);
       window.removeEventListener('online', conRed);

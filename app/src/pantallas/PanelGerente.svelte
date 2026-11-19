@@ -31,6 +31,7 @@
   } from '../lib/gerente';
   import { leerMercadoPago, leerRegreso, type EstadoMercadoPago } from '../lib/mercadoPago';
   import { VigiaPedidos } from '../lib/pedidos.svelte';
+  import { VigiaInventario } from '../lib/vigiaInventario.svelte';
   import { SIN_PANEL } from '../lib/sesion';
   import { supabase } from '../lib/supabase';
   import { anotarReciente, leerRecientes, type Destino, type NuevoAlEntrar } from '../lib/vistas';
@@ -44,6 +45,7 @@
   import CrearContenido from './gerente/CrearContenido.svelte';
   import Empleados from './gerente/Empleados.svelte';
   import Inicio from './gerente/Inicio.svelte';
+  import Inventario from './gerente/Inventario.svelte';
   import Menu from './gerente/Menu.svelte';
   import MenuEnLinea from './gerente/MenuEnLinea.svelte';
   import { salir } from '../lib/salida';
@@ -78,6 +80,7 @@
     | 'pedidos'
     | 'restaurante'
     | 'menu'
+    | 'inventario'
     | 'mesas'
     | 'equipo'
     | 'cortes'
@@ -142,6 +145,20 @@
   });
   $effect(() => {
     if (vigia) vigia.oirListas = vista !== 'pos';
+  });
+
+  // Los ingredientes de la sucursal en vivo (inventario, 19 nov 2026): el numerito de «Inventario» en la barra lateral,
+  // cuántos se acaban o se acabaron, y la tabla de su vista.
+  let vigiaInventario = $state<VigiaInventario | null>(null);
+  $effect(() => {
+    if (vigilada === null) return;
+    const v = new VigiaInventario(supabase, vigilada);
+    vigiaInventario = v;
+    const dejar = v.iniciar();
+    return () => {
+      dejar();
+      vigiaInventario = null;
+    };
   });
 
   // La conexión de la sucursal con su Mercado Pago (lib/mercadoPago.ts): si se cayó, Inicio pone su franja ámbar, y
@@ -233,6 +250,7 @@
       valor === 'restaurante' ||
       valor === 'menu-en-linea' ||
       valor === 'menu' ||
+      valor === 'inventario' ||
       valor === 'mesas' ||
       valor === 'equipo' ||
       valor === 'cortes' ||
@@ -326,10 +344,13 @@
         clave: 'negocio',
         nombre: 'Tu negocio',
         icono: 'r-tienda',
+        // Cerrado, su título lleva lo mismo que Inventario (cuántos ingredientes se acaban), como Operación con Pedidos.
+        insignia: vigiaInventario?.insignia,
         opciones: [
           { valor: 'restaurante', texto: 'Tu restaurante' },
           { valor: 'menu-en-linea', texto: 'Tu menú en línea' },
           { valor: 'menu', texto: 'Mi menú' },
+          { valor: 'inventario', texto: 'Inventario', insignia: vigiaInventario?.insignia },
           { valor: 'equipo', texto: 'Empleados' },
         ],
       },
@@ -386,6 +407,15 @@
       {#key actual.id}
         <Menu sucursal={actual} abrirNuevo={() => tomarNuevo('producto')} />
       {/key}
+    {:else if vista === 'inventario'}
+      <!-- Otra sucursal es otro inventario: se vuelve a abrir desde cero. -->
+      {#if vigiaInventario}
+        {#key actual.id}
+          <Inventario sucursal={actual} vigia={vigiaInventario} />
+        {/key}
+      {:else}
+        <BarraArriba titulo="Inventario" estado={{ texto: 'Leyendo…', vivo: false }} />
+      {/if}
     {:else if vista === 'mesas'}
       <!-- Otra sucursal son otras mesas: se vuelve a abrir desde cero. -->
       {#key actual.id}

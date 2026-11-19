@@ -148,4 +148,13 @@ export const ICONOS: Record<string, string> = {
   'r-hoy': '<path d="M6 3h12v18l-3-2-3 2-3-2-3 2V3Z"></path><path d="M9 8h6M9 12h4"></path>',
   'r-semana': '<rect x="3.5" y="5" width="17" height="15" rx="2"></rect><path d="M3.5 10h17M8 3v4M16 3v4"></path>',
   'r-mes': '<path d="M4 20V4"></path><path d="M4 20h16"></path><path d="M7 15l4-4 3 3 5-6"></path>',
+  // El inventario (19 nov 2026, maqueta BBBNJST5w9qZfHWNdovGgb v3), con el mismo trazo: la caja, la hoja de la receta,
+  // la olla de las preparaciones, lo que llegó y contar. «cubiertos» es el de Productos del dock de Mi menú (la
+  // categoría Comida), para la pestaña Menú de los aparatos.
+  'inventario': '<path d="M3 7.5 12 3l9 4.5v9L12 21l-9-4.5z"></path><path d="M3 7.5 12 12l9-4.5"></path><path d="M12 12v9"></path>',
+  'receta': '<rect x="5" y="4" width="14" height="17" rx="2"></rect><path d="M9 4V3h6v1"></path><path d="M9 10h6"></path><path d="M9 14h6"></path><path d="M9 18h3"></path>',
+  'olla': '<path d="M4 10h16v4a6 6 0 0 1-6 6h-4a6 6 0 0 1-6-6z"></path><path d="M2 10h2"></path><path d="M20 10h2"></path><path d="M9 6.5c0-1.2 1-1.3 1-2.5"></path><path d="M14 6.5c0-1.2 1-1.3 1-2.5"></path>',
+  'llego': '<path d="M3 7.5 12 3l9 4.5v9L12 21l-9-4.5z"></path><path d="M12 8v6"></path><path d="m9 11 3 3 3-3"></path>',
+  'contar': '<rect x="5" y="4" width="14" height="17" rx="2"></rect><path d="M9 4V3h6v1"></path><path d="m9 13 2 2 4-4"></path>',
+  'cubiertos': '<path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"></path><path d="M7 2v20"></path><path d="M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7"></path>',
 };

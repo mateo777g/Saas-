@@ -24,6 +24,7 @@
     min,
     step,
     prefijo,
+    sufijo,
     multilinea = false,
     modoTeclado,
     largoMaximo,
@@ -43,6 +44,8 @@
     min?: number;
     step?: number;
     prefijo?: string;
+    // La unidad adentro, a la derecha («kg», «piezas»), del otro lado del «$» (inventario, maqueta BBBNJST5w9qZfHWNdovGgb).
+    sufijo?: string;
     multilinea?: boolean;
     modoTeclado?: 'decimal' | 'numeric' | 'tel' | 'email';
     largoMaximo?: number;
@@ -72,7 +75,7 @@
       spellcheck={corrector}
     ></textarea>
   {:else}
-    <div class="caja" class:con-prefijo={prefijo}>
+    <div class="caja" class:con-prefijo={prefijo} class:con-sufijo={sufijo}>
       {#if prefijo}<span class="prefijo">{prefijo}</span>{/if}
       <input
         {id}
@@ -90,6 +93,7 @@
         class:mono
         aria-invalid={mal || undefined}
       />
+      {#if sufijo}<span class="sufijo">{sufijo}</span>{/if}
       {@render marca?.()}
     </div>
   {/if}
@@ -166,6 +170,24 @@
     font-size: 13.5px;
     color: var(--suave);
     pointer-events: none;
+  }
+
+  .sufijo {
+    position: absolute;
+    right: 14px;
+    top: 0;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    font-family: var(--mono);
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--tenue);
+    pointer-events: none;
+  }
+
+  .con-sufijo input {
+    padding-right: 52px;
   }
 
   .con-prefijo input {

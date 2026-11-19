@@ -679,7 +679,7 @@ select throws_ok(
 );
 select throws_ok(
   $$ select public.agente_herramienta('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 'sumar', '{}') $$,
-  '22023', 'No hay una herramienta «sumar». Las que hay: resumen, ranking, comparar, detalle, proyeccion_mes, cancelaciones_descuentos_propinas.',
+  '22023', 'No hay una herramienta «sumar». Las que hay: resumen, ranking, comparar, detalle, proyeccion_mes, cancelaciones_descuentos_propinas, inventario.',
   'Una herramienta que no existe es un error con las que hay'
 );
 

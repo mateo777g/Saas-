@@ -464,7 +464,13 @@
       <!-- Las conversaciones y las ventas son de cada sucursal: cambiar de sucursal abre su bienvenida. -->
       {#key actual.id}
         {#await cargarAgente() then { default: Agente }}
-          <Agente sucursal={actual} sucursales={datos.sucursales} alElegir={elegir} barraLista={barraDelAgente} />
+          <Agente
+            sucursal={actual}
+            sucursales={datos.sucursales}
+            alElegir={elegir}
+            barraLista={barraDelAgente}
+            hayIngredientes={(vigiaInventario?.ingredientes?.length ?? 0) > 0}
+          />
         {:catch error}
           <BarraArriba titulo="Agente IA" estado={{ texto: 'No se pudo abrir', vivo: false }} />
           <main class="cuerpo">

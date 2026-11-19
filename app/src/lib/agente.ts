@@ -40,9 +40,9 @@ export function textoSinTope(e: SinTope): string {
     : `Llegaste al límite de IA de este mes. ${vuelve} o escríbele a Fragmentless para que lo suba.`;
 }
 
-// ─── Las ideas (las tres de Flet, con sus dos seguimientos cada una) ───────────────────────────
+// ─── Las ideas (las tres de Flet y la del inventario, con sus dos seguimientos cada una) ──────
 
-// Las tres piden el desglose por producto y que el total vaya debajo de la tabla, nunca como
+// Las tres de Flet piden el desglose por producto y que el total vaya debajo de la tabla, nunca como
 // renglón: con el total adentro, el modelo suma la columna él solo (medido en Flet, ver
 // agenteIA_view.py). Lo que va en MAYÚSCULAS es el periodo, lo único que cambia.
 const FORMA =
@@ -50,13 +50,15 @@ const FORMA =
   'dinero representa cada uno, de mayor a menor. El total no va dentro de la tabla: va debajo, ' +
   'en un renglón de texto. No lo desgloses por mesa.';
 
-// `frase` es lo que se ve en la caja y en la burbuja; `prompt`, lo que se le manda al agente.
+// `frase` es lo que se ve en la caja y en la burbuja; `prompt`, lo que se le manda al agente. `conversacion`, cómo se
+// llama en la barra de chats la conversación que empieza con ella (sin él, su frase, como las tres de Flet).
 export type Idea = {
   icono: string;
   titulo: string;
   texto: string;
   frase: string;
   prompt: string;
+  conversacion?: string;
   seguimiento: { etiqueta: string; pregunta: string }[];
 };
 
@@ -94,7 +96,48 @@ export const IDEAS: Idea[] = [
       { etiqueta: 'Ver hoy', pregunta: `Ventas de HOY por producto, ${FORMA}` },
     ],
   },
+  // La que toma el lugar de «Reporte del mes» cuando la sucursal tiene ingredientes (libreta 4, «La tercera idea del
+  // Agente IA»; maqueta 451imetKAw3mhgmZPptPgy). Va al final para que el número de idea que guarda cada vuelta del
+  // Historial no cambie. Sus tablas piden las columnas en orden: la que es solo número va al final, porque la app
+  // pega esos números a la derecha y una de texto después se juntaba con ella.
+  {
+    icono: 'inventario',
+    titulo: 'Qué me falta comprar',
+    texto: 'Lo que se acaba y los días que alcanza.',
+    frase: '¿Qué me falta comprar? Lo que se acaba y para cuántos días alcanza lo demás.',
+    prompt:
+      'Qué me falta comprar: lo que se acabó, lo que va bajo su mínimo y lo que alcanza para menos de 2 días. ' +
+      'En tabla, con estas columnas en este orden: Ingrediente, Queda, Mínimo, Le falta, Alcanza para; los ' +
+      'renglones en el orden en que vienen. Las cantidades van como vienen, con su unidad. Si no tiene mínimo o no ' +
+      'le falta nada, pon «—»; en Alcanza para, los días («0.8 días»), «Se acabó» si ya se acabó o «—» si no tiene ' +
+      'días. Debajo de la tabla, en texto, lo más urgente y, si hay días, que son un estimado.',
+    conversacion: 'Qué me falta comprar',
+    seguimiento: [
+      {
+        etiqueta: 'Lo que se perdió esta semana',
+        pregunta:
+          'Lo que se perdió ESTA SEMANA en el inventario, por ingrediente, en tabla con estas columnas en este orden: ' +
+          'Ingrediente, Mermas, Faltó al contar, Se perdió. Las cantidades van como vienen, con su unidad; donde no ' +
+          'hay, «—». Debajo de la tabla, en texto, las mermas más grandes con quién las anotó y, si algo sobró al ' +
+          'contar, eso aparte.',
+      },
+      {
+        etiqueta: 'Cuántos platillos alcanzan',
+        pregunta:
+          'Cuántos platillos alcanzan con lo que queda en el inventario, en tabla con estas columnas en este orden: ' +
+          'Platillo, Se acaba primero, Alcanzan; de menos a más, como vienen. Debajo de la tabla, en texto, que no ' +
+          'cuentas las opciones y cuántos platillos no tienen receta.',
+      },
+    ],
+  },
 ];
+
+// Las 3 ideas que se ven, por su número en IDEAS: con al menos un ingrediente en Inventario, la tercera es
+// «Qué me falta comprar»; sin ingredientes, «Reporte del mes» (encuestas 6 y 7 de agente-inventario).
+export const IDEA_INVENTARIO = 3;
+export function ideasALaVista(hayIngredientes: boolean): number[] {
+  return [0, 1, hayIngredientes ? IDEA_INVENTARIO : 2];
+}
 
 // ─── Preguntar ──────────────────────────────────────────────────────────────────────────────
 

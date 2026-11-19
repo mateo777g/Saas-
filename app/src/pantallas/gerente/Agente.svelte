@@ -44,6 +44,7 @@
     guardarBarraCerrada,
     guardarConversacion,
     IDEAS,
+    ideasALaVista,
     leerBarraCerrada,
     leerConversaciones,
     leerEstadoIa,
@@ -73,12 +74,18 @@
     sucursales,
     alElegir,
     barraLista,
+    hayIngredientes,
   }: {
     sucursal: Sucursal;
     sucursales: Sucursal[];
     alElegir: (sucursal: Sucursal) => void;
     barraLista: boolean;
+    // Si la sucursal tiene al menos un ingrediente en Inventario (lo lee el panel en vivo, VigiaInventario):
+    // la tercera idea es «Qué me falta comprar» en vez de «Reporte del mes».
+    hayIngredientes: boolean;
   } = $props();
+
+  const ideas = $derived(ideasALaVista(hayIngredientes));
 
   const PH_BIENVENIDA = 'Pregunta lo que quieras de tu negocio…';
   const PH_CHAT = 'Sigue preguntando… por ejemplo, ¿y ayer?';
@@ -201,7 +208,8 @@
 
   async function enviar(p: Pedido) {
     if (ocupado || sinTope) return;
-    const base: Conversacion = actual ?? { id: crypto.randomUUID(), titulo: p.visible, fecha: '', hora: '', turnos: [] };
+    const titulo = (p.idea !== null && IDEAS[p.idea]?.conversacion) || p.visible;
+    const base: Conversacion = actual ?? { id: crypto.randomUUID(), titulo, fecha: '', hora: '', turnos: [] };
     actual = base;
     fallo = null;
     detenida = null;
@@ -459,11 +467,12 @@
           <div class="ideas-zona">
             <div class="etiqueta ideas-titulo aparece" style="--i: 0">Ideas para ti</div>
             <div class="ideas">
-              {#each IDEAS as idea, i (idea.titulo)}
+              {#each ideas as i, lugar (i)}
+                {@const idea = IDEAS[i]}
                 <button
                   type="button"
                   class="idea aparece"
-                  style="--i: {i + 1}"
+                  style="--i: {lugar + 1}"
                   disabled={!!sinTope || ocupado}
                   onmousedown={(e) => e.preventDefault()}
                   onclick={() => usarIdea(i)}

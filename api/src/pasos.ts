@@ -136,7 +136,39 @@ export function pasoDeHerramienta(nombre: string, a: Record<string, unknown>, ho
     const que = LO_QUE_NO_ES_VENTA[String(a.ver)];
     return que ? buscar(`${que}${de}`) : null;
   }
+  if (nombre === 'inventario') return pasoDeInventario(a, hoy);
   return null;
+}
+
+const LO_DEL_INVENTARIO: Record<string, string> = {
+  perdido: 'lo que se perdió',
+  gastado: 'lo que se gastó',
+  llego: 'lo que llegó',
+};
+
+// La séptima herramienta (libreta 1): sus palabras son las de «Lo que leí» que arma Postgres
+// (privado.herramienta_inventario), con el periodo en la forma «en»: «esta semana», «en octubre».
+// Con un ingrediente o un platillo lo nombra como lo escribió el modelo; Postgres lo busca igual.
+function pasoDeInventario(a: Record<string, unknown>, hoy: string | null): Paso | null {
+  const ingrediente = nombreCorto(a.ingrediente);
+  const de = ingrediente ? ` de ${ingrediente}` : '';
+  if (a.ver === 'queda') {
+    const que = `${a.solo_lo_que_falta === true ? 'lo que falta comprar' : 'lo que queda'}${de}`;
+    return { icono: 'lupa', texto: `Revisando ${que}…`, listo: `Revisé ${que}` };
+  }
+  if (a.ver === 'alcanza') {
+    const platillo = nombreCorto(a.producto);
+    const que = platillo ? `cuántos alcanzan de ${platillo}` : 'cuántos platillos alcanzan';
+    return { icono: 'lupa', texto: `Calculando ${que}…`, listo: `Calculé ${que}` };
+  }
+  const lo = LO_DEL_INVENTARIO[String(a.ver)];
+  if (!lo) return null;
+  const cuando = fechas(a.desde, a.hasta, hoy, 'en');
+  return buscar(`${lo}${de}${cuando ? ` ${cuando}` : ''}${a.agrupar_por === 'dia' ? GRUPOS.dia : ''}`);
+}
+
+function nombreCorto(valor: unknown): string | null {
+  return typeof valor === 'string' && valor.trim() && valor.trim().length <= LARGO_NOMBRE ? valor.trim() : null;
 }
 
 function dondeYQuien(mesa: unknown, mesero: unknown): string {
@@ -165,7 +197,7 @@ function fechasDe(desde: unknown, hasta: unknown, hoy: string | null): string {
   return texto ? ` ${texto}` : '';
 }
 
-function fechas(desde: unknown, hasta: unknown, hoy: string | null, forma: 'solo' | 'de'): string | null {
+function fechas(desde: unknown, hasta: unknown, hoy: string | null, forma: 'solo' | 'de' | 'en'): string | null {
   if (typeof desde !== 'string' || typeof hasta !== 'string' || !hoy) return null;
   const d = leerDia(desde);
   const h = leerDia(hasta);
@@ -202,10 +234,10 @@ function diaYMes(d: number, hoy: number | null): string {
   return `${numeroDe(d)} de ${nombreMes(d)}${hoy === null || anioDe(d) !== anioDe(hoy) ? ` de ${anioDe(d)}` : ''}`;
 }
 
-export function periodo(d: number, h: number, hoy: number, forma: 'solo' | 'de'): string {
+export function periodo(d: number, h: number, hoy: number, forma: 'solo' | 'de' | 'en'): string {
   const lunes = hoy - ((new Date(hoy).getUTCDay() + 6) % 7) * DIA;
   let texto: string;
-  let tipo: 'fijo' | 'dia' | 'rango' = 'fijo';
+  let tipo: 'fijo' | 'dia' | 'rango' | 'mes' | 'año' = 'fijo';
   if (d === h && d === hoy) {
     texto = 'hoy';
   } else if (d === h && d === hoy - DIA) {
@@ -221,11 +253,13 @@ export function periodo(d: number, h: number, hoy: number, forma: 'solo' | 'de')
     texto = 'este mes';
   } else if (d === primeroDelMes(d) && h === finDelMes(d)) {
     texto = `${nombreMes(d)}${anioDe(d) !== anioDe(hoy) ? ` de ${anioDe(d)}` : ''}`;
+    tipo = 'mes';
   } else if (
     d === Date.UTC(anioDe(d), 0, 1) &&
     (h === Date.UTC(anioDe(d), 11, 31) || (anioDe(d) === anioDe(hoy) && h >= hoy && anioDe(h) === anioDe(hoy)))
   ) {
     texto = anioDe(d) === anioDe(hoy) ? 'este año' : String(anioDe(d));
+    if (anioDe(d) !== anioDe(hoy)) tipo = 'año';
   } else if (anioDe(d) === anioDe(h) && mesDe(d) === mesDe(h)) {
     texto = `del ${numeroDe(d)} al ${diaYMes(h, hoy)}`;
     tipo = 'rango';
@@ -237,6 +271,7 @@ export function periodo(d: number, h: number, hoy: number, forma: 'solo' | 'de')
     tipo = 'rango';
   }
   if (forma === 'solo') return texto;
+  if (forma === 'en') return tipo === 'mes' || tipo === 'año' ? `en ${texto}` : texto;
   if (tipo === 'dia') return `del ${texto.slice(3)}`;
   return tipo === 'rango' ? texto : `de ${texto}`;
 }

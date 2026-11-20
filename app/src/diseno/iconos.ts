@@ -157,4 +157,8 @@ export const ICONOS: Record<string, string> = {
   'llego': '<path d="M3 7.5 12 3l9 4.5v9L12 21l-9-4.5z"></path><path d="M12 8v6"></path><path d="m9 11 3 3 3-3"></path>',
   'contar': '<rect x="5" y="4" width="14" height="17" rx="2"></rect><path d="M9 4V3h6v1"></path><path d="m9 13 2 2 4-4"></path>',
   'cubiertos': '<path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"></path><path d="M7 2v20"></path><path d="M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7"></path>',
+  // El recetario (19 nov 2026, maqueta DFVTWEB3eZBEKctyxWjGjg v1): el libro del cuarto botón de Inventario y de la
+  // pestaña de los aparatos, y la foto de «Cambiar foto» y del cuadro punteado de cada paso.
+  'libro': '<path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v15H6.5A2.5 2.5 0 0 0 4 20.5z"></path><path d="M4 20.5A2.5 2.5 0 0 0 6.5 23H20v-5"></path><path d="M9 8h7"></path><path d="M9 12h5"></path>',
+  'foto': '<rect x="3" y="5" width="18" height="15" rx="2.5"></rect><circle cx="9" cy="10.5" r="1.8"></circle><path d="m21 16-5-5-9 9"></path>',
 };

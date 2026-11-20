@@ -7,8 +7,8 @@
 // (biblioteca.ts: Eliminar y, cada día a las 9:00 UTC, el borrado de los 30 días) y Mi menú
 // (traducir.ts: el inglés que traduce la IA y, en el mismo Cron, el dólar del día), y la terminal
 // conectada (terminal.ts y mercadoPago.ts: conectar Mercado Pago, mandar cada cobro a la Point, sus
-// avisos y, en el mismo Cron, renovar sus llaves). Nunca decide solo: antes de cada trabajo le
-// pregunta a Postgres si se puede.
+// avisos y, en el mismo Cron, renovar sus llaves), y en el mismo Cron borra las fotos sueltas del
+// recetario (recetario.ts). Nunca decide solo: antes de cada trabajo le pregunta a Postgres si se puede.
 import { agente } from './agente';
 import { preguntaDelMenu } from './asistente';
 import { borrarVencidos } from './biblioteca';
@@ -18,6 +18,7 @@ import { listaDeEstilos, muestraDeEstilo } from './estilos';
 import { fotoDelMenu } from './fotos';
 import { pedidoDelMenu } from './pedidos';
 import { pos } from './pos';
+import { borrarFotosSueltas } from './recetario';
 import { avisoDeMercadoPago, mercadoPago, regresoDeMercadoPago, renovarLlaves, terminal } from './terminal';
 import { conCors, error, origenPermitido, preflight, Rechazo } from './respuestas';
 import { dolarDelDia, traducirMenu } from './traducir';
@@ -108,12 +109,18 @@ export default {
     return conCors(respuesta, origen);
   },
 
-  // El Cron Trigger diario (wrangler.jsonc): el borrado de los 30 días, el dólar del día y renovar las llaves de
-  // Mercado Pago, cada uno por su lado. Si el borrado o la renovación fallan, la corrida sale como fallida en
-  // Cloudflare; el dólar nunca la tumba.
+  // El Cron Trigger diario (wrangler.jsonc): el borrado de los 30 días, el dólar del día, renovar las llaves de
+  // Mercado Pago y las fotos sueltas del recetario, cada uno por su lado. Si el borrado, la renovación o las fotos
+  // fallan, la corrida sale como fallida en Cloudflare; el dólar nunca la tumba.
   async scheduled(_controlador, env): Promise<void> {
-    const [vencidos, , llaves] = await Promise.allSettled([borrarVencidos(env), dolarDelDia(env), renovarLlaves(env)]);
+    const [vencidos, , llaves, fotos] = await Promise.allSettled([
+      borrarVencidos(env),
+      dolarDelDia(env),
+      renovarLlaves(env),
+      borrarFotosSueltas(env),
+    ]);
     if (vencidos.status === 'rejected') throw vencidos.reason;
     if (llaves.status === 'rejected') throw llaves.reason;
+    if (fotos.status === 'rejected') throw fotos.reason;
   },
 } satisfies ExportedHandler<Env>;

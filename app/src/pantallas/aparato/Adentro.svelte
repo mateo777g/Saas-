@@ -13,7 +13,9 @@
 
   Con el inventario (19 nov 2026; maqueta BBBNJST5w9qZfHWNdovGgb v3, encuestas 17 a 19): la cocina suma «Inventario»
   (lo que queda, con «Merma» y «Llegó»; su numerito, cuántos se acaban, viene de su vigía) y «Menú» (la vista chiquita de
-  Mi menú con su ojito), y la caja suma «Menú». Las dos van siempre a lo ancho, como la Cocina.
+  Mi menú con su ojito), y la caja suma «Menú». Las dos van siempre a lo ancho, como la Cocina. Con el recetario (19 nov
+  2026; maqueta DFVTWEB3eZBEKctyxWjGjg v1, encuesta 6), la cocina y la caja suman «Recetario» (aparato/RecetarioAparato),
+  también a lo ancho.
 
   Usa la sesión del aparato (lib/aparato.ts), nunca la del panel.
 -->
@@ -39,8 +41,9 @@
   import '../pos/ancho/ancho.css';
   import Arriba from './Arriba.svelte';
   import MenuChico from './MenuChico.svelte';
+  import RecetarioAparato from './RecetarioAparato.svelte';
 
-  type Pestana = 'mesas' | 'caja' | 'pedidos' | 'cocina' | 'inventario' | 'menu';
+  type Pestana = 'mesas' | 'caja' | 'pedidos' | 'cocina' | 'inventario' | 'menu' | 'recetario';
 
   let {
     lista,
@@ -71,6 +74,7 @@
         si: persona.roles.includes('cocina'),
       },
       { valor: 'menu' as const, texto: 'Menú', si: persona.roles.includes('cocina') || persona.roles.includes('caja') },
+      { valor: 'recetario' as const, texto: 'Recetario', si: persona.roles.includes('cocina') || persona.roles.includes('caja') },
     ].filter((p) => p.si),
   );
   let elegida = $state<Pestana | null>(leerPestana());
@@ -87,6 +91,7 @@
     cocina: 'r-cocina',
     inventario: 'inventario',
     menu: 'cubiertos',
+    recetario: 'libro',
   };
   const anfitrion = $derived<Anfitrion>({
     donde: 'aparato',
@@ -229,6 +234,10 @@
 {:else if pestana === 'menu'}
   <div class="pantalla-ancha">
     <MenuChico cliente={supabaseAparato} restauranteId={restaurante.id} {anfitrion} />
+  </div>
+{:else if pestana === 'recetario'}
+  <div class="pantalla-ancha">
+    <RecetarioAparato cliente={supabaseAparato} restauranteId={restaurante.id} {anfitrion} />
   </div>
 {:else if pestana === 'pedidos' && ancho}
   <!-- Solo la barra va en .pos-ancho: sus clases (.rejilla, .tarjeta…) chocarían con las del Tablero de Pedidos. -->

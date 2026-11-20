@@ -1,8 +1,10 @@
 <!--
   Inventario (19 nov 2026; maqueta BBBNJST5w9qZfHWNdovGgb v3, copiada de Mi menú por encuesta): cuánto queda de cada
   ingrediente y qué lleva cada platillo. Arriba, el título, el chip de la sección y el dock Ingredientes · Recetas ·
-  Preparaciones; a la derecha, los botones de la sección (Contar, Merma, Llegó y «Nuevo ingrediente»; «Nueva
-  preparación»). Abajo, la búsqueda con su filtro y la tabla en el marco de Mi menú, y encima las ventanas.
+  Preparaciones · Recetario; a la derecha, los botones de la sección (Contar, Merma, Llegó y «Nuevo ingrediente»; «Nueva
+  preparación»; en la página de un recetario, «Cambiar lo que lleva» y «Editar»). Abajo, la búsqueda con su filtro y la
+  tabla en el marco de Mi menú, y encima las ventanas. El Recetario (19 nov 2026; maqueta DFVTWEB3eZBEKctyxWjGjg v1) es
+  su propia sección, en inventario/Recetario.svelte; aquí solo van su botón, su chip y sus botones de arriba.
 
   Los ingredientes vienen de la vigía del panel (lib/vigiaInventario.svelte.ts), que los trae en vivo: cada cuenta que se
   cierra resta su receta y la tabla cambia sola. El menú, las preparaciones y las recetas se leen al abrir y después de
@@ -26,6 +28,7 @@
   import './inventario/tabla.css';
   import Ingredientes from './inventario/Ingredientes.svelte';
   import Preparaciones from './inventario/Preparaciones.svelte';
+  import SeccionRecetario from './inventario/Recetario.svelte';
   import Recetas from './inventario/Recetas.svelte';
   import VentanaContar from './inventario/VentanaContar.svelte';
   import VentanaIngrediente from './inventario/VentanaIngrediente.svelte';
@@ -34,7 +37,7 @@
   import VentanaPreparacion from './inventario/VentanaPreparacion.svelte';
   import VentanaReceta from './inventario/VentanaReceta.svelte';
 
-  type Seccion = 'ingredientes' | 'recetas' | 'preparaciones';
+  type Seccion = 'ingredientes' | 'recetas' | 'preparaciones' | 'recetario';
 
   let { sucursal, vigia }: { sucursal: Sucursal; vigia: VigiaInventario } = $props();
 
@@ -54,6 +57,11 @@
   >(null);
   // La receta de una opción se abre encima de la del platillo.
   let opcion = $state<{ opcion: Opcion; grupo: Grupo } | null>(null);
+  // El Recetario: qué enseña (para los botones de arriba), su chip, y `version`, que sube cuando algo se guardó.
+  let libro = $state<ReturnType<typeof SeccionRecetario>>();
+  let modoRecetario = $state<'cuadros' | 'pagina' | 'editar'>('cuadros');
+  let chipRecetario = $state<{ texto: string; vivo: boolean; pausa?: boolean }>({ texto: 'Cargando tu recetario…', vivo: true });
+  let versionRecetario = $state(0);
 
   const VACIO_MENU: Menu = { categorias: [], productos: [], grupos: [], areas: [] };
   const VACIO_RECETARIO: Recetario = { preparaciones: [], recetas: [] };
@@ -68,6 +76,7 @@
     ingredientes: filasDeLaUltimaVez(llave('ingredientes')),
     recetas: filasDeLaUltimaVez(llave('recetas')),
     preparaciones: filasDeLaUltimaVez(llave('preparaciones')),
+    recetario: 0,
   };
   $effect(() => {
     if (vigia.ingredientes) recordarFilas(llave('ingredientes'), vigia.ingredientes.length);
@@ -81,6 +90,7 @@
   const errorRecetas = $derived(lectura.estado === 'error' ? ERROR_LEER(lectura.deRed, 'tus recetas') : errorIngredientes);
 
   const estado = $derived.by(() => {
+    if (seccion === 'recetario') return chipRecetario;
     if (seccion === 'ingredientes') {
       if (cargandoIngredientes) return { texto: 'Cargando tu inventario…', vivo: true };
       if (!vigia.ingredientes) return { texto: esDeRed(vigia.error) ? 'Sin conexión' : 'No se pudo leer', vivo: false };
@@ -118,6 +128,21 @@
   function alCambiar() {
     void leer();
     void vigia.leer();
+    versionRecetario++;
+  }
+
+  // «Cambiar lo que lleva» del Recetario: la ventana de la receta del platillo, o la de la preparación.
+  function cambiarLoQueLleva(de: { tipo: 'platillo' | 'preparacion'; id: number }) {
+    if (lectura.estado !== 'listo') return;
+    if (de.tipo === 'platillo') {
+      const producto = menu.productos.find((p) => p.id === de.id);
+      if (producto) ventana = { tipo: 'receta', producto };
+      else console.error('[inventario] el platillo del recetario no está en el menú leído:', de.id);
+    } else {
+      const preparacion = recetario.preparaciones.find((p) => p.id === de.id);
+      if (preparacion) ventana = { tipo: 'preparacion', preparacion };
+      else console.error('[inventario] la preparación del recetario no está en las leídas:', de.id);
+    }
   }
 
   onMount(async () => {
@@ -140,6 +165,12 @@
 
   async function cambiarSeccion(valor: Seccion) {
     if (valor === seccion) return;
+    // Del Recetario en «Editar» con cambios, primero «Tienes cambios sin guardar».
+    if (seccion === 'recetario' && libro) return libro.pedirSalida(() => void irASeccion(valor));
+    await irASeccion(valor);
+  }
+
+  async function irASeccion(valor: Seccion) {
     seccion = valor;
     await tick();
     cascada(cuerpo);
@@ -160,6 +191,7 @@
         { valor: 'ingredientes', texto: 'Ingredientes', icono: 'inventario' },
         { valor: 'recetas', texto: 'Recetas', icono: 'receta' },
         { valor: 'preparaciones', texto: 'Preparaciones', icono: 'olla' },
+        { valor: 'recetario', texto: 'Recetario', icono: 'libro' },
       ]}
       elegida={seccion}
       alElegir={cambiarSeccion}
@@ -184,9 +216,24 @@
       apagado={lectura.estado !== 'listo'}
       onclick={() => (ventana = { tipo: 'preparacion', preparacion: null })}
     />
+  {:else if seccion === 'recetario' && modoRecetario !== 'cuadros'}
+    <Boton etiqueta="Cambiar lo que lleva" icono="receta" apagado={lectura.estado !== 'listo'} onclick={() => libro?.cambiarLoQueLleva()} />
+    {#if modoRecetario === 'pagina'}
+      <Boton etiqueta="Editar" icono="crear" tono="tinta" onclick={() => libro?.editar()} />
+    {/if}
   {/if}
 </BarraArriba>
 
+{#if seccion === 'recetario'}
+  <SeccionRecetario
+    bind:this={libro}
+    bind:modo={modoRecetario}
+    bind:chip={chipRecetario}
+    restauranteId={sucursal.id}
+    version={versionRecetario}
+    alCambiarLoQueLleva={cambiarLoQueLleva}
+  />
+{:else}
 <main class="cuerpo inv-desliza" bind:this={cuerpo}>
   <section class="seccion" aria-label="Inventario">
     {#if seccion === 'ingredientes'}
@@ -220,6 +267,7 @@
     {/if}
   </section>
 </main>
+{/if}
 
 {#if ventana?.tipo === 'ingrediente'}
   <VentanaIngrediente

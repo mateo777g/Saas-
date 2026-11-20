@@ -20,8 +20,9 @@ const ANCHO_CARTEL = 1600;
 const ALTO_CARTEL = 900;
 const CALIDAD_CARTEL = 90;
 
-// Las carpetas de un restaurante en R2 (las mismas que acepta el Worker).
-export type Carpeta = 'menu' | 'logo' | 'carteles';
+// Las carpetas de un restaurante en R2 (las mismas que acepta el Worker). recetario/: la foto de cómo se sirve y la de
+// cada paso (19 nov 2026), en WebP como las del menú.
+export type Carpeta = 'menu' | 'logo' | 'carteles' | 'recetario';
 const MAXIMO_ORIGINAL = 15 * 1024 * 1024;
 
 // La dirección pública de una foto (la del bucket; libreta 3: el Worker no sirve las fotos).

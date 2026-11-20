@@ -1,12 +1,14 @@
-// Las imágenes del menú en R2 (libreta 3, «Las fotos en R2»): las fotos de los productos, el logo
-// y los carteles, cada una en su carpeta (menu/, logo/, carteles/). Dos trabajos:
-//  - POST /menu/foto?restaurante=<id>&carpeta=<menu|logo|carteles>, con la imagen WebP como
+// Las imágenes del menú en R2 (libreta 3, «Las fotos en R2»): las fotos de los productos, el logo,
+// los carteles y, desde el 19 nov 2026, las del recetario (la de cómo se sirve y la de cada paso), cada
+// una en su carpeta (menu/, logo/, carteles/, recetario/). Dos trabajos:
+//  - POST /menu/foto?restaurante=<id>&carpeta=<menu|logo|carteles|recetario>, con la imagen WebP como
 //    cuerpo: si Postgres dice que quien llama puede subir imágenes a ese restaurante, la guarda con
 //    un nombre al azar y contesta su ruta. Sin carpeta, va a menu/.
 //  - DELETE /menu/foto?ruta=<ruta>: si Postgres dice que puede borrarla (es de su restaurante y
-//    nada la usa: ni un producto, ni el logo, ni un cartel), la borra.
-// La app guarda la ruta (productos.imagen_ruta, restaurantes.logo_ruta o carteles.imagen_ruta); el
-// nombre lo pone siempre el Worker.
+//    nada la usa: ni un producto, ni el logo, ni un cartel, ni un recetario; privado.foto_en_uso), la borra.
+// La app guarda la ruta (productos.imagen_ruta, restaurantes.logo_ruta, carteles.imagen_ruta o, con
+// guardar_recetario, la del recetario y sus pasos); el nombre lo pone siempre el Worker. Las fotos del
+// recetario que se quitan o se cambian las borra el Cron diario (recetario.ts).
 import type { Env } from './index';
 import { json, Rechazo, SIN_PERMISO } from './respuestas';
 import { leerSesion, preguntar } from './supabase';
@@ -16,9 +18,9 @@ import { leerSesion, preguntar } from './supabase';
 export const MAXIMO_BYTES = 2 * 1024 * 1024;
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
-const CARPETAS = ['menu', 'logo', 'carteles'];
+const CARPETAS = ['menu', 'logo', 'carteles', 'recetario'];
 // El mismo formato que exige la base (los checks de cada ruta y puedo_borrar_foto).
-const RUTA = /^restaurantes\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\/(menu|logo|carteles)\/[0-9a-f]{32}\.webp$/;
+const RUTA = /^restaurantes\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\/(menu|logo|carteles|recetario)\/[0-9a-f]{32}\.webp$/;
 
 export async function fotoDelMenu(request: Request, env: Env, url: URL): Promise<Response> {
   if (request.method === 'POST') return subir(request, env, url);

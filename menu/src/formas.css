@@ -995,8 +995,15 @@
 
 /* ─── En la página de verdad ───
    En la maqueta el teléfono era la pantalla; aquí la página es larga, así que lo que tapa (Ajustes y su velo) va fijo a
-   la pantalla, y Ajustes no pasa del ancho de la columna del menú en la compu. */
-.f-aj-velo, .f-aj { position: fixed; }
+   la pantalla. El velo tapa toda la ventana; la hoja va en su marco, que es la columna del menú (fijo, del ancho de la
+   columna y al centro, como el asistente): en el celular es la pantalla, y en la compu la hoja sale de la orilla derecha
+   de la columna y lo que se desliza fuera de ella no se ve (19 nov 2026, el developer: en la compu nada se sale). El
+   recorte va solo cuando la ventana es más ancha que la columna: en el celular ya recorta la pantalla, y recortar ahí
+   cambiaba la sombra de la hoja en un tono. */
+.f-aj-velo { position: fixed; }
+.f-aj-marco { position: fixed; inset: 0; z-index: 10; max-width: 520px; margin: 0 auto; pointer-events: none; }
+@media (min-width: 521px) { .f-aj-marco { overflow: hidden; } }
+.f-aj { pointer-events: auto; }
 /* La ventana de la «i» también, y en la compu no pasa del ancho de la columna (520 menos sus orillas de 14). */
 .f-info-velo, .f-info { position: fixed; }
 .f-info-caja { max-width: 492px; }

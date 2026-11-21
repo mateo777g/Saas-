@@ -86,7 +86,7 @@ export const AVISO: Record<Lengua, Bloque[]> = {
         "Your questions to the assistant are not stored.",
       ],
     },
-    { p: "**On your phone.** So you don't have to type your data every time, this menu remembers it in your browser, only on your phone and only for this restaurant; also your unsent order, your language and your currency. We do not use advertising or tracking cookies. You can delete them anytime with «Delete my data», in «Your data» in the Order view." },
+    { p: "**On your phone.** So you don't have to type your data every time, this menu remembers it in your browser, only on your phone and only for this restaurant; also your unsent order, your language and your currency. We do not use advertising or tracking cookies. You can delete them anytime with «Delete my data», in «Your details» in the Order view." },
     { p: "**Who else.** We do not sell or lend your data. It is processed on our behalf by Fragmentless and its cloud and artificial intelligence providers, with servers in the United States, who may only use it to provide their service to us. We would only hand it to an authority that requests it as the law provides. When you order, you send us the message from your own WhatsApp: WhatsApp handles it under its own privacy notice." },
     { p: "**Artificial intelligence services.**" },
     {

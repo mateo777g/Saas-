@@ -405,7 +405,7 @@ select ok(
 
 select is_empty(
   $$ select f from unnest(array[
-       'public.guardar_restaurante(uuid, text, text, text, text, jsonb, boolean)',
+       'public.guardar_restaurante(uuid, text, text, text, text, jsonb, boolean, text)',
        'public.guardar_menu_en_linea(uuid, text, text, text, text, text, boolean, text, text, text, text, text, text, text, text, text[], text, text, text, boolean, text, text, text)',
        'public.estado_menu_en_linea(uuid)',
        'public.agregar_cartel(uuid, text, bigint)',
@@ -603,7 +603,7 @@ select ok(
 );
 
 select is(
-  (public.menu_publico('restaurante-a') -> 'restaurante') - array['color_barra', 'fondo', 'formas'],
+  (public.menu_publico('restaurante-a') -> 'restaurante') - array['color_barra', 'fondo', 'formas', 'nombre_legal'],
   jsonb_build_object(
     'nombre', 'Restaurante A', 'telefono', '2221234567', 'direccion', 'Av. Juárez 123, Centro',
     'logo_ruta', tests.ruta('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 'logo', 1),

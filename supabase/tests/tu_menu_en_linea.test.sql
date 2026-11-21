@@ -397,7 +397,7 @@ select ok(
 
 select is_empty(
   $$ select f from unnest(array[
-       'public.guardar_restaurante(uuid, text, text, text, text, jsonb, boolean)',
+       'public.guardar_restaurante(uuid, text, text, text, text, jsonb, boolean, text)',
        'public.guardar_menu_en_linea(uuid, text, text, text, text, text, boolean, text, text, text, text, text, text, text, text, text[], text, text, text, boolean, text, text, text)',
        'public.agregar_cartel(uuid, text, bigint)',
        'public.cambiar_cartel(bigint, text, bigint)'
@@ -829,7 +829,7 @@ select is(
 );
 
 select is(
-  (public.menu_publico('fonda-don-chuy') -> 'restaurante') - 'formas' - 'nombre' - 'telefono' - 'direccion' - 'logo_ruta' - 'tipo_cambio_usd',
+  (public.menu_publico('fonda-don-chuy') -> 'restaurante') - 'formas' - 'nombre' - 'telefono' - 'direccion' - 'logo_ruta' - 'tipo_cambio_usd' - 'nombre_legal',
   '{"tema": "oscuro", "color": "#B3261E", "color_barra": "#1F2A44", "fondo": "#F4F1EA", "hace_envios": true}'::jsonb,
   'Y el color de la barra y el fondo junto al color'
 );

@@ -14,6 +14,11 @@ export function linkDelMenu(slug: string): string {
   return `${MENU_URL}/${slug}`;
 }
 
+// El aviso de privacidad del menú (datos de los clientes, 21 nov 2026): abre el menú con su ventana ya abierta.
+export function linkDelAviso(slug: string): string {
+  return `${MENU_URL}/${slug}/privacidad`;
+}
+
 // Como se enseña en el panel, sin https://: «abremenu.com».
 export const HOST_MENU = new URL(MENU_URL).host;
 

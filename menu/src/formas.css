@@ -1043,3 +1043,75 @@
 .menu .f-info-logo img.f-foto-espera { width: 72px; height: 72px; }
 @keyframes f-late { 50% { opacity: 0.5; } }
 @media (prefers-reduced-motion: reduce) { .menu img.f-foto-espera { animation: none; } }
+
+/* ─── Los datos de los clientes (21 nov 2026; maqueta Qvn42kQsyRX3m9vscikYfB, su menu.css): el aviso corto arriba de «Pedir
+   por WhatsApp», el ícono «Tus datos» en la barra de la vista Pedido, su ventana y la del aviso de privacidad. Las dos
+   ventanas son la de la «i» (.f-info…); el aviso es grande, casi del alto del celular, y va encima de «Tus datos». ─── */
+/* Mientras su ventana está abierta, el ícono de persona se vuelve la ventana. */
+.dc-fuera { visibility: hidden; }
+.marca .dc-persona { margin-left: auto; flex: none; }
+/* Con el logo al centro, la personita va junto al engrane. */
+.dc-der-fila { display: flex; align-items: center; gap: 2px; }
+
+/* El aviso corto: 12 px en el gris del menú, al centro, con la liga en negritas y subrayada en el color del texto (no en el
+   del restaurante, para que no compita con el botón). */
+.dc-corto { margin: 0 6px 10px; font-size: 12px; font-weight: 500; line-height: 1.45; color: var(--m-suave); text-align: center; text-wrap: balance; }
+.dc-liga { padding: 0; border: 0; background: none; font: inherit; font-weight: 700; color: var(--m-texto); text-decoration: underline;
+  text-decoration-thickness: 1px; text-underline-offset: 2px; cursor: pointer; }
+.dc-liga:active { opacity: 0.6; }
+
+/* «Tus datos» */
+.dc-paso { display: flex; flex-direction: column; }
+.dc-cabeza { display: flex; flex-direction: column; align-items: center; padding: 30px 44px 16px; text-align: center; }
+.dc-cabeza.listo { padding-bottom: 30px; }
+.dc-cabeza h2 { margin: 12px 0 6px; font-size: 21px; font-weight: 800; letter-spacing: -0.01em; color: var(--m-texto); }
+.dc-cabeza p { margin: 0; font-size: 14px; line-height: 1.5; color: var(--m-suave); text-wrap: pretty; }
+.dc-icono { width: 52px; height: 52px; display: grid; place-items: center; border-radius: 26px; background: var(--m-chip); color: var(--m-texto); }
+.dc-icono.rojo { background: rgba(229, 72, 77, 0.12); color: #e5484d; }
+.dc-cuerpo { display: flex; flex-direction: column; gap: 10px; padding: 6px 18px 18px; }
+.dc-tarjeta { display: flex; flex-direction: column; padding: 2px 16px; }
+.dc-dato { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; padding: 13px 0; font-size: 14px; line-height: 1.35; }
+.dc-dato + .dc-dato { border-top: 1px solid var(--m-linea); }
+.dc-dato span { flex: none; color: var(--m-suave); }
+.dc-dato b { min-width: 0; font-weight: 700; text-align: right; color: var(--m-texto); overflow-wrap: anywhere; }
+.dc-dato small { display: block; margin-top: 2px; font-size: 12.5px; font-weight: 500; color: var(--m-suave); }
+.dc-renglon { height: 50px; display: flex; align-items: center; justify-content: space-between; padding: 0 12px 0 16px; border: 0; border-radius: 14px;
+  background: transparent; color: var(--m-texto); box-shadow: inset 0 0 0 1px var(--m-linea-fuerte); font: inherit; font-size: 14.5px; font-weight: 700;
+  cursor: pointer; transition: transform 0.15s ease; }
+.dc-renglon :is(svg) { color: var(--m-suave); }
+.dc-renglon:active, .dc-si:active { transform: scale(0.98); }
+.f-info-ir.dc-rojo { color: #e5484d; }
+.dc-dos { flex-direction: row; }
+.dc-dos > * { flex: 1; }
+.dc-si { height: 46px; border: 0; border-radius: 14px; background: #e5484d; color: #fff; font: inherit; font-size: 14.5px; font-weight: 700; cursor: pointer;
+  transition: transform 0.15s ease; }
+.dc-palomita { width: 56px; height: 56px; color: #2f9e5b; }
+.dc-palomita .aro { stroke-dasharray: 120; stroke-dashoffset: 120; animation: dc-traza 0.6s cubic-bezier(0.65, 0, 0.35, 1) 0.1s forwards; }
+.dc-palomita .pal { stroke-dasharray: 30; stroke-dashoffset: 30; animation: dc-traza 0.4s cubic-bezier(0.65, 0, 0.35, 1) 0.55s forwards; }
+@keyframes dc-traza { to { stroke-dashoffset: 0; } }
+
+/* El aviso de privacidad: la ventana grande; su texto se desliza abajo de su cabeza, que se queda fija. */
+/* La fila de la rejilla mide la pantalla: si no, crece con el texto del aviso (≈2,000 px), la ventana se sale por abajo y
+   su texto no se desliza (pasaba también en la maqueta). */
+.f-info.dc-grande { z-index: 9; grid-template-rows: minmax(0, 1fr); }
+.f-info-velo.dc-velo-grande { z-index: 8; }
+.dc-grande .f-info-caja { height: calc(100% - 2 * (var(--f-reloj, 40px) + 2px)); max-height: none; }
+.dc-grande .f-info-dentro { flex: 1; overflow: hidden; }
+.dc-aviso-cabeza { flex: none; padding: 22px 64px 14px 22px; border-bottom: 1px solid var(--m-linea); }
+.dc-aviso-cabeza h2 { margin: 0; font-size: 19px; font-weight: 800; letter-spacing: -0.01em; color: var(--m-texto); }
+.dc-aviso-cabeza p { margin: 3px 0 0; font-size: 13px; color: var(--m-suave); }
+.dc-aviso-texto { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: none; padding: 18px 22px 30px;
+  font-size: 14px; line-height: 1.55; color: var(--m-texto);
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 16px, #000 calc(100% - 40px), transparent 100%);
+  mask-image: linear-gradient(to bottom, transparent 0, #000 16px, #000 calc(100% - 40px), transparent 100%); }
+.dc-aviso-texto::-webkit-scrollbar { display: none; }
+.dc-aviso-texto p { margin: 0 0 12px; text-wrap: pretty; }
+.dc-aviso-texto ul { margin: -4px 0 12px; padding-left: 18px; }
+.dc-aviso-texto li { margin-bottom: 4px; }
+.dc-aviso-texto b { font-weight: 800; }
+/* El hueco del borrador (la razón social de Fragmentless, por definir), en amarillo como en la maqueta. */
+.dc-falta { padding: 0 3px; border-radius: 4px; background: rgba(255, 196, 0, 0.28); }
+.dc-fecha { font-size: 12.5px; color: var(--m-tenue); }
+@media (prefers-reduced-motion: reduce) {
+  .dc-palomita .aro, .dc-palomita .pal { animation: none; stroke-dashoffset: 0; }
+}

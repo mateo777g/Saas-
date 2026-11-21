@@ -183,6 +183,15 @@ export class Platica {
     this.mensajes = guardar ? leerPlatica(slug) : [];
   }
 
+  // «Borrar mis datos» (los datos de los clientes, 21 nov 2026): lo guardado ya lo borró borrarMisDatos (lib/pedido.ts);
+  // aquí se olvida lo que se ve. Una pregunta que va en camino llega sola, sin lo de antes.
+  olvidar() {
+    this.mensajes = [];
+    this.nuevo = null;
+    this.borrador = '';
+    this.noContesto = false;
+  }
+
   // La vista previa del panel: sus pasos y una respuesta de muestra, sin el Worker ni la revisión de Cloudflare (nada se
   // gasta ni se cuenta). El compás de la maqueta: el primer paso a los 0.45 s y cada uno 0.8 s.
   async simular(pregunta: string, texto: string, productos: number[]) {

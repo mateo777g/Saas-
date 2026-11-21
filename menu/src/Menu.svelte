@@ -18,6 +18,10 @@
 
   Con la 6c (maqueta 2UPwZw31WrcYRZkH8jaT1Y) llega el asistente: la burbuja con la estrella abajo a la derecha y
   su plática (Worker /menu/pregunta); la hoja de un producto que nombró se abre encima de la plática.
+
+  Con los datos de los clientes (21 nov 2026; maqueta Qvn42kQsyRX3m9vscikYfB) llegan el aviso corto arriba de «Pedir por
+  WhatsApp», «Tus datos» en la barra de la vista Pedido (con «Borrar mis datos») y el aviso de privacidad, una ventana
+  grande; abremenu.com/<slug>/privacidad abre el menú con el aviso ya abierto. Cada menú recuerda sus propios datos.
 -->
 <script lang="ts">
   import { onMount, tick, untrack } from 'svelte';
@@ -32,6 +36,8 @@
   import Categorias from './componentes/Categorias.svelte';
   import Esqueleto from './componentes/Esqueleto.svelte';
   import Fila from './componentes/Fila.svelte';
+  import VentanaAviso from './componentes/VentanaAviso.svelte';
+  import VentanaDatos from './componentes/VentanaDatos.svelte';
   import VentanaInfo from './componentes/VentanaInfo.svelte';
   import VistaAsistente from './componentes/VistaAsistente.svelte';
   import VistaPedido from './componentes/VistaPedido.svelte';
@@ -47,6 +53,7 @@
   import { avisarAlPanel, cartelDeInicio, escucharPanel, irAPieza, modoMuestra, type Cambio, type ModoPanel, type Pintura } from './lib/muestra';
   import {
     abrirWhatsApp,
+    borrarMisDatos,
     centavos,
     enlaceWhatsApp,
     guardarCarrito,
@@ -60,6 +67,7 @@
     mismoRenglon,
     NoSeMando,
     precioUnitario,
+    type Cliente,
     type EnCarrito,
     type Guardado,
     type Hecho,
@@ -72,8 +80,11 @@
   import { adelantarToken, pedirToken, type Adelantado } from './lib/turnstile';
 
   const CADA = 5 * 60 * 1000;
-  // El slug es lo primero del camino: pidemenu.mx/fonda-don-chuy.
-  const slug = decodeURIComponent(location.pathname.split('/').filter(Boolean)[0] ?? '');
+  // El slug es lo primero del camino: abremenu.com/fonda-don-chuy. Con /privacidad después, el menú abre con el aviso de
+  // privacidad ya abierto (lo abren «Ver el aviso de privacidad» de Ajustes del panel y el abogado).
+  const camino = location.pathname.split('/').filter(Boolean);
+  const slug = decodeURIComponent(camino[0] ?? '');
+  const conAviso = camino[1] === 'privacidad';
   const muestra = modoMuestra();
   // La tira de la ventana del color (parte D, 13 nov 2026; maqueta v59, abrirColor): la barra y, según el color que se
   // prueba, las categorías (el de tu menú), la búsqueda y las categorías (el de la barra) o los productos de la primera
@@ -149,6 +160,7 @@
           hecho = h;
           abrir({ tipo: 'pedido' });
         }
+        if (conAviso) abrirAvisoAlLlegar();
       }
       if (datos && primera && enTelefono) {
         recordarEsqueleto();
@@ -232,6 +244,10 @@
   type Encima =
     | { tipo: 'producto'; producto: Producto; editando: number | null; desde: HTMLElement | null }
     | { tipo: 'info'; desde: HTMLElement }
+    // Los datos de los clientes: «Tus datos» crece del ícono de persona; el aviso, de su liga (o del centro, al llegar
+    // por /privacidad) y se abre también encima de «Tus datos».
+    | { tipo: 'datos'; desde: HTMLElement }
+    | { tipo: 'aviso'; desde: HTMLElement | null }
     | { tipo: 'ajustes' }
     | { tipo: 'pedido' }
     | { tipo: 'asistente' };
@@ -244,6 +260,14 @@
   function abrir(e: Encima) {
     if (!muestra) history.pushState({ menuEncima: true }, '');
     pila.push(e);
+  }
+
+  // Al llegar por abremenu.com/<slug>/privacidad: el historial queda como si hubiera abierto el aviso desde el menú, así
+  // «atrás» (o la X) lo cierra y deja el menú en abremenu.com/<slug>.
+  function abrirAvisoAlLlegar() {
+    history.replaceState(null, '', `/${camino[0]}${location.search}`);
+    history.pushState({ menuEncima: true }, '', `/${camino[0]}/privacidad${location.search}`);
+    pila.push({ tipo: 'aviso', desde: null });
   }
 
   // Mientras llega el «atrás» que la cierra, un segundo toque en la X o en el velo no hace nada: si
@@ -383,9 +407,12 @@
     if (p) abrir({ tipo: 'producto', producto: p, editando: i, desde });
   }
 
-  // «Tu pedido»: lo que escribe, recordado en este celular para la próxima vez (en la vista previa, las cajas vacías).
-  const recordadoCliente = muestra ? { nombre: '', telefono: '', direccion: '', referencias: '' } : leerCliente();
-  let cliente = $state({ ...recordadoCliente, pagaCon: '' });
+  // «Tu pedido»: lo que escribe, recordado en este celular para la próxima vez, solo para este menú (en la vista previa,
+  // las cajas vacías). `datosGuardados` es lo que enseña «Tus datos»: lo guardado, no lo que va escribiendo.
+  const SIN_CLIENTE: Cliente = { nombre: '', telefono: '', direccion: '', referencias: '' };
+  let datosGuardados = $state<Cliente>(muestra ? SIN_CLIENTE : leerCliente(slug));
+  // svelte-ignore state_referenced_locally
+  let cliente = $state({ ...datosGuardados, pagaCon: '' });
   let tipo = $state<Tipo>('para_llevar');
   let avisoPedido = $state<{ titulo?: string; texto: string } | null>(null);
   let limite = $state(false);
@@ -453,7 +480,8 @@
         },
         t.noSeMando,
       );
-      guardarCliente({ nombre: cliente.nombre.trim(), telefono: cliente.telefono, direccion: cliente.direccion, referencias: cliente.referencias });
+      datosGuardados = { nombre: cliente.nombre.trim(), telefono: cliente.telefono, direccion: cliente.direccion, referencias: cliente.referencias };
+      guardarCliente(slug, datosGuardados);
       if (respuesta.ok) {
         // Primero se apunta en el celular (por si el navegador cambia de página al abrir WhatsApp) y
         // enseguida, sin esperar nada más, se abre WhatsApp: Safari solo lo deja cerca del toque. Si no
@@ -497,6 +525,18 @@
     } finally {
       ocupado = false;
     }
+  }
+
+  // «Borrar mis datos» de «Tus datos»: lo de todos los menús de este celular (lib/pedido.ts) y lo que se ve aquí: Tu
+  // pedido sin sus datos (el carrito se queda), sin «Pedido enviado» y la plática del asistente vacía. En la vista previa
+  // no se toca el navegador: es el de Don Chuy.
+  function borrarDatos(): boolean {
+    if (!muestra && !borrarMisDatos()) return false;
+    datosGuardados = SIN_CLIENTE;
+    cliente = { ...SIN_CLIENTE, pagaCon: '' };
+    hecho = null;
+    platica.olvidar();
+    return true;
   }
 
   function alEnviar() {
@@ -834,7 +874,7 @@
     {@const estadoBarra = textoEstado(menu.estado, lengua)}
     {@const abiertoBarra = !!menu.estado?.abierto}
     <!-- La barra del menú; la del asistente es la misma, y su lupa regresa al menú para buscar ahí. -->
-    {#snippet barra(enVista: boolean)}
+    {#snippet barra(enVista: boolean, enPedido = false)}
       <Barra
         nombre={r.nombre}
         logo={r.logo_ruta}
@@ -854,9 +894,11 @@
         alInfo={(desde) => abrir({ tipo: 'info', desde })}
         alLupa={enVista ? buscarDesdeVista : alLupa}
         alAjustes={() => abrir({ tipo: 'ajustes' })}
+        alDatos={enPedido ? (desde) => abrir({ tipo: 'datos', desde }) : undefined}
       />
     {/snippet}
     {#snippet barraDeVista()}{@render barra(true)}{/snippet}
+    {#snippet barraDePedido()}{@render barra(true, true)}{/snippet}
     <div
       class="columna"
       class:f-con-app={pestanas.length > 0}
@@ -1015,7 +1057,7 @@
         {moneda}
         {formas}
         {t}
-        barra={barraDeVista}
+        barra={barraDePedido}
         cerrado={avisoPedidos}
         conAsistente={pestanas.includes('asistente')}
         haceEnvios={r.hace_envios}
@@ -1035,6 +1077,8 @@
         {alEnviar}
         alMenu={() => alPestana('menu')}
         alAsistente={() => alPestana('asistente')}
+        nombre={r.nombre}
+        alAviso={(desde) => abrir({ tipo: 'aviso', desde })}
       />
     {/if}
 
@@ -1062,6 +1106,27 @@
     {#if encima?.tipo === 'ajustes'}
       <Ajustes {lengua} {moneda} {conDolares} {t} alLengua={elegirLengua} alMoneda={elegirMoneda} alCerrar={cerrar} />
     {/if}
+    <!-- «Tus datos» se queda debajo mientras el aviso está abierto encima (se abrió desde ella). -->
+    {#each pila.filter((e) => e.tipo === 'datos') as abierta (abierta)}
+      <VentanaDatos
+        nombre={r.nombre}
+        recordado={datosGuardados}
+        {t}
+        desde={abierta.desde}
+        alAviso={(desde) => abrir({ tipo: 'aviso', desde })}
+        alBorrar={borrarDatos}
+        alCerrar={cerrar}
+      />
+    {/each}
+    {#each pila.filter((e) => e.tipo === 'aviso') as abierto (abierto)}
+      <VentanaAviso
+        datos={{ nombre: r.nombre, nombreLegal: r.nombre_legal ?? null, direccion: r.direccion, whatsapp: r.telefono }}
+        {lengua}
+        {t}
+        desde={abierto.desde}
+        alCerrar={cerrar}
+      />
+    {/each}
 
     {#if globo}
       <div

@@ -56,6 +56,9 @@ export type Dia = { dia: number; abre: string; cierra: string };
 export type MenuPublico = {
   restaurante: {
     nombre: string;
+    // El nombre legal del dueño o su razón social (migración datos_de_clientes): el aviso de privacidad lo nombra como
+    // responsable; null = solo el nombre comercial.
+    nombre_legal: string | null;
     telefono: string | null;
     direccion: string | null;
     logo_ruta: string | null;

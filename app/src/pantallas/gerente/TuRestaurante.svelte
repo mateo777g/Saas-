@@ -50,6 +50,9 @@
   let errorLectura = $state<string | null>(null);
 
   let nombre = $state('');
+  let nombreLegal = $state('');
+  const PISTA_LEGAL =
+    'El nombre del dueño o de su empresa, como en el SAT. El aviso de privacidad de tu menú lo nombra como responsable de los datos de tus clientes.';
   let telefono = $state('');
   let direccion = $state('');
   let logo = $state<string | null>(null);
@@ -92,6 +95,7 @@
   function poner(r: Restaurante) {
     guardado = r;
     nombre = r.nombre;
+    nombreLegal = r.nombre_legal ?? '';
     telefono = conEspacios(r.telefono);
     direccion = r.direccion ?? '';
     logo = r.logo_ruta;
@@ -146,6 +150,7 @@
     return (
       [
         nombre.trim() !== guardado.nombre,
+        nombreLegal.trim() !== (guardado.nombre_legal ?? ''),
         soloDigitos(telefono) !== (guardado.telefono ?? ''),
         direccion.trim() !== (guardado.direccion ?? ''),
         logo !== guardado.logo_ruta || !!archivo,
@@ -155,7 +160,7 @@
 
   // Un cambio nuevo quita el error del guardado anterior (como en «Tu menú en línea»).
   $effect(() => {
-    void [nombre, telefono, direccion, logo, archivo, JSON.stringify(dias)];
+    void [nombre, nombreLegal, telefono, direccion, logo, archivo, JSON.stringify(dias)];
     errorGuardar = null;
     telefonoMal = false;
   });
@@ -216,6 +221,7 @@
       paso = 'guardando';
       anterior = await guardarRestaurante(sucursal.id, {
         nombre: nombre.trim(),
+        nombre_legal: nombreLegal.trim(),
         telefono: soloDigitos(telefono),
         direccion: direccion.trim(),
         logo_ruta: rutaNueva ?? logo,
@@ -336,8 +342,19 @@
         <GrupoCampos>
           {#if cargando}
             {@render campoEsqueleto('NOMBRE DEL RESTAURANTE')}
+            {@render campoEsqueleto('NOMBRE LEGAL O RAZÓN SOCIAL', PISTA_LEGAL)}
           {:else}
             <Campo id="restaurante-nombre" etiqueta="NOMBRE DEL RESTAURANTE" bind:valor={nombre} largoMaximo={60} />
+            <!-- Los datos de los clientes (21 nov 2026; maqueta Qvn42kQsyRX3m9vscikYfB): el aviso de privacidad del menú lo
+                 nombra como responsable. Opcional. -->
+            <Campo
+              id="restaurante-nombre-legal"
+              etiqueta="NOMBRE LEGAL O RAZÓN SOCIAL"
+              placeholder="Ej. Jesús Pérez López (opcional)"
+              pista={PISTA_LEGAL}
+              bind:valor={nombreLegal}
+              largoMaximo={120}
+            />
           {/if}
         </GrupoCampos>
       </Tarjeta>

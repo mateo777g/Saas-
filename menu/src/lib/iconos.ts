@@ -24,6 +24,11 @@ const PROPIOS: Record<string, string> = {
   asistente: '<path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8L12 3Z"></path><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8L19 15Z"></path>',
   // Mandar del asistente (la flecha hacia arriba de la maqueta, como el Agente IA).
   sube: '<path d="M12 19V5"></path><path d="m5 12 7-7 7 7"></path>',
+  // Los datos de los clientes (maqueta Qvn42kQsyRX3m9vscikYfB): la personita de «Tus datos», el bote de «Borrar mis datos»
+  // y la flechita de «Aviso de privacidad».
+  persona: '<circle cx="12" cy="8" r="4.2"></circle><path d="M4.5 20.5a7.5 7.5 0 0 1 15 0"></path>',
+  bote: '<path d="M3 6h18"></path><path d="M8 6V4h8v2"></path><path d="M19 6l-1 14H6L5 6"></path><path d="M10 11v5"></path><path d="M14 11v5"></path>',
+  flechita: '<path d="m9 6 6 6-6 6"></path>',
 };
 
 // Los íconos de los cuatro órdenes, en el orden de TEXTOS.ordenes.

@@ -41,13 +41,14 @@ export function centavos(n: number): number {
 }
 
 // ─── En el celular ───
-// Cada restaurante su carrito; el nombre, el teléfono y la dirección sirven para cualquiera. Si el
-// navegador no deja guardar, todo funciona igual y se olvida al cerrar la pestaña. La plática del
-// asistente (lib/asistente.svelte.ts) se guarda igual.
+// Cada restaurante su carrito y, desde el 21 nov 2026, también sus datos (el nombre, el teléfono y la dirección: los
+// datos de los clientes, encuesta 8b): lo que la señora Ramírez escribió en La Fonda sale solo en La Fonda. Si el
+// navegador no deja guardar, todo funciona igual y se olvida al cerrar la pestaña. La plática del asistente
+// (lib/asistente.svelte.ts) se guarda igual.
 const DOCE_HORAS = 12 * 60 * 60 * 1000;
 const llaveCarrito = (slug: string) => `pidemenu-pedido-${slug}`;
 const llaveHecho = (slug: string) => `pidemenu-hecho-${slug}`;
-const LLAVE_CLIENTE = 'pidemenu-cliente';
+const llaveCliente = (slug: string) => `pidemenu-cliente-${slug}`;
 const LLAVE_MARCA = 'pidemenu-marca';
 
 export function leer<T>(llave: string): T | null {
@@ -83,14 +84,38 @@ export function guardarCarrito(slug: string, renglones: EnCarrito[]) {
 
 export type Cliente = { nombre: string; telefono: string; direccion: string; referencias: string };
 
-export function leerCliente(): Cliente {
-  const c = leer<Partial<Cliente>>(LLAVE_CLIENTE) ?? {};
+// El `pidemenu-cliente` de antes (uno para todos los menús) ya no se lee ni se copia a ningún menú: traería la misma
+// sorpresa («¿cómo me tienen?»). Lo borra «Borrar mis datos».
+export function leerCliente(slug: string): Cliente {
+  const c = leer<Partial<Cliente>>(llaveCliente(slug)) ?? {};
   const s = (x: unknown) => (typeof x === 'string' ? x : '');
   return { nombre: s(c.nombre), telefono: s(c.telefono), direccion: s(c.direccion), referencias: s(c.referencias) };
 }
 
-export function guardarCliente(c: Cliente) {
-  escribir(LLAVE_CLIENTE, c);
+export function guardarCliente(slug: string, c: Cliente) {
+  escribir(llaveCliente(slug), c);
+}
+
+export const sinDatos = (c: Cliente) => !c.nombre.trim() && !c.telefono.trim() && !c.direccion.trim() && !c.referencias.trim();
+
+// «Borrar mis datos» (encuesta 8 y «Lo que decidí yo» 8): de todos los menús de este celular, sus datos (y el
+// `pidemenu-cliente` de antes, compartido), el último «Pedido enviado» (lleva sus datos) y las pláticas con el asistente
+// con su pase. Se quedan el carrito, el idioma y la moneda, el esqueleto y la marca del celular (es al azar y sirve para
+// los límites). Regresa si pudo: un navegador que no deja tocar lo guardado lo dice en la consola.
+const LO_SUYO = /^pidemenu-(cliente(-.+)?|hecho-.+|platica-.+|pase-.+)$/;
+export function borrarMisDatos(): boolean {
+  try {
+    const llaves: string[] = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (k && LO_SUYO.test(k)) llaves.push(k);
+    }
+    llaves.forEach((k) => localStorage.removeItem(k));
+    return true;
+  } catch (error) {
+    console.error('[menu] no se pudieron borrar los datos de este celular:', error);
+    return false;
+  }
 }
 
 // La marca del celular: 32 bytes al azar, para contar 3 pedidos por hora. El Worker la mezcla antes

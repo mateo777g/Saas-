@@ -9,6 +9,8 @@
   Cambia cómo se ve, no cómo se manda (planes/trabajo/pedir-por-whatsapp/pedido.md): el toque único, la revisión de
   Cloudflare por adelantado en su hueco y «Falta un paso» de respaldo siguen como antes, en Menu.svelte. El CSS es el de
   la maqueta, en formas.css.
+  Arriba de «Pedir por WhatsApp», el aviso corto de privacidad (los datos de los clientes, 21 nov 2026; maqueta
+  Qvn42kQsyRX3m9vscikYfB): quién, qué datos y para qué, y la liga que abre el aviso completo. No sale en «Pedido enviado».
 -->
 <script lang="ts">
   import type { Snippet } from 'svelte';
@@ -49,6 +51,8 @@
     alEnviar,
     alMenu,
     alAsistente,
+    nombre,
+    alAviso,
     deMuestra = false,
   }: {
     renglones: EnCarrito[];
@@ -79,6 +83,9 @@
     alEnviar: () => void;
     alMenu: () => void;
     alAsistente: () => void;
+    // El nombre del restaurante, para el aviso corto; su liga abre el aviso de privacidad, que crece desde ella.
+    nombre: string;
+    alAviso: (desde: HTMLElement) => void;
     // La vista previa del panel (parte C2): el pedido no existe, así que «Abrir WhatsApp otra vez» no abre nada.
     deMuestra?: boolean;
   } = $props();
@@ -503,6 +510,9 @@
           </span>
         </div>
       {/if}
+      <p class="dc-corto">
+        {t.corto(nombre, dom)}<button type="button" class="dc-liga" onclick={(e) => alAviso(e.currentTarget)}>{t.cortoLiga}</button>.
+      </p>
       <button type="button" class="f-ped-boton" aria-disabled={apagado} aria-busy={ocupado} onclick={alBoton} bind:this={boton}>
         {#if ocupado}
           <span class="f-ped-puntos" aria-hidden="true"><i></i><i></i><i></i></span><span>{t.mandando}</span>

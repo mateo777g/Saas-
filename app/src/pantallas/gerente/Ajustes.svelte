@@ -17,6 +17,10 @@
     la cuenta para elegir, o los 3 pasos para ligar una; si la ligada ya no está en la cuenta, lo dice y pide otra.
     Desde la franja de Inicio y al regresar de Mercado Pago, llega abierta (`abrirMercadoPago`, `regreso`).
 
+  · Datos de tus clientes (21 nov 2026; maqueta Qvn42kQsyRX3m9vscikYfB; planes/trabajo/datos-de-clientes/): la copia de la
+    de Mercado Pago, de la sucursal. Qué pide el menú y cuándo se borra, «Ver el aviso de privacidad» (el aviso del menú
+    de esta sucursal, en otra pestaña) y «Borrar los datos de un cliente» (ajustes/VentanaBorrarDatos.svelte).
+
   La hora de corte ya no va aquí: se fue a Cortes y reportes (encuesta del 12 nov 2026).
 -->
 <script lang="ts">
@@ -45,6 +49,8 @@
   import { nombrePoint } from '../../lib/terminal.svelte';
   import { vidrio } from '../../diseno/vidrio';
   import { cambiarTema, temaActual } from '../../lib/tema';
+  import { linkDelAviso } from '../../lib/vistaMenu';
+  import VentanaBorrarDatos from './ajustes/VentanaBorrarDatos.svelte';
   import VentanaContrasena from './ajustes/VentanaContrasena.svelte';
 
   let {
@@ -65,6 +71,8 @@
   // svelte-ignore state_referenced_locally
   let mercadoPago = $state(abrirMercadoPago);
   let caja = $state<HTMLElement | null>(null);
+  let datosClientes = $state(false);
+  let borrarCliente = $state(false);
 
   const NOMBRE: Record<Estilo, string> = { simple: 'Simple', cristal: 'Cristal' };
   const PISTA: Record<Estilo, string> = {
@@ -407,6 +415,32 @@
           alCerrar={() => (contrasena = null)}
         />
       {/if}
+
+      <Cajita icono="usuarios" titulo="Datos de tus clientes" nota="De esta sucursal: {sucursal.nombre}." bind:abierta={datosClientes}>
+        {#snippet resumen()}<span class="resumen-texto">Se borran a los 90 días</span>{/snippet}
+        <div class="mp">
+          <p class="texto">
+            Tu menú les pide a tus clientes su nombre, su teléfono y, a domicilio, su dirección, solo para su pedido. El teléfono
+            y la dirección se borran solos a los 90 días (a los 7 si no confirmaste el pedido); el pedido, el nombre y el total se
+            quedan en tus cortes.
+          </p>
+          <div class="acciones envuelve">
+            <Boton
+              etiqueta="Ver el aviso de privacidad"
+              icono="afuera"
+              onclick={() => sucursal && window.open(linkDelAviso(sucursal.slug), '_blank', 'noopener')}
+            />
+            <Boton etiqueta="Borrar los datos de un cliente" icono="eliminar" tono="peligro" onclick={() => (borrarCliente = true)} />
+          </div>
+          <p class="pista">
+            Si un cliente te pide borrar sus datos, que te escriba por WhatsApp desde ese número: así sabes que es suyo. Contéstale
+            en menos de 20 días hábiles.
+          </p>
+        </div>
+      </Cajita>
+      {#if borrarCliente}
+        <VentanaBorrarDatos restauranteId={sucursal.id} sucursal={sucursal.nombre} alCerrar={() => (borrarCliente = false)} />
+      {/if}
     {/if}
   </div>
 </div>
@@ -703,6 +737,16 @@
   .acciones {
     display: flex;
     gap: 10px;
+  }
+
+  /* Datos de tus clientes: sus dos botones bajan de renglón si no caben. */
+  .acciones.envuelve {
+    flex-wrap: wrap;
+  }
+
+  .resumen-texto {
+    font: 500 13px var(--jakarta);
+    color: var(--suave);
   }
 
   .aviso {

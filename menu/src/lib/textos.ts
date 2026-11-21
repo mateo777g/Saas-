@@ -149,6 +149,22 @@ export const TEXTOS = {
     limiteWa: ' Si quieres saber algo más, escríbele al restaurante por WhatsApp.',
     limiteTarde: ' Inténtalo más tarde.',
     noContesto: 'No pude contestar. Vuelve a intentarlo.',
+    // Los datos de los clientes (21 nov 2026; maqueta Qvn42kQsyRX3m9vscikYfB; planes/trabajo/datos-de-clientes/): el aviso
+    // corto arriba de «Pedir por WhatsApp», «Tus datos» y el aviso de privacidad (su texto, en lib/aviso.ts).
+    corto: (n: string, dom: boolean) =>
+      `${n} usa tu nombre${dom ? ', tu teléfono y tu dirección' : ' y tu teléfono'} solo para tu pedido. Al pedir aceptas su `,
+    cortoLiga: 'aviso de privacidad',
+    datosTexto: (n: string) => `Lo que este celular recuerda para pedir en ${n}. Solo tú lo ves.`,
+    datoNombre: 'Nombre',
+    avisoPrivacidad: 'Aviso de privacidad',
+    borrarMisDatos: 'Borrar mis datos',
+    borrarPregunta: '¿Borrar tus datos de este celular?',
+    borrarPreguntaTexto:
+      'Se borran tu nombre, tu teléfono y tu dirección de todos los menús de este celular, tus pedidos enviados y tus pláticas con el asistente. Tu pedido sin mandar se queda.',
+    cancelar: 'Cancelar',
+    siBorrar: 'Sí, borrar',
+    borradoTexto: 'Este celular ya no recuerda tus datos.',
+    sinDatos: 'Este celular todavía no recuerda tus datos: se guardan cuando haces un pedido.',
   },
   en: {
     buscar: 'Search the menu',
@@ -284,6 +300,20 @@ export const TEXTOS = {
     limiteWa: " If you'd like to know more, message the restaurant on WhatsApp.",
     limiteTarde: ' Please try again later.',
     noContesto: "I couldn't answer. Please try again.",
+    corto: (n: string, dom: boolean) =>
+      `${n} uses your name${dom ? ', phone number and address' : ' and phone number'} only for your order. By ordering you accept its `,
+    cortoLiga: 'privacy notice',
+    datosTexto: (n: string) => `What this phone remembers for ordering at ${n}. Only you can see it.`,
+    datoNombre: 'Name',
+    avisoPrivacidad: 'Privacy notice',
+    borrarMisDatos: 'Delete my data',
+    borrarPregunta: 'Delete your data from this phone?',
+    borrarPreguntaTexto:
+      'Your name, phone number and address are deleted from every menu on this phone, along with your sent orders and your chats with the assistant. Your unsent order stays.',
+    cancelar: 'Cancel',
+    siBorrar: 'Yes, delete',
+    borradoTexto: 'This phone no longer remembers your details.',
+    sinDatos: "This phone doesn't remember your details yet: they're saved when you place an order.",
   },
 } as const;
 

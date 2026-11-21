@@ -13,6 +13,11 @@
   - El logo grande al centro, con la lupa a la izquierda (la búsqueda sale abajo de los carteles) y el
     engrane a la derecha, que abre Ajustes con el idioma y la moneda. Sin carteles, la «i» va junto a la
     lupa y si está abierto debajo del engrane.
+
+  En la vista Pedido (con `alDatos`; los datos de los clientes, 21 nov 2026, maqueta Qvn42kQsyRX3m9vscikYfB v3) va el
+  ícono de persona, «Tus datos». Con el logo a la izquierda va solo, al final del renglón del nombre, y ahí no salen el
+  idioma ni la moneda en ninguna forma (la regla del developer, v2); con el logo al centro va junto al engrane, que se
+  queda (v3: «sí cabe»; ahí también cabrá la tarjeta de la parte B).
 -->
 <script lang="ts">
   import { urlImagen } from '../lib/datos';
@@ -42,6 +47,7 @@
     alInfo,
     alLupa,
     alAjustes,
+    alDatos,
   }: {
     nombre: string;
     logo: string | null;
@@ -64,6 +70,8 @@
     alInfo: (desde: HTMLElement) => void;
     alLupa?: () => void;
     alAjustes?: () => void;
+    // Solo en la vista Pedido: el ícono de persona abre «Tus datos», que crece desde él.
+    alDatos?: (desde: HTMLElement) => void;
   } = $props();
 
   const centro = $derived(formas.barra === 'centro');
@@ -85,6 +93,12 @@
   <button type="button" class="redondo" aria-label={t.info} onclick={(e) => alInfo(e.currentTarget)}><Icono nombre="info" tamano={19} /></button>
 {/snippet}
 
+{#snippet persona(forma: string)}
+  <button type="button" class="{forma} dc-persona" aria-label={t.tusDatos} aria-haspopup="dialog" onclick={(e) => alDatos?.(e.currentTarget)}
+    ><Icono nombre="persona" tamano={20} grosor={1.9} /></button
+  >
+{/snippet}
+
 <header class="barra" class:f-centro={centro} class:f-sin-nombre={sinNombre} style:padding-top={arriba}>
   {#if centro}
     <div class="f-izq">
@@ -99,9 +113,16 @@
       {#if logo}<span class="logo"><img src={urlImagen(logo)} alt="" /></span>{/if}
     </div>
     <div class="f-der">
-      <button type="button" class="f-engrane" aria-label={t.ajustes} aria-haspopup="dialog" aria-expanded={ajustesAbierto} onclick={alAjustes}
-        ><Icono nombre="ajustes" tamano={21} /></button
-      >
+      {#snippet engrane()}
+        <button type="button" class="f-engrane" aria-label={t.ajustes} aria-haspopup="dialog" aria-expanded={ajustesAbierto} onclick={alAjustes}
+          ><Icono nombre="ajustes" tamano={21} /></button
+        >
+      {/snippet}
+      {#if alDatos}
+        <div class="dc-der-fila">{@render persona('f-engrane')}{@render engrane()}</div>
+      {:else}
+        {@render engrane()}
+      {/if}
       {#if !conCarteles && estado}
         <span class="abierto" class:cerrado={!abierto}><i></i>{estadoUno}{#if estadoDos}<span class="f-segundo">{estadoDos}</span>{/if}</span>
       {/if}
@@ -114,7 +135,16 @@
       {/if}
       <h1 class="nombre">{nombre}</h1>
       {#if !conCarteles}{@render info()}{/if}
+      {#if alDatos}{@render persona('redondo')}{/if}
     </div>
+    {#if alDatos}
+      <!-- En la vista Pedido, sin el idioma ni la moneda: solo si está abierto, cuando no hay carteles que lo digan. -->
+      {#if !conCarteles && estado}
+        <div class="fila2">
+          <span class="abierto" class:cerrado={!abierto}><i></i>{estado}</span>
+        </div>
+      {/if}
+    {:else}
     <div class="fila2" class:f-sin-abierto={conCarteles}>
       {#if !conCarteles}
         <span class="abierto" class:cerrado={!abierto}>
@@ -164,6 +194,7 @@
         {/if}
       {/if}
     </div>
+    {/if}
   {/if}
 </header>
 

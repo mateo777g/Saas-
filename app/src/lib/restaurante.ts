@@ -12,6 +12,9 @@ export type Horario = { dia: number; abre: string; cierra: string };
 
 export type Restaurante = {
   nombre: string;
+  // «Nombre legal o razón social» (datos de los clientes, 21 nov 2026): el aviso de privacidad del menú lo nombra
+  // como responsable; null = no lo ha puesto.
+  nombre_legal: string | null;
   slug: string;
   telefono: string | null;
   direccion: string | null;
@@ -35,7 +38,7 @@ export async function leerRestaurante(restauranteId: string): Promise<Restaurant
   const [fila, dias] = await Promise.all([
     supabase
       .from('restaurantes')
-      .select('nombre, slug, telefono, direccion, logo_ruta, menu_tema, menu_color, hace_envios')
+      .select('nombre, nombre_legal, slug, telefono, direccion, logo_ruta, menu_tema, menu_color, hace_envios')
       .eq('id', restauranteId)
       .single(),
     supabase.from('horarios').select('dia, abre, cierra').eq('restaurante_id', restauranteId).order('dia'),
@@ -65,6 +68,8 @@ export type DatosRestaurante = {
   horario: Horario[];
   // «Hago envíos»: desde el 14 nov 2026 lo cambia Pedidos, no Tu restaurante. Sin él, se queda como estaba.
   hace_envios?: boolean;
+  // El nombre legal: sin él se queda como estaba (Pedidos no lo manda); en blanco se quita.
+  nombre_legal?: string;
 };
 
 // Los datos y el horario juntos (guardar_restaurante), y «Hago envíos» si se manda. Regresa la ruta del logo
@@ -78,6 +83,7 @@ export async function guardarRestaurante(restauranteId: string, datos: DatosRest
     p_logo_ruta: datos.logo_ruta,
     p_horario: datos.horario,
     p_hace_envios: datos.hace_envios ?? null,
+    p_nombre_legal: datos.nombre_legal ?? null,
   });
   if (error) throw fallo('guardar_restaurante no se pudo', error);
   return (data as string | null) ?? null;

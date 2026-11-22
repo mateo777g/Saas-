@@ -2,8 +2,9 @@
 // gigante del nombre del producto (la escoge el paso de texto: «PASTOR»); el producto de Don Chuy grande,
 // flotando sobre una franja de cuadros azules y crema; abajo, un recuadro con su mensaje (vacío, el horario
 // de «Tu restaurante»; sin horario, no sale) y hasta abajo el teléfono (sin teléfono, no sale). Su color
-// pinta la palabra gigante, los cuadros y el recuadro; el crema se queda.
-import { AUTENTICO, comoEs, fotografia, legibleSobre, lienzo, luzCalida, mayus, nombreDelColor, pintar, QUE_ES, SOLO_LOS_SUYOS } from './comun';
+// pinta tal cual (no conserva la luz de la referencia) la palabra gigante, los cuadros y el recuadro; el
+// crema se queda.
+import { AUTENTICO, comoEs, fotografia, legibleSobre, lienzo, luzCalida, mayus, nombreDelColor, QUE_ES, SOLO_LOS_SUYOS } from './comun';
 import type { Anuncio, Estilo } from './comun';
 
 // Los de la referencia, sacados con Pillow.
@@ -43,10 +44,10 @@ function prompt(a: Anuncio): string {
   const pieza = cartel ? 'banner' : 'poster';
   const p = a.productos[0];
   const color = a.color;
-  const t = pintar(color, TONOS);
-  // Un solo tono para la palabra, los cuadros y el recuadro, como el azul de la muestra; si la marca es
-  // tan clara que no se lee sobre el crema, se oscurece.
-  const azul = color ? legibleSobre(t.azul, CREMA) : t.azul;
+  // Un solo tono para la palabra, los cuadros y el recuadro, como el azul de la muestra: el color de la
+  // marca tal cual (el developer, 22 nov 2026, como Diagonal y Mano: es plano, así que no conserva la luz
+  // de la referencia). Si es tan claro que no se lee sobre el crema, se oscurece con su mismo matiz.
+  const azul = color ? legibleSobre(color, CREMA) : TONOS.azul;
   const nombreAzul = color ? nombreDelColor(color) : 'blue';
   const palabra = a.palabras.gigante;
   const marca = a.restaurante.nombre;

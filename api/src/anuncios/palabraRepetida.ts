@@ -86,6 +86,11 @@ function prompt(a: Anuncio): string {
     ...AUTENTICO,
     SOLO_LOS_SUYOS,
     'Show the product from a steep high angle, about 60 degrees above, so its top and its filling are the main thing the viewer sees.',
+    // Con su foto, el modelo copiaba el ángulo de la foto (la hamburguesa de lado) aunque aquí se pide otro: la foto
+    // solo dice qué es el producto (el developer, 22 nov 2026).
+    ...(p.referencia !== null
+      ? ["This product's reference image only shows what it is: its ingredients, colors, and shape. Photograph it again from this ad's camera angle, about 60 degrees above: do not copy the camera angle, the framing, or the background of its reference image."]
+      : []),
     `The product is about ${cartel ? '26% of the banner width' : '45% of the poster width'}, centered.`,
     '5. NATURAL COMMERCIAL FOOD PHOTOGRAPHY',
     'Use believable professional food photography.',

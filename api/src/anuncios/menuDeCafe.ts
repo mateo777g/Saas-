@@ -2,12 +2,17 @@
 // alrededor, hasta 3 productos de Don Chuy, cada uno con su etiqueta: nombre, descripción y precio de Mi
 // menú. Abajo, un renglón de tres palabras, un párrafo (los dos del paso de texto) y el nombre del
 // restaurante. Su mensaje son las palabras gigantes; vacío, las de sus dos primeros productos unidas con
-// «Y» (el paso de texto). Su color pinta el fondo y las letras lo siguen.
-import { AUTENTICO, cap, comoEs, contactoDelCartel, CUANTOS, lienzo, luzCalida, mayus, nombreDelColor, pintar, QUE_ES, SOLO_LOS_SUYOS } from './comun';
+// «Y» (el paso de texto). Su color pinta el fondo y las letras van en su versión fuerte.
+import { AUTENTICO, cap, comoEs, contactoDelCartel, CUANTOS, fuerte, lienzo, luzCalida, mayus, nombreDelColor, pintar, QUE_ES, SOLO_LOS_SUYOS } from './comun';
 import type { Anuncio, Estilo } from './comun';
 
-// Los de la referencia, sacados con Pillow: el fondo (el principal) y las letras.
-const TONOS = { fondo: '#D6D9C5', letras: '#535925' };
+// El de la referencia, sacado con Pillow: el fondo.
+const TONOS = { fondo: '#D6D9C5' };
+// Todas las letras (22 nov 2026, el developer: «salen un poco cafés… como en Desayunos, más vivo»; con el
+// salvia de «La Cafe» el prompt pedía «dark yellow #595725» y midieron #645018): sin color, el verde olivo de
+// Desayunos (el #535925 de la referencia es del mismo amarillo verdoso que salía café); con color, la versión
+// fuerte del color del anuncio sobre su papel (un amarillento se gira al verde olivo).
+const OLIVO = '#3F6212';
 
 // Dónde va cada producto, en el orden de la muestra (el capuchino, la concha de vainilla, la de chocolate),
 // y qué tan grande: con menos productos, los mismos lugares, más grandes.
@@ -62,7 +67,9 @@ function prompt(a: Anuncio): string {
   const color = a.color;
   const t = pintar(color, TONOS);
   const salvia = color ? `pale ${nombreDelColor(color)}` : 'pale sage-gray';
-  const olivo = color ? `dark ${nombreDelColor(color)}` : 'dark olive green';
+  const letra = color ? fuerte(color, t.fondo) : OLIVO;
+  // El nombre sale de la letra, no de la marca: un amarillento ya se giró al verde olivo.
+  const olivo = color ? `deep ${nombreDelColor(letra)}` : 'deep olive green';
   const gigantes = mayus(a.mensaje ?? a.palabras.gigantes);
   const marca = mayus(a.restaurante.nombre);
   const contacto = cartel ? contactoDelCartel(a.restaurante, true) : null;
@@ -122,7 +129,8 @@ function prompt(a: Anuncio): string {
     'Use a tall, condensed, heavy sans-serif, uppercase, tightly spaced, so the lines form one solid block.',
     `Rotate the whole block about ${cartel ? '30' : '50'} degrees clockwise, so it reads from the upper left down toward the lower right, crossing ${cartel ? 'the left part of the banner' : 'the center of the poster'}.`,
     `The block is very large: its length spans most of ${cartel ? 'the left part of the banner' : "the poster's diagonal"}.`,
-    `Text color: ${olivo} ${t.letras}.`,
+    `Text color: ${olivo} ${letra}.`,
+    `All the text in the ${pieza} uses this same rich, saturated ${olivo}, ${letra}: never brownish, muddy, khaki, or grayish.`,
     'The letters are flat and solid: no outline, no shadow, no texture.',
     `${uno ? 'The product sits' : 'The products sit'} on top of the letters where ${uno ? 'it overlaps' : 'they overlap'}, and ${uno ? 'its soft shadow falls' : 'their soft shadows fall'} across them.`,
     `4. THE ${uno ? 'PRODUCT' : 'PRODUCTS'}`,
@@ -148,7 +156,7 @@ function prompt(a: Anuncio): string {
     `Beside ${uno ? 'the product' : 'each product'}, place one small left-aligned label with up to three lines: the name in bold uppercase, a short description in small regular text, and the price.`,
     ...etiquetas,
     'Use a clean, simple sans-serif, small.',
-    `Text color: ${olivo} ${t.letras}.`,
+    `Text color: ${olivo} ${letra}.`,
     `The ${uno ? 'label never overlaps the product' : 'labels never overlap the products'} or the big words.`,
     '7. BOTTOM TEXT',
     `Below the diagonal block, ${cartel ? 'aligned left' : 'centered'}, place one wide-spaced line reading exactly:`,
@@ -160,7 +168,7 @@ function prompt(a: Anuncio): string {
     `${cartel ? 'Below it' : 'At the very bottom'}, the brand name in small, wide-spaced uppercase, reading exactly:`,
     `"${marca}"`,
     ...(contacto ? [`Below it, one smaller line in the same font, reading exactly: ${contacto}`] : []),
-    `Text color for all: ${olivo} ${t.letras}.`,
+    `Text color for all: ${olivo} ${letra}.`,
     'Spell every word exactly as written, with its accents.',
     '8. GRAPHIC HIERARCHY',
     'Maintain this visual order:',

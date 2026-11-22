@@ -1,13 +1,14 @@
 // Estilo 12 · Estrella (estrella.txt): el producto de Don Chuy sobre una estrella grande de puntas
-// redondas, en un fondo durazno. Dentro de la estrella, el nombre del producto chiquito y su mensaje en
+// redondas, en un fondo crema (el de Cuadros; era durazno #FDD8A9 hasta el 22 nov 2026). Dentro de la estrella, el nombre del producto chiquito y su mensaje en
 // grande (vacío, «DEL MERO BUENO.»); arriba, el nombre del restaurante; abajo, las pastillas del teléfono,
 // la dirección y «ORDENA AHORA» (un dato vacío no se manda). Su color pinta la estrella, la marca y las
-// pastillas; el durazno se queda.
+// pastillas; el crema se queda.
 import { AUTENTICO, comoEs, legibleSobre, letraSobre, lienzo, luzCalida, mayus, nombreDelColor, pintar, SOLO_LOS_SUYOS } from './comun';
 import type { Anuncio, Estilo } from './comun';
 
 const TONOS = { rojo: '#B70608' };
-const DURAZNO = '#FDD8A9';
+// El fondo crema de Cuadros (el developer, 22 nov 2026: el durazno se veía naranja).
+const CREMA = '#F6F1DC';
 
 export const estrella: Estilo = {
   clave: 'estrella',
@@ -33,8 +34,8 @@ function prompt(a: Anuncio): string {
   const color = a.color;
   const estrellaTono = pintar(color, TONOS).rojo;
   const rojo = color ? nombreDelColor(color) : 'red';
-  // La marca va en el color sobre el durazno: si salió claro, se oscurece hasta leerse.
-  const marcaTono = color ? legibleSobre(estrellaTono, DURAZNO) : estrellaTono;
+  // La marca va en el color sobre el crema: si salió claro, se oscurece hasta leerse.
+  const marcaTono = color ? legibleSobre(estrellaTono, CREMA) : estrellaTono;
   const enEstrella = letraSobre(estrellaTono);
   const grandes = a.mensaje ? `"${mayus(a.mensaje)}"` : '"DEL MERO\nBUENO."';
   const grandesCorrido = a.mensaje ? mayus(a.mensaje) : 'DEL MERO BUENO.';
@@ -45,7 +46,8 @@ function prompt(a: Anuncio): string {
   const pastillas = [
     ...(r.telefono ? [`deep ${rojo} ${estrellaTono}, with a small simple ${enEstrella} phone-handset icon and the ${enEstrella} text "${r.telefono}"`] : []),
     ...(r.direccion ? [`deep ${rojo} ${estrellaTono}, with a small simple ${enEstrella} map-pin icon and the ${enEstrella} text "${r.direccion}"`] : []),
-    `white #FFFFFF, with the deep ${rojo} text "ORDENA AHORA"`,
+    // Del color de la estrella como las otras dos (el developer, 22 nov 2026): blanca se perdía en el crema.
+    `deep ${rojo} ${estrellaTono}, with the ${enEstrella} text "ORDENA AHORA"`,
   ];
   const lados = pastillas.length === 3 ? ['LEFT PILL', 'CENTER PILL', 'RIGHT PILL'] : pastillas.length === 2 ? ['LEFT PILL', 'RIGHT PILL'] : ['PILL'];
   const cuantas = ['', 'one small rounded pill', 'two small rounded pills', 'three small rounded pills'][pastillas.length];
@@ -75,14 +77,14 @@ function prompt(a: Anuncio): string {
   const secciones = [
     `STYLE_15 — ${rojo.toUpperCase()} STARBURST`,
     'Bold Graphic Fast-Food Advertising — Product Badge Campaign',
-    `Create a professionally designed ${cartel ? 'horizontal 16:9 menu banner' : a.formato === 'historia' ? 'vertical 9:16 Instagram story' : 'vertical 4:5 Instagram'} food advertisement featuring one product, "${p.nombre}", in front of a large deep-${rojo} starburst badge with rounded points, on a soft peach background, with a bold ${enEstrella} headline inside the badge, the brand name at the top, and a row of information pills at the bottom.`,
+    `Create a professionally designed ${cartel ? 'horizontal 16:9 menu banner' : a.formato === 'historia' ? 'vertical 9:16 Instagram story' : 'vertical 4:5 Instagram'} food advertisement featuring one product, "${p.nombre}", in front of a large deep-${rojo} starburst badge with rounded points, on a warm cream background, with a bold ${enEstrella} headline inside the badge, the brand name at the top, and a row of information pills at the bottom.`,
     'THIS IS A BOLD, CLEAN GRAPHIC DESIGN: flat colors, one big badge shape, and one real photographed product placed on the design.',
     'Prioritize authentic food photography and physically believable food over exaggerated or artificial-looking styling.',
     '1. CANVAS AND COMPOSITION',
     ...zonas,
     'The composition must feel bold, centered, balanced, and clearly designed.',
     '2. BACKGROUND',
-    `Use one flat, solid, soft peach background, approximately ${DURAZNO}, covering the whole canvas.`,
+    `Use one flat, solid, warm cream background, approximately ${CREMA}, covering the whole canvas.`,
     'No gradient.',
     'No texture.',
     'No pattern.',
@@ -113,8 +115,8 @@ function prompt(a: Anuncio): string {
     SOLO_LOS_SUYOS,
     'Show the product from a slightly elevated three-quarter front view, about 25 degrees above, so its top and filling are clearly visible.',
     cartel
-      ? 'The product is large: about 30% of the banner width, in the right part of the badge, between roughly 25% and 85% of the banner height, with its right edge slightly overlapping the edge of the badge onto the peach background.'
-      : 'The product is large: about 60% of the poster width, centered in the lower part of the badge, between roughly 48% and 80% of the poster height, with its lower edge slightly overlapping the bottom edge of the badge onto the peach background.',
+      ? 'The product is large: about 30% of the banner width, in the right part of the badge, between roughly 25% and 85% of the banner height, with its right edge slightly overlapping the edge of the badge onto the cream background.'
+      : 'The product is large: about 60% of the poster width, centered in the lower part of the badge, between roughly 48% and 80% of the poster height, with its lower edge slightly overlapping the bottom edge of the badge onto the cream background.',
     'The whole product is visible: the badge never cuts or hides any part of it.',
     '6. NATURAL COMMERCIAL FOOD PHOTOGRAPHY',
     'Use believable professional food photography.',
@@ -152,7 +154,7 @@ function prompt(a: Anuncio): string {
     'Do not use script fonts, distressed lettering, outlines, or 3D text.',
     'Do not make the food look like a 3D render.',
     '11. FINAL PRIORITY',
-    `One authentic product, large, over the ${cartel ? 'right' : 'lower'} part of a big flat deep-${rojo} starburst badge with rounded points, on a flat soft-peach background.`,
+    `One authentic product, large, over the ${cartel ? 'right' : 'lower'} part of a big flat deep-${rojo} starburst badge with rounded points, on a flat warm cream background.`,
     `A bold ${enEstrella} headline inside the badge: "${nombre}" and "${grandesCorrido}", the deep-${rojo} brand name at the top, and a tidy row of information pills at the bottom.`,
     'Bold, clean, friendly, premium fast-food graphic advertising.',
     'AUTHENTIC MEXICAN FOOD.',

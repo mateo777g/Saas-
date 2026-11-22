@@ -1,10 +1,11 @@
 // Estilo 10 · Desayunos (cafeteria.txt): un titular de letra de cafetería (palabras grandes en
 // manuscrita y chiquitas en mayúsculas condensadas) sobre el producto de Don Chuy en su plato largo y un
-// capuchino que rellena, en un fondo crema a verde salvia. Lleva 1 o 2 productos; una bebida toma el lugar
-// del capuchino. El titular es su mensaje tal cual (la IA de la imagen escoge qué palabras van grandes, sin
+// capuchino que rellena, en un fondo crema a verde salvia. Lleva de 1 a 3 productos (hasta 2 desde el 22 nov
+// 2026, por el developer): una bebida suya es el único vaso y lo demás va en el plato; el capuchino solo sale
+// si ninguno es bebida (el modelo ponía los dos). El titular es su mensaje tal cual (la IA de la imagen escoge qué palabras van grandes, sin
 // cambiar ninguna); vacío, «EL Café SABE MEJOR EN BUENA compañía». Su color pinta el fondo, el recuadro y
 // las letras, con su misma luz.
-import { AUTENTICO, comoEs, contactoDelCartel, lienzo, luzCalida, mayus, nombreDelColor, pintar } from './comun';
+import { AUTENTICO, comoEs, contactoDelCartel, fuerte, lienzo, luzCalida, mayus, nombreDelColor, pintar } from './comun';
 import type { Anuncio, Estilo } from './comun';
 
 // El salvia primero: con él se mide la saturación de la marca.
@@ -13,13 +14,15 @@ const TONOS = {
   crema: '#F4F3E9',
   cremaMedio: '#E7E2C9',
   salviaHondo: '#BFBE77',
-  olivo: '#2B3900',
 };
 const CREMA_LETRA = '#F4F3E9';
+// Las letras, el recuadro y el sello (22 nov 2026, el developer): sin color, un verde olivo de verdad (el
+// #2B3900 de la referencia salía café, #4F4507); con color, la versión fuerte del color del anuncio.
+const OLIVO = '#3F6212';
 
 export const desayunos: Estilo = {
   clave: 'desayunos',
-  maximo: 2,
+  maximo: 3,
   minimo: 1,
   mensaje: 40,
   mayusculas: false,
@@ -37,13 +40,15 @@ function prompt(a: Anuncio): string {
   const color = a.color;
   const t = pintar(color, TONOS);
   const salvia = color ? nombreDelColor(color) : 'sage green';
-  const olivo = color ? `dark ${nombreDelColor(color)}` : 'dark olive green';
+  const letra = color ? fuerte(color, CREMA_LETRA) : OLIVO;
+  // El nombre sale de la letra, no de la marca: un amarillento ya se giró al verde olivo.
+  const olivo = color ? `deep ${nombreDelColor(letra)}` : 'deep olive green';
   const marca = mayus(a.restaurante.nombre);
   const contacto = cartel ? contactoDelCartel(a.restaurante, false) : null;
 
   const titular = a.mensaje
     ? [
-        `Build one centered typographic lockup, in ${olivo} ${t.olivo}, that reads exactly, with every word in this order and nothing added or removed:`,
+        `Build one centered typographic lockup, in ${olivo} ${letra}, that reads exactly, with every word in this order and nothing added or removed:`,
         `"${a.mensaje}"`,
         'It combines two kinds of lettering:',
         '* LARGE SCRIPT WORDS: choose the one or two most expressive words and write them in a smooth, elegant, monoline handwritten script with long, flowing, rounded strokes, exactly as written above, with their accents.',
@@ -51,7 +56,7 @@ function prompt(a: Anuncio): string {
         'Arrange it on two or three rows, centered, with thin horizontal lines and short rows of evenly spaced small dots beside the small words, like a premium café menu.',
       ]
     : [
-        `Build one centered typographic lockup, in ${olivo} ${t.olivo}, that reads exactly, in this order:`,
+        `Build one centered typographic lockup, in ${olivo} ${letra}, that reads exactly, in this order:`,
         '"EL Café SABE MEJOR EN BUENA compañía"',
         'It combines two kinds of lettering:',
         '* LARGE SCRIPT WORDS: "Café" and "compañía", in a smooth, elegant, monoline handwritten script with long, flowing, rounded strokes and a large decorative capital C in "Café". Exactly as written: "Café" with a capital C and an accent on the é, "compañía" all lowercase, with its ñ and its accent on the í.',
@@ -65,18 +70,19 @@ function prompt(a: Anuncio): string {
         'On the left, "EN" above "BUENA", stacked, small. To their right, "compañía" very large. One thin horizontal line runs under "EN BUENA".',
       ];
 
-  // Dónde va cada producto: una bebida toma el lugar del capuchino; lo demás va en el plato.
-  const acomodo =
+  // Dónde va cada producto (22 nov 2026): primero se decide cuál es bebida. Esa es el único vaso, atrás a
+  // la izquierda, y no hay capuchino; lo demás va en el plato. Sin bebida, el capuchino de siempre. Antes el
+  // plato iba primero y la bebida después, como excepción, y el modelo ponía su café en el plato y el
+  // capuchino atrás.
+  const lugarDelPlato = `placed diagonally in the lower ${cartel ? 'part of the right half' : 'right'}`;
+  const acomodo = [
+    `FIRST, decide whether ${n === 1 ? 'the product is' : 'one of these products is'} a drink (a coffee, tea, hot chocolate, juice, smoothie, soda, or any other drink). At most one product is the drink of the set.`,
+    'THE CUP: if a product is a drink, that drink is the only cup or glass in the image, standing behind the plate on the left, exactly as it is described above, and there is NO cappuccino. If no product is a drink, the only cup is the plain cappuccino described in section 4.',
     n === 1
-      ? [
-          `On a long, narrow, rectangular white porcelain plate, placed diagonally in the lower ${cartel ? 'part of the right half' : 'right'}, put product 1.`,
-          'Behind the plate, on the left, a plain cappuccino in a paper cup fills the set (see below).',
-          'If product 1 is a drink, it takes the place of the cappuccino, there is no cappuccino, and the plate is left out.',
-        ]
-      : [
-          `On a long, narrow, rectangular white porcelain plate, placed diagonally in the lower ${cartel ? 'part of the right half' : 'right'}, put product 1 and product 2 side by side, product 1 in front.`,
-          'If one of the two products is a drink, it takes the place of the cappuccino, there is no cappuccino, and the other product goes alone on the plate.',
-        ];
+      ? `THE PLATE: if the product is not a drink, it goes alone on a long, narrow, rectangular white porcelain plate, ${lugarDelPlato}. If it is a drink, there is no plate.`
+      : `THE PLATE: every product that is not a drink goes on one long, narrow, rectangular white porcelain plate, ${lugarDelPlato}, side by side, the first one in front.`,
+    'Never put a cup or a glass on the plate.',
+  ];
 
   const zonas = cartel
     ? [
@@ -108,7 +114,7 @@ function prompt(a: Anuncio): string {
   const secciones = [
     'STYLE_13 — MORNING CAFÉ LETTERING',
     'Premium Mexican Café Advertising — Breakfast Campaign',
-    `Create a professionally art-directed ${cartel ? 'horizontal 16:9 menu banner' : a.formato === 'historia' ? 'vertical 9:16 Instagram story' : 'vertical 4:5 Instagram'} advertisement for a Mexican café, featuring an elegant typographic headline that mixes large flowing script words with small condensed uppercase words, ${cartel ? 'beside' : 'above'} ${n === 1 ? 'one product' : 'two products'} photographed simply and naturally, against a soft cream-to-${salvia} background.`,
+    `Create a professionally art-directed ${cartel ? 'horizontal 16:9 menu banner' : a.formato === 'historia' ? 'vertical 9:16 Instagram story' : 'vertical 4:5 Instagram'} advertisement for a Mexican café, featuring an elegant typographic headline that mixes large flowing script words with small condensed uppercase words, ${cartel ? 'beside' : 'above'} ${['one product', 'two products', 'three products'][n - 1]} photographed simply and naturally, against a soft cream-to-${salvia} background.`,
     'THIS IS A TYPOGRAPHY-LED, CALM, ELEGANT BREAKFAST AD: the headline lettering is the main design element, and the food and the drink are photographed simply and naturally.',
     'Prioritize authentic food photography and physically believable objects over exaggerated or artificial-looking styling.',
     '1. CANVAS AND COMPOSITION',
@@ -129,6 +135,7 @@ function prompt(a: Anuncio): string {
     '3. THE TYPOGRAPHIC HEADLINE — THE MAIN DESIGN ELEMENT',
     ...titular,
     'The script words are the largest and most expressive; the small words are neat, evenly spaced, and aligned.',
+    `All the lettering, the brand block, and the seal use the same rich, saturated ${olivo}, ${letra}: never brownish, muddy, khaki, or grayish.`,
     'Every word must be correctly spelled, with its accents.',
     'The lockup must look professionally lettered and typeset, like a premium café campaign.',
     'No outlines.',
@@ -136,8 +143,8 @@ function prompt(a: Anuncio): string {
     'No 3D effects.',
     'No textures.',
     'No extra words.',
-    '4. THE CAPPUCCINO',
-    'Unless a product is a drink, place ONE plain takeaway paper cup of cappuccino behind the plate, on the left.',
+    '4. THE CAPPUCCINO (ONLY WHEN NO PRODUCT IS A DRINK)',
+    'Only if no product is a drink, place ONE plain takeaway paper cup of cappuccino behind the plate, on the left. If a product is a drink, leave this whole section out: there is no cappuccino.',
     'The cup is white with a plain terracotta-orange band around its middle, and no logo, no text, and no lid.',
     'A soft dome of creamy milk foam rises slightly above the rim, with a light dusting of cinnamon.',
     'The cup stands on the backdrop surface, with a soft natural shadow.',
@@ -149,7 +156,7 @@ function prompt(a: Anuncio): string {
     ...a.productos.map((p, i) => `* Product ${i + 1}: ${comoEs(p)}`),
     ...acomodo,
     ...AUTENTICO,
-    'Show only these products, each one once. Besides the cappuccino of the set, do not add any other food or drink, and do not repeat a product to fill space.',
+    'Show only these products, each one once. Besides the cappuccino (only when no product is a drink), do not add any other food or drink, and do not repeat a product to fill space.',
     'Show the plate from a slightly elevated front view, so the top of the food is clearly visible.',
     '6. NATURAL COMMERCIAL FOOD PHOTOGRAPHY',
     'Use believable professional food photography.',
@@ -161,26 +168,26 @@ function prompt(a: Anuncio): string {
     'Avoid excessive HDR, artificial sharpening, plastic surfaces, unrealistic reflections, or CGI-like food textures.',
     'Natural photographic authenticity is more important than visual perfection.',
     '7. BRAND BLOCK',
-    `In the top-left corner, place a small solid ${olivo} rectangle, ${t.olivo}, attached to the top edge of the ${pieza}, about ${cartel ? '13% of the banner width and 22% of its height' : '22% of the poster width and 16% of its height'}.`,
+    `In the top-left corner, place a small solid ${olivo} rectangle, ${letra}, attached to the top edge of the ${pieza}, about ${cartel ? '13% of the banner width and 22% of its height' : '22% of the poster width and 16% of its height'}.`,
     `Inside it, centered, the brand name, in one, two, or three lines:\n"${marca}"`,
     'Use a bold, clean sans-serif, uppercase.',
     `Text color: warm cream ${CREMA_LETRA}.`,
     'Do not invent logos or symbols.',
     '8. SEAL',
-    `In the top-right corner, place a small round typographic seal, without a filled background, in ${olivo} ${t.olivo}:`,
+    `In the top-right corner, place a small round typographic seal, without a filled background, in ${olivo} ${letra}:`,
     'The word "Desayunos" in the same script as the headline, in the center, and the words "BUENOS DÍAS" in small condensed uppercase letters curving along an arc below it.',
     'Keep it small and secondary.',
     ...(contacto
-      ? [`In the bottom-left corner, one small line in the condensed sans-serif, in ${olivo} ${t.olivo}, reading exactly: ${contacto}`]
+      ? [`In the bottom-left corner, one small line in the condensed sans-serif, in ${olivo} ${letra}, reading exactly: ${contacto}`]
       : []),
     '9. GRAPHIC HIERARCHY',
     'Maintain this visual order:',
-    `1. The typographic headline.\n2. ${n === 1 ? 'Product 1' : 'The two products'}.\n3. The drink.\n4. The brand block.\n5. The seal.`,
+    `1. The typographic headline.\n2. ${['Product 1', 'The two products', 'The three products'][n - 1]}.\n3. The drink.\n4. The brand block.\n5. The seal.`,
     'Keep generous empty space around the headline.',
     `Do not overcrowd the ${pieza} with unnecessary graphic elements.`,
     '10. STRICT EXCLUSIONS',
     'Do not include toast, tomato, salsa, butter, jam, fruit, cutlery, napkins, or any other food or object.',
-    'Do not include more than one cup.',
+    'Do not include more than one cup or glass, and never put a cup or a glass on the plate.',
     'Do not include any logo, brand, or text on the cup or the plate.',
     contacto
       ? 'Do not include prices, promotions, websites, calls to action, or trademark symbols.'
@@ -192,7 +199,7 @@ function prompt(a: Anuncio): string {
     '11. FINAL PRIORITY',
     `An elegant ${olivo} typographic headline that mixes large flowing script words with small condensed uppercase words, thin lines, and dotted rules, reading "${a.mensaje ?? 'EL Café SABE MEJOR EN BUENA compañía'}".`,
     `${cartel ? 'Beside' : 'Below'} it, the food and the drink, photographed simply and naturally, against a soft cream-to-${salvia} background.`,
-    `A small ${color ? nombreDelColor(color) : 'olive'} brand block at the top left and a small typographic seal at the top right.`,
+    `A small ${color ? nombreDelColor(letra) : 'olive'} brand block at the top left and a small typographic seal at the top right.`,
     'Calm, warm, elegant, premium café breakfast advertising.',
     'AUTHENTIC MEXICAN FOOD.',
     'NATURAL PHOTOGRAPHIC FOOD TEXTURES.',

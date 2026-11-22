@@ -221,6 +221,24 @@ export function legibleSobre(tono: string, fondo: string): string {
   return resultado;
 }
 
+// Una versión fuerte de un color, para letras sobre un fondo claro (Desayunos, 22 nov 2026: «que sea más
+// fuerte, pero un color bueno, no café»): su mismo matiz, bien saturado (al menos 65 %; un gris sigue gris) y
+// oscuro (30 % de luz como mucho), y más oscuro todavía si hace falta para leerse a 4.5 a 1 sobre el fondo.
+// Un amarillento (matiz de 40° a 75°, como el salvia #C8C685) oscuro sale caqui o café: se gira al verde
+// olivo, 82° (encuesta del developer, 22 nov 2026: el salvia daba #6D6B17 y ahora #547619).
+export function fuerte(tono: string, fondo: string): string {
+  const hsl = aHsl(tono);
+  if (hsl.s >= 0.12 && hsl.h >= 40 && hsl.h < 75) hsl.h = 82;
+  if (hsl.s >= 0.12) hsl.s = Math.max(hsl.s, 0.65);
+  hsl.l = Math.min(hsl.l, 0.3);
+  let resultado = deHsl(hsl);
+  while (contraste(resultado, fondo) < 4.5 && hsl.l > 0) {
+    hsl.l = Math.max(0, hsl.l - 0.02);
+    resultado = deHsl(hsl);
+  }
+  return resultado;
+}
+
 // «Red» → «Red-and-cream», para el principio de un renglón.
 export function cap(texto: string): string {
   return texto.charAt(0).toUpperCase() + texto.slice(1);

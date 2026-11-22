@@ -2,8 +2,9 @@
 // el nombre del restaurante, el nombre del producto en un renglón chiquito y una palabra gigante partida en
 // dos («PAS / TOR», del paso de texto); el producto grande cruzando la diagonal; su mensaje en la insignia
 // (vacío, no sale: nunca inventa una promoción) y abajo la descripción, «ORDENA AHORA» y el teléfono. Su
-// color pinta lo rojo: la parte de arriba, la insignia y los textos; el crema se queda.
-import { AUTENTICO, comoEs, legibleSobre, lienzo, luzCalida, mayus, nombreDelColor, pintar, QUE_ES, SOLO_LOS_SUYOS } from './comun';
+// color pinta lo rojo tal cual (no conserva la luz de la referencia): la parte de arriba, la insignia y los
+// textos; el crema se queda.
+import { AUTENTICO, comoEs, legibleSobre, lienzo, luzCalida, mayus, nombreDelColor, QUE_ES, SOLO_LOS_SUYOS } from './comun';
 import type { Anuncio, Estilo } from './comun';
 
 // Los de la referencia, sacados con Pillow.
@@ -42,10 +43,13 @@ function prompt(a: Anuncio): string {
   const pieza = cartel ? 'banner' : 'poster';
   const p = a.productos[0];
   const color = a.color;
-  const t = pintar(color, TONOS);
-  const rojo = color ? `deep ${nombreDelColor(color)}` : 'deep red';
-  // Lo rojo que va sobre el crema se oscurece si hace falta para leerse.
-  const enCrema = color ? legibleSobre(t.rojo, CREMA) : t.rojo;
+  // El color de la marca tal cual (el developer, 22 nov 2026): el rojo de Diagonal es plano, así que no
+  // conserva la luz de la referencia como los demás estilos (con #CF170D salía un vino, #8C1009). Solo se
+  // oscurece, con su mismo matiz, si las letras crema no se leerían encima; el mismo tono va en lo rojo
+  // que va sobre el crema. Sin color, como siempre.
+  const t = { rojo: color ? legibleSobre(color, CREMA) : TONOS.rojo };
+  const rojo = color ? nombreDelColor(color) : 'deep red';
+  const enCrema = t.rojo;
   const [arriba, abajo] = a.palabras.partida.split(' / ');
   const renglon = mayus(p.nombre);
   const insignia = a.mensaje ? mayus(a.mensaje) : null;

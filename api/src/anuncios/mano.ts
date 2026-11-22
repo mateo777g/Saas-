@@ -1,8 +1,9 @@
 // Estilo 13 · Mano (mano.txt): una mano sostiene el producto de Don Chuy, envuelto en papel encerado,
 // delante de una palabra gigante repetida tres veces (la escoge el paso de texto: «Pastor»). Abajo, un
 // párrafo justificado en mayúsculas: su mensaje (vacío, la descripción de Mi menú) y siempre, al final, el
-// nombre del restaurante. Su color pinta la palabra; el crema se queda.
-import { AUTENTICO, comoEs, contactoDelCartel, legibleSobre, lienzo, luzCalida, mayus, nombreDelColor, pintar, SOLO_LOS_SUYOS } from './comun';
+// nombre del restaurante. Su color pinta la palabra tal cual (no conserva la luz de la referencia); el
+// crema se queda.
+import { AUTENTICO, comoEs, contactoDelCartel, legibleSobre, lienzo, luzCalida, mayus, nombreDelColor, SOLO_LOS_SUYOS } from './comun';
 import type { Anuncio, Estilo } from './comun';
 
 const TONOS = { verde: '#448323' };
@@ -37,7 +38,10 @@ function prompt(a: Anuncio): string {
   const pieza = cartel ? 'banner' : 'poster';
   const p = a.productos[0];
   const color = a.color;
-  const verdeTono = color ? legibleSobre(pintar(color, TONOS).verde, CREMA) : TONOS.verde;
+  // El color de la marca tal cual (el developer, 22 nov 2026, como en Diagonal): la palabra es plana, así
+  // que no conserva la luz de la referencia (con #CF170D salía un vino). Solo se oscurece, con su mismo
+  // matiz, si no se leería sobre el crema. Sin color, como siempre.
+  const verdeTono = color ? legibleSobre(color, CREMA) : TONOS.verde;
   const verde = color ? nombreDelColor(color) : 'green';
   const palabra = a.palabras.palabra;
   const marca = mayus(a.restaurante.nombre);

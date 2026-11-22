@@ -16,7 +16,7 @@ import { lugaresDe } from './anuncios/comun';
 import type { Estilo, Formato, RestauranteDelAnuncio } from './anuncios/comun';
 import { FORMATOS } from './anuncios/comun';
 import { ESTILOS } from './anuncios/estilos';
-import { esquemaDePalabras, preguntaDePalabras, REGLAS_PALABRAS, revisarPalabras } from './anuncios/palabras';
+import { correccionDePalabras, esquemaDePalabras, preguntaDePalabras, REGLAS_PALABRAS, revisarPalabras } from './anuncios/palabras';
 import { leerCuerpo } from './equipo';
 import type { Env } from './index';
 import { modeloImagen, modeloPalabras, palabrasDeLaIa } from './openai';
@@ -108,10 +108,13 @@ async function palabras(env: Env, sesion: string, cuerpo: Record<string, unknown
   const esquema = esquemaDePalabras(estilo, productos.length);
   const modelo = modeloPalabras(env);
   // Si lo que escribió no cabe, se pregunta una vez más; cada llamada se anota, también la que no cupo.
+  // La segunda vez se le dice qué escribió y por qué no sirvió: con la misma pregunta repetía lo mismo
+  // («HAMBURGUESA» en un lugar de 10 letras, 21 nov 2026). Lo que ya sale a la primera no cambia.
+  let correccion = '';
   for (let intento = 1; intento <= 2; intento++) {
     let salida: Record<string, unknown> | null;
     try {
-      const r = await palabrasDeLaIa(env, { instrucciones: REGLAS_PALABRAS, pregunta, esquema });
+      const r = await palabrasDeLaIa(env, { instrucciones: REGLAS_PALABRAS, pregunta: pregunta + correccion, esquema });
       await anotar(env, restaurante, 'palabras', modelo, r.tokens);
       salida = r.salida;
     } catch (e) {
@@ -121,6 +124,7 @@ async function palabras(env: Env, sesion: string, cuerpo: Record<string, unknown
     const revisadas = salida ? revisarPalabras(estilo, productos.length, salida) : null;
     if (revisadas?.ok) return json({ ok: true, palabras: revisadas.palabras });
     console.warn('[anuncios] las palabras de la IA no cupieron', estilo.clave, `intento ${intento}`, revisadas ? revisadas.falta : 'sin JSON');
+    if (salida && revisadas && !revisadas.ok) correccion = correccionDePalabras(salida, revisadas.falta);
   }
   throw new Rechazo(502, NO_PREPARO);
 }

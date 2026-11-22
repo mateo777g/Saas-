@@ -27,6 +27,17 @@ export function preguntaDePalabras(estilo: Estilo, productos: ProductoParaPalabr
   return `Los productos del anuncio, en orden:\n${lista.join('\n')}\n\nLos lugares:\n${lugares.join('\n')}`;
 }
 
+// Lo que se le suma a la pregunta en el segundo intento: qué escribió y por qué no sirvió. Si la
+// palabra que más dice el producto no cabe («HAMBURGUESA» en 10 letras), que busque otra que sí.
+export function correccionDePalabras(anterior: Record<string, unknown>, falta: string): string {
+  return [
+    '',
+    '',
+    `Tu respuesta anterior no sirve: ${JSON.stringify(anterior)}. ${falta}`,
+    'Corrígela sin pasarte del tope: donde no cupo, escoge otra palabra del nombre o de la descripción del producto que sí quepa; si no hay ninguna, una forma corta y conocida de ese producto.',
+  ].join('\n');
+}
+
 // El esquema que pide la Responses API: un texto por lugar, todos obligatorios.
 export function esquemaDePalabras(estilo: Estilo, productos: number) {
   const lugares = lugaresDe(estilo, productos);

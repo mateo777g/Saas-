@@ -1,9 +1,9 @@
 // Estilo 4 · Explosión (explosion.txt, el prompt del desarrollador): el producto de Don Chuy partido en
 // el aire, con sus ingredientes estallando entre las dos mitades, sobre un fondo plano. Su color pinta
-// el fondo. No llevaba ningún texto: su sección 9 cambia por los de la tabla (arriba el nombre del
-// producto; abajo su mensaje, si hay, y el nombre del restaurante chiquito). Un producto que no se parte
+// el fondo. Sin ningún texto, como el prompt original (el developer, 22 nov 2026: «que lleve solamente los
+// productos»; del 31 oct al 22 nov llevó el nombre del producto, su mensaje y el del restaurante). Un producto que no se parte
 // en dos (una bebida, un postre en vaso) se queda entero y sus ingredientes estallan alrededor.
-import { AUTENTICO, comoEs, contactoDelCartel, letraSobre, lienzo, luzCalida, mayus, nombreDelColor, pintar, SOLO_LOS_SUYOS } from './comun';
+import { AUTENTICO, comoEs, lienzo, luzCalida, nombreDelColor, pintar, SOLO_LOS_SUYOS } from './comun';
 import type { Anuncio, Estilo } from './comun';
 
 const TONOS = { fondo: '#D71920' };
@@ -12,11 +12,11 @@ export const explosion: Estilo = {
   clave: 'explosion',
   maximo: 1,
   minimo: 1,
-  mensaje: 40,
-  mayusculas: true,
+  mensaje: 0,
+  mayusculas: false,
   conColor: true,
   vacio: null,
-  datos: { post: ['nombre'], historia: ['nombre'], cartel: ['nombre', 'telefono', 'direccion'] },
+  datos: { post: [], historia: [], cartel: [] },
   lugares: [],
   prompt,
 };
@@ -28,23 +28,6 @@ function prompt(a: Anuncio): string {
   const color = a.color;
   const fondo = pintar(color, TONOS).fondo;
   const rojo = color ? nombreDelColor(color) : 'crimson-red';
-  const letra = letraSobre(fondo);
-  const mensaje = a.mensaje ? mayus(a.mensaje) : null;
-  const marca = mayus(a.restaurante.nombre);
-  const contacto = cartel ? contactoDelCartel(a.restaurante, true) : null;
-
-  const textos = cartel
-    ? [
-        `* On the left half, in the upper part: the product name, large, reading exactly: "${mayus(p.nombre)}"`,
-        ...(mensaje ? [`* On the left half, below the product name, smaller: "${mensaje}"`] : []),
-        `* On the left half, at the bottom: the restaurant name, small, reading exactly: "${marca}"`,
-        ...(contacto ? [`* Below it, smaller still: ${contacto}`] : []),
-      ]
-    : [
-        `* At the top, centered, from about 5% to 17% of the height: the product name, large, reading exactly: "${mayus(p.nombre)}"`,
-        ...(mensaje ? [`* Near the bottom, centered, at about 84% to 90% of the height, smaller: "${mensaje}"`] : []),
-        `* At the very bottom, centered, at about 92% to 96% of the height: the restaurant name, small, reading exactly: "${marca}"`,
-      ];
 
   const secciones = [
     'STYLE_04 — CINEMATIC FOOD EXPLOSION V2',
@@ -110,8 +93,8 @@ function prompt(a: Anuncio): string {
     '5. CAMERA AND PERSPECTIVE',
     'Use a slightly low, frontal three-quarter camera angle.',
     cartel
-      ? 'Position the exploding product on the right half of the banner, occupying approximately 85% of the banner height; the texts go on the left half.'
-      : `Position the exploding product in the central vertical axis of the ${pieza}, occupying approximately 60% of the image height, between the product name at the top and the texts at the bottom.`,
+      ? 'Position the exploding product in the center of the banner, occupying approximately 85% of the banner height.'
+      : `Position the exploding product in the central vertical axis of the ${pieza}, occupying approximately 70% of the image height.`,
     'Give the upper and lower halves slightly different rotations to create natural motion and cinematic tension.',
     'Use a premium commercial food photography lens aesthetic, with crisp hero-product details and realistic depth of field.',
     'Keep the main ingredients and the two halves sharply defined while allowing only a few tiny background particles to soften naturally with depth.',
@@ -139,23 +122,22 @@ function prompt(a: Anuncio): string {
     'The cinematic quality should come from photography, lighting, composition, and controlled motion — not artificial VFX.',
     '8. COMPOSITIONAL DISCIPLINE',
     'Maintain a bold, elegant advertising composition.',
-    `The exploding product must remain ${cartel ? 'on the right half' : 'visually centered'} and instantly recognizable.`,
+    'The exploding product must remain visually centered and instantly recognizable.',
     'Leave sufficient negative space around the product.',
     'The upper and lower halves must be clearly separated, with the filling visibly suspended between them.',
     'The arrangement should create a strong diagonal sense of motion while retaining an overall vertical silhouette.',
     'Keep the image balanced, impactful, and visually clean.',
     'Do not add secondary products, plates, bowls, cutlery, hands, or packaging.',
-    '9. TEXT',
-    `Add only these texts, printed flat over the ${rojo} background, never over the food:`,
-    ...textos,
-    `Use a heavy, bold, condensed sans-serif, all uppercase, tight letter spacing, in clean ${letra}.`,
-    'Spell every word exactly as written, with its accents.',
-    'The texts stay secondary to the explosion: the food photography delivers the commercial impact.',
+    '9. NO TEXT OR BRANDING',
+    'This is a pure visual product advertisement.',
     'Do not include:',
+    '* Headlines.',
+    '* Product names.',
     '* Logos.',
     '* Prices.',
-    '* Promotions or calls to action other than the texts above.',
-    ...(contacto ? [] : ['* Phone numbers.']),
+    '* Promotions.',
+    '* Calls to action.',
+    '* Phone numbers.',
     '* Websites.',
     '* Ingredient labels.',
     '* Decorative typography.',
@@ -180,7 +162,8 @@ function prompt(a: Anuncio): string {
     `The perfectly uniform ${rojo} background must enhance the warm colors of the food without any visual distractions.`,
     'The final image should feel like an iconic, high-impact commercial food photograph: bold, dramatic, photorealistic, and unforgettable.',
     'ABSOLUTE FINAL PRIORITY:',
-    `One photorealistic product dramatically exploding into two separated halves, with its ingredients suspended between them, floating against a perfectly flat, uninterrupted ${fondo} ${rojo} background, with "${mayus(p.nombre)}" ${cartel ? 'on the left' : 'at the top'} and "${marca}" small ${cartel ? 'below it' : 'at the bottom'}.`,
+    `One photorealistic product dramatically exploding into two separated halves, with its ingredients suspended between them, floating against a perfectly flat, uninterrupted ${fondo} ${rojo} background.`,
+    'NO TEXT ANYWHERE.',
     'NO FLOOR. NO HORIZON. NO BACKGROUND TEXTURE. NO GRADIENT. NO BACKGROUND SHADOWS.',
     'Premium cinematic food photography meets bold, minimalist graphic advertising.',
   ];

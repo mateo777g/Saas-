@@ -358,9 +358,9 @@ select ok(
 );
 
 select ok(
-  has_function_privilege('service_role', 'public.hacer_pedido(text, uuid, text, text, text, text, text, numeric, jsonb, text, text)', 'EXECUTE')
-  and not has_function_privilege('anon', 'public.hacer_pedido(text, uuid, text, text, text, text, text, numeric, jsonb, text, text)', 'EXECUTE')
-  and not has_function_privilege('authenticated', 'public.hacer_pedido(text, uuid, text, text, text, text, text, numeric, jsonb, text, text)', 'EXECUTE'),
+  has_function_privilege('service_role', 'public.hacer_pedido(text, uuid, text, text, text, text, text, numeric, jsonb, text, text, text)', 'EXECUTE')
+  and not has_function_privilege('anon', 'public.hacer_pedido(text, uuid, text, text, text, text, text, numeric, jsonb, text, text, text)', 'EXECUTE')
+  and not has_function_privilege('authenticated', 'public.hacer_pedido(text, uuid, text, text, text, text, text, numeric, jsonb, text, text, text)', 'EXECUTE'),
   'hacer_pedido solo lo llama el Worker, con la llave secreta: ni el menú sin sesión ni alguien con sesión'
 );
 

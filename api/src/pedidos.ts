@@ -5,7 +5,7 @@
 // bloque /64), hechas aquí con la llave de las marcas: la conexión nunca se guarda, solo su marca,
 // que no se puede revertir.
 // Al final hacer_pedido como el Worker (la llave secreta). Postgres decide todo lo demás (horario,
-// pausa, precios, agotados, el límite) y lo que contesta pasa tal cual, también sus «no».
+// pausa, precios, agotados, el límite, el premio de la tarjeta) y lo que contesta pasa tal cual, también sus «no».
 import type { Env } from './index';
 import { hmacHex, leerCuerpo } from './equipo';
 import { json, Rechazo } from './respuestas';
@@ -56,6 +56,11 @@ function leerPedido(cuerpo: Record<string, unknown>): Record<string, unknown> {
   if (pagaCon !== null && (typeof pagaCon !== 'number' || !Number.isFinite(pagaCon))) {
     throw new Rechazo(400, 'Escribe con cuánto pagas, como 500');
   }
+  // La llave de la tarjeta de lealtad, solo si usa su premio («Usar mi premio» en Tu pedido).
+  const llaveTarjeta = cuerpo.llave_tarjeta ?? null;
+  if (llaveTarjeta !== null && (typeof llaveTarjeta !== 'string' || !MARCA_CELULAR.test(llaveTarjeta))) {
+    throw new Rechazo(400, 'Falta la llave de tu tarjeta');
+  }
   const renglones = cuerpo.renglones;
   if (!Array.isArray(renglones) || !renglones.length) throw new Rechazo(400, 'Tu pedido está vacío');
   if (renglones.length > 30) throw new Rechazo(400, 'Un pedido lleva hasta 30 renglones');
@@ -70,6 +75,7 @@ function leerPedido(cuerpo: Record<string, unknown>): Record<string, unknown> {
     p_cliente_referencias: textoONulo(cuerpo.cliente_referencias),
     p_paga_con: pagaCon,
     p_renglones: renglones.map(leerRenglon),
+    p_llave_tarjeta: llaveTarjeta,
   };
 }
 

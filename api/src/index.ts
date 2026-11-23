@@ -8,7 +8,8 @@
 // (traducir.ts: el inglés que traduce la IA y, en el mismo Cron, el dólar del día), y la terminal
 // conectada (terminal.ts y mercadoPago.ts: conectar Mercado Pago, mandar cada cobro a la Point, sus
 // avisos y, en el mismo Cron, renovar sus llaves), y en el mismo Cron borra las fotos sueltas del
-// recetario (recetario.ts). Nunca decide solo: antes de cada trabajo le pregunta a Postgres si se puede.
+// recetario (recetario.ts), y la tarjeta de lealtad del menú (tarjeta.ts). Nunca decide solo: antes
+// de cada trabajo le pregunta a Postgres si se puede.
 import { agente } from './agente';
 import { preguntaDelMenu } from './asistente';
 import { borrarVencidos } from './biblioteca';
@@ -17,6 +18,7 @@ import { equipo } from './equipo';
 import { listaDeEstilos, muestraDeEstilo } from './estilos';
 import { fotoDelMenu } from './fotos';
 import { pedidoDelMenu } from './pedidos';
+import { tarjetaDelMenu } from './tarjeta';
 import { pos } from './pos';
 import { borrarFotosSueltas } from './recetario';
 import { avisoDeMercadoPago, mercadoPago, regresoDeMercadoPago, renovarLlaves, terminal } from './terminal';
@@ -87,6 +89,7 @@ export default {
     try {
       if (url.pathname === '/menu/foto') respuesta = await fotoDelMenu(request, env, url);
       else if (url.pathname === '/menu/pedido') respuesta = await pedidoDelMenu(request, env, url);
+      else if (url.pathname === '/menu/tarjeta' || url.pathname.startsWith('/menu/tarjeta/')) respuesta = await tarjetaDelMenu(request, env, url);
       else if (url.pathname === '/menu/pregunta') respuesta = await preguntaDelMenu(request, env, url, ctx);
       else if (url.pathname === '/menu/traducir') respuesta = await traducirMenu(request, env, url);
       else if (url.pathname === '/estilos/muestra') respuesta = await muestraDeEstilo(request, env, url);

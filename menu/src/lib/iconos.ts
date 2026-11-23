@@ -27,6 +27,9 @@ const PROPIOS: Record<string, string> = {
   // Los datos de los clientes (maqueta Qvn42kQsyRX3m9vscikYfB): la personita de «Tus datos», el bote de «Borrar mis datos»
   // y la flechita de «Aviso de privacidad».
   persona: '<circle cx="12" cy="8" r="4.2"></circle><path d="M4.5 20.5a7.5 7.5 0 0 1 15 0"></path>',
+  // La de «Tus datos» en la barra de la vista Pedido, dentro de su círculo de línea (el developer, 23 nov 2026).
+  'persona-circulo':
+    '<circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="10" r="3.6"></circle><path d="M17.6 19.2a6 6 0 0 0-11.2 0"></path>',
   bote: '<path d="M3 6h18"></path><path d="M8 6V4h8v2"></path><path d="M19 6l-1 14H6L5 6"></path><path d="M10 11v5"></path><path d="M14 11v5"></path>',
   flechita: '<path d="m9 6 6 6-6 6"></path>',
 };

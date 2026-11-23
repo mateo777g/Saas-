@@ -161,4 +161,11 @@ export const ICONOS: Record<string, string> = {
   // pestaña de los aparatos, y la foto de «Cambiar foto» y del cuadro punteado de cada paso.
   'libro': '<path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v15H6.5A2.5 2.5 0 0 0 4 20.5z"></path><path d="M4 20.5A2.5 2.5 0 0 0 6.5 23H20v-5"></path><path d="M9 8h7"></path><path d="M9 12h5"></path>',
   'foto': '<rect x="3" y="5" width="18" height="15" rx="2.5"></rect><circle cx="9" cy="10.5" r="1.8"></circle><path d="m21 16-5-5-9 9"></path>',
+  // La tarjeta de lealtad (23 nov 2026, maqueta v22): la tarjeta con su estrella (su pestaña y su vista), el regalo del
+  // premio, la flecha que la voltea, escanear el QR y el teclado para escribir su código.
+  'r-lealtad': '<rect x="2.5" y="5" width="19" height="14" rx="3"></rect><path d="M12 8.6l1.05 2.13 2.35.34-1.7 1.66.4 2.34L12 14l-2.1 1.1.4-2.34-1.7-1.66 2.35-.34z"></path>',
+  'regalo': '<rect x="3.5" y="8" width="17" height="4" rx="1"></rect><path d="M5 12v7.5h14V12"></path><path d="M12 8v11.5"></path><path d="M12 8c-1.5-3.5-5.5-3.5-5.5-1S10 8 12 8zM12 8c1.5-3.5 5.5-3.5 5.5-1S14 8 12 8z"></path>',
+  'girar': '<path d="M20 12a8 8 0 1 1-2.34-5.66"></path><path d="M20 4v4.5h-4.5"></path>',
+  'escanear': '<path d="M4 8V6a2 2 0 0 1 2-2h2"></path><path d="M16 4h2a2 2 0 0 1 2 2v2"></path><path d="M20 16v2a2 2 0 0 1-2 2h-2"></path><path d="M8 20H6a2 2 0 0 1-2-2v-2"></path><path d="M4 12h16"></path>',
+  'teclado': '<rect x="2.5" y="6" width="19" height="12" rx="2.5"></rect><path d="M6.5 10h1M10.5 10h1M14.5 10h1M18 10h-.5M6.5 14h11"></path>',
 };

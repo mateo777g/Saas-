@@ -102,7 +102,9 @@ export const sinDatos = (c: Cliente) => !c.nombre.trim() && !c.telefono.trim() &
 // `pidemenu-cliente` de antes, compartido), el último «Pedido enviado» (lleva sus datos) y las pláticas con el asistente
 // con su pase. Se quedan el carrito, el idioma y la moneda, el esqueleto y la marca del celular (es al azar y sirve para
 // los límites). Regresa si pudo: un navegador que no deja tocar lo guardado lo dice en la consola.
-const LO_SUYO = /^pidemenu-(cliente(-.+)?|hecho-.+|platica-.+|pase-.+)$/;
+// Desde la tarjeta de lealtad también la llave de la tarjeta (`pidemenu-tarjeta-<slug>`): «Borrar mis datos» la olvida en este
+// celular, pero la tarjeta sigue y se recupera con un código (el aviso de privacidad lo dice).
+const LO_SUYO = /^pidemenu-(cliente(-.+)?|hecho-.+|platica-.+|pase-.+|tarjeta-.+)$/;
 export function borrarMisDatos(): boolean {
   try {
     const llaves: string[] = [];
@@ -152,6 +154,9 @@ export type Guardado = {
     opciones: { grupo: string; opcion: string; precio_extra: number }[];
     nota: string | null;
   }[];
+  // Solo si usa el premio de su tarjeta de lealtad (migración tarjeta_lealtad, privado.premio_del_pedido). `total` es el
+  // de los productos: el premio en pesos lo resta la caja al confirmarlo, y el producto entra entonces a la cuenta.
+  premio?: { tipo: 'producto' | 'pesos'; nombre: string | null; pesos: number | null; alcanza: boolean; entro: boolean };
 };
 
 export type Cambio = { renglon: number; cambio: 'agotado' | 'opciones' | 'precio'; opcion?: string; precio?: number };
@@ -159,7 +164,9 @@ export type Cambio = { renglon: number; cambio: 'agotado' | 'opciones' | 'precio
 export type Respuesta =
   | ({ ok: true } & Guardado)
   | { ok: false; motivo: 'no_recibe' }
-  | { ok: false; motivo: 'cambios'; cambios: Cambio[]; total: number };
+  | { ok: false; motivo: 'cambios'; cambios: Cambio[]; total: number }
+  // «Usar mi premio» y el premio ya no alcanza (se usó, se apagó la tarjeta, el producto se acabó): nada se guardó.
+  | { ok: false; motivo: 'premio' };
 
 // Un «no» que la clienta lee tal cual (el límite, un dato que falta, «No pudimos revisar que eres tú»).
 export class NoSeMando extends Error {}
@@ -175,6 +182,8 @@ export type Envio = {
   paga_con: number | null;
   renglones: (Renglon & { precio: number })[];
   turnstile: string;
+  // La llave de la tarjeta de lealtad, solo con «Usar mi premio».
+  llave_tarjeta?: string;
 };
 
 export async function hacerPedido(envio: Envio, sinRed: string): Promise<Respuesta> {
@@ -232,8 +241,12 @@ export function mensajeWhatsApp(p: Guardado): string {
     lineas.push(`${r.cantidad} ${r.nombre}${ops} · ${dinero(r.importe)}`);
     if (r.nota) lineas.push(`   Nota: ${r.nota}`);
   }
+  // El premio de su tarjeta de lealtad: así quien confirma sabe que lo usa (en la caja también lo dice el pedido).
+  const menos = p.premio?.tipo === 'pesos' ? (p.premio.pesos ?? 0) : 0;
+  if (p.premio?.tipo === 'producto') lineas.push(`Premio de mi tarjeta: ${p.premio.nombre ?? ''} gratis`);
+  else if (p.premio) lineas.push(`Premio de mi tarjeta: −${dinero(menos)}`);
   lineas.push('');
-  lineas.push(`Total: ${dinero(p.total)}${dom ? ' + envío' : ''}`);
+  lineas.push(`Total: ${dinero(Math.round((p.total - menos) * 100) / 100)}${dom ? ' + envío' : ''}`);
   return lineas.join('\n');
 }
 

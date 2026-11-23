@@ -41,11 +41,14 @@
   import VentanaInfo from './componentes/VentanaInfo.svelte';
   import VistaAsistente from './componentes/VistaAsistente.svelte';
   import VistaPedido from './componentes/VistaPedido.svelte';
+  import VistaTarjeta from './componentes/VistaTarjeta.svelte';
   import VistaProducto from './componentes/VistaProducto.svelte';
   import Icono from './componentes/Icono.svelte';
   import TarjetaBusca from './componentes/TarjetaBusca.svelte';
   import TarjetaProducto from './componentes/TarjetaProducto.svelte';
   import { Platica } from './lib/asistente.svelte';
+  import { MiTarjeta } from './lib/tarjeta.svelte';
+  import { tarjetaDeRosa, textosTarjeta, type DeLaTarjeta, type Regla } from './lib/textosTarjeta';
   import { leerMenu, urlImagen, type MenuPublico, type Producto } from './lib/datos';
   import { guardarEsqueleto, leerEsqueleto, medirEsqueleto } from './lib/esqueleto';
   import { esperarFotos, fotosDeArriba } from './lib/fotos';
@@ -93,9 +96,11 @@
   // El teléfono de la vista previa: arriba va su reloj, como en un iPhone (la maqueta dibuja el menú a 390 × 849 con 36
   // de arriba, lo de los comparar_*.py).
   const enTelefono = muestra === 'menu';
-  if (enTelefono) document.documentElement.style.setProperty('--arriba-seguro', '36px');
+  // El teléfono de «Tu tarjeta» (la tarjeta de lealtad, ?muestra=tarjeta): el mismo marco, siempre en la pestaña Tarjeta.
+  const enTelTarjeta = muestra === 'tarjeta';
+  if (enTelefono || enTelTarjeta) document.documentElement.style.setProperty('--arriba-seguro', '36px');
   // En el teléfono del panel no se ve la barrita de deslizar, como en un celular (la maqueta, .tel-desliza).
-  if (enTelefono) document.documentElement.style.setProperty('scrollbar-width', 'none');
+  if (enTelefono || enTelTarjeta) document.documentElement.style.setProperty('scrollbar-width', 'none');
 
   let menu = $state<MenuPublico | null>(null);
   let paso = $state<'leyendo' | 'listo' | 'apagado' | 'sinred'>('leyendo');
@@ -152,6 +157,8 @@
       menu = datos;
       paso = datos ? 'listo' : 'apagado';
       if (!datos && !muestra) guardarEsqueleto(slug, null);
+      // La tarjeta de lealtad de este celular (si tiene su llave): para su pestaña y el puntito del premio listo.
+      if (datos?.tarjeta && primera && miTarjeta.guardada) void miTarjeta.leer('');
       if (datos && primera && !muestra) {
         recordarEsqueleto();
         carrito = leerCarrito(slug);
@@ -162,6 +169,7 @@
         }
         if (conAviso) abrirAvisoAlLlegar();
       }
+      if (datos && primera && enTelTarjeta) pila = [{ tipo: 'tarjeta' }];
       if (datos && primera && enTelefono) {
         recordarEsqueleto();
         if (modoPanel === 'producto') abrirDeMuestra();
@@ -250,6 +258,7 @@
     | { tipo: 'aviso'; desde: HTMLElement | null }
     | { tipo: 'ajustes' }
     | { tipo: 'pedido' }
+    | { tipo: 'tarjeta' }
     | { tipo: 'asistente' };
   let pila = $state<Encima[]>([]);
   const encima = $derived(pila.at(-1) ?? null);
@@ -450,6 +459,7 @@
     limite = false;
     ocupado = true;
     const dom = tipo === 'domicilio';
+    const llavePremio = usarPremio && premioListo ? (miTarjeta.guardada?.llave ?? null) : null;
     try {
       let token: string;
       try {
@@ -477,6 +487,8 @@
             precio: precioUnitario(productos.get(r.producto_id)!, r.opciones),
           })),
           turnstile: token,
+          // «Usar mi premio»: la llave de su tarjeta va con el pedido y Postgres revisa que el premio alcance.
+          ...(llavePremio ? { llave_tarjeta: llavePremio } : {}),
         },
         t.noSeMando,
       );
@@ -495,6 +507,14 @@
           guardarHecho(slug, hecho);
         }
         cliente.pagaCon = '';
+        // El premio se queda listo en la tarjeta hasta que lo confirmen; el interruptor se apaga para el siguiente.
+        usarPremio = false;
+      } else if (respuesta.motivo === 'premio') {
+        // El premio ya no alcanza: se quita y se dice; la tarjeta y el menú se vuelven a leer. Otro toque lo manda sin él.
+        usarPremio = false;
+        avisoPedido = { texto: t.premioYaNo };
+        rev.renovar();
+        await Promise.all([cargar(true), miTarjeta.leer('')]);
       } else if (respuesta.motivo === 'no_recibe') {
         avisoPedido = { texto: t.noRecibimos };
         rev.renovar();
@@ -613,23 +633,51 @@
     if (!menu || muestra === 'barra') return [];
     const lista: Pestana[] = ['menu'];
     if (menu.restaurante.telefono) lista.push('pedido');
+    // La tarjeta de lealtad: prendida, o apagada si este celular ya tiene una (la sigue viendo y la puede borrar).
+    if (menu.tarjeta?.prendida || (menu.tarjeta && miTarjeta.guardada) || enTelTarjeta) lista.push('tarjeta');
     lista.push('asistente');
     return lista;
   });
   const pestanaActiva = $derived.by((): Pestana => {
     if (pila.some((e) => e.tipo === 'asistente')) return 'asistente';
+    if (conTarjetaVista) return 'tarjeta';
     if (conPedido) return 'pedido';
     return 'menu';
   });
 
   function alPestana(p: Pestana) {
+    // El teléfono de «Tu tarjeta» no se va de su pestaña.
+    if (enTelTarjeta) return;
     if (p === 'menu') return regresarA([]);
     if (p === pestanaActiva) return;
     // Una pestaña sustituye a la otra: lo que hubiera encima se reemplaza.
-    const nueva: Encima = p === 'asistente' ? { tipo: 'asistente' } : { tipo: 'pedido' };
+    const nueva: Encima = p === 'asistente' ? { tipo: 'asistente' } : p === 'tarjeta' ? { tipo: 'tarjeta' } : { tipo: 'pedido' };
     if (pila.length) regresarA([nueva]);
     else abrir(nueva);
   }
+
+  // ─── La tarjeta de lealtad (parte B): su pestaña, su vista y el premio en Tu pedido ───
+  const miTarjeta = new MiTarjeta(slug ?? '', !muestra);
+  const conTarjetaVista = $derived(pila.some((e) => e.tipo === 'tarjeta'));
+  // En el teléfono de «Tu tarjeta», la que manda el panel sin guardar (hasta que llegue, la guardada).
+  let reglaDelPanel = $state<Regla | null>(null);
+  const regla = $derived(enTelTarjeta && reglaDelPanel ? reglaDelPanel : menu?.tarjeta?.prendida ? menu.tarjeta : null);
+  // Ahí va la tarjeta de Rosa, con lo que lleva a escala de la regla (8 de 10 sellos, 86 de 100 puntos).
+  $effect(() => {
+    if (enTelTarjeta && regla && menu) miTarjeta.deMuestra(tarjetaDeRosa(regla, menu.ahora.fecha), 'K7MP2QXR');
+  });
+  const textosDeTarjeta = $derived(regla && menu ? textosTarjeta(regla, menu.restaurante.nombre, lengua, moneda) : null);
+  const premioListo = $derived(!!regla && !!miTarjeta.tarjeta?.premio_listo);
+  // «Usar mi premio» en Tu pedido: lo prende «Usarlo en mi pedido» desde la tarjeta.
+  let usarPremio = $state(false);
+  // Lo que ve Tu pedido: con la tarjeta prendida, si este celular tiene una (y lo que lleva) o no.
+  const deLaTarjeta = $derived.by((): DeLaTarjeta | null => {
+    if (!regla || !textosDeTarjeta) return null;
+    const conTarjeta = miTarjeta.estado === 'con' && !!miTarjeta.tarjeta;
+    // Mientras se lee (o si no se pudo, o espera que la pasen), nada: no se invita a sacar otra.
+    if (!conTarjeta && miTarjeta.estado !== 'sin') return null;
+    return { regla, tt: textosDeTarjeta, saldo: conTarjeta ? miTarjeta.tarjeta!.saldo : null, listo: conTarjeta && premioListo };
+  });
 
   // ─── Ajustes y la lupa (con el logo al centro) ───
   let lupaAbierta = $state(false);
@@ -715,7 +763,7 @@
   // El reloj del teléfono (el «14:32» de la maqueta): la hora del restaurante, que llega con el menú, y sigue andando.
   let reloj = $state('');
   $effect(() => {
-    const hora = enTelefono ? menu?.ahora.hora : null;
+    const hora = enTelefono || enTelTarjeta ? menu?.ahora.hora : null;
     if (!hora) return;
     const [h, m] = hora.split(':').map(Number);
     const leida = performance.now();
@@ -825,6 +873,9 @@
           alRecargar: () => cargar(true),
           alModo,
           alCartel,
+          alTarjeta: (regla) => {
+            if (enTelTarjeta && regla) reglaDelPanel = regla;
+          },
           alCerrar: () => {
             if (encima) cerrar();
           },
@@ -874,7 +925,7 @@
     {@const estadoBarra = textoEstado(menu.estado, lengua)}
     {@const abiertoBarra = !!menu.estado?.abierto}
     <!-- La barra del menú; la del asistente es la misma, y su lupa regresa al menú para buscar ahí. -->
-    {#snippet barra(enVista: boolean, enPedido = false)}
+    {#snippet barra(enVista: boolean, enPedido = false, enTarjeta = false)}
       <Barra
         nombre={r.nombre}
         logo={r.logo_ruta}
@@ -895,10 +946,12 @@
         alLupa={enVista ? buscarDesdeVista : alLupa}
         alAjustes={() => abrir({ tipo: 'ajustes' })}
         alDatos={enPedido ? (desde) => abrir({ tipo: 'datos', desde }) : undefined}
+        comoPedido={enTarjeta}
       />
     {/snippet}
     {#snippet barraDeVista()}{@render barra(true)}{/snippet}
     {#snippet barraDePedido()}{@render barra(true, true)}{/snippet}
+    {#snippet barraDeTarjeta()}{@render barra(true, false, true)}{/snippet}
     <div
       class="columna"
       class:f-con-app={pestanas.length > 0}
@@ -1027,7 +1080,7 @@
     </div>
 
     {#if pestanas.length}
-      <Abajo {pestanas} activa={pestanaActiva} cuantos={recibe ? cuantos : 0} {formas} {t} alElegir={alPestana} />
+      <Abajo {pestanas} activa={pestanaActiva} cuantos={recibe ? cuantos : 0} {premioListo} {formas} {t} alElegir={alPestana} />
     {/if}
 
     {#if conPlatica}
@@ -1045,6 +1098,28 @@
         barra={barraDeVista}
         alPreguntar={preguntarAlAsistente}
         alAbrirProducto={abrirProducto}
+      />
+    {/if}
+
+    {#if conTarjetaVista}
+      <VistaTarjeta
+        mi={miTarjeta}
+        {regla}
+        tt={textosDeTarjeta}
+        {t}
+        {lengua}
+        {formas}
+        restaurante={r.nombre}
+        logo={r.logo_ruta ? urlImagen(r.logo_ruta) : null}
+        telefono={r.telefono}
+        barra={barraDeTarjeta}
+        deMuestra={!!muestra}
+        alAviso={(desde) => abrir({ tipo: 'aviso', desde })}
+        alUsarPremio={() => {
+          if (enTelTarjeta) return;
+          usarPremio = true;
+          alPestana('pedido');
+        }}
       />
     {/if}
 
@@ -1079,6 +1154,9 @@
         alAsistente={() => alPestana('asistente')}
         nombre={r.nombre}
         alAviso={(desde) => abrir({ tipo: 'aviso', desde })}
+        tarjeta={deLaTarjeta}
+        bind:usarPremio
+        alTarjeta={() => alPestana('tarjeta')}
       />
     {/if}
 
@@ -1124,6 +1202,7 @@
         {lengua}
         {t}
         desde={abierto.desde}
+        conTarjeta={!!menu.tarjeta}
         alCerrar={cerrar}
       />
     {/each}
@@ -1141,7 +1220,7 @@
       </div>
     {/if}
 
-    {#if enTelefono && reloj}
+    {#if (enTelefono || enTelTarjeta) && reloj}
       <div class="tel-reloj" aria-hidden="true">{reloj}</div>
     {/if}
   {/if}

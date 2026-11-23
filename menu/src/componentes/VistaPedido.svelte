@@ -11,6 +11,10 @@
   la maqueta, en formas.css.
   Arriba de «Pedir por WhatsApp», el aviso corto de privacidad (los datos de los clientes, 21 nov 2026; maqueta
   Qvn42kQsyRX3m9vscikYfB): quién, qué datos y para qué, y la liga que abre el aviso completo. No sale en «Pedido enviado».
+  La tarjeta de lealtad (parte B, maqueta v22): vacío, la invitación a sacarla (o lo que llevas); con productos y tarjeta,
+  «Tu tarjeta» antes de «¿Cómo lo recibes?» con lo que suma y, con el premio listo, «Usar mi premio»; el premio en
+  producto como su renglón en $0 y en pesos como un renglón que resta en el resumen. El menú no cuenta el premio:
+  Postgres lo revisa al guardar el pedido (`hacer_pedido` con la llave) y la caja lo mete al confirmarlo.
 -->
 <script lang="ts">
   import type { Snippet } from 'svelte';
@@ -22,6 +26,8 @@
   import type { Moneda } from '../lib/preferencias';
   import { enSuLengua, type Lengua, type Textos } from '../lib/textos';
   import { quitarRevision } from '../lib/turnstile';
+  import type { DeLaTarjeta } from '../lib/textosTarjeta';
+  import TarjetaMini from '@app/diseno/TarjetaMini.svelte';
   import Icono from './Icono.svelte';
 
   let {
@@ -53,6 +59,9 @@
     alAsistente,
     nombre,
     alAviso,
+    tarjeta = null,
+    usarPremio = $bindable(false),
+    alTarjeta,
     deMuestra = false,
   }: {
     renglones: EnCarrito[];
@@ -86,6 +95,12 @@
     // El nombre del restaurante, para el aviso corto; su liga abre el aviso de privacidad, que crece desde ella.
     nombre: string;
     alAviso: (desde: HTMLElement) => void;
+    // La tarjeta de lealtad prendida (null: sin tarjeta en esta sucursal, o apagada).
+    tarjeta?: DeLaTarjeta | null;
+    // «Usar mi premio»: lo prende también «Usarlo en mi pedido» desde la tarjeta.
+    usarPremio?: boolean;
+    // Lleva a la pestaña Tarjeta.
+    alTarjeta?: () => void;
     // La vista previa del panel (parte C2): el pedido no existe, así que «Abrir WhatsApp otra vez» no abre nada.
     deMuestra?: boolean;
   } = $props();
@@ -106,8 +121,25 @@
   const vigentes = $derived(renglones.filter((r) => !r.aviso?.fuera));
   const cuantos = $derived(vigentes.reduce((s, r) => s + r.cantidad, 0));
   const total = $derived(Math.round(vigentes.reduce((s, r) => s + importe(r), 0) * 100) / 100);
+  // ─── La tarjeta de lealtad ───
+  const regla = $derived(tarjeta?.regla ?? null);
+  const premioProducto = $derived(regla?.premio.tipo === 'producto');
+  const premioPesos = $derived(regla?.premio.tipo === 'pesos' ? (regla.premio.pesos ?? 0) : 0);
+  // Se puede usar: el premio está listo, el producto no se acabó y, en pesos, el pedido vale al menos eso (lo mismo que
+  // revisa hacer_pedido; si algo cambió, Postgres dice que no y el premio se quita).
+  const premioSePuede = $derived(!!tarjeta?.listo && !!regla?.premio.disponible && (premioProducto || total >= premioPesos));
+  const conPremio = $derived(usarPremio && premioSePuede);
+  const menos = $derived(conPremio ? premioPesos : 0);
+  const aPagar = $derived(Math.round((total - menos) * 100) / 100);
+  // Lo que suma al pagarlo, como lo cuenta Postgres al cerrar la cuenta (sin el envío, que pone la caja).
+  const suma = $derived.by(() => {
+    if (!regla) return 0;
+    if (regla.forma === 'sellos') return aPagar >= (regla.minimo ?? 0) ? 1 : 0;
+    return Math.floor(aPagar / (regla.pesos_por_punto ?? 1));
+  });
+
   // Solo un «aprox.» para orientarse, con el dólar del día: el pedido se cobra en pesos.
-  const usd = $derived(tipoCambio ? (total / tipoCambio).toFixed(2) : null);
+  const usd = $derived(tipoCambio ? (aPagar / tipoCambio).toFixed(2) : null);
 
   const que = $derived(hecho ? 'hecho' : cerrado ? 'cerrado' : renglones.length ? 'lista' : 'vacio');
 
@@ -202,7 +234,7 @@
 
   $effect(() => {
     // Lo que cambia el texto del botón.
-    void [total, dom, moneda, lengua, ocupado, boton];
+    void [aPagar, dom, moneda, lengua, ocupado, boton];
     ajustar();
   });
 
@@ -289,10 +321,23 @@
               <span>{pesos(r.importe)}</span>
             </div>
           {/each}
+          {#if p.premio}
+            <!-- El premio de su tarjeta: el producto en $0, o lo que resta. -->
+            <div class="f-exito-l">
+              <span class="n"
+                ><span>{#if p.premio.tipo === 'producto'}<b>1 ×</b> {p.premio.nombre}{:else}{t.premioTarjeta}{/if}</span
+                >{#if p.premio.tipo === 'producto'}<small>{t.premioTarjeta}</small>{/if}</span
+              >
+              <span>{p.premio.tipo === 'producto' ? pesos(0) : `−${pesos(p.premio.pesos ?? 0)}`}</span>
+            </div>
+          {/if}
           <div class="f-ped-res-corte" aria-hidden="true"></div>
           <div class="t">
             <span>{t.total}</span>
-            <span class="f-ped-total"><b>{pesos(p.total)}</b>{#if p.tipo === 'domicilio'}<small>{t.masEnvio}</small>{/if}</span>
+            <span class="f-ped-total"
+              ><b>{pesos(p.premio?.tipo === 'pesos' ? Math.round((p.total - (p.premio.pesos ?? 0)) * 100) / 100 : p.total)}</b
+              >{#if p.tipo === 'domicilio'}<small>{t.masEnvio}</small>{/if}</span
+            >
           </div>
         </section>
       </div>
@@ -326,6 +371,23 @@
           ></path>
         </svg>
         <button type="button" class="f-ped-ir suave corto" onclick={alMenu}><Icono nombre="lista" tamano={17} grosor={1.9} />{t.verMenu}</button>
+        {#if tarjeta && regla}
+          <!-- La tarjeta de lealtad: sin tarjeta, la invitación a sacarla; con ella, lo que llevas o que tu premio está listo. -->
+          {@const tt = tarjeta.tt}
+          <button type="button" class="tl-invita" onclick={alTarjeta}>
+            <TarjetaMini estilo={regla.estilo} color={regla.color} forma={regla.forma} meta={regla.meta} saldo={tarjeta.saldo ?? Math.round(regla.meta * 0.3)} />
+            <span class="t">
+              {#if tarjeta.saldo === null}
+                <b>{tt.invitaB}</b><span>{tt.invitaS}</span>
+              {:else if tarjeta.listo}
+                <b>{tt.vacioListoB}</b><span>{tt.vacioListoS}</span>
+              {:else}
+                <b>{tt.vacioConB(tarjeta.saldo)}</b><span>{tt.lleva(tarjeta.saldo)}</span>
+              {/if}
+            </span>
+            <Icono nombre="flechita" tamano={18} grosor={2} />
+          </button>
+        {/if}
       </div>
     {:else}
       <div class="f-ped-dentro">
@@ -367,7 +429,60 @@
               {/if}
             </div>
           {/each}
+          {#if conPremio && premioProducto && tarjeta}
+            <!-- El premio en producto: su renglón en $0, en el verde de la tarjeta, sin − n +. -->
+            <div class="f-ped-linea tl-linea-premio">
+              <span class="f-ped-q" style="cursor: default">
+                <span class="tl-premio-foto"><Icono nombre="regalo" tamano={22} grosor={1.8} /></span>
+                <span class="t">
+                  <b>{enSuLengua(regla?.premio.nombre ?? '', regla?.premio.nombre_en ?? null, lengua)}</b>
+                  <span class="imp">{pesos(0)}<small> · {tarjeta.tt.premioLinea}</small></span>
+                </span>
+              </span>
+              <span class="tl-etiqueta-premio">{tarjeta.tt.premioChip}</span>
+            </div>
+          {/if}
         </div>
+
+        {#if tarjeta && regla && tarjeta.saldo !== null}
+          {@const tt = tarjeta.tt}
+          <!-- Tu tarjeta: lo que te suma este pedido y lo que llevas (te lleva a la tarjeta); con el premio listo, el
+               interruptor para usarlo aquí. -->
+          <section class="f-ped-seccion tl-seccion">
+            <h3>{tt.sec}</h3>
+            <div class="tl-ped">
+              <button type="button" class="tl-ped-fila" onclick={alTarjeta}>
+                <TarjetaMini estilo={regla.estilo} color={regla.color} forma={regla.forma} meta={regla.meta} saldo={tarjeta.saldo} />
+                <span class="t">
+                  {#if tarjeta.listo}
+                    <b>{tt.vacioListoB}</b><span>{tt.listoPedidoS}</span>
+                  {:else}
+                    <b>{suma > 0 ? tt.suma(suma) : regla.forma === 'sellos' ? tt.noSuma(regla.minimo ?? 0) : tt.suma(0)}</b>
+                    <span>{tt.lleva(tarjeta.saldo)}</span>
+                  {/if}
+                </span>
+                <Icono nombre="flechita" tamano={18} grosor={2} />
+              </button>
+              {#if tarjeta.listo}
+                <div class="tl-ped-usa">
+                  <span>
+                    <b>{tt.usar}</b>
+                    <small>{!regla.premio.disponible ? tt.premioAgotado : premioSePuede ? tt.usarS : tt.premioNoAlcanza}</small>
+                  </span>
+                  <button
+                    type="button"
+                    class="tl-switch"
+                    role="switch"
+                    aria-checked={conPremio}
+                    aria-label={tt.usar}
+                    disabled={!premioSePuede}
+                    onclick={() => (usarPremio = !conPremio)}
+                  ></button>
+                </div>
+              {/if}
+            </div>
+          </section>
+        {/if}
 
         {#if haceEnvios}
           <!-- Un interruptor de dos: la elegida en una pastilla que se desliza. -->
@@ -466,11 +581,14 @@
         <!-- El resumen como un ticket: el subtotal (y a domicilio, el envío), el corte y el total, que rueda al cambiar. -->
         <section class="f-ped-resumen">
           <div class="f-ped-res-renglon"><span>{t.subtotal} · {t.productos(cuantos)}</span><span>{pesos(total)}</span></div>
+          {#if menos > 0 && tarjeta}
+            <div class="f-ped-res-renglon tl-res-premio"><span>{tarjeta.tt.premioLinea}</span><span>−{pesos(menos)}</span></div>
+          {/if}
           <div class="f-ped-res-renglon f-ped-envio"><span>{t.envio}</span><span>{t.envioTexto}</span></div>
           <div class="f-ped-res-corte" aria-hidden="true"></div>
           <div class="t">
             <span>{t.total}</span>
-            <span class="f-ped-total"><b use:rueda={total}>{pesos(total)}</b><small class="f-ped-mas-envio">{t.masEnvio}</small></span>
+            <span class="f-ped-total"><b use:rueda={aPagar}>{pesos(aPagar)}</b><small class="f-ped-mas-envio">{t.masEnvio}</small></span>
           </div>
           {#if moneda === 'usd' && usd !== null}<div class="aprox">≈ US${usd} {t.aprox}</div>{/if}
         </section>
@@ -518,7 +636,7 @@
           <span class="f-ped-puntos" aria-hidden="true"><i></i><i></i><i></i></span><span>{t.mandando}</span>
         {:else}
           <span class="icono" bind:this={icono}><Icono nombre="mensaje" tamano={18} grosor={1.9} /></span><span
-            >{t.hacer} · {pesos(total)}{dom ? t.masEnvio : ''}</span
+            >{t.hacer} · {pesos(aPagar)}{dom ? t.masEnvio : ''}</span
           >
         {/if}
       </button>

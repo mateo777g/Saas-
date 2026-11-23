@@ -1050,6 +1050,8 @@
 /* Mientras su ventana está abierta, el ícono de persona se vuelve la ventana. */
 .dc-fuera { visibility: hidden; }
 .marca .dc-persona { margin-left: auto; flex: none; }
+/* Con la personita, la marca toma lo que sobra, así la personita llega a la orilla derecha y no se pega al nombre. */
+.menu .barra:not(.f-centro) .marca:has(.dc-persona) { flex: 1 1 auto; }
 /* Con el logo al centro, la personita va junto al engrane. */
 .dc-der-fila { display: flex; align-items: center; gap: 2px; }
 

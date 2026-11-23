@@ -1,0 +1,168 @@
+/* La tarjeta de lealtad dibujada (la misma en el menú, en Tu tarjeta del panel y en el cobro), copiada de la maqueta
+   aprobada (planes/trabajo/tarjeta-lealtad/maqueta/tarjeta.css, v22). Su diseño sale del estilo que elige Don Chuy
+   (data-tl-estilo) y su color, de su cajita de color. Las variables las pone lib/tarjetaFondo.ts (pintarTarjeta):
+   --tl-color, --tl-fondo-* (el fondo ya pintado, como imagen), --tl-tinta (blanco o negro, lo que se lea), --tl-oscuro y
+   --tl-canto. Al frente: qué es, lo juntado (los sellos en círculos o los puntos con su barra) y lo que falta. Atrás: el
+   logo y el nombre del restaurante, su nombre, su número, el código corto y el QR. Se voltea con un toque. Lo usa
+   diseno/TarjetaLealtad.svelte; la página lo importa una vez. */
+/* Cada estilo pone sus variables donde dice data-tl-estilo: así un cuadrito de muestra lleva el suyo dentro de la página. */
+/* Todas con el 3D de Metal y Brillante (el developer, 22 nov: «Todas con 3D»): la pose de reposo y el canto con su sombra. */
+[data-tl-estilo] { --tl-pose: rotateX(3.5deg) rotateY(-4.5deg); --tl-sombra: var(--tl-sombra-3d); }
+/* El 3D de Metal y Brillante: el canto de 6 rebanadas que se oscurecen y su sombra. */
+[data-tl-estilo] { --tl-sombra-3d: 0.4px 0.67px 0 var(--tl-canto), 0.8px 1.33px 0 color-mix(in srgb, var(--tl-canto) 92%, #000),
+    1.2px 2px 0 color-mix(in srgb, var(--tl-canto) 84%, #000), 1.6px 2.67px 0 color-mix(in srgb, var(--tl-canto) 76%, #000),
+    2px 3.33px 0 color-mix(in srgb, var(--tl-canto) 68%, #000), 2.4px 4px 0 color-mix(in srgb, var(--tl-canto) 60%, #000),
+    8px 18px 26px -8px rgba(0, 0, 0, 0.42); }
+[data-tl-estilo='liquido'] {
+  --tl-fondo: var(--tl-fondo-liquido);
+  --tl-frente: var(--tl-fondo) center / cover, var(--tl-oscuro);
+  --tl-velo: linear-gradient(180deg, rgba(0, 0, 0, 0.16), rgba(0, 0, 0, 0) 32%, rgba(0, 0, 0, 0) 58%, rgba(0, 0, 0, 0.3));
+  --tl-atras: var(--tl-oscuro); --tl-atras-img: var(--tl-fondo); --tl-atras-tinta: var(--tl-tinta);
+  --tl-hueco: rgba(0, 0, 0, 0.2); --tl-hueco-borde: rgba(255, 255, 255, 0.62);
+}
+[data-tl-estilo='liso'] {
+  --tl-frente: radial-gradient(120% 95% at 0% 0%, rgba(255, 255, 255, 0.24), rgba(255, 255, 255, 0) 55%),
+    radial-gradient(90% 80% at 100% 110%, rgba(0, 0, 0, 0.22), rgba(0, 0, 0, 0) 60%),
+    linear-gradient(140deg, var(--tl-color), color-mix(in srgb, var(--tl-color) 72%, #000));
+  --tl-velo: none; --tl-atras-img: none; --tl-atras-tinta: var(--tl-tinta);
+  --tl-atras: radial-gradient(120% 95% at 100% 0%, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0) 55%),
+    linear-gradient(220deg, var(--tl-color), color-mix(in srgb, var(--tl-color) 72%, #000));
+  --tl-hueco: transparent; --tl-hueco-borde: color-mix(in srgb, var(--tl-tinta) 50%, transparent);
+}
+/* Agua (del «Liquid Checkout» de Nimbus UI): vidrio con agua adentro a media tarjeta, con su orilla brillante, la luz del
+   fondo, burbujas y el brillo de colores del vidrio; una sola foto, quieta. Atrás, el degradado de su vidrio. */
+[data-tl-estilo='agua'] {
+  --tl-fondo: var(--tl-fondo-agua);
+  --tl-frente: var(--tl-fondo) center / cover, var(--tl-color);
+  --tl-velo: linear-gradient(180deg, rgba(0, 0, 0, 0.06), rgba(0, 0, 0, 0) 30%, rgba(0, 0, 0, 0) 62%, rgba(0, 0, 0, 0.22));
+  --tl-atras: radial-gradient(90% 70% at 15% 0%, rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0) 60%),
+    linear-gradient(160deg, var(--tl-agua-a), var(--tl-agua-b));
+  --tl-atras-img: none; --tl-atras-tinta: var(--tl-tinta);
+  --tl-hueco: rgba(255, 255, 255, 0.14); --tl-hueco-borde: rgba(255, 255, 255, 0.7);
+}
+/* Olas: como Liso (sus sellos punteados), con las olas suaves de la referencia; atrás, las mismas olas. */
+[data-tl-estilo='olas'] {
+  --tl-fondo: var(--tl-fondo-olas);
+  --tl-frente: var(--tl-fondo) center / cover, var(--tl-color);
+  --tl-velo: none; --tl-atras: var(--tl-fondo) center / cover, var(--tl-color); --tl-atras-img: none; --tl-atras-tinta: var(--tl-tinta);
+  --tl-hueco: transparent; --tl-hueco-borde: color-mix(in srgb, var(--tl-tinta) 50%, transparent);
+}
+/* Agua: sus brillos (las dos franjas de colores del vidrio) van aparte de la foto y se mecen en su lugar, de izquierda a
+   derecha, despacio y poquito (el developer: «nada más se van como que tambaleando»). Quietos con «reducir movimiento». */
+[data-tl-estilo='agua'] .tl-destello { opacity: 1; inset: 0 -12%;
+  background: linear-gradient(131deg, transparent 22%, rgba(236, 228, 255, 0.16) 25.5%, transparent 29%,
+    transparent 41%, rgba(255, 226, 244, 0.2) 46%, rgba(226, 242, 255, 0.28) 50.5%, rgba(228, 255, 240, 0.2) 55%, transparent 60%);
+  animation: tl-vaiven 4.8s ease-in-out infinite alternate; }
+/* El agua viva va encima de la foto y debajo del velo y de lo escrito; fuera de Agua no se ve. */
+.tl-agua-viva { position: absolute; inset: 0; width: 100%; height: 100%; z-index: -2; pointer-events: none; display: none; }
+[data-tl-estilo='agua'] .tl-agua-viva { display: block; }
+.tl-frente::before { z-index: -1; }
+@keyframes tl-vaiven { from { transform: translateX(-5%); } to { transform: translateX(5%); } }
+@media (prefers-reduced-motion: reduce) { [data-tl-estilo='agua'] .tl-destello { animation: none; } }
+/* Metal y Brillante (del «Card Tilt Depth»): la cara en el color elegido con su material ya pintado (metal cepillado o un
+   reflejo limpio, con su bisel), el grosor de 6 px (seis rebanadas que se oscurecen, en la pose de reposo del componente:
+   3.5° y -4.5°), su sombra, y el destello que la cruza una vez al tocarla. Atrás, el mismo material. */
+[data-tl-estilo='metal'], [data-tl-estilo='brillante'] {
+  --tl-frente: var(--tl-fondo) center / cover, var(--tl-color);
+  --tl-velo: none;
+  --tl-atras: var(--tl-fondo) center / cover, var(--tl-color); --tl-atras-img: none; --tl-atras-tinta: var(--tl-tinta);
+  --tl-hueco: rgba(0, 0, 0, 0.12); --tl-hueco-borde: color-mix(in srgb, var(--tl-tinta) 55%, transparent);
+  --tl-pose: rotateX(3.5deg) rotateY(-4.5deg);
+  --tl-sombra: var(--tl-sombra-3d);
+}
+[data-tl-estilo='metal'] { --tl-fondo: var(--tl-fondo-metal); }
+[data-tl-estilo='brillante'] { --tl-fondo: var(--tl-fondo-brillo); }
+[data-tl-estilo='metal'] .tl-sello, [data-tl-estilo='brillante'] .tl-sello { border-style: solid; }
+.tl-destello { position: absolute; inset: 0; z-index: 2; pointer-events: none; opacity: 0;
+  background: linear-gradient(115deg, transparent 38%, rgba(255, 255, 255, 0.42) 46%, transparent 54%, transparent 57%,
+    rgba(255, 255, 255, 0.24) 59.5%, transparent 62%) 100% 0 / 300% 100% no-repeat; }
+/* Con un color claro (tinta negra), el velo del líquido aclara en lugar de oscurecer. */
+[data-tl-tinta='negra'] [data-tl-estilo='liquido'], [data-tl-tinta='negra'][data-tl-estilo='liquido'],
+[data-tl-tinta='negra'] [data-tl-estilo='agua'], [data-tl-tinta='negra'][data-tl-estilo='agua'] {
+  --tl-velo: linear-gradient(180deg, rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0) 32%, rgba(255, 255, 255, 0) 58%, rgba(255, 255, 255, 0.34));
+  --tl-hueco: rgba(255, 255, 255, 0.3); --tl-hueco-borde: rgba(0, 0, 0, 0.42);
+}
+
+.tl-tarjeta { position: relative; display: block; width: 100%; aspect-ratio: 1.586; padding: 0; border: 0;
+  background: none; perspective: 1100px; cursor: pointer; font-family: var(--jakarta, 'Plus Jakarta Sans', sans-serif);
+  -webkit-tap-highlight-color: transparent; text-align: left; }
+.tl-tarjeta.quieta { cursor: default; }
+.tl-gira { position: absolute; inset: 0; transform-style: preserve-3d; transform: var(--tl-pose, none); transition: transform 640ms cubic-bezier(0.34, 1.32, 0.5, 1); }
+.tl-tarjeta[data-volteada='true'] .tl-gira { transform: var(--tl-pose, ) rotateY(180deg); }
+.tl-tarjeta:active:not(.quieta) .tl-gira { scale: 0.985; }
+.tl-cara { position: absolute; inset: 0; border-radius: 18px; overflow: hidden; -webkit-backface-visibility: hidden; backface-visibility: hidden;
+  box-shadow: var(--tl-sombra, 0 14px 30px -10px rgba(0, 0, 0, 0.35), 0 2px 6px rgba(0, 0, 0, 0.08)), inset 0 0 0 1px rgba(255, 255, 255, 0.15); }
+.tl-frente { display: flex; flex-direction: column; padding: 15px 17px 14px; color: var(--tl-tinta); background: var(--tl-frente); isolation: isolate; }
+/* El velo: oscurece apenas arriba y abajo, donde van las letras, para que se lean sobre lo claro del líquido. */
+.tl-frente::before { content: ''; position: absolute; inset: 0; background: var(--tl-velo); z-index: -1; pointer-events: none; }
+/* Un brillo que cruza al voltear, para que el giro se sienta de plástico y no de papel. */
+.tl-frente::after { content: ''; position: absolute; inset: -40% -60%; background: linear-gradient(105deg, transparent 42%, rgba(255, 255, 255, 0.16) 50%, transparent 58%);
+  transform: translateX(-30%); transition: transform 640ms ease; pointer-events: none; }
+.tl-tarjeta[data-volteada='true'] .tl-frente::after { transform: translateX(30%); }
+.tl-arriba { display: flex; align-items: center; gap: 9px; min-height: 22px; }
+.tl-crece-t { flex: 1; }
+.tl-etq { font: 600 9.5px/1 var(--mono, 'JetBrains Mono', monospace); letter-spacing: 0.16em; opacity: 0.86; white-space: nowrap; }
+.tl-frente .tl-etq, .tl-frente .tl-abajo { text-shadow: 0 1px 10px rgba(0, 0, 0, 0.22); }
+[data-tl-tinta='negra'] .tl-frente .tl-etq, [data-tl-tinta='negra'] .tl-frente .tl-abajo { text-shadow: none; }
+.tl-listo { display: inline-flex; align-items: center; gap: 5px; height: 22px; padding: 0 9px; border-radius: 99px; background: var(--tl-tinta);
+  color: var(--tl-oscuro); font-size: 11px; font-weight: 800; white-space: nowrap; }
+.tl-listo svg { width: 13px; height: 13px; }
+.tl-sellos { display: grid; grid-template-columns: repeat(var(--tl-columnas, 5), 1fr); gap: 7px 0; justify-items: center; margin: auto 0; padding: 4px 0; }
+.tl-sello { width: 32px; height: 32px; border-radius: 50%; border: 1.5px dashed var(--tl-hueco-borde); background: var(--tl-hueco); display: grid; place-items: center;
+  color: color-mix(in srgb, var(--tl-tinta) 70%, transparent); }
+[data-tl-estilo='liquido'] .tl-sello, [data-tl-estilo='agua'] .tl-sello { border-style: solid; }
+.tl-sello svg { width: 16px; height: 16px; }
+.tl-sello.lleno { border: 0; background: var(--tl-tinta); color: var(--tl-oscuro); box-shadow: 0 2px 6px rgba(0, 0, 0, 0.18); }
+.tl-sello.premio:not(.lleno) { border-style: solid; border-color: color-mix(in srgb, var(--tl-tinta) 78%, transparent); color: var(--tl-tinta); }
+.tl-puntos { margin: auto 0; display: flex; flex-direction: column; gap: 9px; }
+.tl-puntos-n { display: flex; align-items: baseline; gap: 7px; text-shadow: 0 1px 12px rgba(0, 0, 0, 0.2); }
+[data-tl-tinta='negra'] .tl-puntos-n { text-shadow: none; }
+.tl-puntos-n b { font-size: 42px; font-weight: 800; line-height: 1; letter-spacing: -0.03em; }
+.tl-puntos-n span { font-size: 13px; font-weight: 600; opacity: 0.85; }
+.tl-tarjeta .tl-barra { height: 8px; border-radius: 4px; background: color-mix(in srgb, var(--tl-oscuro) 38%, transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--tl-tinta) 28%, transparent); overflow: hidden; }
+.tl-tarjeta .tl-barra i { display: block; height: 100%; border-radius: inherit; background: var(--tl-tinta); }
+.tl-abajo { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+.tl-abajo b { font-size: 14px; font-weight: 800; white-space: nowrap; }
+.tl-abajo span { font-size: 11.5px; font-weight: 600; opacity: 0.92; text-align: right; }
+/* Atrás (v3, de la referencia del developer): el fondo de su estilo (en Líquido, el mismo desenfocado 16 px, como
+   cards-shader); arriba el logo y el nombre del restaurante; abajo, a la izquierda, su nombre, su número y el código corto en
+   una barrita blanca; a la derecha, el QR chico en su cuadro blanco (así se lee en cualquier color). Sin marca de Fragmentless
+   (encuesta del 22 nov: la tarjeta es solo del restaurante, como su menú). */
+.tl-atras { transform: rotateY(180deg); background: var(--tl-atras); color: var(--tl-atras-tinta); display: flex; flex-direction: column;
+  justify-content: space-between; padding: 15px 16px 14px 17px; isolation: isolate; }
+.tl-atras::before { content: ''; position: absolute; inset: -32px; background: var(--tl-atras-img) center / cover; filter: blur(16px); z-index: -1; }
+.tl-atras::after { content: ''; position: absolute; inset: 0; background: var(--tl-velo); z-index: -1; pointer-events: none; }
+.tl-at-arriba { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.tl-at-logo { width: 34px; height: 34px; flex: none; border-radius: 9px; background: #fff; overflow: hidden; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.16); }
+.tl-at-logo img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.tl-at-nombres { display: flex; flex-direction: column; gap: 1px; min-width: 0; text-shadow: 0 1px 10px rgba(0, 0, 0, 0.22); }
+.tl-at-nombres b { font-size: 15px; font-weight: 800; letter-spacing: -0.01em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tl-at-nombres span { font-size: 11px; font-weight: 600; opacity: 0.82; }
+.tl-at-abajo { display: flex; align-items: flex-end; justify-content: space-between; gap: 14px; }
+.tl-datos { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; text-shadow: 0 1px 10px rgba(0, 0, 0, 0.22); }
+[data-tl-tinta='negra'] .tl-at-nombres, [data-tl-tinta='negra'] .tl-datos { text-shadow: none; }
+.tl-titular { font: 700 12.5px var(--mono, 'JetBrains Mono', monospace); letter-spacing: 0.06em; text-transform: uppercase; white-space: nowrap;
+  overflow: hidden; text-overflow: ellipsis; }
+.tl-tel { font: 500 11px var(--mono, 'JetBrains Mono', monospace); opacity: 0.8; }
+.tl-codigo-et { margin-top: 9px; font-size: 10px; font-weight: 600; opacity: 0.8; white-space: nowrap; }
+.tl-codigo { margin-top: 4px; align-self: flex-start; min-width: 62%; height: 24px; display: flex; align-items: center; padding: 0 11px; border-radius: 99px;
+  background: #fff; color: #141414; text-shadow: none; font: 700 12px var(--mono, 'JetBrains Mono', monospace); letter-spacing: 0.06em; white-space: nowrap; }
+.tl-qr { width: 29%; aspect-ratio: 1; flex: none; padding: 6px; border-radius: 11px; background: #fff; box-shadow: 0 4px 14px -4px rgba(0, 0, 0, 0.3); }
+.tl-qr svg { display: block; width: 100%; height: 100%; }
+
+/* La tarjeta chiquita (en Tu pedido y en la cabeza de la ventana), en el estilo y el color de la grande. */
+.tl-mini { position: relative; width: 58px; height: 37px; flex: none; border-radius: 8px; overflow: hidden; background: var(--tl-frente);
+  box-shadow: 0 6px 14px -6px rgba(0, 0, 0, 0.4), inset 0 0 0 1px rgba(255, 255, 255, 0.15); display: grid; grid-template-columns: repeat(var(--tl-columnas, 5), 1fr); align-content: center;
+  justify-items: center; gap: 4px 0; padding: 0 6px; }
+.tl-mini i { width: 6px; height: 6px; border-radius: 50%; border: 1px solid var(--tl-hueco-borde); background: var(--tl-hueco); }
+.tl-mini i.lleno { background: var(--tl-tinta); border-color: var(--tl-tinta); }
+.tl-mini.puntos { display: flex; align-items: flex-end; padding: 0 7px 8px; }
+.tl-mini.puntos::after { content: ''; flex: 1; height: 4px; border-radius: 2px; background: linear-gradient(90deg, var(--tl-tinta) var(--p, 60%), color-mix(in srgb, var(--tl-tinta) 30%, transparent) var(--p, 60%)); }
+@media (prefers-reduced-motion: reduce) { .tl-gira, .tl-frente::after { transition: none; } }
+/* Con tinta negra (un color claro), lo lleno va en negro con su palomita en el color de la tarjeta, para que se vea. */
+[data-tl-tinta='negra'] .tl-sello.lleno, [data-tl-tinta='negra'] .tl-listo { color: var(--tl-color); }
+
+/* Con más de 10 sellos, más chicos para que quepan en tres renglones. */
+.tl-sellos.muchos .tl-sello { width: 26px; height: 26px; }
+.tl-sellos.muchos .tl-sello svg { width: 13px; height: 13px; }
+.tl-sello.premio svg { color: inherit; }

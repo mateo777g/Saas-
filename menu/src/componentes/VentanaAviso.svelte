@@ -6,7 +6,7 @@
   es el borrador aprobado (lib/aviso.ts), con los datos de Tu restaurante; lo revisa un abogado antes del primer cliente.
 -->
 <script lang="ts">
-  import { AVISO, pedazos, type DatosDelAviso, type Pedazo } from '../lib/aviso';
+  import { avisoCompleto, pedazos, type DatosDelAviso, type Pedazo } from '../lib/aviso';
   import type { Lengua, Textos } from '../lib/textos';
   import VentanaCrece from './VentanaCrece.svelte';
 
@@ -15,11 +15,20 @@
     lengua,
     t,
     desde,
+    conTarjeta = false,
     alCerrar,
-  }: { datos: DatosDelAviso; lengua: Lengua; t: Textos; desde: HTMLElement | null; alCerrar: () => void } = $props();
+  }: {
+    datos: DatosDelAviso;
+    lengua: Lengua;
+    t: Textos;
+    desde: HTMLElement | null;
+    // La sucursal tiene su tarjeta de lealtad (prendida o apagada): el aviso suma su parte.
+    conTarjeta?: boolean;
+    alCerrar: () => void;
+  } = $props();
 
   const bloques = $derived(
-    AVISO[lengua].map((b): { p: Pedazo[] } | { lista: Pedazo[][] } =>
+    avisoCompleto(lengua, conTarjeta).map((b): { p: Pedazo[] } | { lista: Pedazo[][] } =>
       'p' in b ? { p: pedazos(b.p, datos, lengua) } : { lista: b.lista.map((x) => pedazos(x, datos, lengua)) },
     ),
   );

@@ -82,10 +82,39 @@ export type MenuPublico = {
   pedidos_pausados: boolean;
   // Si el asistente contesta (parte 6c): su sobre tiene dinero. Sin números.
   asistente_contesta: boolean;
+  // La tarjeta de lealtad (migración tarjeta_lealtad): null si la sucursal no tiene; apagada si tiene regla o ya tiene
+  // tarjetas (el aviso sigue hablando de ellas y su dueña la puede ver y borrar); prendida con su regla, su estilo, su color
+  // ya resuelto por Postgres y su premio. Los dólares del premio los calcula Postgres.
+  tarjeta: TarjetaDelMenu | null;
   // Cada cartel es una imagen subida o la foto de un producto de Mi menú (migración tu_menu_en_linea).
   carteles: { ruta: string; producto_id: number | null }[];
   categorias: Categoria[];
 };
+
+export type EstiloTarjeta = 'liquido' | 'agua' | 'metal' | 'brillante' | 'liso' | 'olas';
+
+export type TarjetaDelMenu =
+  | { prendida: false }
+  | {
+      prendida: true;
+      forma: 'sellos' | 'puntos';
+      meta: number;
+      // Sellos: lo mínimo pagado para ganar uno. Puntos: cuántos pesos vale un punto.
+      minimo: number | null;
+      pesos_por_punto: number | null;
+      estilo: EstiloTarjeta;
+      color: string;
+      premio: {
+        tipo: 'producto' | 'pesos';
+        producto_id: number | null;
+        nombre: string | null;
+        nombre_en: string | null;
+        pesos: number | null;
+        pesos_usd: number | null;
+        // Que se pueda canjear ahora (un producto agotado o archivado no).
+        disponible: boolean;
+      };
+    };
 
 const URL_SUPABASE = import.meta.env.VITE_SUPABASE_URL;
 const LLAVE = import.meta.env.VITE_SUPABASE_LLAVE_PUBLICABLE;

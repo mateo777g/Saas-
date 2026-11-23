@@ -102,6 +102,57 @@ export const AVISO: Record<Lengua, Bloque[]> = {
   ],
 };
 
+// La parte de la tarjeta de lealtad (parte B, 22 nov 2026): el borrador aprobado de planes/trabajo/tarjeta-lealtad/aviso.md,
+// palabra por palabra. Va después de «En tu celular» y antes de «Con quién», solo en el menú de una sucursal que tiene su
+// tarjeta (prendida o apagada). También la revisa el abogado.
+export const AVISO_TARJETA: Record<Lengua, Bloque[]> = {
+  es: [
+    { p: "**Tu tarjeta de lealtad.** Sacarla es opcional: sin ella pides igual. Si la sacas, y solo con tu permiso (la casilla «Acepto el aviso de privacidad»), usamos tu nombre y tu teléfono para:" },
+    {
+      lista: [
+        "sumarte tus sellos o tus puntos cada vez que pagas una cuenta con ella, en el local o en un pedido de este menú;",
+        "darte tu premio cuando lo juntes;",
+        "pasar tu tarjeta a otro celular si cambias.",
+      ],
+    },
+    { p: "Guardamos tu nombre, tu teléfono, lo que llevas juntado, en qué cuentas sumaste o canjeaste, y la fecha de tu última compra. Tu tarjeta sirve solo en esta sucursal. Quien te cobra ve tu nombre y lo que llevas juntado, no tu teléfono. No te mandamos mensajes ni publicidad por tenerla, y ningún servicio de inteligencia artificial la lee." },
+    { p: "Tu celular guarda una llave secreta de tu tarjeta, la que va en su código QR: así solo tú puedes canjear tu premio. «Borrar mis datos» la olvida en ese celular, pero tu tarjeta sigue, y la recuperas con un código que confirma el restaurante." },
+    { p: "Tu tarjeta se borra sola si pasas 12 meses sin comprar. La borras cuando quieras con «Borrar mi tarjeta», en tu tarjeta, o pidiéndonoslo por WhatsApp desde su número; borrarla también es retirar tu permiso. Se borra para siempre, con lo que llevabas juntado. Un premio que ya usaste se queda en la cuenta donde lo usaste, como «Premio de la tarjeta»." },
+  ],
+  en: [
+    { p: "**Your loyalty card.** Getting it is optional: you can order without it. If you get it, and only with your permission (the «I accept the privacy notice» box), we use your name and phone number to:" },
+    {
+      lista: [
+        "add your stamps or points every time you pay a bill with it, at the restaurant or in an order from this menu;",
+        "give you your reward when you earn it;",
+        "move your card to another phone if you change.",
+      ],
+    },
+    { p: "We keep your name, your phone number, what you have earned, which bills you earned or redeemed on, and the date of your last purchase. Your card only works at this branch. Whoever charges you sees your name and what you have earned, not your phone number. We do not send you messages or advertising for having it, and no artificial intelligence service reads it." },
+    { p: "Your phone keeps a secret key to your card, the one in its QR code: that way only you can redeem your reward. «Delete my data» forgets it on that phone, but your card stays, and you can recover it with a code the restaurant confirms." },
+    { p: "Your card is deleted automatically after 12 months without a purchase. You can delete it anytime with «Delete my card», on your card, or by asking us on WhatsApp from its number; deleting it also withdraws your permission. It is deleted for good, along with what you had earned. A reward you already used stays on the bill where you used it, marked «Premio de la tarjeta» (loyalty card reward)." },
+  ],
+};
+
+// El aviso corto de la tarjeta, en «Saca tu tarjeta» arriba de la casilla. {nombre} = el de Tu restaurante; {lo_juntado}
+// según la forma que eligió Don Chuy.
+export const AVISO_CORTO_TARJETA: Record<Lengua, string> = {
+  es: '{nombre} usa tu nombre y tu teléfono para tu tarjeta de lealtad: sumar {lo_juntado}, darte tu premio y pasarla a otro celular si cambias. Se borra sola si pasas 12 meses sin comprar.',
+  en: '{nombre} uses your name and phone number for your loyalty card: to add up {lo_juntado}, give you your reward and move it to another phone if you change. It is deleted automatically after 12 months without a purchase.',
+};
+export const LO_JUNTADO: Record<Lengua, Record<'sellos' | 'puntos', string>> = {
+  es: { sellos: 'tus sellos', puntos: 'tus puntos' },
+  en: { sellos: 'your stamps', puntos: 'your points' },
+};
+
+// El aviso completo de un menú: con tarjeta, su parte va justo después de «En tu celular».
+export function avisoCompleto(lengua: Lengua, conTarjeta: boolean): Bloque[] {
+  if (!conTarjeta) return AVISO[lengua];
+  const i = AVISO[lengua].findIndex((b) => 'p' in b && /^\*\*(En tu celular|On your phone)\./.test(b.p));
+  if (i < 0) throw new Error('No encontré «En tu celular» en el aviso');
+  return [...AVISO[lengua].slice(0, i + 1), ...AVISO_TARJETA[lengua], ...AVISO[lengua].slice(i + 1)];
+}
+
 export type DatosDelAviso = { nombre: string; nombreLegal: string | null; direccion: string | null; whatsapp: string | null };
 
 // Un pedazo de texto: normal, en negritas o el hueco del borrador.

@@ -1,0 +1,224 @@
+/* La tarjeta de lealtad en el menú (maqueta v22 aprobada el 23 nov 2026, planes/trabajo/tarjeta-lealtad/maqueta/menu.css),
+   con las variables del menú (--m-*): la vista «Tarjeta» (la cuarta pestaña), sus ventanitas, y lo que dice Tu pedido. Se
+   quitó lo que solo servía a la maqueta (sus variantes y estados en <html>). La barrita de «Tu premio» se llama aquí
+   .tl-avance-barra, para no pisar la de los puntos de la tarjeta (diseno/tarjetaLealtad.css). */
+/* Lo que depende de la clienta: data-cliente = sin | con | listo | nuevo (en otro celular: este no la tiene). */
+/* El ícono de la barra: la misma forma que la personita (redondo o como el engrane). */
+/* La ventana: la caja de «Tus datos» con su ancho; los pasos, como los suyos. */
+.tl-aviso { margin: 2px 4px 0; font-size: 12.5px; line-height: 1.45; color: var(--m-suave); text-align: center; }
+.tl-casilla { display: flex; align-items: center; justify-content: center; gap: 9px; min-height: 40px; margin: 0; font-size: 14px; font-weight: 600;
+  color: var(--m-texto); cursor: pointer; }
+.tl-casilla input { appearance: none; -webkit-appearance: none; width: 22px; height: 22px; margin: 0; flex: none; border-radius: 7px; cursor: pointer;
+  box-shadow: inset 0 0 0 1.5px var(--m-linea-fuerte); background: var(--m-hoja) center / 14px no-repeat; transition: background-color 0.15s, box-shadow 0.15s; }
+.tl-casilla input:checked { background-color: var(--m-acento); box-shadow: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12.5l4.5 4.5L19 7.5'/%3E%3C/svg%3E"); }
+.tl-casilla input:focus-visible { outline: 2px solid var(--m-acento); outline-offset: 2px; }
+.dc-liga, .tl-liga { padding: 0; border: 0; background: none; color: inherit; font: inherit; font-weight: 700; text-decoration: underline; text-underline-offset: 2px; cursor: pointer; }
+.tl-otra { align-self: center; height: 38px; padding: 0 10px; border: 0; background: none; color: var(--m-suave); font: inherit; font-size: 13.5px; font-weight: 600; cursor: pointer; }
+.tl-otra b { color: var(--m-texto); font-weight: 700; text-decoration: underline; text-underline-offset: 2px; }
+.tl-pista { display: flex; align-items: center; justify-content: center; gap: 6px; margin: 2px 0 4px; font-size: 12.5px; color: var(--m-suave); }
+.tl-pista svg { width: 15px; height: 15px; }
+/* La tarjeta que llega: entra volteada y gira al frente. */
+@keyframes tl-llega { from { transform: rotateY(-180deg) scale(0.9); opacity: 0; } 40% { opacity: 1; } to { transform: none; opacity: 1; } }
+.tl-tarjeta.llega .tl-gira { animation: tl-llega 900ms cubic-bezier(0.34, 1.32, 0.5, 1) both; }
+/* El código para pasar la tarjeta. */
+.tl-codigo-grande { display: flex; justify-content: center; gap: 6px; margin: 4px 0 2px; }
+.tl-codigo-grande span { width: 42px; height: 54px; display: grid; place-items: center; border-radius: 12px; background: var(--m-chip);
+  font: 800 26px var(--mono, 'JetBrains Mono', monospace); color: var(--m-texto); }
+.tl-codigo-grande span:nth-child(3) { margin-right: 8px; }
+.tl-espera { display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 13px; font-weight: 600; color: var(--m-suave); }
+.tl-espera i { display: inline-flex; gap: 3px; }
+.tl-espera i b { width: 5px; height: 5px; border-radius: 50%; background: currentColor; animation: tl-punto 1.2s ease-in-out infinite; }
+.tl-espera i b:nth-child(2) { animation-delay: 0.15s; } .tl-espera i b:nth-child(3) { animation-delay: 0.3s; }
+@keyframes tl-punto { 0%, 80%, 100% { opacity: 0.25; transform: none; } 40% { opacity: 1; transform: translateY(-2px); } }
+.tl-vence { font-family: var(--mono, 'JetBrains Mono', monospace); font-weight: 600; color: var(--m-texto); }
+
+/* Tu pedido vacío: la invitación, una tarjetita gris que crece en la ventana. */
+.tl-invita { width: 100%; max-width: 340px; display: flex; align-items: center; gap: 13px; margin-top: 34px; padding: 13px 12px 13px 13px; border: 0;
+  border-radius: 16px; background: var(--m-chip); color: var(--m-texto); font: inherit; text-align: left; cursor: pointer; }
+.tl-invita .t { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.tl-invita b { font-size: 14.5px; font-weight: 800; letter-spacing: -0.2px; }
+.tl-invita .t > span { font-size: 12.5px; color: var(--m-suave); line-height: 1.35; }
+.tl-invita > svg { color: var(--m-suave); flex: none; }
+/* Tu pedido con productos: «Tu tarjeta», como «Tus datos». */
+.tl-ped { display: flex; flex-direction: column; gap: 0; border-radius: 16px; background: var(--m-chip); overflow: hidden; }
+.tl-ped-fila { display: flex; align-items: center; gap: 13px; padding: 13px 14px; border: 0; background: none; color: var(--m-texto); font: inherit; text-align: left; width: 100%; }
+button.tl-ped-fila { cursor: pointer; }
+.tl-ped-fila .t { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.tl-ped-fila b { font-size: 14.5px; font-weight: 800; letter-spacing: -0.2px; }
+.tl-ped-fila .t > span { font-size: 12.5px; color: var(--m-suave); line-height: 1.35; }
+.tl-ped-fila > svg { color: var(--m-suave); flex: none; }
+.tl-ped-usa { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 14px; border-top: 1px solid var(--m-linea); }
+.tl-ped-usa b { font-size: 14.5px; font-weight: 700; }
+.tl-ped-usa small { display: block; margin-top: 2px; font-size: 12.5px; color: var(--m-suave); }
+/* El interruptor de «Usar mi premio», en el color del restaurante. */
+.tl-switch { position: relative; width: 50px; height: 30px; flex: none; padding: 0; border: 0; border-radius: 15px; background: var(--m-linea-fuerte); cursor: pointer;
+  transition: background-color 0.2s ease; }
+.tl-switch::after { content: ''; position: absolute; top: 3px; left: 3px; width: 24px; height: 24px; border-radius: 12px; background: #fff;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2); transition: transform 0.32s cubic-bezier(0.34, 1.4, 0.5, 1); }
+.tl-switch[aria-checked='true'] { background: var(--m-acento); }
+.tl-switch[aria-checked='true']::after { transform: translateX(20px); }
+/* El premio como un renglón más del pedido. */
+.tl-linea-premio .tl-premio-foto { width: 52px; height: 52px; flex: none; border-radius: 12px; display: grid; place-items: center; background: color-mix(in srgb, var(--m-acento) 14%, transparent);
+  color: var(--m-acento); }
+.tl-linea-premio .tl-premio-foto svg { width: 22px; height: 22px; }
+.tl-etiqueta-premio { display: inline-flex; align-items: center; height: 26px; padding: 0 10px; border-radius: 13px; background: color-mix(in srgb, var(--m-acento) 14%, transparent);
+  color: var(--m-acento); font-size: 12px; font-weight: 800; white-space: nowrap; }
+@media (prefers-reduced-motion: reduce) { .tl-switch::after { transition: none; } .tl-tarjeta.llega .tl-gira { animation: none; } .tl-espera i b { animation: none; } }
+/* La cabeza de la tarjeta según cómo llegó: al abrirla, recién pasada a este celular. */
+.tl-lugar-tarjeta { padding: 2px 2px 0; }
+.tl-lugar-tarjeta > span { display: block; }
+/* El aviso: la parte de la tarjeta, en la ventana grande. */
+/* ═══ v2: la tarjeta como vista completa (la cuarta pestaña de abajo) ═══ */
+.tl-vista[data-tl='sacar'] [data-tl-solo]:not([data-tl-solo~='sacar']), .tl-vista[data-tl='tarjeta'] [data-tl-solo]:not([data-tl-solo~='tarjeta']),
+.tl-vista[data-tl='existe'] [data-tl-solo]:not([data-tl-solo~='existe']), .tl-vista[data-tl='recuperar'] [data-tl-solo]:not([data-tl-solo~='recuperar']),
+.tl-vista[data-tl='codigo'] [data-tl-solo]:not([data-tl-solo~='codigo']),
+.tl-vista[data-tl='datos'] [data-tl-solo]:not([data-tl-solo~='datos']) { display: none !important; }
+.tl-vista:not([data-llegada='nueva']) [data-solo-llegada='nueva'], .tl-vista:not([data-llegada='pasada']) [data-solo-llegada='pasada'],
+.tl-vista[data-llegada='nueva'] [data-cual-tarjeta='rosa'], .tl-vista:not([data-llegada='nueva']) [data-cual-tarjeta='nueva'] { display: none !important; }
+.tl-estado { display: flex; flex-direction: column; gap: 18px; }
+.tl-estado > .f-ped-seccion { margin: 0; }
+.tl-vista .tl-lugar-tarjeta { padding: 2px 0 0; }
+.tl-vista .tl-pista { margin: -8px 0 0; }
+.tl-muestra-menu .tl-tarjeta { width: 88%; margin: 6px auto 0; transform: rotate(-3deg); }
+.tl-lead { margin: 0 6px; font-size: 15px; line-height: 1.5; color: var(--m-suave); text-align: center; text-wrap: balance; }
+.tl-verde { color: #2f9e5b; font-weight: 700; }
+/* Lo que pasó al llegar: la tarjeta recién sacada, o pasada a este celular. */
+.tl-llegada { display: flex; align-items: flex-start; gap: 11px; padding: 13px 14px; border-radius: 16px; color: var(--m-texto);
+  background: color-mix(in srgb, #2f9e5b 13%, transparent); }
+.tl-llegada > svg { flex: none; margin-top: 1px; color: #2f9e5b; }
+.tl-llegada span { display: flex; flex-direction: column; gap: 2px; font-size: 13px; line-height: 1.4; color: var(--m-suave); }
+.tl-llegada b { font-size: 14.5px; font-weight: 800; color: var(--m-texto); }
+/* El premio listo: en el color del restaurante, con su botón. */
+.tl-listo-aviso { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding: 14px; border-radius: 16px;
+  background: color-mix(in srgb, var(--m-acento) 13%, transparent); }
+.tl-listo-i { width: 40px; height: 40px; flex: none; display: grid; place-items: center; border-radius: 50%; background: var(--m-acento); color: var(--m-sobre-acento); }
+.tl-listo-aviso .t { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.tl-listo-aviso b { font-size: 15px; font-weight: 800; color: var(--m-texto); }
+.tl-listo-aviso .t span { font-size: 13px; line-height: 1.4; color: var(--m-suave); }
+.tl-listo-boton { width: 100%; height: 44px; border: 0; border-radius: 12px; background: var(--m-acento); color: var(--m-sobre-acento); font: inherit;
+  font-size: 14.5px; font-weight: 800; cursor: pointer; }
+/* Tu premio, cómo funciona y tu historial: en el gris de las tarjetas de Tu pedido. */
+.tl-como { display: flex; flex-direction: column; }
+.tl-como-fila, .tl-hist-fila { display: flex; align-items: center; gap: 13px; padding: 13px 14px; }
+.tl-como-fila + .tl-como-fila, .tl-hist-fila + .tl-hist-fila { border-top: 1px solid var(--m-linea); }
+.tl-como-i { width: 36px; height: 36px; flex: none; display: grid; place-items: center; border-radius: 50%; background: var(--m-hoja); color: var(--m-acento); }
+.tl-hist-n { flex: none; font: 800 15px var(--mono, 'JetBrains Mono', monospace); color: #2f9e5b; }
+.tl-hist-fila.canje .tl-hist-n { color: var(--m-suave); }
+/* Recuperarla y el código, con la cabeza al centro como las ventanas del menú. */
+.tl-vista .tl-codigo-grande { margin: 6px 0 0; }
+/* El pie fijo: el aviso corto, la casilla y el botón (como el de Tu pedido). */
+.tl-pie-m { display: flex; flex-direction: column; gap: 6px; }
+.tl-pie-m .tl-aviso-m { margin: 0; text-align: center; }
+.tl-pie-m .tl-casilla { min-height: 36px; }
+.tl-pie-m .tl-otra { margin-top: -2px; }
+.tl-pie-m .f-ped-boton:disabled { opacity: 0.4; }
+/* El puntito de la pestaña cuando el premio está listo. */
+.f-app-icono { position: relative; }
+.tl-app-punto { position: absolute; top: -2px; right: -5px; width: 9px; height: 9px; border-radius: 50%; background: #3fbf6a; box-shadow: 0 0 0 2px var(--m-hoja, #fff); }
+.tl-vista .f-ped-cabeza h2 span { font: inherit; color: inherit; letter-spacing: inherit; }
+
+.tl-hist-vacio { margin: 0; padding: 16px; border-radius: 16px; background: var(--m-chip); font-size: 13px; color: var(--m-suave); text-align: center; }
+
+/* ═══ v13: la tarjeta arriba y tres atajos abajo (idea del developer, como «Lo que más haces» de la app de BBVA) ═══ */
+/* Tres secciones (la tarjeta, «Más de tu tarjeta» y «Tu privacidad»), con más aire entre una y otra (el developer: «que no vayan tan
+   juntos»): 18 px dentro de la tarjeta, 34 px entre secciones. */
+.tl-mas h3, .tl-otros h3 { margin-bottom: 14px; }
+.tl-vista .tl-estado > :is(.tl-mas, .tl-otros) { margin-top: 16px; }
+.tl-atajos { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.tl-atajo { display: flex; flex-direction: column; align-items: center; gap: 9px; padding: 2px 0 4px; border: 0; background: none;
+  color: var(--m-texto); font: inherit; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.tl-atajo-i { position: relative; width: 62px; height: 62px; display: grid; place-items: center; border-radius: 50%; background: var(--m-chip);
+  color: var(--m-acento); transition: transform 0.15s ease; }
+.tl-atajo:active .tl-atajo-i { transform: scale(0.93); }
+.tl-atajo:focus-visible { outline: none; }
+.tl-atajo:focus-visible .tl-atajo-i { outline: 2px solid var(--m-acento); outline-offset: 3px; }
+.tl-atajo-t { font-size: 13px; font-weight: 700; line-height: 1.25; text-align: center; text-wrap: balance; }
+.tl-atajo .tl-app-punto { top: 3px; right: 3px; width: 12px; height: 12px; box-shadow: 0 0 0 3px var(--m-fondo); }
+/* Sus ventanitas: la cabeza al centro con su ícono en el color del restaurante. */
+/* Las ventanitas de la vista (los atajos y «¿Borrar tu tarjeta?»): su cabeza un poco más junta, como la maqueta (`.tl-ventana`). */
+.dc-cabeza.tl-v-cabeza { padding: 28px 36px 14px; }
+/* Las ventanitas que crecen de un atajo: su cuerpo, como la maqueta (`.tl-atajo-v`). */
+.dc-cuerpo.tl-v-cuerpo { gap: 12px; padding: 4px 16px 18px; }
+.tl-atajo-v:not([data-llegada='nueva']) [data-cual-tarjeta='nueva'], .tl-atajo-v[data-llegada='nueva'] [data-cual-tarjeta='rosa'] { display: none !important; }
+/* Tu premio: lo que llevas y lo que falta, con su barrita en el color del restaurante (verde cuando ya lo juntaste). */
+.tl-avance { padding: 14px 16px 16px; border-radius: 16px; background: var(--m-chip); }
+.tl-avance-fila { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 10px; }
+.tl-avance-fila b { font-size: 15px; font-weight: 800; letter-spacing: -0.2px; color: var(--m-texto); }
+.tl-avance-fila b.tl-verde { color: #2f9e5b; }
+.tl-avance-fila > span { font-size: 13px; font-weight: 700; color: var(--m-suave); white-space: nowrap; }
+.tl-avance-barra { display: block; height: 8px; border-radius: 4px; background: var(--m-linea-fuerte); overflow: hidden; }
+.tl-avance-barra i { display: block; height: 100%; border-radius: 4px; background: var(--m-acento); }
+.tl-avance-barra.llena i { background: #2f9e5b; }
+/* v13, idea 2: el aviso y «Borrar mi tarjeta», abajo de los atajos, en dos tarjetas del mismo tamaño que se deslizan con el
+   dedo (encuesta: «Al lado, asomándose»; el developer: «las dos tarjetas van a ser del mismo tamaño»). El carril llega a las
+   orillas de la vista (sus 16 px) y cada tarjeta se detiene en su lugar; dos puntitos dicen cuál ves. */
+.tl-deslizan { margin: 0 -16px; }
+.tl-carril { display: flex; gap: 10px; padding: 0 16px; overflow-x: auto; scroll-snap-type: x mandatory; scroll-padding: 0 16px;
+  overscroll-behavior-x: contain; scrollbar-width: none; }
+.tl-carril::-webkit-scrollbar { display: none; }
+.tl-hoja { flex: 0 0 84%; scroll-snap-align: start; display: flex; flex-direction: column; gap: 8px; padding: 16px; border-radius: 18px;
+  background: var(--m-chip); }
+.tl-hoja:last-child { scroll-snap-align: end; }
+.tl-hoja-cab { display: flex; align-items: center; gap: 11px; }
+.tl-hoja-cab b { font-size: 15.5px; font-weight: 800; letter-spacing: -0.2px; color: var(--m-texto); }
+.tl-hoja-i { width: 38px; height: 38px; flex: none; display: grid; place-items: center; border-radius: 50%; background: var(--m-hoja); color: var(--m-texto); }
+.tl-hoja-i svg { width: 19px; height: 19px; }
+.tl-hoja p { flex: 1; margin: 0 0 6px; font-size: 13px; line-height: 1.45; color: var(--m-suave); }
+.tl-hoja .f-info-ir { width: 100%; background: var(--m-hoja); }
+/* El bote va como el candado (en su círculo, en tinta); lo único rojo es su botón, lleno y con letras blancas, para que diga que
+   borra algo (el developer). El rojo es el de «Sí, borrar». */
+.tl-hoja .f-info-ir.tl-rojo-lleno { background: #e5484d; color: #fff; box-shadow: none; }
+.tl-puntitos { display: flex; justify-content: center; margin-top: 6px; }
+.tl-puntitos button { width: 22px; height: 20px; display: grid; place-items: center; padding: 0; border: 0; background: none; cursor: pointer; }
+.tl-puntitos button::after { content: ''; width: 7px; height: 7px; border-radius: 4px; background: var(--m-linea-fuerte);
+  transition: width 0.3s cubic-bezier(0.34, 1.4, 0.5, 1), background-color 0.2s ease; }
+.tl-puntitos button[aria-current='true']::after { width: 18px; background: var(--m-texto); }
+@media (prefers-reduced-motion: reduce) { .tl-puntitos button::after { transition: none; } }
+/* v13, idea 5: sin tarjeta en dos pasos. La presentación: la tarjeta vacía, el premio y «¿Cómo funciona?» en tres pasos con su
+   número (los renglones de «Cómo funciona», con el número en lugar del ícono). Sus datos: «Atrás» en la cabeza, los dos campos y
+   «Tu privacidad» con el aviso corto y la casilla en su tarjeta gris. Las secciones, separadas como en la vista con tarjeta. */
+.tl-vista .tl-estado > .f-ped-seccion { margin-top: 16px; }
+.tl-vista .tl-estado > .f-ped-seccion > h3 { margin-bottom: 14px; }
+.tl-num { font: 800 15px var(--mono, 'JetBrains Mono', monospace); }
+.tl-vista:is([data-tl='datos'], [data-tl='existe'], [data-tl='recuperar'], [data-tl='codigo']) .f-ped-cabeza { align-items: center; justify-content: flex-start; gap: 10px; }
+.tl-volver { width: 38px; height: 38px; flex: none; display: grid; place-items: center; margin-left: -4px; padding: 0; border: 0; border-radius: 50%;
+  background: var(--m-chip); color: var(--m-texto); cursor: pointer; transition: transform 0.15s ease; }
+.tl-volver:active { transform: scale(0.92); }
+.tl-datos-p { margin: -8px 0 0; font-size: 15px; line-height: 1.5; color: var(--m-suave); }
+.tl-priv { display: flex; flex-direction: column; gap: 8px; padding: 16px 16px 8px; border-radius: 18px; background: var(--m-chip); }
+.tl-priv > p { margin: 0; font-size: 13px; line-height: 1.5; color: var(--m-suave); }
+.tl-priv .tl-casilla { justify-content: flex-start; min-height: 48px; margin-top: 4px; border-top: 1px solid var(--m-linea); }
+/* v13: el aviso del premio listo, como el de «¡Listo, ya tienes tu tarjeta!» (el developer: «estuvo muy bonita… que sea
+   parecida»): el verde clarito, el regalo en verde sin su círculo, el título y su línea; «Usarlo en mi pedido» abajo, alineado con
+   el texto, en el mismo verde (el verde dice premio). El de la ventanita de «Tu premio» va igual de verde. */
+.tl-listo-aviso { align-items: flex-start; gap: 11px; padding: 13px 14px 14px; background: color-mix(in srgb, #2f9e5b 13%, transparent); }
+.tl-listo-aviso .tl-listo-i { width: auto; height: auto; margin-top: 1px; background: none; color: #2f9e5b; }
+.tl-listo-aviso .tl-listo-i svg { width: 18px; height: 18px; }
+.tl-listo-aviso b { font-size: 14.5px; }
+.tl-listo-aviso .tl-listo-boton { width: calc(100% - 29px); margin: 2px 0 0 29px; }
+.tl-listo-boton { background: #2f9e5b; color: #fff; }
+/* v13: el aviso del premio listo, acomodado (el developer: el botón grande «no me termina de convencer»): como el de «¡Listo, ya
+   tienes tu tarjeta!», y «Usarlo en mi pedido» chico, abajo del texto y alineado con él, con su flechita. */
+.tl-listo-aviso .tl-listo-boton { width: auto; height: 34px; display: inline-flex; align-items: center; gap: 4px; margin: 4px 0 0 29px;
+  padding: 0 10px 0 14px; border-radius: 10px; font-size: 13.5px; }
+.tl-listo-aviso .tl-listo-boton svg { width: 16px; height: 16px; }
+/* El código para pasar la tarjeta, en su gris con lo que pasa abajo (como «Tu privacidad»). */
+.tl-codigo-caja { display: flex; flex-direction: column; gap: 14px; padding: 20px 14px 16px; border-radius: 18px; background: var(--m-chip); }
+.tl-codigo-caja .tl-codigo-grande { margin: 0; }
+.tl-codigo-caja .tl-codigo-grande span { background: var(--m-hoja); }
+/* Tu pedido vacío no lleva el número de productos en su pestaña (lo traía la maqueta). */
+.tl-listo-aviso .t { flex: 1 1 calc(100% - 29px); }
+.tl-datos-p b { color: var(--m-texto); white-space: nowrap; }
+/* Tu pedido: el premio en su verde, como en la vista de la tarjeta (el interruptor sigue en el color del restaurante: es un
+   control, como todos los del menú). */
+.tl-linea-premio .tl-premio-foto, .tl-linea-premio .tl-etiqueta-premio { background: color-mix(in srgb, #2f9e5b 14%, transparent); color: #2f9e5b; }
+/* La personita de la vista Pedido, a la orilla derecha de la barra (el developer, 23 nov 2026: «se ve raro» pegada al nombre). En
+   el menú de hoy pasa lo mismo: `.marca` mide lo que su contenido (`flex: 0 1 auto` en formas.css), así que el `margin-left: auto`
+   de la personita no la empuja; con la personita adentro, la marca ocupa lo que sobra de la barra. */
+
+/* Cómo funciona y Tu historial: en el gris de las tarjetas de Tu pedido, con su título y su línea uno sobre otro. */
+.tl-como, .tl-hist { border-radius: 16px; background: var(--m-chip); }
+.tl-como-fila .t, .tl-hist-fila .t { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.tl-como-fila b, .tl-hist-fila b { font-size: 14.5px; font-weight: 800; letter-spacing: -0.2px; color: var(--m-texto); }
+.tl-como-fila .t > span, .tl-hist-fila .t > span { font-size: 12.5px; line-height: 1.4; color: var(--m-suave); }

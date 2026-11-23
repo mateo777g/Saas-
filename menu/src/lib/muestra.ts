@@ -14,6 +14,9 @@
 //   {fragmentless: 'recargar'}            Que vuelva a leer menu_publico (después de cambiar un cartel).
 //   {fragmentless: 'modo', modo}          'producto': el producto de muestra abierto; 'menu': todo cerrado.
 //   {fragmentless: 'cerrar'}              Escape en el panel: cierra lo de más arriba.
+//   {fragmentless: 'tarjeta', tarjeta}    La tarjeta de lealtad (parte B, 23 nov 2026; maqueta v22, ?muestra=tarjeta): el
+//       teléfono de «Tu tarjeta» va siempre en la pestaña «Tarjeta» con la de Rosa, pintada con la regla, el estilo y el
+//       color que Don Chuy todavía no guarda (la forma de `Regla` de lib/textosTarjeta.ts, con el color ya resuelto).
 //   {fragmentless: 'cartel', ruta}        Crear anuncios (13 nov 2026, `crear-anuncios.md`): en el celular del cartel, la
 //       muestra del estilo (estilos/<clave>/<32 hex>.webp) va sola en el lugar de los carteles, quieta y con su etiqueta
 //       «Muestra», y el teléfono va a ella. Con `ruta` null, sus carteles de siempre. La primera llega en la dirección
@@ -27,8 +30,9 @@
 import type { TemaMenu } from '@app/lib/color';
 import { FORMAS_DE_SIEMPRE, leerFormas, type Formas } from './formas';
 import { quieto } from './movimiento';
+import type { Regla } from './textosTarjeta';
 
-export type ModoMuestra = 'menu' | 'barra' | null;
+export type ModoMuestra = 'menu' | 'barra' | 'tarjeta' | null;
 
 // Lo que no llega se queda como está guardado (un panel de antes solo manda el tema y el color).
 export type Pintura = { tema: TemaMenu; color: string | null; colorBarra?: string | null; fondo?: string | null; formas?: Formas };
@@ -45,7 +49,7 @@ const ORIGENES = (import.meta.env.VITE_ORIGENES_APP ?? '')
 
 export function modoMuestra(): ModoMuestra {
   const modo = new URLSearchParams(location.search).get('muestra');
-  return modo === 'menu' || modo === 'barra' ? modo : null;
+  return modo === 'menu' || modo === 'barra' || modo === 'tarjeta' ? modo : null;
 }
 
 // Quién nos tiene dentro: solo se le habla si es la app.
@@ -72,9 +76,40 @@ export type DelPanel = {
   alModo?: (modo: ModoPanel) => void;
   alCerrar?: () => void;
   alCartel?: (ruta: string | null) => void;
+  alTarjeta?: (regla: Regla | null) => void;
 };
 
-export function escucharPanel({ alPintar, alRecargar, alModo, alCerrar, alCartel }: DelPanel): () => void {
+// La regla que manda «Tu tarjeta» (lo que no cuadra, null: el teléfono sigue con la de antes).
+const ESTILOS = ['liquido', 'agua', 'metal', 'brillante', 'liso', 'olas'];
+const numero = (v: unknown) => (typeof v === 'number' && Number.isFinite(v) && v >= 0 ? v : null);
+function leerRegla(v: unknown): Regla | null {
+  if (!v || typeof v !== 'object') return null;
+  const d = v as Record<string, unknown>;
+  const p = (d.premio ?? {}) as Record<string, unknown>;
+  const meta = numero(d.meta);
+  if ((d.forma !== 'sellos' && d.forma !== 'puntos') || !meta || !ESTILOS.includes(d.estilo as string) || !color(d.color)) return null;
+  if (p.tipo !== 'producto' && p.tipo !== 'pesos') return null;
+  return {
+    prendida: true,
+    forma: d.forma as Regla['forma'],
+    meta,
+    minimo: numero(d.minimo),
+    pesos_por_punto: numero(d.pesos_por_punto),
+    estilo: d.estilo as Regla['estilo'],
+    color: color(d.color)!,
+    premio: {
+      tipo: p.tipo as Regla['premio']['tipo'],
+      producto_id: numero(p.producto_id),
+      nombre: typeof p.nombre === 'string' ? p.nombre : null,
+      nombre_en: typeof p.nombre_en === 'string' ? p.nombre_en : null,
+      pesos: numero(p.pesos),
+      pesos_usd: numero(p.pesos_usd),
+      disponible: true,
+    },
+  };
+}
+
+export function escucharPanel({ alPintar, alRecargar, alModo, alCerrar, alCartel, alTarjeta }: DelPanel): () => void {
   const escuchar = (e: MessageEvent) => {
     if (!ORIGENES.includes(e.origin) || e.source !== window.parent) return;
     const d = e.data as Record<string, unknown> | null;
@@ -83,6 +118,7 @@ export function escucharPanel({ alPintar, alRecargar, alModo, alCerrar, alCartel
     if (d.fragmentless === 'modo') return alModo?.(d.modo === 'producto' ? 'producto' : 'menu');
     if (d.fragmentless === 'cerrar') return alCerrar?.();
     if (d.fragmentless === 'cartel') return alCartel?.(rutaMuestra(d.ruta));
+    if (d.fragmentless === 'tarjeta') return alTarjeta?.(leerRegla(d.tarjeta));
     if (d.fragmentless !== 'muestra') return;
     const p: Pintura = { tema: d.tema === 'oscuro' ? 'oscuro' : 'claro', color: color(d.color) };
     if ('colorBarra' in d) p.colorBarra = color(d.colorBarra);

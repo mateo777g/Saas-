@@ -5,7 +5,8 @@
   lleva detrás una pastilla del color del restaurante que se desliza. Con o sin el nombre de cada una
   (sin nombre se queda para el lector de pantalla). Pedido lleva cuántos productos van en el pedido.
   Sin WhatsApp no sale Pedido y sin asistente no sale Asistente; si solo queda Menú, no sale nada (eso
-  lo decide Menu.svelte).
+  lo decide Menu.svelte). Tarjeta (la de lealtad) va antes del Asistente, solo si la sucursal la prendió o este celular
+  ya tiene una, con un puntito verde cuando el premio está listo (maqueta de la tarjeta, v22).
 -->
 <script lang="ts">
   import type { Formas, Pestana } from '../lib/formas';
@@ -16,6 +17,7 @@
     pestanas,
     activa,
     cuantos,
+    premioListo = false,
     formas,
     t,
     alElegir,
@@ -23,6 +25,8 @@
     pestanas: Pestana[];
     activa: Pestana;
     cuantos: number;
+    // La tarjeta de lealtad con su premio listo: un puntito verde en su pestaña.
+    premioListo?: boolean;
     formas: Formas;
     t: Textos;
     alElegir: (p: Pestana) => void;
@@ -32,6 +36,7 @@
     menu: { icono: 'lista', texto: 0 },
     pedido: { icono: 'bolsa-app', texto: 1 },
     asistente: { icono: 'asistente', texto: 2 },
+    tarjeta: { icono: 'r-lealtad', texto: 3 },
   };
 
   const pildora = $derived(formas.abajo === 'pildora');
@@ -51,6 +56,7 @@
       <span class="f-app-icono">
         <Icono nombre={DE[p].icono} tamano={24} />
         {#if p === 'pedido' && cuantos}<span class="f-app-cuenta">{cuantos}</span>{/if}
+        {#if p === 'tarjeta' && premioListo}<span class="tl-app-punto"></span>{/if}
       </span>
       <span class="f-app-texto">{t.app[DE[p].texto]}</span>
     </button>

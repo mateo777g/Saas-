@@ -48,6 +48,7 @@
     alLupa,
     alAjustes,
     alDatos,
+    comoPedido = false,
   }: {
     nombre: string;
     logo: string | null;
@@ -72,6 +73,8 @@
     alAjustes?: () => void;
     // Solo en la vista Pedido: el ícono de persona abre «Tus datos», que crece desde él.
     alDatos?: (desde: HTMLElement) => void;
+    // La vista Tarjeta: la barra de la vista Pedido sin la personita (sin el idioma ni la moneda).
+    comoPedido?: boolean;
   } = $props();
 
   const centro = $derived(formas.barra === 'centro');
@@ -95,7 +98,7 @@
 
 {#snippet persona(forma: string)}
   <button type="button" class="{forma} dc-persona" aria-label={t.tusDatos} aria-haspopup="dialog" onclick={(e) => alDatos?.(e.currentTarget)}
-    ><Icono nombre="persona" tamano={20} grosor={1.9} /></button
+    ><Icono nombre="persona-circulo" tamano={27} grosor={1.4} /></button
   >
 {/snippet}
 
@@ -137,8 +140,8 @@
       {#if !conCarteles}{@render info()}{/if}
       {#if alDatos}{@render persona('redondo')}{/if}
     </div>
-    {#if alDatos}
-      <!-- En la vista Pedido, sin el idioma ni la moneda: solo si está abierto, cuando no hay carteles que lo digan. -->
+    {#if alDatos || comoPedido}
+      <!-- En la vista Pedido (y en la de la tarjeta), sin el idioma ni la moneda: solo si está abierto, cuando no hay carteles que lo digan. -->
       {#if !conCarteles && estado}
         <div class="fila2">
           <span class="abierto" class:cerrado={!abierto}><i></i>{estado}</span>

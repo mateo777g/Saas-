@@ -6,5 +6,5 @@
 
 export { FORMAS_DE_SIEMPRE, leerFormas, type Formas, type Pieza } from '@app/lib/formasMenu';
 
-// Las pestañas de abajo: Menú, Pedido y Asistente.
-export type Pestana = 'menu' | 'pedido' | 'asistente';
+// Las pestañas de abajo: Menú, Pedido, Tarjeta (la de lealtad, si la sucursal la tiene) y Asistente.
+export type Pestana = 'menu' | 'pedido' | 'tarjeta' | 'asistente';

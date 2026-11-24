@@ -14,6 +14,7 @@
   import Icono from '../../../diseno/Icono.svelte';
   import { dinero, pesos } from '../../../lib/formato';
   import type { PorConfirmar } from '../../../lib/pedidos.svelte';
+  import UsaPremio from './UsaPremio.svelte';
 
   let {
     pedido,
@@ -75,23 +76,7 @@
     {/each}
   </div>
 
-  {#if p.premio}
-    <!-- La tarjeta de lealtad (maqueta v22, pantalla «Pedidos»): el pedido usa su premio. -->
-    {@const pr = p.premio}
-    <div class="usa-premio" class:no={!pr.alcanza}>
-      <span class="premio-i"><Icono nombre="regalo" tamano={17} /></span>
-      <span class="premio-t">
-        <b>Usa su premio de la tarjeta</b>
-        <span
-          >{pr.tipo === 'producto' ? `${pr.nombre ?? 'Su producto'} gratis` : `${dinero(pr.pesos ?? 0)} de descuento`}: {pr.alcanza
-            ? pr.tipo === 'producto'
-              ? 'entra a la cuenta al confirmar'
-              : 'se resta al confirmar'
-            : 'ya no alcanza; se confirma sin él'}</span
-        >
-      </span>
-    </div>
-  {/if}
+  {#if p.premio}<UsaPremio premio={p.premio} />{/if}
 
   <p class="aviso-wa"><Icono nombre="mensaje" tamano={14} />Confírmalo cuando te llegue su WhatsApp.</p>
 
@@ -126,55 +111,6 @@
 {/if}
 
 <style>
-  /* El pedido que usa el premio de la tarjeta de lealtad, en el verde del premio (en ámbar si ya no alcanza). */
-  .usa-premio {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    margin: 12px 0 2px;
-    padding: 9px 12px;
-    border-radius: 12px;
-    background: color-mix(in srgb, var(--verde) 12%, transparent);
-  }
-
-  .usa-premio.no {
-    background: rgba(245, 166, 35, 0.13);
-  }
-
-  .premio-i {
-    width: 28px;
-    height: 28px;
-    flex: none;
-    display: grid;
-    place-items: center;
-    border-radius: 50%;
-    background: var(--verde);
-    color: #fff;
-  }
-
-  .usa-premio.no .premio-i {
-    background: #c98a1a;
-  }
-
-  .premio-t {
-    flex: 1;
-    min-width: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-  }
-
-  .premio-t b {
-    font-size: 13px;
-    font-weight: 700;
-    color: var(--texto);
-  }
-
-  .premio-t > span {
-    font-size: 12px;
-    color: var(--suave);
-  }
-
   /* La tarjeta de Crear anuncios (CrearContenido.svelte, .tarjeta): blanca, borde, 14 de esquina, sin sombra. */
   .tarjeta {
     padding: 20px;

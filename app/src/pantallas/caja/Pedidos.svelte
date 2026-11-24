@@ -31,6 +31,7 @@
   import '../pos/pos.css';
   import { franjaDe } from './pedidos/franja';
   import Tablero from './pedidos/Tablero.svelte';
+  import UsaPremio from './pedidos/UsaPremio.svelte';
 
   let {
     cliente,
@@ -329,6 +330,7 @@
               </div>
             {/each}
           </div>
+          {#if p.premio}<UsaPremio premio={p.premio} />{/if}
           <p class="ped-pista"><Icono nombre="mensaje" tamano={13} />Confírmalo cuando te llegue su WhatsApp.</p>
           <div class="ped-botones">
             <button
@@ -378,6 +380,11 @@
     {@const elegido = h.envios?.find((e) => e.id === h.envio) ?? null}
     {@const envio = elegido?.precio ?? 0}
     {@const listo = h.envio !== undefined}
+    <!-- El premio de la tarjeta que entra al confirmar (la prueba de verdad del 23 nov: el total no lo restaba). Solo si
+         todavía alcanza; si no, se confirma sin él y su aviso ámbar ya lo dice. En pesos se resta de toda la cuenta, como
+         lo deja Postgres; un producto entra en $0. -->
+    {@const premio = p.premio?.alcanza ? p.premio : null}
+    {@const menos = premio?.tipo === 'pesos' ? (premio.pesos ?? 0) : 0}
     <Hoja titulo="Confirmar #{p.numero}" sub="{p.cliente_nombre} · {dom ? 'A domicilio' : 'Para llevar'}" alCerrar={() => (hoja = null)}>
       <p class="confirmar-texto">
         {h.areas?.length ? `Se manda a ${h.areas.join(' y ')} y queda` : 'Queda'} como cuenta {dom ? 'a domicilio' : 'para llevar'} a tu nombre:
@@ -410,11 +417,19 @@
         </div>
       {/if}
       <div class="resumen">
-        {#if dom}
+        {#if dom || premio}
           <div class="resumen-fila"><span>Pedido</span><span>{dinero(p.total)}</span></div>
+        {/if}
+        {#if dom}
           <div class="resumen-fila"><span>Envío</span><span>{listo ? dinero(envio) : '—'}</span></div>
         {/if}
-        <div class="resumen-fila fuerte"><span>Total</span><span>{listo ? dinero(p.total + envio) : '—'}</span></div>
+        {#if premio}
+          <div class="resumen-fila desc">
+            <span>{premio.tipo === 'producto' ? `${premio.nombre ?? 'Su producto'} · premio de la tarjeta` : 'Premio de la tarjeta'}</span>
+            <span>{premio.tipo === 'producto' ? dinero(0) : `-${dinero(menos)}`}</span>
+          </div>
+        {/if}
+        <div class="resumen-fila fuerte"><span>Total</span><span>{listo ? dinero(p.total + envio - menos) : '—'}</span></div>
       </div>
       {#if errorHoja}<CajaError mensaje={errorHoja} />{/if}
       <button type="button" class="cel-boton fijo" disabled={!listo || ocupado} onclick={confirmar}

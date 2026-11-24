@@ -4,8 +4,12 @@
   cuadro cambia la saturación y el brillo, la barra el tono, y el código se puede escribir. Debajo, su menú con ese
   color (Muestra.svelte, la tira) y el aviso si casi no se ve. Como las ventanas del gerente: lo que quita en el rojo de
   contorno y lo que usa en verde. «Usar este color» todavía no guarda: lo guarda la barra de guardar.
+
+  La usa también «Tu tarjeta» (la tarjeta de lealtad, maqueta v22): con `prueba`, en lugar de la tira del menú va lo que
+  ella pinte con el color que se prueba (la tarjeta en vivo), sin aviso, y con sus propios `textos` e `inicial`.
 -->
 <script lang="ts">
+  import type { Snippet } from 'svelte';
   import Boton from '../../../diseno/Boton.svelte';
   import GrupoCampos from '../../../diseno/GrupoCampos.svelte';
   import Icono from '../../../diseno/Icono.svelte';
@@ -22,18 +26,24 @@
     slug,
     alUsar,
     alCerrar,
+    textos,
+    inicial: inicialDado,
+    prueba,
   }: {
     clave: ClaveColor;
     // Lo que va hoy en el teléfono (sin guardar): el color que se prueba se pone encima.
     colores: Colores;
-    formas: Formas;
-    slug: string;
+    formas?: Formas;
+    slug?: string;
     alUsar: (color: string | null) => void;
     alCerrar: () => void;
+    textos?: { titulo: string; nota: string; quitar: string; usar: string };
+    inicial?: string;
+    prueba?: Snippet<[string]>;
   } = $props();
 
   // svelte-ignore state_referenced_locally
-  const TEXTOS = {
+  const TEXTOS = textos ?? {
     color: { titulo: 'Color de tu menú', nota: 'Pinta lo que está elegido, el «+» y los botones.', quitar: 'Quitar color', usar: 'Usar este color' },
     colorBarra: { titulo: 'Color de la barra', nota: 'La barra de arriba y las cajas de tu menú.', quitar: 'Usar el de tu menú', usar: 'Usar este color' },
     fondo: { titulo: 'Fondo de tu menú', nota: 'El fondo de todo tu menú. Las letras siguen al tema.', quitar: 'Quitar fondo', usar: 'Usar este fondo' },
@@ -41,13 +51,13 @@
 
   // Sin color todavía, el selector arranca en uno de muestra (el de la barra, en el de tu menú).
   // svelte-ignore state_referenced_locally
-  const inicial = colores[clave] ?? (clave === 'fondo' ? '#F4EBDD' : clave === 'colorBarra' ? (colores.color ?? '#121212') : '#B3261E');
+  const inicial = inicialDado ?? colores[clave] ?? (clave === 'fondo' ? '#F4EBDD' : clave === 'colorBarra' ? (colores.color ?? '#121212') : '#B3261E');
   let hsv = $state<[number, number, number]>(hexAHsv(inicial));
   let codigo = $state(inicial);
 
   const hex = $derived(hsvAHex(hsv[0], hsv[1], hsv[2]));
   const probando = $derived({ ...colores, [clave]: hex } as Colores);
-  const aviso = $derived(avisoDeColor(clave, probando));
+  const aviso = $derived(prueba ? null : avisoDeColor(clave, probando));
 
   // Arrastrar en el cuadro o en la barra; el código se pone al color que sale.
   function arrastrar(e: PointerEvent, al: (x: number, y: number) => void) {
@@ -95,9 +105,13 @@
       </div>
     </GrupoCampos>
   </div>
-  <div class="probar">
-    <Muestra {slug} tira={clave} muestra={{ tema: probando.tema, color: probando.color, colorBarra: probando.colorBarra, fondo: probando.fondo, formas }} />
-  </div>
+  {#if prueba}
+    {@render prueba(hex)}
+  {:else if slug && formas}
+    <div class="probar">
+      <Muestra {slug} tira={clave} muestra={{ tema: probando.tema, color: probando.color, colorBarra: probando.colorBarra, fondo: probando.fondo, formas }} />
+    </div>
+  {/if}
   {#if aviso}
     <p class="aviso"><Icono nombre="alerta" tamano={16} /><span><b>{aviso.fuerte}</b> {aviso.texto}</span></p>
   {/if}

@@ -10,6 +10,7 @@ export type VistaGerente =
   | 'cortes'
   | 'restaurante'
   | 'menu-en-linea'
+  | 'lealtad'
   | 'menu'
   | 'inventario'
   | 'equipo'
@@ -33,6 +34,7 @@ export const VISTAS: Record<VistaGerente, DatosVista> = {
   cortes: { texto: 'Cortes y reportes', grupo: 'Operación', icono: 'r-corte' },
   restaurante: { texto: 'Tu restaurante', grupo: 'Tu negocio', icono: 'r-tienda' },
   'menu-en-linea': { texto: 'Tu menú en línea', grupo: 'Tu negocio', icono: 'r-celular' },
+  lealtad: { texto: 'Tarjeta de lealtad', grupo: 'Tu negocio', icono: 'r-lealtad' },
   menu: { texto: 'Mi menú', grupo: 'Tu negocio', icono: 'r-menu' },
   inventario: { texto: 'Inventario', grupo: 'Tu negocio', icono: 'inventario' },
   equipo: { texto: 'Empleados', grupo: 'Tu negocio', icono: 'r-usuarios' },

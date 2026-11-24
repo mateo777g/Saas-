@@ -3,8 +3,8 @@
   pegada arriba, de la barra lateral al borde derecho, con su línea de 1 px a la altura de la de la marca.
   Lleva el título de la vista, la pastilla de estado (punto verde mientras todo se lee bien; amarillo
   con `pausa`, los pedidos en pausa de la parte 6b; hueco con `hueco`, cuando a ningún cliente le sale
-  un estilo o no se pudo leer Estilos) y, a la derecha, los botones que le pase la vista. `junto` va
-  pegado al título, antes del chip (el selector Productos | Categorías de Mi menú, el día de Cortes y
+  un estilo o no se pudo leer Estilos; gris con `apagado`, la tarjeta de lealtad apagada) y, a la
+  derecha, los botones que le pase la vista. `junto` va pegado al título, antes del chip (el selector Productos | Categorías de Mi menú, el día de Cortes y
   reportes). Con `chipAntes` la pastilla va pegada al título, antes de `junto` (Mi menú, con el dock al
   centro; maqueta U9YqpsSb2PeB5pFXTPvh1C, versión 14). Los botones de aquí miden 34. Con el título vacío no sale el
   título: el aparato a lo ancho pone en `antes` la estrella, el restaurante y quién está (adaptabilidad).
@@ -26,7 +26,7 @@
     children,
   }: {
     titulo: string;
-    estado?: { texto: string; vivo: boolean; pausa?: boolean; hueco?: boolean } | null;
+    estado?: { texto: string; vivo: boolean; pausa?: boolean; hueco?: boolean; apagado?: boolean } | null;
     // Antes del título: la flecha de volver (el punto de venta abierto en el panel).
     antes?: Snippet;
     junto?: Snippet;
@@ -48,8 +48,8 @@
 {#snippet chip()}
   {#if estado}
     <span class="chip">
-      {#if estado.vivo || estado.pausa || estado.hueco}
-        <span class="punto" class:pausa={estado.pausa} class:hueco={estado.hueco}></span>
+      {#if estado.vivo || estado.pausa || estado.hueco || estado.apagado}
+        <span class="punto" class:pausa={estado.pausa} class:hueco={estado.hueco} class:apagado={estado.apagado}></span>
       {/if}
       <span>{estado.texto}</span>
     </span>
@@ -111,6 +111,10 @@
 
   .punto.pausa {
     background: var(--amarillo);
+  }
+
+  .punto.apagado {
+    background: var(--tenue);
   }
 
   .punto.hueco {

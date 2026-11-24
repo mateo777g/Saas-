@@ -4,13 +4,18 @@
   Uno nuevo reemplaza al anterior. No tiene tope, pero nada deja el total abajo de lo pagado. Un %
   a toda la cuenta alcanza lo que se agregue después; uno en pesos se queda fijo (decidido el 18 de
   octubre de 2026). Quitarlo no pide PIN: está en la hoja del renglón y en «⋯».
+  Si lo de ahora es el premio de la tarjeta de lealtad (el renglón del producto al 100 % o los pesos de la cuenta, con el
+  motivo «Premio de la tarjeta»), avisa antes que el descuento nuevo lo reemplaza y el premio regresa a la tarjeta
+  (Diccionario de la tarjeta, punto 6; Postgres lo regresa solo).
 -->
 <script lang="ts">
   import type { SupabaseClient } from '@supabase/supabase-js';
   import CajaError from '../../diseno/CajaError.svelte';
   import Selector from '../../diseno/Selector.svelte';
   import { leerMonto } from '../../lib/caja';
+  import Icono from '../../diseno/Icono.svelte';
   import { dinero } from '../../lib/formato';
+  import { MOTIVO_PREMIO } from '../../lib/lealtad';
   import { siSeDescuenta, textoDescuento, type Autoriza, type Renglon, type TipoDescuento, type Venta } from '../../lib/pos';
   import HojaPedir from './HojaPedir.svelte';
 
@@ -39,6 +44,9 @@
   const ahora = renglon
     ? renglon.descuento_tipo && { tipo: renglon.descuento_tipo, valor: renglon.descuento_valor! }
     : venta.descuento_tipo && { tipo: venta.descuento_tipo, valor: venta.descuento_valor! };
+
+  // svelte-ignore state_referenced_locally
+  const esPremio = (renglon ? renglon.descuento_motivo : venta.descuento_motivo) === MOTIVO_PREMIO && !!ahora;
 
   let tipo = $state<TipoDescuento>(ahora ? ahora.tipo : 'porcentaje');
   let valorTexto = $state(ahora ? String(ahora.valor) : '');
@@ -111,11 +119,44 @@
     <div class="resumen-fila fuerte"><span>La cuenta queda en</span><span>{dinero(si && !pasa ? si.queda : venta.total)}</span></div>
   </div>
   {#if !cabe}<CajaError mensaje="Ya se pagaron {dinero(venta.pagado)}. Cancela antes un pago." />{/if}
-  {#if ahora}<p class="pista">Reemplaza al de ahora ({textoDescuento(ahora.tipo, ahora.valor)}).</p>{/if}
+  {#if esPremio}
+    <p class="aviso-premio" role="note">
+      <Icono nombre="alerta" tamano={16} /><span
+        ><b>{renglon ? `${renglon.nombre} es el premio de la tarjeta.` : `Esta cuenta lleva el premio de la tarjeta (−${dinero(venta.descuento)}).`}</b>
+        El descuento nuevo lo reemplaza y el premio regresa a la tarjeta de lealtad.</span
+      >
+    </p>
+  {:else if ahora}<p class="pista">Reemplaza al de ahora ({textoDescuento(ahora.tipo, ahora.valor)}).</p>{/if}
 </HojaPedir>
 
 <style>
   .pista.fuerte {
     color: var(--texto);
+  }
+
+  /* Como las notas ámbar del cobro (cobro/terminal.css, .t-nota.ambar), que aquí no siempre se cargan. */
+  .aviso-premio {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    margin: 0;
+    padding: 11px 14px;
+    border-radius: 12px;
+    background: var(--amarillo-fondo);
+    font-size: 12.5px;
+    line-height: 1.5;
+    color: var(--suave);
+    text-align: left;
+  }
+
+  .aviso-premio :global(svg) {
+    flex: none;
+    margin-top: 2px;
+    color: var(--amarillo-texto);
+  }
+
+  .aviso-premio b {
+    color: var(--texto);
+    font-weight: 700;
   }
 </style>

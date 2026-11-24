@@ -5,6 +5,9 @@
   encontró en esta sucursal. «Borrar sus datos», rojo lleno, se prende solo si hay; vacía el teléfono, la dirección y las
   referencias (borrar_datos_cliente) y el éxito sale en el mismo botón (~1.6 s), luego se cierra. «Cancelar» es el que se
   alarga. Los pedidos y lo que pagó se quedan en Cortes.
+  Con la tarjeta de lealtad (encuesta del 23 nov 2026, planes/trabajo/tarjeta-lealtad/construir.md): al buscar también
+  pregunta por su tarjeta (tarjeta_del_cliente) y, si tiene, un renglón más con su ícono dice de quién es, lo que lleva y
+  que también se borra; con solo la tarjeta (sin pedidos), ese renglón solo, y el botón se prende igual.
 -->
 <script lang="ts">
   import { onDestroy } from 'svelte';
@@ -14,7 +17,8 @@
   import GrupoCampos from '../../../diseno/GrupoCampos.svelte';
   import Icono from '../../../diseno/Icono.svelte';
   import Ventana from '../../../diseno/Ventana.svelte';
-  import { borrarDatosCliente, buscarDatosCliente } from '../../../lib/datosClientes';
+  import { borrarDatosCliente, buscarDatosCliente, tarjetaDelCliente, type TarjetaDelCliente } from '../../../lib/datosClientes';
+  import { cuantos } from '../../../lib/lealtad';
   import { ALGO_SALIO_PANEL, Fallo } from '../../../lib/errores';
   import { quieto } from '../../../diseno/ventanaSeMueve';
 
@@ -31,8 +35,10 @@
   const ESPERA_EXITO = 1600;
 
   let telefono = $state('');
-  // Lo que encontró con los 10 dígitos de ahora (null: todavía no hay 10, o está buscando).
+  // Lo que encontró con los 10 dígitos de ahora (null: todavía no hay 10, o está buscando): cuántos pedidos y su tarjeta.
   let encontrados = $state<number | null>(null);
+  let tarjeta = $state<TarjetaDelCliente | null>(null);
+  const hay = $derived(!!encontrados || !!tarjeta);
   let error = $state<string | null>(null);
   let paso = $state<null | 'borrando' | 'listo'>(null);
   let temporizador: ReturnType<typeof setTimeout> | undefined;
@@ -46,11 +52,14 @@
     const d = digitos;
     const mia = ++vuelta;
     encontrados = null;
+    tarjeta = null;
     error = null;
     if (d.length !== 10) return;
-    buscarDatosCliente(restauranteId, d)
-      .then((n) => {
-        if (mia === vuelta) encontrados = n;
+    Promise.all([buscarDatosCliente(restauranteId, d), tarjetaDelCliente(restauranteId, d)])
+      .then(([n, t]) => {
+        if (mia !== vuelta) return;
+        tarjeta = t;
+        encontrados = n;
       })
       .catch((falla) => {
         if (mia !== vuelta) return;
@@ -64,12 +73,13 @@
   }
 
   async function borrar() {
-    if (paso || !encontrados) return;
+    if (paso || !hay) return;
     paso = 'borrando';
     error = null;
     try {
       const n = await borrarDatosCliente(restauranteId, digitos);
-      if (n === 0) {
+      // Regresa los pedidos; la tarjeta que se encontró se borra con ellos (Postgres la apunta en la bitácora).
+      if (n === 0 && !tarjeta) {
         // Ya no había nada (otra pestaña o la noche se adelantaron): lo dice como al buscar.
         encontrados = 0;
         paso = null;
@@ -86,6 +96,8 @@
   }
 
   const pedidos = (n: number) => `${n} ${n === 1 ? 'pedido' : 'pedidos'}`;
+  // «Rosa Ramírez, 8 de 10 sellos» (sin regla, «8 sellos»).
+  const deTarjeta = (t: TarjetaDelCliente) => `${t.nombre}, ${t.meta ? `${t.saldo} de ${cuantos(t.forma, t.meta)}` : cuantos(t.forma, t.saldo)}`;
 
   function aparece(_el: Element) {
     if (quieto()) return { duration: 0 };
@@ -115,16 +127,31 @@
       />
     </GrupoCampos>
     {#if encontrados !== null && !error}
-      {#key encontrados > 0}
-        <p class="resultado" class:si={encontrados > 0} role="status" in:aparece>
+      {#key `${encontrados > 0}-${!!tarjeta}`}
+        <div class="resultados" role="status" in:aparece>
           {#if encontrados > 0}
-            <Icono nombre="check" tamano={16} />
-            <span>Encontramos <b>{pedidos(encontrados)}</b> con este teléfono en {sucursal}.</span>
-          {:else}
-            <Icono nombre="info" tamano={16} />
-            <span>No hay pedidos con este teléfono en esta sucursal, o sus datos ya se borraron.</span>
+            <p class="resultado si">
+              <Icono nombre="check" tamano={16} />
+              <span>Encontramos <b>{pedidos(encontrados)}</b> con este teléfono en {sucursal}.</span>
+            </p>
           {/if}
-        </p>
+          {#if tarjeta}
+            <p class="resultado de-tarjeta">
+              <Icono nombre="r-lealtad" tamano={16} />
+              {#if encontrados > 0}
+                <span>Y su tarjeta de lealtad (<b>{deTarjeta(tarjeta)}</b>): también se borra.</span>
+              {:else}
+                <span>Encontramos su tarjeta de lealtad (<b>{deTarjeta(tarjeta)}</b>) en {sucursal}: se borra.</span>
+              {/if}
+            </p>
+          {/if}
+          {#if !encontrados && !tarjeta}
+            <p class="resultado">
+              <Icono nombre="info" tamano={16} />
+              <span>No hay pedidos con este teléfono en esta sucursal, o sus datos ya se borraron.</span>
+            </p>
+          {/if}
+        </div>
       {/key}
     {/if}
     {#if error}<CajaError mensaje={error} />{/if}
@@ -136,7 +163,7 @@
       tono="peligro-lleno"
       icono="eliminar"
       etiqueta={paso === 'borrando' ? 'Borrando…' : paso === 'listo' ? 'Datos borrados' : 'Borrar sus datos'}
-      apagado={!encontrados && !paso}
+      apagado={!hay && !paso}
       cargando={paso === 'borrando'}
       exito={paso === 'listo'}
       onclick={borrar}
@@ -150,6 +177,12 @@
     flex-direction: column;
     gap: 12px;
     margin-top: 22px;
+  }
+
+  .resultados {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
   }
 
   .resultado {
@@ -170,6 +203,10 @@
 
   .resultado.si :global(svg) {
     color: var(--verde);
+  }
+
+  .resultado.de-tarjeta :global(svg) {
+    color: var(--texto);
   }
 
   .resultado b {

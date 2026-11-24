@@ -19,6 +19,10 @@
   con Tarjeta y una Point, el botón grande es «Mandar a la terminal · $489.50» y abajo, chico, «La cobré a mano». Al
   mandarlo, la hoja espera («Esperando en la terminal», los segundos, «Revisar» y «Cancelar cobro»); si Mercado Pago no
   sabe, «Revisa la terminal» con «Sí se pagó / No se pagó»; si no se cobró, la nota roja con el porqué y «Reintentar».
+
+  Con la tarjeta de lealtad (encuesta del 23 nov 2026, planes/trabajo/tarjeta-lealtad/construir.md): la misma fila
+  «Tarjeta de lealtad» del cobro a lo ancho (cobro/Lealtad.svelte), abajo de los botones del descuento, para que la cuenta
+  que Pepe cobra en la mesa sume y canjee ahí mismo. Sale sola si la sucursal la tiene prendida.
 -->
 <script lang="ts">
   import type { SupabaseClient } from '@supabase/supabase-js';
@@ -32,6 +36,7 @@
   import type { VigiaTerminal } from '../../lib/terminal.svelte';
   import { Cobro, type ElegidaPropina } from './cobro/cobro.svelte';
   import Encima from './cobro/Encima.svelte';
+  import Lealtad from './cobro/Lealtad.svelte';
   import Hoja from './Hoja.svelte';
   import PagoHecho from './PagoHecho.svelte';
 
@@ -218,6 +223,9 @@
           </button>
         {/if}
       </div>
+      {#key venta.id}
+        <Lealtad {cliente} {restauranteId} ventaId={venta.id} total={c.resumen.total} />
+      {/key}
     {/if}
 
     {#if c.pagos.length}

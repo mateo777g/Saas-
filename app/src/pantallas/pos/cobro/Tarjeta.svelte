@@ -24,6 +24,7 @@
   import { NOMBRE_METODO, type Metodo, type Pago } from '../../../lib/caja';
   import { enZona, pesos } from '../../../lib/formato';
   import type { Cobro, ElegidaPropina } from './cobro.svelte';
+  import Lealtad from './Lealtad.svelte';
 
   let { cobro, titulo }: { cobro: Cobro; titulo: string } = $props(); // titulo: «#24 · Comer aquí»
 
@@ -193,6 +194,10 @@
         onclick={() => c.abrirDescuento()}
       />
     </div>
+    <!-- La tarjeta de lealtad (maqueta v22): sale sola si la sucursal la tiene prendida. Otra cuenta, otra fila. -->
+    {#key c.e.venta.id}
+      <Lealtad cliente={c.e.cliente} restauranteId={c.e.restauranteId} ventaId={c.e.venta.id} total={r.total} />
+    {/key}
   {/if}
 
   {#if c.enCero}

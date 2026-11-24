@@ -48,6 +48,7 @@
   import Inventario from './gerente/Inventario.svelte';
   import Menu from './gerente/Menu.svelte';
   import MenuEnLinea from './gerente/MenuEnLinea.svelte';
+  import Lealtad from './gerente/Lealtad.svelte';
   import { salir } from '../lib/salida';
   import Mesas from './gerente/Mesas.svelte';
   import Pedidos from './gerente/Pedidos.svelte';
@@ -92,6 +93,7 @@
     | 'caja'
     | 'cocina'
     | 'menu-en-linea'
+    | 'lealtad'
   >('inicio');
   let perfilAbierto = $state(false);
   // Ctrl K o la búsqueda chica de la barra: en Inicio, Inicio abre la grande y lo toma una vez; en otra vista, se
@@ -249,6 +251,7 @@
       valor === 'pedidos' ||
       valor === 'restaurante' ||
       valor === 'menu-en-linea' ||
+      valor === 'lealtad' ||
       valor === 'menu' ||
       valor === 'inventario' ||
       valor === 'mesas' ||
@@ -349,6 +352,7 @@
         opciones: [
           { valor: 'restaurante', texto: 'Tu restaurante' },
           { valor: 'menu-en-linea', texto: 'Tu menú en línea' },
+          { valor: 'lealtad', texto: 'Tarjeta de lealtad' },
           { valor: 'menu', texto: 'Mi menú' },
           { valor: 'inventario', texto: 'Inventario', insignia: vigiaInventario?.insignia },
           { valor: 'equipo', texto: 'Empleados' },
@@ -401,6 +405,11 @@
       <!-- Cada sucursal tiene su menú en línea: se vuelve a abrir desde cero. -->
       {#key actual.id}
         <MenuEnLinea sucursal={actual} sucursales={datos.sucursales} alElegir={elegir} />
+      {/key}
+    {:else if vista === 'lealtad'}
+      <!-- Cada sucursal tiene su tarjeta y sus clientes: se vuelve a abrir desde cero. -->
+      {#key actual.id}
+        <Lealtad sucursal={actual} sucursales={datos.sucursales} alElegir={elegir} />
       {/key}
     {:else if vista === 'menu'}
       <!-- Otra sucursal es otro menú: se vuelve a abrir desde cero. -->

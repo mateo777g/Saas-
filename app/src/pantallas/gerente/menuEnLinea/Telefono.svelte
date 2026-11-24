@@ -5,6 +5,10 @@
   escalado a 0.8268 para caber. Se toca como lo toca un cliente (el menú no manda pedidos ni preguntas de verdad: parte
   C2). Lo que se dicen está arriba de menu/src/lib/muestra.ts y en lib/vistaMenu.ts.
 
+  Con `como="tarjeta"` es el teléfono de «Tu tarjeta» (la tarjeta de lealtad, maqueta v22): el mismo marco con
+  ?muestra=tarjeta, siempre en la pestaña Tarjeta; en lugar del tema y las formas le manda la regla con el estilo y el
+  color sin guardar (`tarjeta`). Mientras carga, el esqueleto de esa pestaña.
+
   Mientras el panel lee la primera vez (o el menú todavía no avisa que ya pintó), la pantalla va en el blanco del panel
   con el esqueleto de su menú: el que el menú midió la vez pasada y el panel recuerda por restaurante, pintado con los
   colores del panel (Simple o Cristal); la primera vez, uno general. Cuando ya leyó el panel y el menú avisó, el menú
@@ -20,6 +24,7 @@
     mandarCerrar,
     mandarModo,
     mandarMuestra,
+    mandarTarjeta,
     oirAlMenu,
     recargarMuestra,
     type EsqueletoTelefono,
@@ -33,6 +38,8 @@
     muestra,
     modo,
     leido,
+    como = 'menu',
+    tarjeta = null,
   }: {
     slug: string;
     restauranteId: string;
@@ -41,6 +48,9 @@
     modo: 'menu' | 'producto';
     // Si el panel ya leyó (antes de eso no hay qué mandarle).
     leido: boolean;
+    como?: 'menu' | 'tarjeta';
+    // Con `como="tarjeta"`: la regla que pinta (null: la que tiene guardada).
+    tarjeta?: Record<string, unknown> | null;
   } = $props();
 
   const ANCHO = 390;
@@ -51,13 +61,18 @@
   // Si hay algo abierto en el teléfono (para que Escape lo cierre).
   let abierto = false;
   // svelte-ignore state_referenced_locally
-  const recordado: EsqueletoTelefono | null = leerEsqueletoTelefono(restauranteId);
+  const recordado: EsqueletoTelefono | null = como === 'menu' ? leerEsqueletoTelefono(restauranteId) : null;
 
   const listo = $derived(leido && menuListo);
 
   // Lo que se le dice al menú: lo que no se ha guardado (con la forma que se acaba de elegir, para que vaya a ella).
   export function pintar(cambio: keyof Formas | null = null) {
-    if (menuListo && leido) mandarMuestra(marco, muestra, cambio);
+    if (menuListo && leido) mandar(cambio);
+  }
+
+  function mandar(cambio: keyof Formas | null = null) {
+    if (como === 'tarjeta') mandarTarjeta(marco, tarjeta);
+    else mandarMuestra(marco, muestra, cambio);
   }
 
   // Después de cambiar un cartel: que lo vuelva a leer.
@@ -84,7 +99,7 @@
   // Ya leyó el panel: que pinte lo suyo (si el menú avisó antes). Después, cada cambio lo manda quien lo hace (pintar),
   // con la forma que cambió.
   $effect(() => {
-    if (listo) untrack(() => mandarMuestra(marco, muestra));
+    if (listo) untrack(() => mandar());
   });
 
   onMount(() =>
@@ -95,7 +110,7 @@
           menuListo = true;
           // Si el menú se volvió a armar (otra lectura), regresa a como lo tiene el panel.
           if (leido) {
-            mandarMuestra(marco, muestra);
+            mandar();
             modoMandado = 'menu';
             if (modo === 'producto') {
               modoMandado = 'producto';
@@ -129,7 +144,7 @@
   const ANCHOS_CATS = [84, 102, 76, 92];
 </script>
 
-<aside class="lado" aria-label="Tu menú, como lo ven tus clientes">
+<aside class="lado" aria-label={como === 'tarjeta' ? 'Tu tarjeta, como la ven tus clientes' : 'Tu menú, como lo ven tus clientes'}>
   <div class="marco">
     <!-- El cuerpo de metal con sus botones y el bisel negro (21st.dev «iphone-16-pro»). -->
     <svg class="cuerpo" viewBox="0 0 200 400" fill="none" aria-hidden="true"><path fill="#303333" d="M196.11,128.09c0-.25-.2-.45-.45-.45-.11.04-.37.03-.69,0V36.69c0-17.84-14.46-32.31-32.31-32.31H37.48C19.63,4.39,5.17,18.85,5.17,36.69v48.99c-.3.02-.55.03-.66-.02-.25,0-.45.2-.45.45,0,0,0,17.29,0,17.29-.03.41.5.49,1.11.48v13.63c-.61,0-1.14.08-1.11.48,0,0,0,28.54,0,28.54-.03.42.5.49,1.11.48v7.95c-.61,0-1.14.08-1.11.48,0,0,0,28.54,0,28.54-.03.42.5.49,1.11.48v178.86c0,17.84,14.46,32.31,32.31,32.31h125.2c17.84,0,32.31-14.46,32.31-32.31v-188.87c.32-.02.58-.03.69.04,1.26.1.03-45.94.45-46.38ZM186.07,362.63c0,13.56-10.99,24.56-24.56,24.56H38.64c-13.56,0-24.56-10.99-24.56-24.56V37.37c0-13.56,10.99-24.56,24.56-24.56h122.87c13.56,0,24.56,10.99,24.56,24.56v325.26Z"></path><path fill="#000000" d="M161.38,7.29H38.78c-16.54,0-29.95,13.41-29.95,29.95v325.52c0,16.54,13.41,29.95,29.95,29.95h122.6c16.54,0,29.95-13.41,29.95-29.95V37.24c0-16.54-13.41-29.95-29.95-29.95ZM186.07,362.57c0,13.6-11.02,24.62-24.62,24.62H38.7c-13.6,0-24.62-11.02-24.62-24.62V37.43c0-13.6,11.02-24.62,24.62-24.62h122.75c13.6,0,24.62,11.02,24.62,24.62v325.14Z"></path></svg>
@@ -137,15 +152,31 @@
       <iframe
         bind:this={marco}
         class="menu"
-        src={linkDeMuestra(slug, 'menu')}
-        title="Tu menú, como lo ven tus clientes"
+        src={linkDeMuestra(slug, como)}
+        title={como === 'tarjeta' ? 'Tu tarjeta, como la ven tus clientes' : 'Tu menú, como lo ven tus clientes'}
         style:width={px(ANCHO)}
         style:height={px(ALTO)}
       ></iframe>
       {#if !listo}
         <div class="esqueleto" aria-hidden="true">
           <div class="escala" style:width={px(ANCHO)} style:height={px(ALTO)}>
-            {#if recordado}
+            {#if como === 'tarjeta'}
+              <!-- La pestaña Tarjeta: la barra, el título, la tarjeta, los tres atajos y la barra de abajo. -->
+              <div class="general">
+                <div class="g-barra"><span class="pieza" style="width:48px;height:48px;border-radius:12px"></span><span class="pieza" style="width:170px;height:18px"></span></div>
+                <div class="g-cuerpo">
+                  <span class="pieza" style="width:150px;height:24px;margin-top:6px"></span>
+                  <span class="pieza" style="width:358px;height:226px;border-radius:18px"></span>
+                  <span class="pieza" style="width:140px;height:18px;margin-top:18px"></span>
+                  <div class="g-cats">
+                    {#each [0, 1, 2] as i (i)}<span class="pieza" style="width:62px;height:62px;border-radius:31px;margin:0 24px"></span>{/each}
+                  </div>
+                </div>
+                <div class="g-abajo">
+                  {#each [0, 1, 2, 3] as i (i)}<span class="pieza" style="width:24px;height:24px;border-radius:7px"></span>{/each}
+                </div>
+              </div>
+            {:else if recordado}
               <div class="columna" style:left={px(izquierda)} style:width={px(recordado.ancho)}>
                 {#each recordado.piezas as p, i (i)}
                   <span class="pieza" class:tapa={p[5] === 1} style={lugar(p)}></span>

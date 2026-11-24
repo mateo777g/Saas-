@@ -92,6 +92,8 @@
   import MarcaEstado from '../pos/MarcaEstado.svelte';
   import PagoHecho from '../pos/PagoHecho.svelte';
   import '../pos/pos.css';
+  import { conRegla, leerLealtad } from '../../lib/lealtad';
+  import VentanaPasar from '../lealtad/VentanaPasar.svelte';
 
   let {
     cliente,
@@ -139,6 +141,10 @@
   let pantalla = $state<'caja' | 'corte' | 'resultado'>('caja');
   let vista = $state<'porcobrar' | 'cobradas'>('porcobrar');
   let hoja = $state<Hojas | null>(null);
+  // La tarjeta de lealtad (maqueta v22): con la tarjeta prendida, «Pasar tarjeta» en la barra abre «Pasar una tarjeta a
+  // otro celular», la misma ventana del panel.
+  let lealtad = $state<{ forma: 'sellos' | 'puntos'; meta: number | null } | null>(null);
+  let pasando = $state(false);
   let fondo = $state('');
   let fondoTocado = $state(false);
   let contado = $state<Record<Metodo, string>>({ efectivo: '', tarjeta: '', transferencia: '' });
@@ -477,6 +483,9 @@
   // ─── Al abrir ───
   onMount(() => {
     leerTodo();
+    leerLealtad(cliente, restauranteId)
+      .then((l) => (lealtad = l.prendida && conRegla(l) ? { forma: l.forma, meta: l.meta } : null))
+      .catch(() => (lealtad = null));
     const dejar = escuchar(cliente, restauranteId, ['ventas', 'comandas', 'pagos', 'turnos'], () => {
       if (carga.estado === 'listo') recargar();
     });
@@ -497,6 +506,7 @@
   <div class="pos-ancho">
     <Barra anfitrion={a} titulo="Caja" chip={chipCaja}>
       {#if turno && carga.estado === 'listo'}
+        {#if lealtad}<Boton etiqueta="Pasar tarjeta" icono="celular" onclick={() => (pasando = true)} />{/if}
         <Boton
           etiqueta="Entrada o salida"
           icono="cambiar"
@@ -1060,6 +1070,10 @@
     </Hoja>
   {/if}
 {/snippet}
+
+{#if pasando}
+  <VentanaPasar {cliente} {restauranteId} regla={lealtad} alCerrar={() => (pasando = false)} />
+{/if}
 
 <style>
   .arriba-vista {

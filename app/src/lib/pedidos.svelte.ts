@@ -36,6 +36,9 @@ export type PorConfirmar = {
   total: number;
   created_at: string;
   renglones: RenglonPedido[];
+  // La tarjeta de lealtad: el pedido usa su premio (solo en los que lo usan). `alcanza`: todavía se puede canjear al
+  // confirmarlo; `entro`: ya se canjeó.
+  premio?: { tipo: 'producto' | 'pesos'; nombre: string | null; pesos: number | null; alcanza: boolean; entro: boolean } | null;
 };
 
 export type Atendido = {

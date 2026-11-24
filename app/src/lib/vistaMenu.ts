@@ -27,7 +27,7 @@ export const HOST_MENU = new URL(MENU_URL).host;
 // (el fondo).
 export type TiraDeColor = 'color' | 'colorBarra' | 'fondo';
 
-export function linkDeMuestra(slug: string, como: 'menu' | 'barra', tira?: TiraDeColor): string {
+export function linkDeMuestra(slug: string, como: 'menu' | 'barra' | 'tarjeta', tira?: TiraDeColor): string {
   return `${MENU_URL}/${slug}?muestra=${como}${tira && tira !== 'color' ? `&tira=${tira}` : ''}`;
 }
 
@@ -38,6 +38,12 @@ export function mandarMuestra(marco: HTMLIFrameElement | undefined, muestra: Mue
   const datos = { fragmentless: 'muestra', ...muestra, ...(cambio ? { cambio } : {}) };
   // Las formas van como objeto simple (sin el proxy de $state, que postMessage no sabe copiar).
   marco?.contentWindow?.postMessage(JSON.parse(JSON.stringify(datos)), ORIGEN_MENU);
+}
+
+// El teléfono de «Tu tarjeta» (la tarjeta de lealtad): la regla con el estilo y el color sin guardar, como la lee
+// menu/src/lib/muestra.ts (`leerRegla`). Sin regla (null), no manda nada: se queda la guardada.
+export function mandarTarjeta(marco: HTMLIFrameElement | undefined, tarjeta: Record<string, unknown> | null) {
+  if (tarjeta) marco?.contentWindow?.postMessage({ fragmentless: 'tarjeta', tarjeta: JSON.parse(JSON.stringify(tarjeta)) }, ORIGEN_MENU);
 }
 
 // Después de cambiar algo que el menú lee de la base (un cartel): que lo vuelva a pedir.

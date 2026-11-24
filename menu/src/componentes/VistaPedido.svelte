@@ -361,7 +361,7 @@
       </div>
     {:else if que === 'vacio'}
       <!-- Sin nada todavía: tranquila como la bienvenida del asistente, con la carita de línea que parpadea. -->
-      <div class="f-ped-vacio nada">
+      <div class="f-ped-vacio nada" class:con-invita={!!(tarjeta && regla)}>
         <h2>{t.vacio}</h2>
         <p>{t.vacioTexto}</p>
         <svg class="f-carita" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">

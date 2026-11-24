@@ -28,6 +28,7 @@
     type ConQue,
     type Lealtad,
     type TarjetaDeLaCuenta,
+    juntado,
   } from '../../../lib/lealtad';
   import Camara from './Camara.svelte';
 
@@ -169,7 +170,7 @@
       <span class="enc-t">
         <b>{tarjeta.nombre}</b>
         <span
-          >{tarjeta.saldo.toLocaleString('en-US')} de {cuantos(regla!.forma, regla!.meta ?? 0)}{#if !tarjeta.premio_en_cuenta && suma > 0}&nbsp;· esta cuenta
+          >{juntado(regla!.forma, tarjeta.saldo, regla!.meta ?? 0).toLocaleString('en-US')} de {cuantos(regla!.forma, regla!.meta ?? 0)}{#if !tarjeta.premio_en_cuenta && suma > 0}&nbsp;· esta cuenta
             le suma {suma.toLocaleString('en-US')}{/if}</span
         >
       </span>

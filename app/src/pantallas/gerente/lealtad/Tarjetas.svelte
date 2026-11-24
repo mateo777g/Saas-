@@ -30,6 +30,7 @@
     type Lealtad,
     type TarjetaCliente,
     type Tarjetas,
+    juntado,
   } from '../../../lib/lealtad';
   import type { Menu } from '../../../lib/menu';
   import { supabase } from '../../../lib/supabase';
@@ -298,7 +299,7 @@
               <span class="mono">{telefonoEscrito(t.telefono)}</span>
               <span class="junta">
                 <span class="mini-barra"><i style:width="{barrita(t)}%"></i></span>
-                <span class="mono fuerte">{t.saldo.toLocaleString('en-US')} de {(lealtad?.meta ?? 0).toLocaleString('en-US')}</span>
+                <span class="mono fuerte">{juntado(lealtad?.forma ?? 'sellos', t.saldo, lealtad?.meta ?? 0).toLocaleString('en-US')} de {(lealtad?.meta ?? 0).toLocaleString('en-US')}</span>
               </span>
               <span class="tenue" class:gris={!ultima}>{ultima ?? 'Sin compras'}</span>
               <span class="tenue">{diaDeTabla(t.sacada, tarjetas!.hoy)}</span>

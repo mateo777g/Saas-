@@ -18,7 +18,7 @@
   import Icono from '../../../diseno/Icono.svelte';
   import Ventana from '../../../diseno/Ventana.svelte';
   import { borrarDatosCliente, buscarDatosCliente, tarjetaDelCliente, type TarjetaDelCliente } from '../../../lib/datosClientes';
-  import { cuantos } from '../../../lib/lealtad';
+  import { cuantos, juntado } from '../../../lib/lealtad';
   import { ALGO_SALIO_PANEL, Fallo } from '../../../lib/errores';
   import { quieto } from '../../../diseno/ventanaSeMueve';
 
@@ -97,7 +97,7 @@
 
   const pedidos = (n: number) => `${n} ${n === 1 ? 'pedido' : 'pedidos'}`;
   // «Rosa Ramírez, 8 de 10 sellos» (sin regla, «8 sellos»).
-  const deTarjeta = (t: TarjetaDelCliente) => `${t.nombre}, ${t.meta ? `${t.saldo} de ${cuantos(t.forma, t.meta)}` : cuantos(t.forma, t.saldo)}`;
+  const deTarjeta = (t: TarjetaDelCliente) => `${t.nombre}, ${t.meta ? `${juntado(t.forma, t.saldo, t.meta)} de ${cuantos(t.forma, t.meta)}` : cuantos(t.forma, t.saldo)}`;
 
   function aparece(_el: Element) {
     if (quieto()) return { duration: 0 };

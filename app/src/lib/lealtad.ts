@@ -79,6 +79,11 @@ export const COLORES_RAPIDOS: { color: string; nombre: string }[] = [
 export const cuantos = (forma: FormaLealtad, n: number) =>
   forma === 'sellos' ? plural(n, 'sello', 'sellos') : plural(n, 'punto', 'puntos');
 
+// Lo juntado que se enseña en «X de meta», como el menú (lib/textosTarjeta.ts de menu/): con sellos nunca pasa de la meta
+// («2 de 2» aunque tenga 3; el de más se ve después del canje); con puntos, los que tiene («1,250 de 1,000»). La prueba de
+// verdad del 23 nov encontró «3 de 2» en el panel y «2 de 2» en el menú; el developer eligió como el menú.
+export const juntado = (forma: FormaLealtad, saldo: number, meta: number) => (forma === 'sellos' ? Math.min(saldo, meta) : saldo);
+
 // El premio en una frase: «una Gringa gratis» no (con cualquier producto el «una» sale mal): «tu Gringa gratis»; «$50 de
 // descuento».
 export function premioEscrito(tipo: TipoPremio | null, producto: string | null, pesos: number | null): string {

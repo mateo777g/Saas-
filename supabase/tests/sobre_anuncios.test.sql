@@ -575,7 +575,7 @@ select is(
   public.uso_ia_cliente(tests.r('a')) - 'mes' - 'consultas_agente' - 'saludos' - 'consultas_menu' - 'distribuidor_id' - 'distribuidor',
   '{"tope": 10.00, "gastado": 3.2500, "sobre_agente": 4.00, "gastado_agente": 1.5000, "agente_en_limite": false,
     "sobre_anuncios": 4.00, "gastado_anuncios": 1.2500, "anuncios": 16, "anuncios_caben": 40, "anuncios_en_limite": false,
-    "sobre_menu": 2.00, "gastado_menu": 0.5000, "menu_en_limite": false}'::jsonb,
+    "sobre_menu": 2.00, "gastado_menu": 0.5000, "menu_en_limite": false, "cartas": 0, "gastado_cartas": 0}'::jsonb,
   'Cada sobre con lo suyo, y lo del agente ya no suma los anuncios'
 );
 

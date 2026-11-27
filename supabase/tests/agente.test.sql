@@ -1192,7 +1192,7 @@ select throws_ok(
 );
 select throws_ok(
   $$ select public.anotar_uso_ia('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 'flyer', 'gpt-6.1-sol', 100, 0, 0, 10) $$,
-  '22023', 'El uso de IA es pregunta, saludo, menu, menu_sin_respuesta o palabras',
+  '22023', 'El uso de IA es pregunta, saludo, menu, menu_sin_respuesta, palabras, carta o carta_sin_lectura',
   'Los flyers todavía no existen'
 );
 reset role;
@@ -1221,7 +1221,7 @@ select is(
   '{"tope": 0.05, "gastado": 0.0200, "sobre_agente": 0.02, "gastado_agente": 0.0200, "consultas_agente": 1,
     "saludos": 1, "agente_en_limite": true, "sobre_anuncios": 0.02, "gastado_anuncios": 0.0000, "anuncios": 0, "anuncios_caben": 0,
     "anuncios_en_limite": false, "sobre_menu": 0.01, "gastado_menu": 0.0000, "consultas_menu": 0,
-    "menu_en_limite": false, "distribuidor_id": null, "distribuidor": null}'::jsonb,
+    "menu_en_limite": false, "cartas": 0, "gastado_cartas": 0, "distribuidor_id": null, "distribuidor": null}'::jsonb,
   'La ventana «Tope de IA» trae lo gastado este mes, el tope y quién paga'
 );
 select is(

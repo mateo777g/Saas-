@@ -553,7 +553,7 @@ select is(
 
 select throws_ok(
   $$ select public.anotar_uso_ia('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 'flyer', 'gpt-6.1-sol', 100, 0, 0, 10) $$,
-  '22023', 'El uso de IA es pregunta, saludo, menu, menu_sin_respuesta o palabras',
+  '22023', 'El uso de IA es pregunta, saludo, menu, menu_sin_respuesta, palabras, carta o carta_sin_lectura',
   'Los flyers todavía no existen'
 );
 
@@ -667,7 +667,7 @@ select is(
   '{"tope": 5.00, "gastado": 5.99, "sobre_agente": 2.00, "gastado_agente": 4.0000, "consultas_agente": 1,
     "saludos": 0, "agente_en_limite": true, "sobre_anuncios": 2.00, "gastado_anuncios": 0.0000, "anuncios": 0, "anuncios_caben": 20,
     "anuncios_en_limite": false, "sobre_menu": 1.00, "gastado_menu": 1.9900, "consultas_menu": 2,
-    "menu_en_limite": true, "distribuidor_id": null, "distribuidor": null}'::jsonb,
+    "menu_en_limite": true, "cartas": 0, "gastado_cartas": 0, "distribuidor_id": null, "distribuidor": null}'::jsonb,
   'La ventana «Tope de IA» trae cada sobre en su renglón: su parte, lo gastado, cuántas preguntas y si llegó a lo suyo'
 );
 select is(
@@ -675,7 +675,7 @@ select is(
   '{"tope": 7.77, "gastado": 0, "sobre_agente": 3.11, "gastado_agente": 0, "consultas_agente": 0, "saludos": 0,
     "agente_en_limite": false, "sobre_anuncios": 3.11, "gastado_anuncios": 0, "anuncios": 0, "anuncios_caben": 31,
     "anuncios_en_limite": false, "sobre_menu": 1.55, "gastado_menu": 0, "consultas_menu": 0,
-    "menu_en_limite": false}'::jsonb,
+    "menu_en_limite": false, "cartas": 0, "gastado_cartas": 0}'::jsonb,
   'Con 7.77, 3.11 para el agente, 3.11 para los anuncios y 1.55 para el menú, ya calculados'
 );
 select is(

@@ -1407,7 +1407,7 @@ select is(
 select tests.authenticate_as('fragmentless');
 select is(
   public.uso_ia_cliente('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa') - 'mes' - 'distribuidor_id' - 'distribuidor'
-    - 'sobre_menu' - 'gastado_menu' - 'consultas_menu' - 'menu_en_limite',
+    - 'sobre_menu' - 'gastado_menu' - 'consultas_menu' - 'menu_en_limite' - 'cartas' - 'gastado_cartas',
   '{"tope": 10.00, "gastado": 4.0000, "sobre_agente": 4.00, "gastado_agente": 0.0000, "consultas_agente": 1,
     "saludos": 0, "agente_en_limite": false, "sobre_anuncios": 4.00, "gastado_anuncios": 4.0000, "anuncios": 2,
     "anuncios_caben": 40, "anuncios_en_limite": true}'::jsonb,

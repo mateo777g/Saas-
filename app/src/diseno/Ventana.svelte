@@ -37,8 +37,10 @@
     relleno = '28px',
     tamanoTexto = 13,
     centrado = false,
+    textoArriba = false,
     alCerrar,
     children,
+    pie,
   }: {
     // Sin etiqueta, el título va solo (el color del menú en línea).
     etiqueta?: string;
@@ -52,8 +54,14 @@
     relleno?: string;
     tamanoTexto?: number;
     centrado?: boolean;
+    // El texto en la cabeza, debajo del título y entre los botones, en lugar de arriba de lo que se desliza (las
+    // ventanas del menú con IA: así se queda fijo cuando lo de adentro se desliza).
+    textoArriba?: boolean;
     alCerrar: () => void;
     children: Snippet;
+    // Un pie fijo abajo, fuera de lo que se desliza (las ventanas «Tu carta» y «Revisa tu menú» del menú con IA): lo
+    // que dice a la izquierda y el botón verde a la derecha.
+    pie?: Snippet;
   } = $props();
 
   let dialogo: HTMLDialogElement;
@@ -168,6 +176,9 @@
         {#if etiqueta}<span class="etiqueta">{etiqueta}</span>{/if}
         <h2 class="titulo" id={idTitulo}>{titulo}</h2>
         {#if nota}<p class="nota">{nota}</p>{/if}
+        {#if texto && textoArriba}
+          <p class="texto" class:centrado style:font-size="{tamanoTexto}px">{texto}</p>
+        {/if}
       </div>
       <div class="acciones">
         {#if mueve}
@@ -184,11 +195,12 @@
       class:mas-abajo={masAbajo}
       onscroll={sombras}
     >
-      {#if texto}
+      {#if texto && !textoArriba}
         <p class="texto" class:centrado style:font-size="{tamanoTexto}px">{texto}</p>
       {/if}
       {@render children()}
     </div>
+    {#if pie}<div class="pie-fijo">{@render pie()}</div>{/if}
   </div>
 </dialog>
 
@@ -288,6 +300,15 @@
   .desliza.mas-arriba.mas-abajo {
     -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 32px, #000 calc(100% - 32px), transparent 100%);
     mask-image: linear-gradient(to bottom, transparent 0, #000 32px, #000 calc(100% - 32px), transparent 100%);
+  }
+
+  .pie-fijo {
+    flex: none;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-top: 28px;
+    padding: 18px 0 24px;
   }
 
   .titulos {

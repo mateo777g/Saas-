@@ -27,6 +27,7 @@
     iconoAlFinal  el icono después del texto, como la flecha de "Ver clientes →"
     chip      el relleno de chip, sin perder el borde (Cancelar de Ocultar varios)
     ayuda     la cajita que sale con el cursor encima («Primero crea una categoría»; diseno/pista.ts)
+    iconoVerde  otro ícono para el verde en lugar del + o la flecha (la flecha hacia arriba de «Subir a mi menú»)
 -->
 <script lang="ts">
   import { onMount } from 'svelte';
@@ -46,6 +47,7 @@
     iconoAlFinal = false,
     chip = false,
     ayuda,
+    iconoVerde,
     tipo = 'button',
     onclick,
     ...resto
@@ -60,6 +62,7 @@
     iconoAlFinal?: boolean;
     chip?: boolean;
     ayuda?: string;
+    iconoVerde?: string;
     tipo?: 'button' | 'submit';
     onclick?: (e: MouseEvent) => void;
     [dato: `aria-${string}`]: string | undefined;
@@ -75,7 +78,9 @@
   const PALOMITA = '<path stroke-width="2.4" d="M5 12l5 5L20 7"></path>';
   const flujo = $derived(tono === 'peligro' || tono === 'peligro-lleno');
   // El ícono del verde: + en «Agregar…», la flecha en lo demás; listo, la palomita.
-  const trazoVerde = $derived(exito ? PALOMITA : /^Agregar/.test(etiqueta) ? MAS : FLECHA);
+  const trazoVerde = $derived(
+    exito ? PALOMITA : iconoVerde ? (ICONOS[iconoVerde] ?? FLECHA) : /^Agregar/.test(etiqueta) ? MAS : FLECHA,
+  );
   const trazoRojo = $derived(exito ? PALOMITA : icono ? (ICONOS[icono] ?? '') : '');
 
   // Al tocarlo con el dedo se queda «encima» 450 ms, como con el mouse (el verde, los rojos y el que se

@@ -21,7 +21,7 @@ export type VistaGerente =
   | 'ajustes';
 
 // La ventana que se abre al llegar a la vista.
-export type NuevoAlEntrar = 'producto' | 'mesa' | 'empleado';
+export type NuevoAlEntrar = 'producto' | 'mesa' | 'empleado' | 'carta';
 
 export type Destino = { vista: VistaGerente | 'caja'; nuevo?: NuevoAlEntrar };
 

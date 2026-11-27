@@ -60,7 +60,16 @@
 
   type Seccion = 'productos' | 'categorias' | 'opciones' | 'areas';
 
-  let { sucursal, abrirNuevo }: { sucursal: Sucursal; abrirNuevo?: () => boolean } = $props();
+  let {
+    sucursal,
+    abrirNuevo,
+    alArmarConCarta,
+  }: {
+    sucursal: Sucursal;
+    abrirNuevo?: () => boolean;
+    // «Armar mi menú con tu carta» de Mi menú vacío: lleva al Agente IA con «Tu carta» abierta (el menú con IA).
+    alArmarConCarta?: () => void;
+  } = $props();
 
   type Lectura =
     | { estado: 'leyendo' }
@@ -345,6 +354,7 @@
           alOjo={alternarVisible}
           alEditar={(p) => (ventana = { tipo: 'producto', producto: p })}
           alIrACategorias={() => cambiarSeccion('categorias')}
+          {alArmarConCarta}
           alOcultar={ocultarElegidos}
         />
       {:else if seccion === 'categorias'}

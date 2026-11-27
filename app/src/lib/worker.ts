@@ -49,10 +49,12 @@ export async function llamarWorker(
 
 // Una pregunta al Worker que contesta por partes (lib/pasos.ts): la respuesta sin leer, para irla
 // leyendo. `senal` la corta; ese error se deja pasar tal cual. Sus errores llegan como los de llamarWorker.
+// Un FormData (las hojas de la carta, lib/carta.ts) va como multipart: el Content-Type con su boundary lo pone
+// el navegador.
 export async function abrirWorker(
   contexto: string,
   camino: string,
-  cuerpo: Record<string, unknown>,
+  cuerpo: Record<string, unknown> | FormData,
   senal: AbortSignal,
 ): Promise<Response> {
   const { data, error } = await supabase.auth.getSession();
@@ -65,8 +67,11 @@ export async function abrirWorker(
   try {
     respuesta = await fetch(`${API}${camino}`, {
       method: 'POST',
-      headers: { Authorization: `Bearer ${data.session.access_token}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify(cuerpo),
+      headers: {
+        Authorization: `Bearer ${data.session.access_token}`,
+        ...(cuerpo instanceof FormData ? {} : { 'Content-Type': 'application/json' }),
+      },
+      body: cuerpo instanceof FormData ? cuerpo : JSON.stringify(cuerpo),
       signal: senal,
     });
   } catch (falla) {

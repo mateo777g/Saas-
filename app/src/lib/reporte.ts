@@ -43,8 +43,9 @@ export const nombreDelArchivo = (p: PeriodoReporte, restaurante: string) =>
 
 type Ahora = { fecha: string; hora: string; zona: string; corte: number; hoy: string; lunes: string; primero: string };
 
-// La hora y los días del restaurante: nunca el reloj del aparato.
-async function leerAhora(restauranteId: string): Promise<Ahora> {
+// La hora y los días del restaurante: nunca el reloj del aparato. También la usa una carta leída (Agente IA) para
+// decir en el Historial cuándo empezó su conversación.
+export async function leerAhora(restauranteId: string): Promise<Ahora> {
   const { data, error } = await supabase.rpc('contexto_agente', { p_restaurante_id: restauranteId });
   if (error) throw error;
   const a = data.ahora;

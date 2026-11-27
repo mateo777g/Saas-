@@ -43,6 +43,7 @@
     alEditar,
     alIrACategorias,
     alOcultar,
+    alArmarConCarta,
   }: {
     menu: Menu;
     cargando?: boolean;
@@ -57,6 +58,7 @@
     alEditar: (p: Producto) => void;
     alIrACategorias: () => void;
     alOcultar: () => void;
+    alArmarConCarta?: () => void;
   } = $props();
 
   const COLUMNAS = '2.2fr 2.8fr 1.1fr 0.8fr 1fr 80px';
@@ -128,6 +130,13 @@
   </span>
 {/snippet}
 
+<!-- El menú con IA: con Mi menú vacío, un botón lleva al Agente IA con «Tu carta» abierta. -->
+{#snippet conCarta()}
+  {#if alArmarConCarta}
+    <Boton etiqueta="Armar mi menú con tu carta" icono="foto" tono="tinta" tamano="chico" onclick={alArmarConCarta} />
+  {/if}
+{/snippet}
+
 <div class="herramientas">
   <Haz>
     <label class="buscador" use:vidrio={'control'}>
@@ -182,10 +191,13 @@
         titulo="Todavía no hay productos en el menú."
         texto="Primero crea tus categorías, como Tacos o Bebidas; después agrega tus productos con Nuevo producto."
       >
+        {@render conCarta()}
         <Boton etiqueta="Ir a Categorías" icono="derecha" iconoAlFinal tamano="chico" onclick={alIrACategorias} />
       </NotaTabla>
     {:else}
-      <NotaTabla relleno={48} angosta titulo="Todavía no hay productos en el menú." texto="Agrega el primero con Nuevo producto." />
+      <NotaTabla relleno={48} angosta titulo="Todavía no hay productos en el menú." texto="Agrega el primero con Nuevo producto.">
+        {@render conCarta()}
+      </NotaTabla>
     {/if}
   {:else if !mostrados.length}
     <NotaTabla

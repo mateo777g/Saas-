@@ -59,5 +59,9 @@
 
   .debajo {
     margin-top: 10px;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 10px;
   }
 </style>

@@ -9,8 +9,12 @@
 
   Una pregunta detenida (`aviso`) no trae Markdown ni «Copiar»: solo lo que dice el aviso y, si alcanzó a leer
   algo, «Lo que leí».
+
+  Una carta leída (el menú con IA) no lleva «Copiar» ni «Lo que leí» (`sinAcciones`: no leyó nada de la base): debajo del
+  texto va su tarjeta (`children`), que sale cuando termina de salir el texto.
 -->
 <script lang="ts">
+  import type { Snippet } from 'svelte';
   import Icono from '../../../diseno/Icono.svelte';
   import { ICONOS } from '../../../diseno/iconos';
   import Pildora from '../../../diseno/Pildora.svelte';
@@ -29,6 +33,8 @@
     seguimiento = [],
     apagado = false,
     alSeguir,
+    sinAcciones = false,
+    children,
   }: {
     texto: string;
     aviso?: string | null;
@@ -40,6 +46,8 @@
     seguimiento?: { etiqueta: string; pregunta: string }[];
     apagado?: boolean;
     alSeguir: (s: { etiqueta: string; pregunta: string }) => void;
+    sinAcciones?: boolean;
+    children?: Snippet;
   } = $props();
 
   const html = $derived(markdown(texto));
@@ -110,7 +118,12 @@
   {:else}
     <div class="md" bind:this={cuerpo}>{@html html}</div>
   {/if}
-  {#if !aviso || leido.length}
+  {#if children}
+    <div class="debajo" class:aparece={animar} style:animation-delay={animar ? `${esperaAcciones}ms` : undefined}>
+      {@render children()}
+    </div>
+  {/if}
+  {#if !sinAcciones && (!aviso || leido.length)}
     <div class="acciones" class:aparece={animar} style:animation-delay={animar ? `${esperaAcciones}ms` : undefined}>
       {#if !aviso}
         <button type="button" class="chico suave" onclick={copiar} disabled={copiado}>
@@ -329,7 +342,8 @@
   }
 
   .md :global(.aparece),
-  .acciones.aparece {
+  .acciones.aparece,
+  .debajo.aparece {
     animation: aparecer 330ms ease-out both;
   }
 
@@ -417,7 +431,8 @@
 
   @media (prefers-reduced-motion: reduce) {
     .md :global(.aparece),
-    .acciones.aparece {
+    .acciones.aparece,
+    .debajo.aparece {
       animation: none;
     }
 

@@ -215,6 +215,9 @@ export type UsoIa = {
   gastado_menu: number;
   consultas_menu: number;
   menu_en_limite: boolean;
+  // Las cartas que leyó la IA este mes (el menú con IA): fuera del tope y de los sobres, pero dentro de lo gastado.
+  cartas: number;
+  gastado_cartas: number;
   distribuidor_id: number | null;
   distribuidor: string | null;
 };

@@ -414,7 +414,11 @@
     {:else if vista === 'menu'}
       <!-- Otra sucursal es otro menú: se vuelve a abrir desde cero. -->
       {#key actual.id}
-        <Menu sucursal={actual} abrirNuevo={() => tomarNuevo('producto')} />
+        <Menu
+          sucursal={actual}
+          abrirNuevo={() => tomarNuevo('producto')}
+          alArmarConCarta={() => irA({ vista: 'agente', nuevo: 'carta' })}
+        />
       {/key}
     {:else if vista === 'inventario'}
       <!-- Otra sucursal es otro inventario: se vuelve a abrir desde cero. -->
@@ -479,6 +483,8 @@
             alElegir={elegir}
             barraLista={barraDelAgente}
             hayIngredientes={(vigiaInventario?.ingredientes?.length ?? 0) > 0}
+            abrirCarta={() => tomarNuevo('carta')}
+            alVerMenu={() => irA({ vista: 'menu' })}
           />
         {:catch error}
           <BarraArriba titulo="Agente IA" estado={{ texto: 'No se pudo abrir', vivo: false }} />

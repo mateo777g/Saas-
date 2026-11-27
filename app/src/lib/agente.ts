@@ -10,6 +10,7 @@
 import { ALGO_SALIO_PANEL, Fallo, SIN_CONEXION } from './errores';
 import { diaYMes } from './formato';
 import { Compas, leerRenglones, vienePorPartes, type Aviso, type Paso } from './pasos';
+import type { CartaGuardada } from './carta';
 import type { ReporteGuardado } from './reporte';
 import { supabase } from './supabase';
 import { abrirWorker, llamarWorker } from './worker';
@@ -146,7 +147,8 @@ export function ideasALaVista(hayIngredientes: boolean): number[] {
 // que leyó para responder y de qué idea salió (para sus seguimientos).
 // También cuánto tardó y lo que hizo («Pensé 6 s», planes/trabajo/estrella/vista.md; las conversaciones
 // de antes no lo traen). Una pregunta detenida es un turno sin respuesta que no se le manda al agente, y
-// un «Reporte en PDF» tampoco: lo arma el sistema, sin IA (reporte.ts).
+// un «Reporte en PDF» tampoco: lo arma el sistema, sin IA (reporte.ts). Una carta leída (lib/carta.ts) tampoco: su
+// lectura se guarda aquí, con lo que Don Chuy corrija, hasta «Subir a mi menú».
 export type Turno = {
   visible: string;
   pregunta: string;
@@ -157,6 +159,7 @@ export type Turno = {
   pasos?: string[];
   detenida?: boolean;
   reporte?: ReporteGuardado;
+  carta?: CartaGuardada;
 };
 
 export type Contestacion =
@@ -173,7 +176,7 @@ export type Contestacion =
 // Un paso del agente es de lo que encontró si trae `dato`: es lo que alcanzó a leer si se detiene.
 export type PasoAgente = Paso & { dato?: boolean };
 
-type Oyentes = {
+export type Oyentes = {
   senal: AbortSignal;
   alPasos: (pasos: PasoAgente[]) => void;
   alLlegar: () => void; // la respuesta ya llegó (los segundos son hasta aquí), aunque falte enseñar pasos
@@ -189,7 +192,7 @@ export async function preguntar(
   { senal, alPasos, alLlegar }: Oyentes,
 ): Promise<Contestacion> {
   const conversacion = turnos
-    .filter((t) => !t.detenida && !t.reporte)
+    .filter((t) => !t.detenida && !t.reporte && !t.carta)
     .flatMap((t) => [
       { rol: 'gerente', texto: t.pregunta },
       { rol: 'agente', texto: t.respuesta },
@@ -210,6 +213,33 @@ export async function preguntar(
     throw new Error('El Worker no mandó la respuesta');
   }
 
+  const { fin: r, pasos } = await leerPorPartes(respuesta, { senal, alPasos, alLlegar });
+  if (typeof r.respuesta !== 'string') {
+    console.error('[agente] el Worker contestó algo que no se entiende:', r);
+    throw new Error('El Worker no mandó la respuesta');
+  }
+  const leido = Array.isArray(r.leido)
+    ? (r.leido as Leido[]).filter((l) => typeof l?.texto === 'string' && typeof l?.icono === 'string')
+    : [];
+  const ahora = r.ahora as { fecha?: unknown; hora?: unknown } | null;
+  return {
+    tipo: 'respuesta',
+    respuesta: r.respuesta,
+    leido,
+    puede: r.puede !== false,
+    ahora: typeof ahora?.fecha === 'string' && typeof ahora.hora === 'string' ? { fecha: ahora.fecha, hora: ahora.hora } : null,
+    pasos,
+  };
+}
+
+// Lee lo que el Worker manda por partes (una pregunta, o una carta: lib/carta.ts): cada paso con su compás, y al
+// final su aviso `fin`. Un `hecho` puede traer `listo`: el texto ya terminado cambia por lo que de verdad pasó
+// («Anoté 18 productos»). Regresa el `fin` y lo que dijo cada paso al terminar. Si se detiene (`senal`), lanza el
+// error de la señal, sin esperar; un `error` del Worker llega como Fallo, en español.
+export async function leerPorPartes(
+  respuesta: Response,
+  { senal, alPasos, alLlegar }: Oyentes,
+): Promise<{ fin: Aviso; pasos: string[] }> {
   const compas = new Compas();
   const parar = () => compas.parar();
   senal.addEventListener('abort', parar);
@@ -226,7 +256,8 @@ export async function preguntar(
         const paso = { clave: a.id as number, icono: a.icono as string, texto: a.texto as string, listo: a.listo as string, hecho: false };
         compas.entra(() => poner([...pasos, paso]));
       } else if (a.tipo === 'hecho') {
-        compas.sale(() => poner(pasos.map((p) => (p.clave === a.id ? { ...p, hecho: true } : p))));
+        const listo = typeof a.listo === 'string' ? { listo: a.listo } : {};
+        compas.sale(() => poner(pasos.map((p) => (p.clave === a.id ? { ...p, ...listo, hecho: true } : p))));
       } else if (a.tipo === 'quita') {
         compas.sale(() => poner(pasos.filter((p) => p.clave !== a.id)));
       } else if (a.tipo === 'dato') {
@@ -252,24 +283,7 @@ export async function preguntar(
     senal.removeEventListener('abort', parar);
     compas.parar();
   }
-
-  const r = fin as Aviso;
-  if (typeof r.respuesta !== 'string') {
-    console.error('[agente] el Worker contestó algo que no se entiende:', r);
-    throw new Error('El Worker no mandó la respuesta');
-  }
-  const leido = Array.isArray(r.leido)
-    ? (r.leido as Leido[]).filter((l) => typeof l?.texto === 'string' && typeof l?.icono === 'string')
-    : [];
-  const ahora = r.ahora as { fecha?: unknown; hora?: unknown } | null;
-  return {
-    tipo: 'respuesta',
-    respuesta: r.respuesta,
-    leido,
-    puede: r.puede !== false,
-    ahora: typeof ahora?.fecha === 'string' && typeof ahora.hora === 'string' ? { fecha: ahora.fecha, hora: ahora.hora } : null,
-    pasos: pasos.map((p) => p.listo),
-  };
+  return { fin: fin as Aviso, pasos: pasos.map((p) => p.listo) };
 }
 
 // Si este gerente puede preguntar en esta sucursal, y si no, por qué (lo cuenta Postgres).
@@ -357,6 +371,17 @@ export function guardarConversacion(restauranteId: string, conversacion: Convers
     (c) => c.fijada || ++sueltas <= MAX_CONVERSACIONES,
   );
   return escribirConversaciones(restauranteId, lista);
+}
+
+// La misma conversación con un cambio que no es una respuesta nueva (lo que se corrige de una carta leída y lo que se
+// subió): se queda en su lugar del Historial.
+export function guardarEnSuLugar(restauranteId: string, conversacion: Conversacion): Conversacion[] {
+  const lista = leerConversaciones(restauranteId);
+  if (!lista.some((c) => c.id === conversacion.id)) return guardarConversacion(restauranteId, conversacion);
+  return escribirConversaciones(
+    restauranteId,
+    lista.map((c) => (c.id === conversacion.id ? conversacion : c)),
+  );
 }
 
 // Fijar y cambiar el nombre no la mueven de su lugar: al desfijarla, regresa adonde estaba.

@@ -11,6 +11,10 @@ if (!R2_PUBLICO) throw new Error('Falta VITE_R2_PUBLICO en app/.env');
 
 const LADO_MAXIMO = 1600;
 const CALIDAD = 80;
+// Las hojas de la carta que lee la IA (el menú con IA, 27 nov 2026): 2048 px de lado mayor, porque a 1600 la letra
+// chica no se lee bien; calidad 85 por lo mismo. No se guardan en R2: van al Worker y se tiran.
+const LADO_HOJA = 2048;
+const CALIDAD_HOJA = 85;
 // El logo: chico (va en una barra de 48 px) y más nítido, porque casi siempre trae letras.
 const LADO_LOGO = 512;
 const CALIDAD_LOGO = 90;
@@ -53,6 +57,14 @@ export async function convertirAWebp(archivo: File): Promise<Blob> {
   const { lienzo, pincel } = lienzoDe(imagen, LADO_MAXIMO);
   imagen.close();
   return aWebp(lienzo, pincel, CALIDAD);
+}
+
+// Una hoja de la carta lista para que la lea la IA: WebP de 2048 px de lado mayor, calidad 85, derecha.
+export async function convertirHoja(archivo: File): Promise<Blob> {
+  const imagen = await abrir(archivo);
+  const { lienzo, pincel } = lienzoDe(imagen, LADO_HOJA);
+  imagen.close();
+  return aWebp(lienzo, pincel, CALIDAD_HOJA);
 }
 
 // El logo listo para subir: WebP de 512 px de lado mayor que conserva su fondo transparente.

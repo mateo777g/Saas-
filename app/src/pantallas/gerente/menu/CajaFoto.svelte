@@ -16,7 +16,15 @@
     envio = false,
     apagado = false,
     alElegir,
-  }: { src: string | null; envio?: boolean; apagado?: boolean; alElegir: (archivo: File) => void } = $props();
+    varias,
+  }: {
+    src: string | null;
+    envio?: boolean;
+    apagado?: boolean;
+    alElegir: (archivo: File) => void;
+    // La de «Tu carta» (el menú con IA): sus textos, varias fotos o un PDF a la vez, y su alto.
+    varias?: { titulo: string; texto: string; soltar: string; pista: string; alto?: number; alElegir: (archivos: File[]) => void };
+  } = $props();
 
   let caja = $state<HTMLDivElement>();
   let entrada = $state<HTMLInputElement>();
@@ -91,9 +99,11 @@
   }
 
   function alCambiar(e: Event & { currentTarget: HTMLInputElement }) {
-    const archivo = e.currentTarget.files?.[0];
+    const archivos = [...(e.currentTarget.files ?? [])];
     e.currentTarget.value = '';
-    if (archivo) alElegir(archivo);
+    if (varias) {
+      if (archivos.length) varias.alElegir(archivos);
+    } else if (archivos[0]) alElegir(archivos[0]);
   }
 
   function encima(e: DragEvent) {
@@ -110,8 +120,10 @@
     if (envio || apagado) return;
     e.preventDefault();
     arrastrando = false;
-    const archivo = e.dataTransfer?.files[0];
-    if (archivo) alElegir(archivo);
+    const archivos = [...(e.dataTransfer?.files ?? [])];
+    if (varias) {
+      if (archivos.length) varias.alElegir(archivos);
+    } else if (archivos[0]) alElegir(archivos[0]);
   }
 </script>
 
@@ -131,8 +143,9 @@
     class:apagado
     role="button"
     tabindex="0"
-    aria-label="Foto de tu menú"
+    aria-label={varias ? varias.titulo : 'Foto de tu menú'}
     aria-disabled={apagado}
+    style:min-height={varias?.alto ? `${varias.alto}px` : null}
     bind:this={caja}
     onclick={elegir}
     onkeydown={alTeclear}
@@ -151,11 +164,20 @@
       </span>
     {:else}
       <div class="cf-riffle" aria-hidden="true" bind:this={figura}></div>
-      <b>Foto de tu menú</b>
-      <span class="cf-texto">{arrastrando ? 'Suéltala aquí.' : 'Arrástrala aquí o haz clic para elegirla.'}</span>
-      <span class="cf-pista">JPG o PNG · se optimiza automáticamente</span>
+      <b>{varias ? varias.titulo : 'Foto de tu menú'}</b>
+      <span class="cf-texto"
+        >{arrastrando ? (varias ? varias.soltar : 'Suéltala aquí.') : varias ? varias.texto : 'Arrástrala aquí o haz clic para elegirla.'}</span
+      >
+      <span class="cf-pista">{varias ? varias.pista : 'JPG o PNG · se optimiza automáticamente'}</span>
     {/if}
-    <input bind:this={entrada} type="file" accept="image/*" hidden onchange={alCambiar} />
+    <input
+      bind:this={entrada}
+      type="file"
+      accept={varias ? 'image/*,application/pdf' : 'image/*'}
+      multiple={!!varias}
+      hidden
+      onchange={alCambiar}
+    />
   </div>
 {/if}
 

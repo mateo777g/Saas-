@@ -11,6 +11,9 @@
 
   Con la 7b-3 los anuncios tienen su sobre y su renglón, que siempre dice cuántos caben con este
   tope (planes/trabajo/7b/sobre-7b3.md).
+
+  Con el menú con IA (27 nov 2026), las cartas que leyó la IA van en su propio renglón, fuera de los sobres: no salen del
+  tope (planes/trabajo/menu-con-ia/encuestas.md), pero lo gastado del mes sí las suma.
 -->
 <script lang="ts">
   import { onMount } from 'svelte';
@@ -80,6 +83,10 @@
               : 'Sin uso este mes'}
           </span>
           <span class="mono">{dolares(u.gastado_menu)} <span class="de">de {dolares(u.sobre_menu)}</span></span>
+        </div>
+        <div class="fila">
+          <span>Cartas · {u.cartas || u.gastado_cartas > 0 ? plural(u.cartas, 'leída', 'leídas') : 'Sin uso este mes'}</span>
+          <span class="mono">{dolares(u.gastado_cartas)} <span class="de">fuera del tope</span></span>
         </div>
       </div>
       {#if u.tope === 0}

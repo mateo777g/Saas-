@@ -29,9 +29,16 @@
   Sin tope (estado_ia), la caja dice el aviso y las ideas se apagan; la barra de chats y el resto del
   panel siguen igual. Si se acaba a media conversación, la caja de abajo dice lo mismo. Si una pregunta
   no se pudo contestar, vuelve a la caja para mandarla otra vez.
+
+  El menú con IA (maqueta 1Y6NCBNSZwWCVatj17iCDA v2; planes/trabajo/menu-con-ia/): la carta se lee desde «Tu carta» (el
+  «+», también con tope 0, o Mi menú vacío, `abrirCarta`) o con sus fotos adjuntas en la caja (con el botón de la foto,
+  arrastrándolas a cualquier lugar de la vista o pegándolas), y lo escrito con ellas es una nota para la IA. En la
+  plática sale como una pregunta: la burbuja «Lee mi carta · 3 hojas» (con sus miniaturas mientras la pestaña sigue
+  abierta: las fotos nunca se guardan), los pasos y la respuesta con su tarjeta, que abre la revisión y luego «Subir a mi
+  menú». La lectura, con lo que Don Chuy corrige, se guarda con la conversación, en su lugar del Historial.
 -->
 <script lang="ts">
-  import { onMount, tick } from 'svelte';
+  import { onDestroy, onMount, tick } from 'svelte';
   import BarraArriba from '../../diseno/BarraArriba.svelte';
   import BotonCuadro from '../../diseno/BotonCuadro.svelte';
   import CajaError from '../../diseno/CajaError.svelte';
@@ -39,7 +46,24 @@
   import Pensando from '../../diseno/Pensando.svelte';
   import Pliegue from '../../diseno/Pliegue.svelte';
   import {
+    esFoto,
+    esPdf,
+    leerCarta,
+    leerCartasDelMes,
+    MAXIMO_HOJAS,
+    soltarHojas,
+    textoDeHojas,
+    type CategoriaLeida,
+    type CartaGuardada,
+    type Hoja,
+  } from '../../lib/carta';
+  import TarjetaCarta from './agente/TarjetaCarta.svelte';
+  import VentanaCarta from './agente/VentanaCarta.svelte';
+  import VentanaRevision from './agente/VentanaRevision.svelte';
+  import type { ChipCarta } from './agente/chipCarta';
+  import {
     cambiarConversacion,
+    guardarEnSuLugar,
     eliminarConversacion,
     guardarBarraCerrada,
     guardarConversacion,
@@ -60,9 +84,9 @@
     type Turno,
   } from '../../lib/agente';
   import { esDeRed, SIN_CONEXION } from '../../lib/errores';
-  import { saludoPorHora } from '../../lib/formato';
+  import { diaYMes, saludoPorHora } from '../../lib/formato';
   import type { Sucursal } from '../../lib/gerente';
-  import { prepararReporte, tituloDelPedido, type PeriodoReporte } from '../../lib/reporte';
+  import { leerAhora, prepararReporte, tituloDelPedido, type PeriodoReporte } from '../../lib/reporte';
   import CajaSucursales from './CajaSucursales.svelte';
   import ArchivoReporte from './agente/ArchivoReporte.svelte';
   import CajaPregunta from './agente/CajaPregunta.svelte';
@@ -75,6 +99,8 @@
     alElegir,
     barraLista,
     hayIngredientes,
+    abrirCarta,
+    alVerMenu,
   }: {
     sucursal: Sucursal;
     sucursales: Sucursal[];
@@ -83,6 +109,10 @@
     // Si la sucursal tiene al menos un ingrediente en Inventario (lo lee el panel en vivo, VigiaInventario):
     // la tercera idea es «Qué me falta comprar» en vez de «Reporte del mes».
     hayIngredientes: boolean;
+    // Si llegó desde «Armar mi menú con tu carta» de Mi menú vacío: «Tu carta» sale abierta (una vez).
+    abrirCarta?: () => boolean;
+    // «Ver Mi menú» de una carta ya subida.
+    alVerMenu: () => void;
   } = $props();
 
   const ideas = $derived(ideasALaVista(hayIngredientes));
@@ -90,7 +120,8 @@
   const PH_BIENVENIDA = 'Pregunta lo que quieras de tu negocio…';
   const PH_CHAT = 'Sigue preguntando… por ejemplo, ¿y ayer?';
 
-  type Pedido = { visible: string; pregunta: string; idea: number | null };
+  // Una carta va como una pregunta, con sus hojas y su nota.
+  type Pedido = { visible: string; pregunta: string; idea: number | null; carta?: { hojas: Hoja[]; nota: string } };
 
   // null mientras se lee; si no se pudo leer, se pregunta igual y el Worker revisa.
   let estado = $state<EstadoIa | null>(null);
@@ -127,6 +158,22 @@
   const barraAbierta = $derived(barraLista && !barraCerrada);
   // Las que se eliminaron con su respuesta en camino: cuando llegue, ya no se guarda.
   const eliminadas = new Set<string>();
+
+  // La carta: «Tu carta» abierta (con lo que se soltó encima, si fue un PDF), las fotos adjuntas en la caja (su nota es
+  // lo escrito), cuántas cartas quedan (el chip) y la revisión abierta (qué turno de qué conversación).
+  let ventanaCarta = $state<{ archivos: File[] } | null>(null);
+  let adjuntas = $state<Hoja[]>([]);
+  let sobran = $state(0);
+  let chipCarta = $state<ChipCarta | null>(null);
+  let soltando = $state(false);
+  let revisando = $state<{ id: string; turno: number } | null>(null);
+  // Las miniaturas de las cartas mandadas en esta pestaña, por conversación y turno: nunca se guardan.
+  let miniaturas = $state<Record<string, string[]>>({});
+  const turnoRevisado = $derived.by(() => {
+    if (!revisando) return null;
+    const c = conversaciones.find((x) => x.id === revisando!.id) ?? (actual?.id === revisando.id ? actual : null);
+    return c?.turnos[revisando.turno]?.carta ?? null;
+  });
 
   // La lista de la barra: lo guardado, y arriba la que todavía no se guarda (se guarda con su primera respuesta).
   const lista = $derived.by(() => {
@@ -347,6 +394,15 @@
   // Lo escrito en la caja. Si es la que no se pudo contestar o la que se detuvo, se manda igual que
   // la primera vez; si es la frase de una idea, se manda su prompt.
   function enviarLoEscrito() {
+    if (adjuntas.length) {
+      const hojas = adjuntas;
+      const nota = valor.trim();
+      adjuntas = [];
+      sobran = 0;
+      valor = '';
+      leerLaCarta(hojas, nota);
+      return;
+    }
     const texto = valor.trim();
     if (!texto) return;
     const otraVez = [fallo, detenida].find((x) => x && x.id === actual?.id && x.visible === texto);
@@ -356,6 +412,256 @@
     else if (idea >= 0) enviar({ visible: texto, pregunta: IDEAS[idea].prompt, idea });
     else enviar({ visible: texto, pregunta: texto, idea: null });
   }
+
+  // ─── La carta ───
+
+  // Fotos adjuntas en la caja (botón, arrastrar o pegar): entran hasta 6; cuántas cartas quedan lo dice Postgres la
+  // primera vez. Un PDF no entra en la caja: abre «Tu carta» con él.
+  async function adjuntar(archivos: File[]) {
+    if (ocupado) return;
+    const pdf = archivos.find(esPdf);
+    if (pdf && !archivos.some((a) => esFoto(a) && !esPdf(a))) {
+      ventanaCarta = { archivos: [pdf] };
+      return;
+    }
+    const fotos = archivos.filter((a) => esFoto(a) && !esPdf(a));
+    if (!fotos.length) return;
+    const caben = Math.max(0, MAXIMO_HOJAS - adjuntas.length);
+    sobran = Math.max(0, fotos.length - caben);
+    adjuntas = [...adjuntas, ...fotos.slice(0, caben).map((archivo): Hoja => ({ tipo: 'foto', archivo, url: URL.createObjectURL(archivo) }))];
+    if (chipCarta === null) {
+      chipCarta = 'cargando';
+      leerCartasDelMes(sucursal.id)
+        .then((c) => (chipCarta = { quedan: c.quedan, de: c.de, vuelve: c.vuelve }))
+        .catch((falla) => {
+          // Sin saber cuántas quedan, se deja mandar: el Worker vuelve a preguntarle a Postgres.
+          console.error('[carta] no se pudo leer cuántas cartas quedan; se deja mandar y el Worker revisa:', falla);
+          chipCarta = 'sin_saber';
+        });
+    }
+    await tick();
+    caja?.enfocar();
+  }
+
+  function quitarHoja(i: number) {
+    soltarHojas([adjuntas[i]]);
+    adjuntas = adjuntas.filter((_, j) => j !== i);
+    sobran = 0;
+    if (adjuntas.length) caja?.enfocar();
+  }
+
+  // La lectura entra a la plática como una pregunta: su burbuja, sus pasos y, al final, la respuesta con su tarjeta.
+  // Funciona también sin tope (las cartas no salen del tope). Si falla o se detiene, las fotos vuelven a la caja.
+  async function leerLaCarta(hojas: Hoja[], nota: string) {
+    if (ocupado || !hojas.length) return;
+    const pdf = hojas[0].tipo === 'pdf' ? hojas[0] : null;
+    const cuantas = pdf ? pdf.paginas : hojas.length;
+    const visible = textoDeHojas(cuantas, !!pdf);
+    const base: Conversacion = actual ?? { id: crypto.randomUUID(), titulo: visible, fecha: '', hora: '', turnos: [] };
+    actual = base;
+    fallo = null;
+    detenida = null;
+    nueva = null;
+    const p: Pedido = { visible, pregunta: visible, idea: null, carta: { hojas, nota } };
+    pendiente = { ...p, id: base.id };
+    pasos = [];
+    segundos = 0;
+    const esta = new AbortController();
+    llamada = esta;
+    const inicio = performance.now();
+    const tardo = () => Math.max(1, Math.round((performance.now() - inicio) / 1000));
+    const reloj = setInterval(() => (segundos = Math.floor((performance.now() - inicio) / 1000)), 250);
+    let alLlegar = 0;
+    const urls = hojas.flatMap((h) => (h.tipo === 'foto' ? [h.url] : []));
+    const guardada = (categorias: CategoriaLeida[]): CartaGuardada => ({
+      hojas: cuantas,
+      ...(pdf ? { pdf: true } : {}),
+      ...(nota ? { nota } : {}),
+      categorias,
+    });
+    // Las fotos vuelven a la caja si se puede (no un PDF, no sin tope, la caja sin otras); si no, se sueltan.
+    const devolver = (): boolean => {
+      if (!pdf && !sinTope && !adjuntas.length) {
+        adjuntas = hojas;
+        if (!valor.trim()) valor = nota;
+        return true;
+      }
+      soltarHojas(hojas);
+      return false;
+    };
+    irALaPregunta();
+    try {
+      const r = await leerCarta(sucursal.id, hojas, nota, {
+        senal: esta.signal,
+        alPasos: (lista) => (pasos = lista),
+        alLlegar: () => {
+          clearInterval(reloj);
+          alLlegar = tardo();
+          segundos = alLlegar;
+        },
+      });
+      chipCarta = null;
+      if (r.tipo === 'sin_cartas') {
+        const volvieron = devolver();
+        fallo = {
+          ...p,
+          id: base.id,
+          mensaje: `Ya leíste ${r.cartas.de} cartas este mes. Vuelve el ${diaYMes(r.cartas.vuelve)}.${volvieron ? ' Tus fotos volvieron a la caja.' : ''}`,
+        };
+        return;
+      }
+      if (eliminadas.has(base.id)) {
+        soltarHojas(hojas);
+        return;
+      }
+      const antes = conversaciones.find((c) => c.id === base.id) ?? base;
+      const turno: Turno = {
+        visible,
+        pregunta: visible,
+        respuesta: r.respuesta,
+        leido: [],
+        idea: null,
+        segundos: alLlegar,
+        pasos: r.pasos,
+        carta: guardada(r.categorias),
+      };
+      const lista = [...antes.turnos, turno];
+      if (urls.length) miniaturas[`${base.id}:${lista.length - 1}`] = urls;
+      // El día y la hora del restaurante, para el Historial, si la conversación empieza aquí (como el reporte).
+      let cuando = { fecha: antes.fecha, hora: antes.hora };
+      if (!cuando.fecha) {
+        try {
+          const a = await leerAhora(sucursal.id);
+          cuando = { fecha: a.fecha, hora: a.hora };
+        } catch (falla) {
+          console.error('[carta] no se pudo leer la hora del restaurante para el Historial:', falla);
+          cuando = { fecha: sucursal.hoy, hora: '' };
+        }
+      }
+      const conversacion: Conversacion = { ...antes, ...cuando, turnos: lista };
+      conversaciones = guardarConversacion(sucursal.id, conversacion);
+      if (actual?.id === base.id) {
+        actual = conversacion;
+        nueva = { id: base.id, turno: lista.length - 1 };
+      }
+    } catch (error) {
+      if (esta.signal.aborted) {
+        if (eliminadas.has(base.id)) {
+          soltarHojas(hojas);
+          return;
+        }
+        const hechos = pasos.filter((x) => x.hecho);
+        const antes = conversaciones.find((c) => c.id === base.id) ?? base;
+        const turno: Turno = {
+          visible,
+          pregunta: visible,
+          respuesta: '',
+          leido: [],
+          idea: null,
+          segundos: tardo(),
+          pasos: hechos.map((x) => x.listo),
+          detenida: true,
+          carta: guardada([]),
+        };
+        const conversacion: Conversacion = { ...antes, turnos: [...antes.turnos, turno] };
+        if (conversacion.turnos.some((t) => !t.detenida)) conversaciones = guardarConversacion(sucursal.id, conversacion);
+        actual = conversacion;
+        const volvio = devolver();
+        detenida = { ...p, id: base.id, turno: conversacion.turnos.length - 1, volvio };
+        return;
+      }
+      console.error('[carta] la carta no se leyó:', error);
+      const mensaje = error instanceof Error ? error.message : '';
+      const volvieron = devolver();
+      fallo = {
+        ...p,
+        id: base.id,
+        mensaje:
+          (mensaje === SIN_CONEXION || !mensaje
+            ? 'No se pudo leer tu carta: se perdió la conexión con el servidor.'
+            : mensaje) +
+          (volvieron ? ' Tus fotos volvieron a la caja para que las mandes otra vez.' : ' Vuelve a subir tu carta desde el «+».'),
+      };
+    } finally {
+      clearInterval(reloj);
+      llamada = null;
+      pendiente = null;
+      await tick();
+      if (fallo || nueva) irALaPregunta();
+      caja?.enfocar();
+    }
+  }
+
+  // Lo que se corrige en la revisión y lo que se subió se guardan con la conversación, sin moverla de su lugar.
+  function cambiarCarta(id: string, turno: number, cambio: Partial<CartaGuardada>) {
+    const c = conversaciones.find((x) => x.id === id) ?? (actual?.id === id ? actual : null);
+    const t = c?.turnos[turno];
+    if (!c || !t?.carta) return;
+    const conversacion: Conversacion = {
+      ...c,
+      turnos: c.turnos.map((x, i) => (i === turno ? { ...x, carta: { ...t.carta!, ...cambio } } : x)),
+    };
+    conversaciones = guardarEnSuLugar(sucursal.id, conversacion);
+    if (actual?.id === id) actual = conversacion;
+  }
+
+  // Soltar fotos en cualquier lugar del Agente IA, o pegarlas. Con tope 0 (no hay caja) o con una ventana abierta no
+  // hace nada, y el navegador tampoco abre la foto. Lo que se suelta dentro de una ventana («Tu carta») es de ella.
+  $effect(() => {
+    const conArchivos = (e: DragEvent) => !!e.dataTransfer && [...e.dataTransfer.types].includes('Files');
+    const enVentana = (e: Event) => e.target instanceof Element && !!e.target.closest('dialog');
+    const recibe = () => !sinTope && !ventanaCarta && !revisando && !ocupado && !document.querySelector('dialog[open]');
+    let arrastres = 0;
+    const entra = (e: DragEvent) => {
+      if (!conArchivos(e) || enVentana(e)) return;
+      e.preventDefault();
+      arrastres++;
+      if (recibe()) soltando = true;
+    };
+    const encima = (e: DragEvent) => {
+      if (!conArchivos(e) || enVentana(e)) return;
+      e.preventDefault();
+      if (e.dataTransfer) e.dataTransfer.dropEffect = recibe() ? 'copy' : 'none';
+    };
+    const sale = (e: DragEvent) => {
+      if (!conArchivos(e) || enVentana(e)) return;
+      if (--arrastres <= 0) {
+        arrastres = 0;
+        soltando = false;
+      }
+    };
+    const suelta = (e: DragEvent) => {
+      if (!conArchivos(e) || enVentana(e)) return;
+      e.preventDefault();
+      arrastres = 0;
+      soltando = false;
+      if (recibe()) adjuntar([...(e.dataTransfer?.files ?? [])]);
+    };
+    const pega = (e: ClipboardEvent) => {
+      if (!recibe() || !e.clipboardData) return;
+      const fotos = [...e.clipboardData.files].filter((a) => esFoto(a));
+      if (!fotos.length) return;
+      e.preventDefault();
+      adjuntar(fotos);
+    };
+    document.addEventListener('dragenter', entra);
+    document.addEventListener('dragover', encima);
+    document.addEventListener('dragleave', sale);
+    document.addEventListener('drop', suelta);
+    document.addEventListener('paste', pega);
+    return () => {
+      document.removeEventListener('dragenter', entra);
+      document.removeEventListener('dragover', encima);
+      document.removeEventListener('dragleave', sale);
+      document.removeEventListener('drop', suelta);
+      document.removeEventListener('paste', pega);
+    };
+  });
+
+  onDestroy(() => {
+    soltarHojas(adjuntas);
+    for (const lista of Object.values(miniaturas)) for (const url of lista) URL.revokeObjectURL(url);
+  });
 
   function usarIdea(i: number) {
     valor = IDEAS[i].frase;
@@ -402,6 +708,7 @@
   }
 
   onMount(() => {
+    if (abrirCarta?.()) ventanaCarta = { archivos: [] };
     const momento = saludoPorHora(sucursal.hora);
     Promise.allSettled([leerEstadoIa(sucursal.id), leerZonaYCorte(sucursal.id)]).then(([e, z]) => {
       if (e.status === 'fulfilled') estado = e.value;
@@ -461,6 +768,13 @@
               aviso={sinTope ? textoSinTope(sinTope) : null}
               alEnviar={enviarLoEscrito}
               alReporte={pedirReporte}
+              alCarta={() => (ventanaCarta = { archivos: [] })}
+              hojas={adjuntas}
+              {sobran}
+              cartas={chipCarta}
+              {soltando}
+              alAdjuntar={adjuntar}
+              alQuitarHoja={quitarHoja}
             />
           </div>
 
@@ -500,21 +814,41 @@
     {:else}
       <div class="chat" aria-label="Conversación">
         {#each actual.turnos as t, i (i)}
-          <div class="burbuja">{t.visible}</div>
+          {@const minis = t.carta ? miniaturas[`${actual.id}:${i}`] : undefined}
+          {#if minis}{@render hojasArriba(minis)}{/if}
+          {@render burbuja(t.visible, t.carta?.nota)}
           {#if t.reporte}
             <ArchivoReporte reporte={t.reporte} restauranteId={sucursal.id} restaurante={sucursal.nombre} />
           {:else if t.detenida}
             <Respuesta
               texto=""
-              aviso={detenida?.volvio && detenida.id === actual.id && detenida.turno === i
-                ? 'La detuviste. Tu pregunta volvió a la caja por si quieres cambiarla.'
-                : 'La detuviste.'}
+              aviso={t.carta
+                ? detenida?.volvio && detenida.id === actual.id && detenida.turno === i
+                  ? 'La detuviste: esta no cuenta en tus 3. Tus fotos volvieron a la caja.'
+                  : 'La detuviste: esta no cuenta en tus 3.'
+                : detenida?.volvio && detenida.id === actual.id && detenida.turno === i
+                  ? 'La detuviste. Tu pregunta volvió a la caja por si quieres cambiarla.'
+                  : 'La detuviste.'}
               segundos={t.segundos}
               pasos={t.pasos}
               leido={t.leido}
               nota={notaLeido}
               alSeguir={() => {}}
             />
+          {:else if t.carta}
+            {@const conversacionId = actual.id}
+            <Respuesta
+              texto={t.respuesta}
+              nueva={nueva?.id === actual.id && nueva.turno === i}
+              segundos={t.segundos}
+              pasos={t.pasos}
+              leido={[]}
+              nota={notaLeido}
+              sinAcciones
+              alSeguir={() => {}}
+            >
+              <TarjetaCarta carta={t.carta} alRevisar={() => (revisando = { id: conversacionId, turno: i })} {alVerMenu} />
+            </Respuesta>
           {:else}
             <Respuesta
               texto={t.respuesta}
@@ -530,13 +864,17 @@
           {/if}
         {/each}
         {#if pendiente && pendiente.id === actual.id}
-          <div class="burbuja">{pendiente.visible}</div>
+          {#if pendiente.carta}
+            {@const minis = pendiente.carta.hojas.flatMap((h) => (h.tipo === 'foto' ? [h.url] : []))}
+            {#if minis.length}{@render hojasArriba(minis)}{/if}
+          {/if}
+          {@render burbuja(pendiente.visible, pendiente.carta?.nota)}
           <Pensando chicos texto="Pensando…" {pasos} {segundos} color="var(--punto-panel)" />
         {:else if reporteEnCamino && reporteEnCamino.id === actual.id}
           <div class="burbuja">{reporteEnCamino.visible}</div>
           <Pensando chicos texto="Armando tu reporte…" pasos={[]} color="var(--punto-panel)" />
         {:else if fallo && fallo.id === actual.id}
-          <div class="burbuja">{fallo.visible}</div>
+          {@render burbuja(fallo.visible, fallo.carta?.nota)}
           <div class="error"><CajaError mensaje={fallo.mensaje} /></div>
         {/if}
       </div>
@@ -552,6 +890,13 @@
             alEnviar={enviarLoEscrito}
             alDetener={pensandoAqui ? detener : null}
             alReporte={pedirReporte}
+            alCarta={() => (ventanaCarta = { archivos: [] })}
+            hojas={adjuntas}
+            {sobran}
+            cartas={chipCarta}
+            {soltando}
+            alAdjuntar={adjuntar}
+            alQuitarHoja={quitarHoja}
           />
           <div class="candado">
             <Icono nombre="r-candado" tamano={14} />
@@ -563,6 +908,49 @@
   </section>
 </main>
 </div>
+{#snippet hojasArriba(urls: string[])}
+  <div class="miniaturas" aria-hidden="true">
+    {#each urls as u (u)}<img src={u} alt="" />{/each}
+  </div>
+{/snippet}
+
+{#snippet burbuja(visible: string, nota: string | undefined)}
+  <div class="burbuja">
+    {#if nota}
+      <span class="nota-burbuja">{nota}</span>
+      <span class="burbuja-carta"><Icono nombre="foto" tamano={14} /><span>{visible}</span></span>
+    {:else}
+      {visible}
+    {/if}
+  </div>
+{/snippet}
+
+{#if ventanaCarta}
+  <VentanaCarta
+    restauranteId={sucursal.id}
+    iniciales={ventanaCarta.archivos}
+    alLeer={(hojas) => {
+      ventanaCarta = null;
+      leerLaCarta(hojas, '');
+    }}
+    alCerrar={() => (ventanaCarta = null)}
+  />
+{/if}
+
+{#if revisando && turnoRevisado && !turnoRevisado.subida}
+  {@const r = revisando}
+  <VentanaRevision
+    restauranteId={sucursal.id}
+    carta={turnoRevisado}
+    alCambiar={(categorias) => cambiarCarta(r.id, r.turno, { categorias })}
+    alSubida={(subida) => {
+      cambiarCarta(r.id, r.turno, { subida });
+      revisando = null;
+    }}
+    alCerrar={() => (revisando = null)}
+  />
+{/if}
+
 <Historial
   abierta={barraAbierta}
   conversaciones={lista}
@@ -1015,6 +1403,42 @@
   .error {
     flex: none;
     min-width: 0;
+  }
+
+  /* La carta: sus hojas arriba de la burbuja, solo mientras la pestaña sigue abierta; la nota en la burbuja y, abajo,
+     que es la carta. */
+  .miniaturas {
+    flex: none;
+    align-self: flex-end;
+    display: flex;
+    gap: 6px;
+    margin-bottom: -12px;
+  }
+
+  .miniaturas img {
+    width: 46px;
+    height: 61px;
+    object-fit: cover;
+    border-radius: 8px;
+    border: 1px solid var(--borde-tarjeta);
+  }
+
+  .nota-burbuja {
+    display: block;
+  }
+
+  .burbuja-carta {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 6px;
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--suave);
+  }
+
+  .burbuja-carta :global(svg) {
+    flex: none;
   }
 
   .abajo {

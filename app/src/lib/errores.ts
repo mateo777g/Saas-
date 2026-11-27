@@ -60,6 +60,8 @@ const REGLAS: Record<string, string> = {
   miembros_nombre_check: 'Escribe su nombre completo.',
   mesas_nombre_check: 'Escribe un nombre para la mesa.',
   areas_preparacion_nombre_check: 'Escribe un nombre para el área.',
+  // La carta que lee la IA manda su ícono; el Worker ya lo revisa, así que esto solo sale si algo se coló.
+  categorias_icono_lista: 'Una categoría trae un ícono que no existe. Recarga la página y vuelve a intentarlo.',
 };
 
 // Los finales de los mensajes que empiezan con un nombre: los de la migración distribuidores
@@ -109,9 +111,9 @@ export function mensajeDeError(error: unknown): string {
     if (regla) return REGLAS[regla];
   }
   // Un código de Postgres (5 caracteres; los de PostgREST empiezan con PGRST) con un mensaje que
-  // empieza con mayúscula o con comillas («Taco de pastor» está agotado…), o uno de los que
+  // empieza con mayúscula o con comillas («Taco de pastor» está agotado…, “Postres” no tiene productos), o uno de los que
   // empiezan con un nombre (que pudo escribirse en minúscula): es de nuestras funciones.
-  if (/^[0-9A-Z]{5}$/.test(e.code ?? '') && (/^[A-ZÁÉÍÓÚÑ«¿]/.test(mensaje) || CON_NOMBRE.some((r) => r.test(mensaje)))) {
+  if (/^[0-9A-Z]{5}$/.test(e.code ?? '') && (/^[A-ZÁÉÍÓÚÑ«“¿]/.test(mensaje) || CON_NOMBRE.some((r) => r.test(mensaje)))) {
     return sinCentavos(mensaje);
   }
   return ALGO_SALIO_PANEL;

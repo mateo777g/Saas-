@@ -29,8 +29,10 @@ export class Pasos {
     return id;
   }
 
-  cerrar(id: number | null): void {
-    if (id !== null) this.avisar({ tipo: 'hecho', id });
+  // Con `listo`, lo que dice ya terminado cambia por lo que de verdad pasó (la carta: «Anoté 18
+  // productos» aunque el índice dijera 19).
+  cerrar(id: number | null, listo?: string): void {
+    if (id !== null) this.avisar(listo ? { tipo: 'hecho', id, listo } : { tipo: 'hecho', id });
   }
 
   // El paso no pasó de verdad: se va de la lista y, si el modelo corrige, puede volver a salir.

@@ -1,5 +1,6 @@
-// El agente IA (libreta 1, «Cómo las usa el modelo»; libreta 3, «El gasto de IA»). Dos trabajos,
-// los dos con la sesión del gerente:
+// El agente IA (libreta 1, «Cómo las usa el modelo»; libreta 3, «El gasto de IA»). Tres trabajos,
+// los tres con la sesión del gerente (el tercero, POST /agente/carta, «Armar mi menú con tu carta», vive
+// en carta.ts):
 //  - POST /agente/pregunta {restaurante, pregunta, conversacion}: Don Chuy pregunta, el
 //    modelo pide herramientas y el Worker se las pasa a Postgres (agente_herramienta) con la sesión
 //    de Don Chuy, hasta que el modelo contesta con texto. Contesta por partes (porPartes.ts): cada
@@ -10,6 +11,7 @@
 //    tope, regresa null y la app pone el suyo, sin aviso.
 // El Worker no decide nada: estado_ia dice si se puede, las herramientas hacen las cuentas y
 // anotar_uso_ia saca el costo con los tokens que reportó OpenAI.
+import { leerLaCarta } from './carta';
 import type { Env } from './index';
 import { leerCuerpo } from './equipo';
 import { modeloAgente, modeloSaludo, rondaDelAgente, RondaFallida, saludoDeLaIa, SIN_TOKENS, sumar } from './openai';
@@ -38,6 +40,8 @@ type Leido = { icono: string; texto: string };
 
 export async function agente(request: Request, env: Env, url: URL, ctx: ExecutionContext): Promise<Response> {
   if (request.method !== 'POST') throw new Rechazo(405, 'Ese trabajo solo acepta POST.');
+  // La carta llega como archivos (multipart), no como JSON: carta.ts lee su propia petición.
+  if (url.pathname === '/agente/carta') return leerLaCarta(request, env, ctx);
   const sesion = leerSesion(request);
   const cuerpo = await leerCuerpo(request);
   const restaurante = typeof cuerpo.restaurante === 'string' ? cuerpo.restaurante : '';
@@ -266,15 +270,23 @@ async function saludo(env: Env, sesion: string, restaurante: string): Promise<Re
 
 // El gasto, con la llave secreta: Postgres saca el costo y dice si todavía queda tope. Nunca
 // truena: si no se pudo anotar, queda en el registro con los tokens para anotarlo a mano. El
-// asistente del menú la usa igual, con sus dos usos.
+// asistente del menú la usa igual, con sus dos usos, y la carta con los suyos (para una carta, `puede`
+// dice si le queda otra este mes).
 export async function anotar(
   env: Env,
   restaurante: string,
-  uso: 'pregunta' | 'saludo' | 'menu' | 'menu_sin_respuesta' | 'palabras',
+  uso: 'pregunta' | 'saludo' | 'menu' | 'menu_sin_respuesta' | 'palabras' | 'carta' | 'carta_sin_lectura',
   modelo: string,
   t: Tokens,
 ): Promise<boolean | null> {
-  const etiqueta = uso === 'menu' || uso === 'menu_sin_respuesta' ? '[asistente]' : uso === 'palabras' ? '[anuncios]' : '[agente]';
+  const etiqueta =
+    uso === 'menu' || uso === 'menu_sin_respuesta'
+      ? '[asistente]'
+      : uso === 'palabras'
+        ? '[anuncios]'
+        : uso === 'carta' || uso === 'carta_sin_lectura'
+          ? '[carta]'
+          : '[agente]';
   try {
     const r = await llamar<{ costo: unknown; puede: boolean }>(env, 'worker', 'anotar_uso_ia', {
       p_restaurante_id: restaurante,

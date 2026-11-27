@@ -372,6 +372,125 @@ export async function respuestaDelAsistente(
   return { salida: null, tokens: t };
 }
 
+// ─── La carta: Files API y Responses API con salida estructurada ──────────────
+
+// Una hoja de la carta (una foto) o el PDF, tal como lo mandó la app: el Worker no lo abre.
+export type Hoja = { archivo: Blob; nombre: string; esPdf: boolean };
+
+// Lo que espera la carta: unos minutos (seis hojas con letra chica y razonamiento), y con esto el
+// gasto más alto de una lectura (unos 0.30 USD de salida). Si no le alcanza, es una carta enorme.
+const ESPERA_CARTA = 4 * 60 * 1000;
+const SALIDA_CARTA_MAXIMA = 30_000;
+// Si al Worker se le pasa borrarla, OpenAI la borra sola a la hora (lo menos que acepta).
+const VIDA_ARCHIVO = 3_600;
+
+// Sube una hoja a la Files API sin leerla: el archivo pasa tal cual (multipart), así el Worker no
+// gasta CPU en base64. Las fotos van como `vision` y el PDF como `user_data`, como en la
+// documentación de OpenAI. Regresa su id.
+export async function subirArchivo(env: Env, hoja: Hoja): Promise<string> {
+  const forma = new FormData();
+  forma.append('purpose', hoja.esPdf ? 'user_data' : 'vision');
+  forma.append('expires_after[anchor]', 'created_at');
+  forma.append('expires_after[seconds]', String(VIDA_ARCHIVO));
+  forma.append('file', hoja.archivo, hoja.nombre);
+  const respuesta = await fetch('https://api.openai.com/v1/files', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${llave(env)}` },
+    body: forma,
+  });
+  const texto = await respuesta.text();
+  if (!respuesta.ok) {
+    console.error(`[carta] subir una hoja a OpenAI falló con ${respuesta.status}`, codigoDeError(texto));
+    throw new Rechazo(502, 'No se pudo subir la hoja.');
+  }
+  const id = (JSON.parse(texto) as { id?: unknown }).id;
+  if (typeof id !== 'string' || !id) {
+    console.error('[carta] OpenAI subió la hoja sin id');
+    throw new Rechazo(502, 'No se pudo subir la hoja.');
+  }
+  return id;
+}
+
+// Nunca truena: si no se pudo borrar, queda en el registro (con su id, nunca su contenido) y
+// OpenAI la borra sola a la hora.
+export async function borrarArchivo(env: Env, id: string): Promise<void> {
+  try {
+    const respuesta = await fetch(`https://api.openai.com/v1/files/${encodeURIComponent(id)}`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${llave(env)}` },
+    });
+    const texto = await respuesta.text();
+    if (!respuesta.ok) console.error(`[carta] no se pudo borrar ${id} en OpenAI (${respuesta.status}); se borra sola a la hora`, codigoDeError(texto));
+  } catch (e) {
+    console.error(`[carta] no se pudo borrar ${id} en OpenAI; se borra sola a la hora`, e);
+  }
+}
+
+// Lo que pasó con la lectura: lo que escribió el modelo (lo revisa carta.ts), o por qué no hay, con
+// lo que cobró. `larga`: se acabó la salida antes de terminar.
+export type Lectura = { salida: Record<string, unknown> | null; larga: boolean; tokens: Tokens };
+
+// Una sola llamada con las hojas ya subidas, con el razonamiento de siempre. Si OpenAI no la terminó,
+// se negó o no trajo el JSON pedido, salida null con lo que cobró. Nada de lo que escribió el modelo
+// pasa al registro: solo cuántas letras.
+export async function lecturaDeLaCarta(
+  env: Env,
+  peticion: { instrucciones: string; ids: string[]; esPdf: boolean; formato: unknown },
+  oyente: Oyente,
+  corte: AbortSignal,
+): Promise<Lectura> {
+  const modelo = modeloAgente(env);
+  const contenido: Record<string, unknown>[] = [
+    { type: 'input_text', text: peticion.esPdf ? 'Esta es mi carta, en PDF.' : `Estas son las ${peticion.ids.length} hojas de mi carta, en orden.` },
+    ...peticion.ids.map((id) => (peticion.esPdf ? { type: 'input_file', file_id: id } : { type: 'input_image', file_id: id, detail: 'high' })),
+  ];
+  const r = await pedirPorPartes(
+    env,
+    'responses',
+    {
+      model: modelo,
+      instructions: peticion.instrucciones,
+      input: [{ role: 'user', content: contenido }],
+      text: { format: peticion.formato },
+      store: false,
+      max_output_tokens: SALIDA_CARTA_MAXIMA,
+    },
+    { soloCodigo: true, espera: ESPERA_CARTA, corte, oyente, etiqueta: '[carta]' },
+  );
+  if (!r) return { salida: null, larga: false, tokens: SIN_TOKENS };
+
+  const uso = (r.usage ?? {}) as Record<string, Record<string, unknown> | unknown>;
+  const detalle = (uso.input_tokens_details ?? {}) as Record<string, unknown>;
+  const t = tokens(modelo, uso.input_tokens, detalle.cached_tokens, detalle.cache_write_tokens, uso.output_tokens, r.usage);
+
+  if (r.status !== 'completed') {
+    const incompleta = (r.incomplete_details ?? {}) as { reason?: unknown };
+    const error = (r.error ?? {}) as { code?: unknown };
+    console.error('[carta] OpenAI no terminó la lectura', r.status, incompleta.reason ?? null, error.code ?? null);
+    return { salida: null, larga: incompleta.reason === 'max_output_tokens', tokens: t };
+  }
+
+  let texto = '';
+  for (const item of Array.isArray(r.output) ? (r.output as Item[]) : []) {
+    if (item.type !== 'message' || !Array.isArray(item.content)) continue;
+    for (const parte of item.content as Record<string, unknown>[]) {
+      if (parte.type === 'refusal') {
+        console.warn('[carta] OpenAI se negó a leer la carta');
+        return { salida: null, larga: false, tokens: t };
+      }
+      if (parte.type === 'output_text' && typeof parte.text === 'string') texto += parte.text;
+    }
+  }
+  try {
+    const salida: unknown = JSON.parse(texto);
+    if (salida && typeof salida === 'object' && !Array.isArray(salida)) return { salida: salida as Record<string, unknown>, larga: false, tokens: t };
+  } catch {
+    // Abajo se registra igual que un JSON que no es objeto.
+  }
+  console.error('[carta] OpenAI no regresó el JSON de la carta', texto ? `(${texto.length} letras)` : '(vacío)');
+  return { salida: null, larga: false, tokens: t };
+}
+
 // ─── El paso de texto de los anuncios: Responses API con salida estructurada ──
 
 // Una llamada con razonamiento bajo y 30 segundos de espera. Regresa el objeto que escribió el

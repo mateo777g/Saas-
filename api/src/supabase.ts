@@ -77,7 +77,8 @@ export async function esFragmentless(env: Env, sesion: string): Promise<boolean>
 }
 
 // Lee renglones de una tabla con la sesión de quien llama: RLS decide cuáles ve. Solo para
-// «Descargar» un anuncio (GET /anuncios/archivo); todo lo demás va por funciones.
+// «Descargar» un anuncio (GET /anuncios/archivo) y para los nombres de las categorías que se le
+// dicen al modelo al leer la carta (carta.ts); todo lo demás va por funciones.
 export async function leerFilas<T>(env: Env, sesion: string, consulta: string): Promise<T[]> {
   const respuesta = await fetch(`${env.SUPABASE_URL}/rest/v1/${consulta}`, {
     headers: { apikey: env.SUPABASE_LLAVE_PUBLICABLE, Authorization: `Bearer ${sesion}` },

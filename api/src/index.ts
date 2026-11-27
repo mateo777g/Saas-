@@ -1,7 +1,7 @@
 // El Worker de Fragmentless (libreta 3, Seguridad). Hoy hace diez cosas: subir y borrar las
 // fotos del menú en R2 (fotos.ts), las cuentas, los PIN y los aparatos del equipo (equipo.ts), lo
 // que pide el PIN de otra persona en el punto de venta (pos.ts), el agente IA con su saludo
-// (agente.ts), el pedido del menú en línea por WhatsApp (pedidos.ts), el asistente del menú
+// (agente.ts) y «Armar mi menú con tu carta» (carta.ts), el pedido del menú en línea por WhatsApp (pedidos.ts), el asistente del menú
 // (asistente.ts), las muestras de los estilos de los anuncios (estilos.ts), Crear contenido
 // (crearContenido.ts, con su trabajo en segundo plano en hacerAnuncio.ts) y Mi biblioteca
 // (biblioteca.ts: Eliminar y, cada día a las 9:00 UTC, el borrado de los 30 días) y Mi menú
